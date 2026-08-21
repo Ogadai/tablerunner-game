@@ -14,6 +14,7 @@ export default function Home() {
           width={1400}
           height={1100}
           className={styles.heroImage}
+          loading="eager"
           alt="The Hero image for TableRunner, showing a barbarian and a witch"
         />
       </main>
