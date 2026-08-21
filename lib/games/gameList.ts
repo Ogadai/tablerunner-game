@@ -7,7 +7,8 @@ const gameList: GameListEntry[] = [
     id: 'test1',
     name: 'Test Game 1',
     map: 'test',
-    description: 'This is a test game for testing purposes.'
+    description: 'This is a test game for testing purposes.',
+    heroImage: '/hero-barbarian-witch.png',
   }
 ];
 

@@ -3,4 +3,5 @@ export interface GameListEntry {
   id: string;
   name: string;
   description: string;
+  heroImage: string;
 }
