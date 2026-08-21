@@ -1,49 +1,469 @@
+/* ==========================================================================
+   RPG Fantasy Theme Defaults (System Theme Responsive)
+   ========================================================================== */
+
+@import url('https://googleapis.com');
+
+/* ==========================================================================
+   Theme Variables
+   ========================================================================== */
+
+/* LIGHT MODE DEFAULTS */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color Palette - Weathered Parchment & Gold */
+  --bg-main: #f2ebd9;
+  --bg-card: #eadeca;
+  --bg-card-hover: #e0d1b8;
+  --bg-input: #fbf8f0;
+
+  --color-text-primary: #2b221a;
+  --color-text-muted: #5c4e40;
+
+  --gold-bright: #d4af37;
+  --gold-antique: #8c6d31;
+  --gold-dark: #57421c;
+  --gold-glow: rgba(212, 175, 55, 0.2);
+
+  --border-stone: #bdae99;
+  --border-stone-light: #9e8e76;
+
+  /* System Colors */
+  --color-mana: #1a5fb4;
+  --color-health: #c01c28;
+  --color-stamina: #26a269;
+
+  /* Typography */
+  --font-header: 'Cinzel', 'MedievalSharp', Georgia, serif;
+  --font-body: 'Lora', Georgia, serif;
 }
 
+/* DARK MODE OVERRIDES */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Color Palette - Deep Nocturnal & Gold */
+    --bg-main: #120f0d;
+    --bg-card: #1c1612;
+    --bg-card-hover: #261f1a;
+    --bg-input: #0d0a08;
+
+    --color-text-primary: #e6dfd3;
+    --color-text-muted: #a69d8d;
+
+    --gold-bright: #ffd700;
+    --gold-antique: #c5a059;
+    --gold-dark: #8c6d31;
+    --gold-glow: rgba(255, 215, 0, 0.15);
+
+    --border-stone: #3a3126;
+    --border-stone-light: #5c4e3c;
+
+    /* System Colors */
+    --color-mana: #2b7ae6;
+    --color-health: #a62b2b;
+    --color-stamina: #2be67a;
   }
 }
 
-html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* ==========================================================================
+   Base Elements
+   ========================================================================== */
 
 * {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+body {
+  background-color: var(--bg-main);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 1.5rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+
+  /* Subtle texture layers */
+  background-image:
+    radial-gradient(circle at 50% 20%, rgba(197, 160, 89, 0.08), transparent 80%),
+    linear-gradient(var(--bg-main), var(--bg-main));
 }
 
 @media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+  body {
+    background-image:
+      radial-gradient(circle at 50% 20%, rgba(40, 30, 20, 0.4), transparent 80%),
+      linear-gradient(var(--bg-main), var(--bg-main));
   }
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-header);
+  color: var(--gold-antique);
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  }
+}
+
+h1 {
+  font-size: 2.5rem;
+  border-bottom: 2px solid var(--border-stone);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--gold-bright);
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin-top: 1.5rem;
+}
+
+h3 {
+  font-size: 1.4rem;
+  margin-top: 1.25rem;
+}
+
+p {
+  margin-bottom: 1.25rem;
+  color: var(--color-text-muted);
+}
+
+strong {
+  color: var(--gold-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  strong {
+    color: var(--gold-bright);
+  }
+}
+
+/* ==========================================================================
+   Interactive Elements (Buttons & Links)
+   ========================================================================== */
+
+a {
+  color: var(--gold-antique);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover,
+a:focus {
+  color: var(--gold-bright);
+  outline: none;
+}
+
+/* Base Button */
+button,
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-header);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  color: #120f0d;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold-antique));
+  border: 2px solid var(--gold-dark);
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  user-select: none;
+  touch-action: manipulation;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+
+  button,
+  .btn {
+    color: #120f0d;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Touch & Interaction States */
+@media (hover: hover) {
+
+  button:hover,
+  .btn:hover {
+    background: linear-gradient(135deg, #fff2a3, var(--gold-bright));
+    box-shadow: 0 0 12px var(--gold-glow), 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+  }
+}
+
+/* High-feedback active state optimized for mobile tapping */
+button:active,
+.btn:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), inset 0 2px 5px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, var(--gold-antique), var(--gold-dark));
+}
+
+button:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+/* Disabled State */
+button:disabled,
+.btn:disabled {
+  background: #dcd4c4;
+  border-color: #bfae99;
+  color: #8c8070;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (prefers-color-scheme: dark) {
+
+  button:disabled,
+  .btn:disabled {
+    background: #2a241e;
+    border-color: #1a1612;
+    color: #54493d;
+  }
+}
+
+/* Variant Button */
+.btn-secondary {
+  background: linear-gradient(135deg, #f5f0e6, #eadeca);
+  color: var(--gold-dark);
+  border-color: var(--border-stone-light);
+}
+
+@media (hover: hover) {
+  .btn-secondary:hover {
+    background: linear-gradient(135deg, #ffffff, #f5f0e6);
+    color: var(--gold-antique);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-secondary {
+    background: linear-gradient(135deg, #2e261f, #1c1612);
+    color: var(--gold-antique);
+    border-color: var(--border-stone-light);
+  }
+
+  @media (hover: hover) {
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #3d3229, #261f1a);
+      color: var(--gold-bright);
+    }
+  }
+}
+
+/* ==========================================================================
+   Components: Panels & Cards
+   ========================================================================== */
+
+.card {
+  background-color: var(--bg-card);
+  border: 2px solid var(--border-stone);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.03), 0 6px 12px rgba(0, 0, 0, 0.08);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.015) 1px, transparent 0);
+  background-size: 4px 4px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.6);
+    background-image: radial-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 0);
+  }
+}
+
+/* Ornamental corner accents for cards */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 1px solid rgba(140, 109, 49, 0.15);
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .card::before {
+    border: 1px solid rgba(197, 160, 89, 0.15);
+  }
+}
+
+/* Interactive list/highlight cards */
+.card-interactive {
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  touch-action: manipulation;
+}
+
+@media (hover: hover) {
+  .card-interactive:hover {
+    background-color: var(--bg-card-hover);
+    border-color: var(--border-stone-light);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 16px rgba(0, 0, 0, 0.12), 0 0 8px rgba(140, 109, 49, 0.05);
+  }
+}
+
+@media (max-width: 1024px) {
+
+  /* Tap fallback visual flare instead of hovering motion */
+  .card-interactive:active {
+    background-color: var(--bg-card-hover);
+  }
+}
+
+.card-interactive:active {
+  transform: scale(0.99) translateY(0);
+  border-color: var(--gold-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  @media (hover: hover) {
+    .card-interactive:hover {
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.7), 0 0 8px rgba(197, 160, 89, 0.1);
+    }
+  }
+
+  .card-interactive:active {
+    background-color: #17110e;
+  }
+}
+
+/* ==========================================================================
+   Forms & Inputs
+   ========================================================================== */
+
+form {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-family: var(--font-header);
+  font-size: 0.9rem;
+  color: var(--gold-dark);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  label {
+    color: var(--gold-antique);
+  }
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+textarea,
+select {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  background-color: var(--bg-input);
+  border: 2px solid var(--border-stone);
+  border-radius: 4px;
+  padding: 0.75rem;
+  width: 100%;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+
+  input[type="text"],
+  input[type="number"],
+  input[type="password"],
+  input[type="email"],
+  textarea,
+  select {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Input Focus & Touch Target Fixes */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--gold-antique);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 8px var(--gold-glow);
+}
+
+@media (prefers-color-scheme: dark) {
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 8px var(--gold-glow);
+  }
+}
+
+/* Dropdown/Select Customization styling fallback */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  select {
+    background-image: url("data:image/svg+xml;utf8,");
+  }
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+ul {
+  list-style-type: none;
 }

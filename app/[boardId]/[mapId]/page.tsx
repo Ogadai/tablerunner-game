@@ -1,23 +1,55 @@
+'use client'
+import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react';
+
 import styles from "./page.module.css";
-import { gameList } from "../../../games/gamelist";
-import { notFound } from "next/navigation";
+import { ApiResponse } from "@/lib/api-response";
+import { getGameState } from "@/lib/store/gameState";
+import { GameState } from "@/lib/store/types";
 
-export default async function Page(props: { params: Promise<{ boardId: string, mapId: string }> }) {
-  const params = await props.params;
-  const boardId = params.boardId;
-  const mapId = params.mapId;
+import CreateGame from './create-game';
+import PlayGame from './play-game';
+import ErrorComponent from '../../error';
 
-  const game = gameList.find((g) => g.map === mapId);
-  if (!game) {
-    notFound();
+export default function Page() {
+  const params = useParams();
+  const boardId = params.boardId?.toString() || '';
+  const mapId = params.mapId?.toString() || '';
+
+  const [gameState, setGameState] = useState<ApiResponse<GameState> | null>(null);
+
+  useEffect(() => {
+    async function fetchGameState() {
+      const state = await getGameState(boardId, mapId);
+      setGameState(state);
+    }
+
+    fetchGameState();
+  }, []);
+
+  if (!gameState) {
+    return <p>Loading...</p>;
   }
 
-  return (
-    <div>
-      <main>
-        <p>Board ID: {boardId}</p>
-        <p>Game ID: {game.id}</p>
-      </main>
-    </div>
-  );
+  if (!gameState.success) {
+    return <ErrorComponent error={new Error(gameState.error)} />;
+  }
+
+  const onCreateGame = (newGameState: GameState) => {
+    setGameState({ success: true, data: newGameState });
+  }
+
+  const onDeleteGame = () => {
+    setGameState({ success: true, data: undefined });
+  }
+
+  if (gameState.data) {
+    return (
+      <PlayGame boardId={boardId} mapId={mapId} name={gameState.data.name} onDeleteGame={onDeleteGame} />
+    );
+  } else {
+    return (
+      <CreateGame boardId={boardId} mapId={mapId} onCreateGame={onCreateGame} />
+    );
+  }
 }
