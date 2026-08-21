@@ -40,25 +40,21 @@ export default function CreateGame(
     };
   };
 
-  return (
-    <div>
-      <main>
-        <h2>Welcome to TableRunner</h2>
-        <p>Please choose one of the following games</p>
-        <ul>
-          {gameList.data?.map((game) => (
-            <li key={game.id}>
-              <div className="card">
-                <form action={bindCreateNewGameAction(game.id)}>
-                  <h3>{game.name}</h3>
-                  <p>{game.description}</p>
-                  <button type="submit">Create Game</button>
-                </form>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </main>
-    </div>
-  );
+  return (<>
+    <h2>Welcome to TableRunner</h2>
+    <p>Please choose one of the following games</p>
+    <ul>
+      {gameList.data?.map((game) => (
+        <li key={game.id}>
+          <div className="card">
+            <form action={bindCreateNewGameAction(game.id)}>
+              <h3>{game.name}</h3>
+              <p>{game.description}</p>
+              <button type="submit">Create Game</button>
+            </form>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </>);
 }

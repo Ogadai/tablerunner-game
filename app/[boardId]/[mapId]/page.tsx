@@ -44,12 +44,12 @@ export default function Page() {
   }
 
   if (gameState.data) {
-    return (
+    return (<div><main>
       <PlayGame boardId={boardId} mapId={mapId} name={gameState.data.name} onDeleteGame={onDeleteGame} />
-    );
+    </main></div>);
   } else {
-    return (
+    return (<div><main>
       <CreateGame boardId={boardId} mapId={mapId} onCreateGame={onCreateGame} />
-    );
+    </main></div>);
   }
 }
