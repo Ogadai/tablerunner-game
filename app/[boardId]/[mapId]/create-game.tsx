@@ -42,7 +42,7 @@ export default function CreateGame(
 
   return (<>
     <h3>Welcome to TableRunner</h3>
-    <p>Please choose one of the following games</p>
+    <p>Please choose one of these games</p>
     <ul>
       {gameList.data?.map((game) => (
         <li key={game.id}>

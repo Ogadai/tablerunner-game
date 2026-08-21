@@ -402,7 +402,6 @@ input[type="password"],
 input[type="email"],
 textarea,
 select {
-  font-family: var(--font-body);
   font-size: 1rem;
   color: var(--color-text-primary);
   background-color: var(--bg-input);
