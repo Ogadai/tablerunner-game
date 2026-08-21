@@ -41,14 +41,14 @@ export default function CreateGame(
   };
 
   return (<>
-    <h2>Welcome to TableRunner</h2>
+    <h3>Welcome to TableRunner</h3>
     <p>Please choose one of the following games</p>
     <ul>
       {gameList.data?.map((game) => (
         <li key={game.id}>
           <div className="card">
             <form action={bindCreateNewGameAction(game.id)}>
-              <h3>{game.name}</h3>
+              <h4>{game.name}</h4>
               <p>{game.description}</p>
               <button type="submit">Create Game</button>
             </form>
