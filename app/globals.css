@@ -132,11 +132,13 @@ h1 {
   margin-bottom: 1.5rem;
   text-align: center;
   color: var(--gold-bright);
+  text-align: center;
 }
 
 h2 {
   font-size: 1.8rem;
   margin-top: 1.5rem;
+  text-align: center;
 }
 
 h3 {
