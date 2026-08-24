@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
+import Swal from 'sweetalert2'
 
 import { BleState } from './ble-states';
 import styles from "./ble-board.module.css";
@@ -158,7 +159,17 @@ export default function BluetoothController() {
         await connectBluetooth();
         break;
       case BleState.Connected:
-        await disconnectBluetooth();
+        const result = await Swal.fire({
+          title: 'Disconnect from board?',
+          text: "Are you sure you want to disconnect from the Tablerunner board?",
+          showCancelButton: true,
+          confirmButtonText: 'Yes, disconnect!'
+        })
+
+        if (result.isConfirmed) {
+          // Run your delete logic here
+          await disconnectBluetooth();
+        }
         break;
     }
   }
