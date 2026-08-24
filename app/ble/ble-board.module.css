@@ -1,0 +1,33 @@
+@keyframes connecting {
+   from {
+      color: var(--color-disconnected);
+   }
+   to {
+      color: var(--color-connected);
+   }
+ }
+
+.bleButton {
+  background: none;
+  background-color: transparent;
+
+  &.disconnected {
+    color: var(--color-disconnected);
+  }
+  &.connecting {
+    color: var(--color-disconnected);
+    animation-duration: 400ms;
+    animation-name: connecting;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+  &.connected {
+    color: var(--color-connected);
+  }
+  &.notsupported {
+    color: var(--color-error);
+  }
+  &.error {
+    color: var(--color-error);
+  }
+}

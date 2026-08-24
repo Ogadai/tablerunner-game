@@ -32,6 +32,12 @@
   --color-health: #c01c28;
   --color-stamina: #26a269;
 
+  --color-disconnected: #5c4e40;
+  --color-warning: #d4af37;
+  --color-error: #c01c28;
+  --color-success: #26a269;
+  --color-connected: #1a5fb4;
+
   /* Typography */
   --font-header: 'Cinzel', 'MedievalSharp', Georgia, serif;
   --font-body: 'Lora', Georgia, serif;
@@ -61,6 +67,12 @@
     --color-mana: #2b7ae6;
     --color-health: #a62b2b;
     --color-stamina: #2be67a;
+
+    --color-disconnected: #a69d8d;
+    --color-warning: #ffd700;
+    --color-error: #a62b2b;
+    --color-success: #2be67a;
+    --color-connected: #2b7ae6;
   }
 }
 
