@@ -1,20 +1,27 @@
 'use client';
 
+import { useParams } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 
 import { BleState } from './ble-states';
 import styles from "./ble-board.module.css";
 
+const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+const BLE_PREFIX = 'TABLERUNNER';
+
+
 export default function BluetoothController() {
+  const params = useParams();
   const [device, setDevice] = useState<any>(null);
   const [bleState, setBleState] = useState<BleState>(BleState.Disconnected);
   const [characteristic, setCharacteristic] = useState<any>(null);
   const [message, setMessage] = useState<string>('');
   const [isSupported, setIsSupported] = useState<boolean>(true);
 
-  const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
-  const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+  const boardId = params.boardId?.toString() || '';
+  const BLE_NAME = `${BLE_PREFIX}-${boardId}`;
 
   const setStatus = (newStatus: string) => {
     console.debug(newStatus);
@@ -77,7 +84,7 @@ export default function BluetoothController() {
         const devices = await (navigator.bluetooth as any).getDevices();
 
         // Find the first device that fits your ESP32 naming convention
-        const rememberedDevice = devices.find((d: any) => d.name?.startsWith('ESP32'));
+        const rememberedDevice = devices.find((d: any) => d.name?.startsWith(BLE_NAME));
 
         if (rememberedDevice) {
           setStatus(`Found paired device: ${rememberedDevice.name}. Waiting for signal...`);
@@ -114,7 +121,7 @@ export default function BluetoothController() {
     try {
       setStatus('Requesting Bluetooth device...');
       const selectedDevice = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: 'ESP32' }],
+        filters: [{ namePrefix: BLE_NAME }],
         optionalServices: [SERVICE_UUID],
       });
 
@@ -147,6 +154,7 @@ export default function BluetoothController() {
   const onClick = async () => {
     switch (bleState) {
       case BleState.Disconnected:
+      case BleState.Error:
         await connectBluetooth();
         break;
       case BleState.Connected:
