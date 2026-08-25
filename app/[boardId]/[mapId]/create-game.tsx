@@ -61,7 +61,7 @@ export default function CreateGame(
               />
 
               <p>{game.description}</p>
-              <button type="submit">Create Game</button>
+              <button type="submit">New Game</button>
             </form>
           </div>
         </li>

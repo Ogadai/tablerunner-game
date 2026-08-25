@@ -33,4 +33,11 @@
   &.error {
     color: var(--color-error);
   }
+  
+  &:active, &:hover {
+    background: linear-gradient(135deg, #0002a3, var(--color-connected));
+    background-color: var(--color-connected);
+    color: var(--color-text-primary);
+  }
+
 }

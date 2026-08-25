@@ -4,6 +4,7 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 
+import styles from './layout.module.css';
 import BluetoothController from '../../ble/ble-board';
 import { bluetoothService } from '../../ble/bluetooth-service';
 import GameTopic from '../../message-bus/game-topic';
@@ -51,9 +52,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div>
+    <div className={styles.page}>
       {playerId && (
-        <div>
+        <div className={styles.header}>
           <BluetoothController
             bleOtherPlayer={!!blePlayerId && blePlayerId !== playerId}
           />
@@ -67,7 +68,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           />
         </div>
       )}
-      {children}
+      <div className={`${styles.content} page-content`}>
+        {children}
+      </div>
     </div>
   );
 }

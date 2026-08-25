@@ -106,19 +106,8 @@ export default function BluetoothController({
   }
 
   return (
-    <div>
-      <div>
-        <button onClick={onClick} className={`${styles.bleButton} ${styles[showBleState]}`}>
-          <span className="material-symbols-outlined">bluetooth</span>
-        </button>
-      </div>
-
-      <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-        <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type message..." disabled={bleState !== BleState.Connected} style={{ padding: '8px' }} />
-        <button onClick={sendMessage} disabled={bleState !== BleState.Connected || !message} style={{ padding: '8px 16px', backgroundColor: '#10b981', color: '#fff', border: 'none' }}>
-          Send Message
-        </button>
-      </div>
-    </div>
+    <button onClick={onClick} className={`${styles.bleButton} ${styles[showBleState]}`}>
+      <span className="material-symbols-outlined">bluetooth</span>
+    </button>
   );
 }
