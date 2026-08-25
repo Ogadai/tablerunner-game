@@ -20,6 +20,14 @@ function connectToAbly(playerId: string): Ably.Realtime {
         } catch (err: any) {
           callback(err, null);
         }
+      },
+      transportParams: {
+        // Defines how long (in milliseconds) Ably keeps a user in the 
+        // presence room after an abrupt WebSocket drop. (Minimum: 1000)
+        remainPresentFor: "5000", 
+        
+        // Optional: Speed up how often the client checks connection health
+        heartbeatInterval: "5000" 
       }
     });
   }
