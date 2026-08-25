@@ -2,13 +2,12 @@
 import { deleteGameState } from "@/lib/store/gameState";
 
 export default function PlayGame(
-  { boardId, mapId, name, onDeleteGame }
-  : { boardId: string, mapId: string, name: string, onDeleteGame: () => void }
+  { boardId, mapId, name }
+  : { boardId: string, mapId: string, name: string }
 ) {
 
-  const deleteGameAction = async (formData: FormData) => {
+  const deleteGameAction = async () => {
     await deleteGameState(boardId, mapId);
-    onDeleteGame();
   };
 
   return (

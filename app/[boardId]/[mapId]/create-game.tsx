@@ -7,12 +7,11 @@ import { ApiResponse } from "@/lib/api-response";
 import { getGamesForMap } from "@/lib/games/gameList";
 import { GameListEntry } from "@/lib/games/types";
 import { createNewGameState } from "@/lib/store/gameState";
-import { GameState } from "@/lib/store/types";
 import styles from "./create-game.module.css";
 
 export default function CreateGame(
-  { boardId, mapId, onCreateGame }
-  : { boardId: string, mapId: string, onCreateGame: (gameState: GameState) => void }
+  { boardId, mapId }
+  : { boardId: string, mapId: string }
 ) {
   const [gameList, setGameList] = useState<ApiResponse<GameListEntry[]> | null>(null);
 
@@ -23,7 +22,7 @@ export default function CreateGame(
     }
 
     fetchGames();
-  }, []);
+  }, [mapId]);
 
   if (!gameList) {
     return <p>Loading...</p>;
@@ -34,11 +33,8 @@ export default function CreateGame(
   }
 
   const bindCreateNewGameAction = (gameId: string) => {
-    return async (formData: FormData) => {
-      const newGame = await createNewGameState(boardId, mapId, gameId);
-      if (newGame.success && newGame.data) {
-        onCreateGame(newGame.data);
-      }
+    return async () => {
+      await createNewGameState(boardId, mapId, gameId);
     };
   };
 

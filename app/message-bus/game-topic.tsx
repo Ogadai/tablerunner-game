@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import * as Ably from 'ably';
-import { BleConnectedStatusMessage } from '../../lib/message-types';
+import { BleConnectedStatusMessage, GameTopicMessageType } from '../../lib/message-types';
+import GameTopicService from './game-topic-service';
 
 let _ably: Ably.Realtime | null = null;
 function connectToAbly(playerId: string): Ably.Realtime {
@@ -75,6 +76,12 @@ export default function GameTopic({
     // Listen for update
     channel.presence.subscribe(['update'], (message) => {
       onBleStatusReceived(message.data);
+    });
+
+    channel.subscribe(message => {
+      if (message.name === GameTopicMessageType.GameStateUpdated) {
+        GameTopicService.raiseGameStateUpdated(topicId);
+      }
     });
 
     onSetBleStatusCallback((message: BleConnectedStatusMessage) => {

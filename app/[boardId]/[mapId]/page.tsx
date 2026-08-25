@@ -8,6 +8,7 @@ import { GameState } from "@/lib/store/types";
 
 import CreateGame from './create-game';
 import PlayGame from './play-game';
+import GameTopicService from '../../message-bus/game-topic-service';
 
 import ErrorComponent from '../../error';
 
@@ -15,6 +16,7 @@ export default function Page() {
   const params = useParams();
   const boardId = params.boardId?.toString() || '';
   const mapId = params.mapId?.toString() || '';
+  const topicId = `${boardId}-${mapId}`;
   const [gameState, setGameState] = useState<ApiResponse<GameState> | null>(null);
 
   useEffect(() => {
@@ -24,7 +26,9 @@ export default function Page() {
     }
 
     fetchGameState();
-  }, [boardId, mapId]);
+
+    return GameTopicService.subscribe(topicId, fetchGameState);
+  }, [boardId, mapId, topicId]);
 
   if (!gameState) {
     return <p>Loading...</p>;
@@ -34,16 +38,8 @@ export default function Page() {
     return <ErrorComponent error={new Error(gameState.error)} />;
   }
 
-  const onCreateGame = (newGameState: GameState) => {
-    setGameState({ success: true, data: newGameState });
-  }
-
-  const onDeleteGame = () => {
-    setGameState({ success: true, data: undefined });
-  }
-
   return (<div><main>
-    {gameState.data && <PlayGame boardId={boardId} mapId={mapId} name={gameState.data.name} onDeleteGame={onDeleteGame} />}
-    {!gameState.data && <CreateGame boardId={boardId} mapId={mapId} onCreateGame={onCreateGame} />}
+    {gameState.data && <PlayGame boardId={boardId} mapId={mapId} name={gameState.data.name} />}
+    {!gameState.data && <CreateGame boardId={boardId} mapId={mapId} />}
   </main></div>);
 }
