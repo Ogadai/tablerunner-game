@@ -9,7 +9,7 @@ const BLE_PREFIX = 'TABLERUNNER';
 
 type BleListener = (state: BleState) => void;
 
-class BluetoothService {
+export class BluetoothService {
   private device: BluetoothDevice | null = null;
   private characteristic: BluetoothRemoteGATTCharacteristic | null = null;
   private state = BleState.Disconnected;
