@@ -24,6 +24,9 @@
   &.connected {
     color: var(--color-connected);
   }
+  &.otherconnected {
+    color: var(--color-success);
+  }
   &.notsupported {
     color: var(--color-error);
   }

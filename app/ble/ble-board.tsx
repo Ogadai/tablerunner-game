@@ -13,7 +13,13 @@ const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const BLE_PREFIX = 'TABLERUNNER';
 
 
-export default function BluetoothController() {
+export default function BluetoothController({
+  bleOtherPlayer,
+  onBleStatus = () => {}
+}: {
+  bleOtherPlayer: boolean,
+  onBleStatus?: (connected: boolean) => void;
+}) {
   const params = useParams();
   const [device, setDevice] = useState<any>(null);
   const [bleState, setBleState] = useState<BleState>(BleState.Disconnected);
@@ -24,15 +30,12 @@ export default function BluetoothController() {
   const boardId = params.boardId?.toString() || '';
   const BLE_NAME = `${BLE_PREFIX}-${boardId}`;
 
-  const setStatus = (newStatus: string) => {
-    console.debug(newStatus);
-  }
   // Disconnection handler
   const onDisconnected = useCallback(() => {
     setDevice(null);
     setCharacteristic(null);
     setBleState(BleState.Disconnected);
-    setStatus('Disconnected');
+    onBleStatus(false);
   }, []);
 
 
@@ -40,87 +43,44 @@ export default function BluetoothController() {
   const establishGattConnection = useCallback(async (selectedDevice: any) => {
     try {
       setBleState(BleState.Connecting);
-      setStatus(`Connecting to GATT Server on ${selectedDevice.name}...`);
       const server = await selectedDevice.gatt?.connect();
 
-      setStatus('Getting BLE Service...');
       const service = await server?.getPrimaryService(SERVICE_UUID);
 
-      setStatus('Getting BLE Characteristic...');
       const char = await service?.getCharacteristic(CHARACTERISTIC_UUID);
 
       setDevice(selectedDevice);
       setCharacteristic(char || null);
       setBleState(BleState.Connected);
-      setStatus(`Connected to ${selectedDevice.name}`);
+      localStorage.setItem('ble_connected', 'true');
+      onBleStatus(true);
 
       selectedDevice.addEventListener('gattserverdisconnected', onDisconnected);
     } catch (error) {
       console.error(error);
       setBleState(BleState.Error);
-      setStatus(`GATT Connection failed: ${error instanceof Error ? error.message : 'Unknown'}`);
+
+      errorRetryConnect();
     }
   }, [onDisconnected]);
-  // AUTO-RECONNECT LOGIC (With explicit capability checks)
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     if (!navigator.bluetooth) {
       setIsSupported(false);
       setBleState(BleState.NotSupported);
-      setStatus('Web Bluetooth is not supported in this browser.');
       return;
     }
 
-    const checkExistingPairs = async () => {
-      // 1. DEFENSIVE CHECK: Verify if getDevices exists on the bluetooth object
-      if (!('getDevices' in navigator.bluetooth)) {
-        console.warn('navigator.bluetooth.getDevices is not supported by this browser.');
-        setStatus('Manual pairing required (Auto-reconnect browser API unavailable).');
-        return;
-      }
-
-      try {
-        // 2. Fetch devices this site already has permission to access
-        const devices = await (navigator.bluetooth as any).getDevices();
-
-        // Find the first device that fits your ESP32 naming convention
-        const rememberedDevice = devices.find((d: any) => d.name?.startsWith(BLE_NAME));
-
-        if (rememberedDevice) {
-          setStatus(`Found paired device: ${rememberedDevice.name}. Waiting for signal...`);
-
-          // 3. DEFENSIVE CHECK: Verify if watchAdvertisements exists
-          if (!('watchAdvertisements' in rememberedDevice)) {
-            console.warn('watchAdvertisements is not supported on this device instance.');
-            setStatus('Paired device found, but browser lacks auto-wake capabilities.');
-            return;
-          }
-
-          // 4. Activate wireless scanning tracking
-          await rememberedDevice.watchAdvertisements();
-
-          // 5. Fire connection when the browser catches the ESP32 advertising pulse
-          rememberedDevice.addEventListener('advertisementreceived', async (event: any) => {
-            setStatus(`Signal spotted from ${event.device.name}! Reconnecting...`);
-            await establishGattConnection(event.device);
-          });
-        } else {
-          setStatus('Ready to connect. No previously paired ESP32 found.');
-        }
-      } catch (err) {
-        console.error('Auto-reconnect lookup encountered an error:', err);
-        setStatus('Auto-reconnect failed. Please pair manually.');
-      }
-    };
-
-    checkExistingPairs();
+    let bleConnected: boolean = localStorage.getItem('ble_connected') === 'true';
+    if (bleConnected) {
+      askReconnect();
+    }
   }, [establishGattConnection]);
 
   // Manual pair workflow (Used if no cached device exists)
   const connectBluetooth = async () => {
     try {
-      setStatus('Requesting Bluetooth device...');
       const selectedDevice = await navigator.bluetooth.requestDevice({
         filters: [{ namePrefix: BLE_NAME }],
         optionalServices: [SERVICE_UUID],
@@ -129,7 +89,6 @@ export default function BluetoothController() {
       await establishGattConnection(selectedDevice);
     } catch (error) {
       console.error(error);
-      setStatus(`Connection failed: ${error instanceof Error ? error.message : 'Unknown'}`);
     }
   };
 
@@ -145,18 +104,50 @@ export default function BluetoothController() {
     try {
       const encoder = new TextEncoder();
       await characteristic.writeValue(encoder.encode(message));
-      setStatus(`Sent: "${message}"`);
-      setMessage('');
+     setMessage('');
     } catch (error) {
-      setStatus(`Send error: ${error instanceof Error ? error.message : 'Unknown'}`);
+      console.error(`Send error: ${error instanceof Error ? error.message : 'Unknown'}`);
     }
   };
 
+  const askReconnect = async () => {
+    const result = await Swal.fire({
+      title: 'Reconnect to board?',
+      text: "Would you like to reconnect to the Tablerunner board?",
+      showCancelButton: true,
+      confirmButtonText: 'Connect'
+    })
+
+    if (result.isConfirmed) {
+      await connectBluetooth();
+    } else {
+      localStorage.setItem('ble_connected', 'false');
+    }
+  }
+
+  const errorRetryConnect = async () => {
+    const result = await Swal.fire({
+      title: 'Error connecting?',
+      text: "Would you like to re-try connecting to the Tablerunner board?",
+      showCancelButton: true,
+      confirmButtonText: 'Connect'
+    })
+
+    if (result.isConfirmed) {
+      await connectBluetooth();
+    } else {
+      localStorage.setItem('ble_connected', 'false');
+    }
+  }
+
+  const showBleState = bleOtherPlayer ? BleState.OtherConnected : bleState;
   const onClick = async () => {
-    switch (bleState) {
+    switch (showBleState) {
       case BleState.Disconnected:
       case BleState.Error:
-        await connectBluetooth();
+        if (!bleOtherPlayer) {
+          await connectBluetooth();
+        }
         break;
       case BleState.Connected:
         const result = await Swal.fire({
@@ -167,9 +158,25 @@ export default function BluetoothController() {
         })
 
         if (result.isConfirmed) {
+          localStorage.setItem('ble_connected', 'false');
+
           // Run your delete logic here
           await disconnectBluetooth();
         }
+        break;
+      case BleState.NotSupported:
+        await Swal.fire({
+          title: 'Not supported',
+          text: "Unfortunately, your browser doesn't support Bluetooth devices.",
+          confirmButtonText: 'Ok'
+        });
+        break;
+      case BleState.OtherConnected:
+        await Swal.fire({
+          title: 'Already connected',
+          text: "Another device is already connected to this Tablerunner board. You only need to connect one device.",
+          confirmButtonText: 'Ok'
+        });
         break;
     }
   }
@@ -177,7 +184,7 @@ export default function BluetoothController() {
   return (
     <div>
       <div>
-        <button onClick={onClick} className={`${styles.bleButton} ${styles[bleState]}`}>
+        <button onClick={onClick} className={`${styles.bleButton} ${styles[showBleState]}`}>
           <span className="material-symbols-outlined">bluetooth</span>
         </button>
       </div>
