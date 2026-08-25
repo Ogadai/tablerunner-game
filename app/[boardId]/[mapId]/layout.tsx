@@ -1,6 +1,68 @@
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+'use client';
+
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { useParams } from 'next/navigation';
+
+import BluetoothController from '../../ble/ble-board';
+import GameTopic from '../../message-bus/game-topic';
+import { BleConnectedStatusMessage } from '../../message-bus/message-types';
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  const params = useParams();
+  const boardId = params.boardId?.toString() || '';
+  const mapId = params.mapId?.toString() || '';
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [blePlayerId, setBlePlayerId] = useState<string | null>(null);
+  const bleStatusCallback = useRef<((message: BleConnectedStatusMessage) => void) | null>(null);
+  const currentBlePlayerId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const initializePlayer = window.setTimeout(() => {
+      let storedPlayerId = localStorage.getItem('player_guid') || '';
+      if (!storedPlayerId) {
+        storedPlayerId = crypto.randomUUID();
+        localStorage.setItem('player_guid', storedPlayerId);
+      }
+      setPlayerId(storedPlayerId);
+    }, 0);
+
+    return () => window.clearTimeout(initializePlayer);
+  }, []);
+
+  const onBleStatus = (connected: boolean) => {
+    bleStatusCallback.current?.({ connected, playerId: playerId || undefined });
+  };
+
+  const onBleStatusReceived = (message: BleConnectedStatusMessage | null) => {
+    if (message?.connected && message.playerId) {
+      setBlePlayerId(message.playerId);
+      currentBlePlayerId.current = message.playerId;
+    } else if (message?.playerId === currentBlePlayerId.current || !message?.playerId) {
+      setBlePlayerId(null);
+      currentBlePlayerId.current = null;
+    }
+  };
+
   return (
-    <div>{children}</div>
+    <div>
+      {playerId && (
+        <div>
+          <BluetoothController
+            bleOtherPlayer={!!blePlayerId && blePlayerId !== playerId}
+            onBleStatus={onBleStatus}
+          />
+          <GameTopic
+            topicId={`${boardId}-${mapId}`}
+            playerId={playerId}
+            onSetBleStatusCallback={callback => {
+              bleStatusCallback.current = callback;
+            }}
+            onBleStatusReceived={onBleStatusReceived}
+          />
+        </div>
+      )}
+      {children}
+    </div>
   );
 }
