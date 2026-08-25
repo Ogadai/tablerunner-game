@@ -35,6 +35,9 @@ jest.mock('material-symbols/outlined.css', () => ({}));
 import { useParams } from 'next/navigation';
 import { bluetoothService } from './bluetooth-service';
 
+// Store original userAgent descriptor
+const originalUserAgent = Object.getOwnPropertyDescriptor(navigator, 'userAgent');
+
 describe('BluetoothController', () => {
   const mockBoardId = 'test-board-123';
 
@@ -44,6 +47,19 @@ describe('BluetoothController', () => {
     (useParams as jest.Mock).mockReturnValue({ boardId: mockBoardId });
     (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.Disconnected);
     (bluetoothService.subscribe as jest.Mock).mockReturnValue(jest.fn());
+    // Reset userAgent to default (non-iOS)
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    // Restore original userAgent if it exists
+    if (originalUserAgent) {
+      Object.defineProperty(navigator, 'userAgent', originalUserAgent);
+    }
   });
 
   describe('Rendering', () => {
@@ -208,7 +224,7 @@ describe('BluetoothController', () => {
       expect(bluetoothService.connect).toHaveBeenCalledWith(mockBoardId);
     });
 
-    it('should show not supported message when clicked in NotSupported state', async () => {
+    it('should show generic not supported message on non-iOS devices', async () => {
       (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.NotSupported);
       (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
 
@@ -222,6 +238,132 @@ describe('BluetoothController', () => {
           expect.objectContaining({
             title: 'Not supported',
             text: expect.stringContaining("doesn't support Bluetooth"),
+          })
+        );
+      });
+    });
+
+    it('should show iOS-specific message when on iPhone', async () => {
+      // Mock iPhone userAgent
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+        writable: true,
+        configurable: true,
+      });
+
+      (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.NotSupported);
+      (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
+
+      render(<BluetoothController bleOtherPlayer={false} />);
+      const button = screen.getByRole('button');
+
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(Swal.fire).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Not supported',
+            text: expect.stringContaining('Apple prevents iOS web engines'),
+          })
+        );
+      });
+    });
+
+    it('should mention Bluefy app in iOS message', async () => {
+      // Mock iPhone userAgent
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+        writable: true,
+        configurable: true,
+      });
+
+      (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.NotSupported);
+      (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
+
+      render(<BluetoothController bleOtherPlayer={false} />);
+      const button = screen.getByRole('button');
+
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(Swal.fire).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('Bluefy'),
+          })
+        );
+      });
+    });
+
+    it('should mention Android as ideal device in iOS message', async () => {
+      // Mock iPad userAgent
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+        writable: true,
+        configurable: true,
+      });
+
+      (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.NotSupported);
+      (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
+
+      render(<BluetoothController bleOtherPlayer={false} />);
+      const button = screen.getByRole('button');
+
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(Swal.fire).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('Android device is ideal'),
+          })
+        );
+      });
+    });
+
+    it('should detect iPad as iOS device', async () => {
+      // Mock iPad userAgent
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+        writable: true,
+        configurable: true,
+      });
+
+      (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.NotSupported);
+      (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
+
+      render(<BluetoothController bleOtherPlayer={false} />);
+      const button = screen.getByRole('button');
+
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(Swal.fire).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('Apple prevents iOS'),
+          })
+        );
+      });
+    });
+
+    it('should detect iPod as iOS device', async () => {
+      // Mock iPod userAgent
+      Object.defineProperty(navigator, 'userAgent', {
+        value: 'Mozilla/5.0 (iPod touch; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+        writable: true,
+        configurable: true,
+      });
+
+      (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.NotSupported);
+      (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
+
+      render(<BluetoothController bleOtherPlayer={false} />);
+      const button = screen.getByRole('button');
+
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(Swal.fire).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('Apple prevents iOS'),
           })
         );
       });
@@ -272,7 +414,6 @@ describe('BluetoothController', () => {
 
       render(<BluetoothController bleOtherPlayer={false} />);
 
-      // Initialize dialog should not be called for reconnection
       expect(Swal.fire).not.toHaveBeenCalled();
     });
   });
@@ -289,7 +430,6 @@ describe('BluetoothController', () => {
 
       const subscriber = mockCallback.mock.calls[0][0];
 
-      // Simulate state change - wrap in waitFor for React
       await waitFor(() => {
         subscriber(BleState.Connected);
       });

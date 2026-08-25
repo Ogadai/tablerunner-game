@@ -9,6 +9,11 @@ import { BleState } from './ble-states';
 import { bluetoothService } from './bluetooth-service';
 import styles from "./bluetooth-controller.module.css";
 
+const isIOS = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  return /iPhone|iPad|iPod/.test(navigator.userAgent);
+};
+
 export default function BluetoothController({
   bleOtherPlayer,
 }: {
@@ -89,9 +94,13 @@ export default function BluetoothController({
         }
         break;
       case BleState.NotSupported:
+        const iosMessage = isIOS()
+          ? "Apple prevents iOS web engines from using Web Bluetooth standards. Only one device in the game needs to connect to the board, and an Android device is ideal. If using iOS, the browser \"Bluefy\" in the App Store supports Bluetooth."
+          : "Unfortunately, your browser doesn't support Bluetooth devices.";
+        
         await Swal.fire({
           title: 'Not supported',
-          text: "Unfortunately, your browser doesn't support Bluetooth devices.",
+          text: iosMessage,
           confirmButtonText: 'Ok'
         });
         break;
