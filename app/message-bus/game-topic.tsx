@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import * as Ably from 'ably';
-import { BleConnectedStatusMessage, GameTopicMessageType } from './message-types';
+import { BleConnectedStatusMessage } from '../../lib/message-types';
 
 let _ably: Ably.Realtime | null = null;
 function connectToAbly(playerId: string): Ably.Realtime {
@@ -50,7 +50,7 @@ export default function GameTopic({
   useEffect(() => {
     // Instantiate Ably pointing to your POST auth endpoint
     const ably = connectToAbly(playerId);
-    const channel = ably.channels.get(`presence:${topicId}`);
+    const channel = ably.channels.get(`game:${topicId}`);
 
     // Enter the presence room using the GUID
     channel.presence.enter({ name: `Player-${playerId.substring(0, 5)}` });

@@ -8,7 +8,7 @@ import styles from './layout.module.css';
 import BluetoothController from '../../ble/ble-board';
 import { bluetoothService } from '../../ble/bluetooth-service';
 import GameTopic from '../../message-bus/game-topic';
-import { BleConnectedStatusMessage } from '../../message-bus/message-types';
+import { BleConnectedStatusMessage } from '../../../lib/message-types';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const params = useParams();
