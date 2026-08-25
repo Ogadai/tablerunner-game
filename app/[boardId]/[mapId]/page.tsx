@@ -3,6 +3,7 @@ import { useParams } from 'next/navigation'
 import { useState, useEffect } from 'react';
 
 import { ApiResponse } from "@/lib/api-response";
+import { getGameTopicId } from "@/lib/message-types";
 import { getGameState } from "@/lib/store/gameState";
 import { GameState } from "@/lib/store/types";
 
@@ -16,7 +17,7 @@ export default function Page() {
   const params = useParams();
   const boardId = params.boardId?.toString() || '';
   const mapId = params.mapId?.toString() || '';
-  const topicId = `${boardId}-${mapId}`;
+  const topicId = getGameTopicId(boardId, mapId);
   const [gameState, setGameState] = useState<ApiResponse<GameState> | null>(null);
 
   useEffect(() => {

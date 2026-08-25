@@ -8,7 +8,7 @@ import styles from './layout.module.css';
 import BluetoothController from '../../ble/ble-board';
 import { bluetoothService } from '../../ble/bluetooth-service';
 import GameTopic from '../../message-bus/game-topic';
-import { BleConnectedStatusMessage } from '../../../lib/message-types';
+import { BleConnectedStatusMessage, getGameTopicId } from '../../../lib/message-types';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const params = useParams();
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             bleOtherPlayer={!!blePlayerId && blePlayerId !== playerId}
           />
           <GameTopic
-            topicId={`${boardId}-${mapId}`}
+            topicId={getGameTopicId(boardId, mapId)}
             playerId={playerId}
             onSetBleStatusCallback={callback => {
               bleStatusCallback.current = callback;

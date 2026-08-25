@@ -1,13 +1,13 @@
 'use server'
 import { ApiResponse } from "../api-response";
-import { GameTopicMessageType } from "../message-types";
+import { GameTopicMessageType, getGameTopicId } from "../message-types";
 import { GameState, gameStateOptions } from "./types";
 
 import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
 
 const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
-const getGameTopic = (boardId: string, mapId: string) => `game:${boardId}-${mapId}`;
+const getGameTopic = (boardId: string, mapId: string) => `game:${getGameTopicId(boardId, mapId)}`;
 
 async function publishGameStateUpdated(boardId: string, mapId: string): Promise<void> {
   const apiKey = process.env.ABLY_API_KEY;
