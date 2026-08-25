@@ -5,7 +5,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 import styles from './layout.module.css';
-import BluetoothController from '../../ble/ble-board';
+import BluetoothController from '../../ble/bluetooth-controller';
 import { bluetoothService } from '../../ble/bluetooth-service';
 import GameTopic from '../../message-bus/game-topic';
 import { BleConnectedStatusMessage, getGameTopicId } from '../../../lib/message-types';

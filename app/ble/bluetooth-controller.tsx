@@ -7,7 +7,7 @@ import Swal from 'sweetalert2'
 
 import { BleState } from './ble-states';
 import { bluetoothService } from './bluetooth-service';
-import styles from "./ble-board.module.css";
+import styles from "./bluetooth-controller.module.css";
 
 export default function BluetoothController({
   bleOtherPlayer,
