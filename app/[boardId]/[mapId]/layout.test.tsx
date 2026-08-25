@@ -15,8 +15,21 @@ jest.mock("../../ble/bluetooth-service", () => ({
   },
 }));
 
-const mockBluetoothController = jest.fn(() => null);
-const mockGameTopic = jest.fn(() => null);
+type GameTopicProps = {
+  topicId: string;
+  playerId: string;
+  onSetBleStatusCallback: (
+    callback: (message: { connected: boolean; playerId?: string }) => void,
+  ) => void;
+  onBleStatusReceived: (
+    message: { connected: boolean; playerId?: string } | null,
+  ) => void;
+};
+
+const mockBluetoothController = jest.fn<null, [
+  { bleOtherPlayer: boolean },
+]>();
+const mockGameTopic = jest.fn<null, [GameTopicProps]>();
 
 jest.mock("../../ble/bluetooth-controller", () => ({
   __esModule: true,
@@ -26,17 +39,16 @@ jest.mock("../../ble/bluetooth-controller", () => ({
 
 jest.mock("../../message-bus/game-topic", () => ({
   __esModule: true,
-  default: (props: {
-    topicId: string;
-    playerId: string;
-    onSetBleStatusCallback: (
-      callback: (message: { connected: boolean; playerId?: string }) => void,
-    ) => void;
-    onBleStatusReceived: (
-      message: { connected: boolean; playerId?: string } | null,
-    ) => void;
-  }) => mockGameTopic(props),
+  default: (props: GameTopicProps) => mockGameTopic(props),
 }));
+
+const getLastGameTopicProps = (): GameTopicProps => {
+  const props = mockGameTopic.mock.calls.at(-1)?.[0];
+  if (!props) {
+    throw new Error("GameTopic was not rendered");
+  }
+  return props;
+};
 
 describe("Route RootLayout", () => {
   const unsubscribe = jest.fn();
@@ -154,13 +166,11 @@ describe("Route RootLayout", () => {
       bluetoothStatusListener?.("connected");
     });
 
-    expect(
-      mockGameTopic.mock.calls.at(-1)?.[0].onSetBleStatusCallback,
-    ).toBeDefined();
+    expect(getLastGameTopicProps().onSetBleStatusCallback).toBeDefined();
 
     // The layout's Bluetooth subscription reports the local player's status
     // through the callback registered by GameTopic.
-    const gameTopicProps = mockGameTopic.mock.calls.at(-1)?.[0];
+    const gameTopicProps = getLastGameTopicProps();
     const setBleStatusCallback = jest.fn();
 
     act(() => {
@@ -190,7 +200,7 @@ describe("Route RootLayout", () => {
       jest.runOnlyPendingTimers();
     });
 
-    const gameTopicProps = mockGameTopic.mock.calls.at(-1)?.[0];
+    const gameTopicProps = getLastGameTopicProps();
 
     act(() => {
       gameTopicProps.onBleStatusReceived({
@@ -217,7 +227,7 @@ describe("Route RootLayout", () => {
       jest.runOnlyPendingTimers();
     });
 
-    const gameTopicProps = mockGameTopic.mock.calls.at(-1)?.[0];
+    const gameTopicProps = getLastGameTopicProps();
 
     act(() => {
       gameTopicProps.onBleStatusReceived({
