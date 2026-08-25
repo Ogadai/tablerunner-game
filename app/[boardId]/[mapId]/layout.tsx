@@ -5,6 +5,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 import BluetoothController from '../../ble/ble-board';
+import { bluetoothService } from '../../ble/bluetooth-service';
 import GameTopic from '../../message-bus/game-topic';
 import { BleConnectedStatusMessage } from '../../message-bus/message-types';
 
@@ -30,9 +31,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(initializePlayer);
   }, []);
 
-  const onBleStatus = (connected: boolean) => {
-    bleStatusCallback.current?.({ connected, playerId: playerId || undefined });
-  };
+  useEffect(() => {
+    return bluetoothService.subscribe(connected => {
+      bleStatusCallback.current?.({
+        connected: connected === 'connected',
+        playerId: playerId || undefined,
+      });
+    });
+  }, [playerId]);
 
   const onBleStatusReceived = (message: BleConnectedStatusMessage | null) => {
     if (message?.connected && message.playerId) {
@@ -50,7 +56,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div>
           <BluetoothController
             bleOtherPlayer={!!blePlayerId && blePlayerId !== playerId}
-            onBleStatus={onBleStatus}
           />
           <GameTopic
             topicId={`${boardId}-${mapId}`}

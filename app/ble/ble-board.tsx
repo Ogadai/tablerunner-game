@@ -6,111 +6,43 @@ import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import Swal from 'sweetalert2'
 
 import { BleState } from './ble-states';
+import { bluetoothService } from './bluetooth-service';
 import styles from "./ble-board.module.css";
-
-const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
-const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
-const BLE_PREFIX = 'TABLERUNNER';
-
 
 export default function BluetoothController({
   bleOtherPlayer,
-  onBleStatus = () => {}
 }: {
-  bleOtherPlayer: boolean,
-  onBleStatus?: (connected: boolean) => void;
+  bleOtherPlayer: boolean;
 }) {
   const params = useParams();
-  const [device, setDevice] = useState<any>(null);
-  const [bleState, setBleState] = useState<BleState>(BleState.Disconnected);
-  const [characteristic, setCharacteristic] = useState<any>(null);
+  const [bleState, setBleState] = useState<BleState>(bluetoothService.getState());
   const [message, setMessage] = useState<string>('');
-  const [isSupported, setIsSupported] = useState<boolean>(true);
 
   const boardId = params.boardId?.toString() || '';
-  const BLE_NAME = `${BLE_PREFIX}-${boardId}`;
-
-  // Disconnection handler
-  const onDisconnected = useCallback(() => {
-    setDevice(null);
-    setCharacteristic(null);
-    setBleState(BleState.Disconnected);
-    onBleStatus(false);
-  }, []);
-
-
-  // Connects to a known device object (used for both manual and auto-connect)
-  const establishGattConnection = useCallback(async (selectedDevice: any) => {
-    try {
-      setBleState(BleState.Connecting);
-      const server = await selectedDevice.gatt?.connect();
-
-      const service = await server?.getPrimaryService(SERVICE_UUID);
-
-      const char = await service?.getCharacteristic(CHARACTERISTIC_UUID);
-
-      setDevice(selectedDevice);
-      setCharacteristic(char || null);
-      setBleState(BleState.Connected);
-      localStorage.setItem('ble_connected', 'true');
-      onBleStatus(true);
-
-      selectedDevice.addEventListener('gattserverdisconnected', onDisconnected);
-    } catch (error) {
-      console.error(error);
-      setBleState(BleState.Error);
-
-      errorRetryConnect();
-    }
-  }, [onDisconnected]);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!navigator.bluetooth) {
-      setIsSupported(false);
-      setBleState(BleState.NotSupported);
-      return;
-    }
-
-    let bleConnected: boolean = localStorage.getItem('ble_connected') === 'true';
-    if (bleConnected) {
-      askReconnect();
-    }
-  }, [establishGattConnection]);
-
   // Manual pair workflow (Used if no cached device exists)
-  const connectBluetooth = async () => {
+  const connectBluetooth = useCallback(async () => {
     try {
-      const selectedDevice = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: BLE_NAME }],
-        optionalServices: [SERVICE_UUID],
-      });
-
-      await establishGattConnection(selectedDevice);
+      await bluetoothService.connect(boardId);
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [boardId]);
 
   const disconnectBluetooth = () => {
-    if (device?.gatt?.connected) {
-      device.gatt.disconnect();
-    }
-    onDisconnected();
+    bluetoothService.disconnect();
   };
 
   const sendMessage = async () => {
-    if (!characteristic) return;
     try {
-      const encoder = new TextEncoder();
-      await characteristic.writeValue(encoder.encode(message));
-     setMessage('');
+      if (await bluetoothService.sendMessage(message)) {
+        setMessage('');
+      }
     } catch (error) {
       console.error(`Send error: ${error instanceof Error ? error.message : 'Unknown'}`);
     }
   };
 
-  const askReconnect = async () => {
+  const askReconnect = useCallback(async () => {
     const result = await Swal.fire({
       title: 'Reconnect to board?',
       text: "Would you like to reconnect to the Tablerunner board?",
@@ -123,22 +55,17 @@ export default function BluetoothController({
     } else {
       localStorage.setItem('ble_connected', 'false');
     }
-  }
+  }, [connectBluetooth]);
 
-  const errorRetryConnect = async () => {
-    const result = await Swal.fire({
-      title: 'Error connecting?',
-      text: "Would you like to re-try connecting to the Tablerunner board?",
-      showCancelButton: true,
-      confirmButtonText: 'Connect'
-    })
+  useEffect(() => {
+    bluetoothService.initialize();
+    const unsubscribe = bluetoothService.subscribe(setBleState);
 
-    if (result.isConfirmed) {
-      await connectBluetooth();
-    } else {
-      localStorage.setItem('ble_connected', 'false');
+    if (localStorage.getItem('ble_connected') === 'true') {
+      askReconnect();
     }
-  }
+    return unsubscribe;
+  }, [askReconnect]);
 
   const showBleState = bleOtherPlayer ? BleState.OtherConnected : bleState;
   const onClick = async () => {
@@ -158,9 +85,6 @@ export default function BluetoothController({
         })
 
         if (result.isConfirmed) {
-          localStorage.setItem('ble_connected', 'false');
-
-          // Run your delete logic here
           await disconnectBluetooth();
         }
         break;
@@ -190,8 +114,8 @@ export default function BluetoothController({
       </div>
 
       <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-        <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type message..." disabled={!characteristic} style={{ padding: '8px' }} />
-        <button onClick={sendMessage} disabled={!characteristic || !message} style={{ padding: '8px 16px', backgroundColor: '#10b981', color: '#fff', border: 'none' }}>
+        <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type message..." disabled={bleState !== BleState.Connected} style={{ padding: '8px' }} />
+        <button onClick={sendMessage} disabled={bleState !== BleState.Connected || !message} style={{ padding: '8px 16px', backgroundColor: '#10b981', color: '#fff', border: 'none' }}>
           Send Message
         </button>
       </div>
