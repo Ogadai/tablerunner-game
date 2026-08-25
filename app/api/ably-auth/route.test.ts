@@ -85,11 +85,11 @@ describe('POST /api/ably-auth', () => {
   });
 
   it('returns 500 when the request body is invalid JSON', async () => {
-    const request = {
-      json: async () => {
-        throw new SyntaxError('Unexpected token');
-      },
-    } as Request;
+    const request = new Request('http://localhost/api/ably-auth', {
+      method: 'POST',
+      body: '{',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
     const response = await POST(request);
     const body = await response.json();
