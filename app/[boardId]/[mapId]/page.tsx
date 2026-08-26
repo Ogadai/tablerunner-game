@@ -5,10 +5,11 @@ import { useState, useEffect } from 'react';
 import { ApiResponse } from "@/lib/api-response";
 import { getGameTopicId } from "@/lib/message-types";
 import { getGameState } from "@/lib/store/gameState";
+import gameStateSyncService from "./game/game-state-sync-service";
 import { GameState } from "@/lib/store/types";
 
 import CreateGame from './create-game';
-import PlayGame from './play/play-game';
+import PlayGame from './game/play-game';
 import GameTopicService from '../../message-bus/game-topic-service';
 
 import ErrorComponent from '../../error';
@@ -24,6 +25,7 @@ export default function Page() {
     async function fetchGameState() {
       const state = await getGameState(boardId, mapId);
       setGameState(state);
+      gameStateSyncService.set(boardId, mapId, state.success ? state.data : undefined);
     }
 
     fetchGameState();

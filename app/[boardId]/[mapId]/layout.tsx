@@ -8,7 +8,7 @@ import styles from './layout.module.css';
 import BluetoothController from '../../ble/bluetooth-controller';
 import { bluetoothService } from '../../ble/bluetooth-service';
 import GameTopic from '../../message-bus/game-topic';
-import PlayHeader from './play/play-header';
+import PlayHeader from './game/play-header';
 import { BleConnectedStatusMessage, getGameTopicId } from '../../../lib/message-types';
 
 export default function RootLayout({ children }: { children: ReactNode }) {

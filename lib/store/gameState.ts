@@ -2,7 +2,7 @@
 import { ApiResponse } from "../api-response";
 import { GameTopicMessageType, getGameTopicId } from "../message-types";
 import { GameState, gameStateOptions, PlayerState } from "./types";
-import { gameList } from '../games/gameList';
+import { games } from '../games/games';
 
 import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
@@ -11,11 +11,7 @@ const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}
 const getGameTopic = (boardId: string, mapId: string) => `game:${getGameTopicId(boardId, mapId)}`;
 
 async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
-  const result = await redis.get(getGameKey(boardId, mapId));
-  if (!result) {
-    throw Error(`Couldn't find Game state for game`);
-  }
-  return result as GameState;
+  return await redis.get(getGameKey(boardId, mapId)) as GameState;
 }
 
 async function setGameStateInRedis(boardId: string, mapId: string, newGameState: GameState): Promise<void> {
@@ -64,7 +60,7 @@ export async function getGameState(boardId: string, mapId: string): Promise<ApiR
 }
 
 export async function createNewGameState(boardId: string, mapId: string, gameId: string): Promise<ApiResponse<GameState>> {
-  const gameDef = gameList.find(g => g.id === gameId);
+  const gameDef = games.find(g => g.id === gameId);
   if (!gameDef) {
     return {
       success: false,
@@ -113,6 +109,9 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
   try {
     // Get game from Redis
     const gameState = await getGameStateFromRedis(boardId, mapId);
+    if (!gameState) {
+      throw Error(`Couldn't find Game state for game`);
+    }
 
     if (gameState.players.find(p => p.id === player.id)) {
       return {

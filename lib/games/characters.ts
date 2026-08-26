@@ -1,4 +1,3 @@
-'use server'
 import { CharacterListEntry } from "./types";
 
 export const characters: { [id: string]: CharacterListEntry } = {
