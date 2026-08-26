@@ -42,6 +42,11 @@ jest.mock("../../message-bus/game-topic", () => ({
   default: (props: GameTopicProps) => mockGameTopic(props),
 }));
 
+jest.mock("./game/play-header", () => ({
+  __esModule: true,
+  default: () => <div>Play header</div>,
+}));
+
 const getLastGameTopicProps = (): GameTopicProps => {
   const props = mockGameTopic.mock.calls.at(-1)?.[0];
   if (!props) {

@@ -61,16 +61,20 @@ describe("gameState", () => {
   });
 
   describe("createNewGameState", () => {
+    beforeEach(() => {
+      mockRedis.get.mockResolvedValue(null);
+    });
+
     it("stores and publishes the new game state", async () => {
       mockRedis.set.mockResolvedValue("OK");
 
-      await expect(createNewGameState("board-1", "map-2", "game-1")).resolves.toEqual({
+      await expect(createNewGameState("board-1", "map-2", "cauldronfire")).resolves.toEqual({
         success: true,
-        data: { name: "game-1 on board board-1 and map map-2" },
+        data: expect.objectContaining({ name: "cauldronfire on board board-1 and map map-2" }),
       });
       expect(mockRedis.set).toHaveBeenCalledWith(
         "game:board-1:map-2",
-        { name: "game-1 on board board-1 and map map-2" },
+        expect.objectContaining({ name: "cauldronfire on board board-1 and map map-2" }),
         { ex: 60 * 60 * 24 * 7 },
       );
       expect(fetchMock).toHaveBeenCalledWith(
@@ -85,7 +89,7 @@ describe("gameState", () => {
     it("returns a failure when storing the state fails", async () => {
       mockRedis.set.mockRejectedValue(new Error("Redis unavailable"));
 
-      await expect(createNewGameState("board-1", "map-2", "game-1")).resolves.toEqual({
+      await expect(createNewGameState("board-1", "map-2", "cauldronfire")).resolves.toEqual({
         success: false,
         error: "Redis unavailable",
       });
@@ -96,7 +100,7 @@ describe("gameState", () => {
       mockRedis.set.mockResolvedValue("OK");
       fetchMock.mockResolvedValue({ ok: false, status: 503 });
 
-      await expect(createNewGameState("board-1", "map-2", "game-1")).resolves.toEqual({
+      await expect(createNewGameState("board-1", "map-2", "cauldronfire")).resolves.toEqual({
         success: false,
         error: "Failed to publish game state update: 503",
       });

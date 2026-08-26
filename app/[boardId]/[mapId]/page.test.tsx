@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Page from "./page";
 import { getGameState } from "@/lib/store/gameState";
 import GameTopicService from "../../message-bus/game-topic-service";
+import gameStateSyncService from "./game/game-state-sync-service";
 
 jest.mock("next/navigation", () => ({
   useParams: jest.fn(),
@@ -23,6 +24,11 @@ jest.mock("../../message-bus/game-topic-service", () => ({
   default: { subscribe: jest.fn() },
 }));
 
+jest.mock("./game/game-state-sync-service", () => ({
+  __esModule: true,
+  default: { set: jest.fn() },
+}));
+
 jest.mock("./create-game", () => ({
   __esModule: true,
   default: ({ boardId, mapId }: { boardId: string; mapId: string }) => (
@@ -30,7 +36,7 @@ jest.mock("./create-game", () => ({
   ),
 }));
 
-jest.mock("./play-game", () => ({
+jest.mock("./game/play-game", () => ({
   __esModule: true,
   default: ({ name }: { name: string }) => <div>Playing {name}</div>,
 }));
@@ -69,6 +75,7 @@ describe("Route Page", () => {
 
     expect(await screen.findByText("Create game for board-1/map-2")).toBeInTheDocument();
     expect(GameTopicService.subscribe).toHaveBeenCalledWith("board-1-map-2", expect.any(Function));
+    expect(gameStateSyncService.set).toHaveBeenCalledWith("board-1", "map-2", undefined);
   });
 
   it("renders PlayGame for an existing game", async () => {
@@ -81,6 +88,7 @@ describe("Route Page", () => {
 
     expect(await screen.findByText("Playing Test Game")).toBeInTheDocument();
     expect(getGameState).toHaveBeenCalledWith("board-1", "map-2");
+    expect(gameStateSyncService.set).toHaveBeenCalledWith("board-1", "map-2", { name: "Test Game" });
   });
 
   it("renders the error component when fetching fails", async () => {
@@ -92,6 +100,7 @@ describe("Route Page", () => {
     render(<Page />);
 
     expect(await screen.findByText("Error: Unable to load game")).toBeInTheDocument();
+    expect(gameStateSyncService.set).toHaveBeenCalledWith("board-1", "map-2", undefined);
   });
 
   it("refetches game state when the topic reports an update", async () => {
@@ -106,5 +115,6 @@ describe("Route Page", () => {
 
     expect(await screen.findByText("Playing Updated Game")).toBeInTheDocument();
     expect(getGameState).toHaveBeenCalledTimes(2);
+    expect(gameStateSyncService.set).toHaveBeenLastCalledWith("board-1", "map-2", { name: "Updated Game" });
   });
 });
