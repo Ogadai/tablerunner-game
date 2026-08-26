@@ -5,7 +5,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     id: 'barbarian',
     prompt: 'The Barbarian',
     defaultName: 'Glod',
-    description: 'A raw warrior who excels in hand-to-hand combat and physical strength',
+    description: 'A warrior who excels at hand-to-hand combat and physical strength',
     image: '/barbarian.png',
     icon: '/barbarian-small.png',
   },
