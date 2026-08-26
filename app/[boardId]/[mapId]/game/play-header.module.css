@@ -1,9 +1,17 @@
 .headerContainer {
   display: flex;
   flex-direction: row;
-  justify-content: flex-end;
   width: 100%;
   margin: auto 0;
+  justify-content: center;
+}
+
+.headerContainerGame {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  margin: auto 0;
+  justify-content: flex-end;
 }
 
 .headerContent {

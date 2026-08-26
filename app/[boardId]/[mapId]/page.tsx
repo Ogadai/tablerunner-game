@@ -24,7 +24,6 @@ export default function Page() {
   useEffect(() => {
     async function fetchGameState() {
       const state = await getGameState(boardId, mapId);
-console.log('GameState from API: ', state);
       setGameState(state);
       gameStateSyncService.set(boardId, mapId, state.success ? state.data : undefined);
     }

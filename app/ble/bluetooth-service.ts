@@ -58,11 +58,44 @@ export class BluetoothService {
       this.device.addEventListener('gattserverdisconnected', this.onDisconnected);
       localStorage.setItem('ble_connected', 'true');
       this.setState(BleState.Connected);
+
+      // this.runTest();
     } catch (error) {
       this.setState(BleState.Error);
       throw error;
     }
   }
+  
+  // async runTest () {
+  //   await new Promise(r => setTimeout(r, 200));
+  //   await this.setAll('ff0000');
+  //   await new Promise(r => setTimeout(r, 200));
+  //   await this.setAll('00ff00');
+  //   await new Promise(r => setTimeout(r, 200));
+  //   await this.setAll('0000ff');
+  //   await new Promise(r => setTimeout(r, 200));
+  //   await this.setAll('ff00ff');
+  //   await new Promise(r => setTimeout(r, 200));
+  //   await this.setAll('ffff00');
+
+  //   for(let n = 0; n < 298; n++) {
+  //     await new Promise(r => setTimeout(r, 10));
+  //     await this.sendMessage(`LED|${n}:000000,${n+1}:ff0000,${n+2}:00ff00,${n+3}:0000ff`);
+  //   }
+  // }
+
+  // async setAll(rgb: string) {
+  //   const leds: string[] = [];
+  //   for(let n = 0; n < 300; n++) {
+  //     leds.push(`${n}:${rgb}`);
+  //   }
+
+  //   const chunkSize = 40;
+  //   for (let i = 0; i < leds.length; i += chunkSize) {
+  //     const chunk = leds.slice(i, i + chunkSize);
+  //     await this.sendMessage(`LED|${chunk.join(',')}`);
+  //   }
+  // }
 
   disconnect(): void {
     this.device?.gatt?.disconnect();

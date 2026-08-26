@@ -29,7 +29,7 @@ export default function PlayHeader(
     gameState.characters.find(c => c.id === characterId)?.icon || '';
 
   return (
-    <div className={styles.headerContainer}>
+    <div className={styles.headerContainerGame}>
       <div className={styles.headerContent}>
         <ul className={styles.playerList}>
           {gameState.players?.map((player) => (

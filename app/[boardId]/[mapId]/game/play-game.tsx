@@ -28,8 +28,6 @@ export default function PlayGame(
   const characterCard = (character: CharacterListEntry) => {
     const player = gameState.players?.find(p => p.id === character.id);
 
-  console.log('Character card for ', character, player);
-
     const formAction = player ? bindDeleteCharacterAction(player) : bindCreateCharacterAction(character);
     return <form action={formAction}>
       <h4>{player ? player.name : character.prompt}</h4>
