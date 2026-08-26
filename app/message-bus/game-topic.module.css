@@ -1,0 +1,10 @@
+.playerContainer {
+  margin: auto 15px auto 5px;
+}
+
+.playerCount {
+  color: var(--gold-antique);
+  padding: 0 7px;
+  border: 1px solid var(--gold-antique);
+  border-radius: 10px;
+}

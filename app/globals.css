@@ -15,6 +15,7 @@
   --bg-card: #eadeca;
   --bg-card-hover: #e0d1b8;
   --bg-input: #fbf8f0;
+  --bg-menu: #fbf8f0;
 
   --color-text-primary: #2b221a;
   --color-text-muted: #5c4e40;
@@ -51,6 +52,7 @@
     --bg-card: #1c1612;
     --bg-card-hover: #261f1a;
     --bg-input: #0d0a08;
+    --bg-menu: #0d0a08;
 
     --color-text-primary: #e6dfd3;
     --color-text-muted: #a69d8d;

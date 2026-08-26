@@ -1,0 +1,10 @@
+.headerContainer {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  margin: auto 0;
+}
+
+.headerContent {
+  flex: 1 1 auto;
+}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import * as Ably from 'ably';
 import { BleConnectedStatusMessage, GameTopicMessageType } from '../../lib/message-types';
 import GameTopicService from './game-topic-service';
+import styles from './game-topic.module.css';
 
 let _ably: Ably.Realtime | null = null;
 function connectToAbly(playerId: string): Ably.Realtime {
@@ -100,7 +101,7 @@ export default function GameTopic({
     };
   }, [topicId]);
 
-  return (
-    <div>{activeUsers.length}</div>
-  );
+  return (<div className={styles.playerContainer}>
+    <span className={styles.playerCount}>{activeUsers.length}</span>
+  </div>);
 }
