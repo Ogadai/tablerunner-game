@@ -13,7 +13,6 @@ export default function PlayGame(
   return (
     <form action={deleteGameAction}>
       <p>Playing game: {name}</p>
-      <button type="submit">Delete Game</button>
     </form>
   );
 }

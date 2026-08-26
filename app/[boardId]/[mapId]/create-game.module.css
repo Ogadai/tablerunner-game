@@ -1,5 +1,14 @@
 .createGameHero {
-  width: 300px;
+  width: 100%;
   max-width: 100%;
   height: auto;
+}
+
+.gameList {
+  display: flex;
+  flex-direction: column;
+
+  li {
+    max-width: 400px;
+  }
 }

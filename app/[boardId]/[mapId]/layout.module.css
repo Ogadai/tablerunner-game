@@ -15,6 +15,10 @@
     border: none;
     border-radius: 0;
   }
+
+  h3 {
+    margin: 0;
+  }
 }
 
 .content {

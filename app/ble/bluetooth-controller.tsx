@@ -52,6 +52,7 @@ export default function BluetoothController({
       title: 'Reconnect to board?',
       text: "Would you like to reconnect to the Tablerunner board?",
       showCancelButton: true,
+      confirmButtonColor: 'var(--gold-antique)',
       confirmButtonText: 'Connect'
     })
 
@@ -86,7 +87,8 @@ export default function BluetoothController({
           title: 'Disconnect from board?',
           text: "Are you sure you want to disconnect from the Tablerunner board?",
           showCancelButton: true,
-          confirmButtonText: 'Yes, disconnect!'
+          confirmButtonColor: 'var(--color-error)',
+          confirmButtonText: 'Disconnect!'
         })
 
         if (result.isConfirmed) {
@@ -101,6 +103,7 @@ export default function BluetoothController({
         await Swal.fire({
           title: 'Not supported',
           text: iosMessage,
+          confirmButtonColor: 'var(--gold-antique)',
           confirmButtonText: 'Ok'
         });
         break;
@@ -108,6 +111,7 @@ export default function BluetoothController({
         await Swal.fire({
           title: 'Already connected',
           text: "Another device is already connected to this Tablerunner board. You only need to connect one device.",
+          confirmButtonColor: 'var(--gold-antique)',
           confirmButtonText: 'Ok'
         });
         break;
