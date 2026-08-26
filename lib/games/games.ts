@@ -9,8 +9,8 @@ export const games: GameListEntry[] = [
     description: 'Explore the lands of the volcano and defeat the evil king.',
     heroImage: '/hero-barbarian-witch.png',
     characters: [
-      characters.barbarian,
-      characters.witch
+      { ...characters.barbarian },
+      { ...characters.witch }
     ]
   }
 ];

@@ -1,4 +1,6 @@
 'use server'
+'force-no-store'
+
 import { ApiResponse } from "../api-response";
 import { GameTopicMessageType, getGameTopicId } from "../message-types";
 import { GameState, gameStateOptions, PlayerState } from "./types";
@@ -47,9 +49,11 @@ async function publishGameStateUpdated(boardId: string, mapId: string): Promise<
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
+    const result = await getGameStateFromRedis(boardId, mapId);
+
     return {
       success: true,
-      data: await getGameStateFromRedis(boardId, mapId)
+      data: result
     };
   } catch (error) {
     return {
@@ -122,7 +126,10 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
 
     const newGameState = {
       ...gameState,
-      players: [...gameState.players, player]
+      players: [
+        ...gameState.players,
+        player
+      ]
     };
 
     // Store data in Redis

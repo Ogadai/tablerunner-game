@@ -24,6 +24,7 @@ export default function Page() {
   useEffect(() => {
     async function fetchGameState() {
       const state = await getGameState(boardId, mapId);
+console.log('GameState from API: ', state);
       setGameState(state);
       gameStateSyncService.set(boardId, mapId, state.success ? state.data : undefined);
     }
@@ -42,7 +43,7 @@ export default function Page() {
   }
 
   return (<div><main>
-    {gameState.data && <PlayGame boardId={boardId} mapId={mapId} name={gameState.data.name} />}
+    {gameState.data && <PlayGame boardId={boardId} mapId={mapId} name={gameState.data.name} gameState={gameState.data} />}
     {!gameState.data && <CreateGame boardId={boardId} mapId={mapId} />}
   </main></div>);
 }

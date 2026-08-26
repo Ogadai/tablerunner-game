@@ -12,4 +12,6 @@ export interface CharacterListEntry {
   prompt: string;
   defaultName: string;
   description: string;
+  image: string;
+  icon: string;
 }

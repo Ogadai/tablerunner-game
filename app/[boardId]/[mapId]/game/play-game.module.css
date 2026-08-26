@@ -1,17 +1,22 @@
-.createGameHero {
+.playerHero {
   width: 100%;
-  max-width: 100%;
+  max-width: 80px;
   height: auto;
   display: block;
   margin: 0 auto;
 }
 
-.gameList {
+.characterList {
   display: flex;
   flex-direction: row;
 
   li {
+    width: 250px;
     margin: 0 5px;
     max-width: 400px;
   }
+}
+
+.characterDesc {
+  height: 60px;
 }

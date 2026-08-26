@@ -404,12 +404,7 @@ button:disabled,
    Forms & Inputs
    ========================================================================== */
 
-form {
-  margin-bottom: 1.5rem;
-}
-
 .form-group {
-  margin-bottom: 1.25rem;
   display: flex;
   flex-direction: column;
 }
