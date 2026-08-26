@@ -1,14 +1,19 @@
 'use server'
 import { ApiResponse } from "../api-response";
 import { GameListEntry } from "./types";
+import { characters } from './characters';
 
-const gameList: GameListEntry[] = [
+export const gameList: GameListEntry[] = [
   {
     id: 'test1',
     name: 'Test Game 1',
     map: 'test',
     description: 'This is a test game for testing purposes.',
     heroImage: '/hero-barbarian-witch.png',
+    characters: [
+      characters.barbarian,
+      characters.witch
+    ]
   }
 ];
 

@@ -8,7 +8,7 @@ import { getGameState } from "@/lib/store/gameState";
 import { GameState } from "@/lib/store/types";
 
 import CreateGame from './create-game';
-import PlayGame from './play-game';
+import PlayGame from './play/play-game';
 import GameTopicService from '../../message-bus/game-topic-service';
 
 import ErrorComponent from '../../error';

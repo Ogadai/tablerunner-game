@@ -1,13 +1,27 @@
 'use server'
 import { ApiResponse } from "../api-response";
 import { GameTopicMessageType, getGameTopicId } from "../message-types";
-import { GameState, gameStateOptions } from "./types";
+import { GameState, gameStateOptions, PlayerState } from "./types";
+import { gameList } from '../games/gameList';
 
 import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
 
 const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
 const getGameTopic = (boardId: string, mapId: string) => `game:${getGameTopicId(boardId, mapId)}`;
+
+async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
+  const result = await redis.get(getGameKey(boardId, mapId));
+  if (!result) {
+    throw Error(`Couldn't find Game state for game`);
+  }
+  return result as GameState;
+}
+
+async function setGameStateInRedis(boardId: string, mapId: string, newGameState: GameState): Promise<void> {
+  await redis.set(getGameKey(boardId, mapId), newGameState, gameStateOptions);
+  await publishGameStateUpdated(boardId, mapId);
+}
 
 async function publishGameStateUpdated(boardId: string, mapId: string): Promise<void> {
   const apiKey = process.env.ABLY_API_KEY;
@@ -37,12 +51,9 @@ async function publishGameStateUpdated(boardId: string, mapId: string): Promise<
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
-    // Fetch data from Redis
-    const result = await redis.get(getGameKey(boardId, mapId));
-
     return {
       success: true,
-      data: result as GameState
+      data: await getGameStateFromRedis(boardId, mapId)
     };
   } catch (error) {
     return {
@@ -53,14 +64,23 @@ export async function getGameState(boardId: string, mapId: string): Promise<ApiR
 }
 
 export async function createNewGameState(boardId: string, mapId: string, gameId: string): Promise<ApiResponse<GameState>> {
+  const gameDef = gameList.find(g => g.id === gameId);
+  if (!gameDef) {
+    return {
+      success: false,
+      error: `Couldn't find game id ${gameId}`
+    };
+  }
+
   const newGameState: GameState = {
-    name: `${gameId} on board ${boardId} and map ${mapId}`
+    name: `${gameId} on board ${boardId} and map ${mapId}`,
+    characters: gameDef.characters,
+    players: [],
   };
 
   try {
     // Store data in Redis
-    await redis.set(getGameKey(boardId, mapId), newGameState, gameStateOptions);
-    await publishGameStateUpdated(boardId, mapId);
+    await setGameStateInRedis(boardId, mapId, newGameState);
     return {
       success: true,
       data: newGameState
@@ -78,6 +98,61 @@ export async function deleteGameState(boardId: string, mapId: string): Promise<A
     // Delete data from Redis
     await redis.del(getGameKey(boardId, mapId));
     await publishGameStateUpdated(boardId, mapId);
+    return {
+      success: true
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message
+    };
+  }
+}
+
+export async function createPlayerForGame(boardId: string, mapId: string, player: PlayerState): Promise<ApiResponse<null>> {
+  try {
+    // Get game from Redis
+    const gameState = await getGameStateFromRedis(boardId, mapId);
+
+    if (gameState.players.find(p => p.id === player.id)) {
+      return {
+        success: false,
+        error: `Player ${player.id} has already been created`
+      };
+    }
+
+    const newGameState = {
+      ...gameState,
+      players: [...gameState.players, player]
+    };
+
+    // Store data in Redis
+    await setGameStateInRedis(boardId, mapId, newGameState);
+
+    return {
+      success: true
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message
+    };
+  }
+}
+
+export async function deletePlayerFromGame(boardId: string, mapId: string, playerId: string): Promise<ApiResponse<null>> {
+  try {
+    // Get game from Redis
+    const gameState = await getGameStateFromRedis(boardId, mapId);
+
+    const newGameState = {
+      ...gameState,
+      players: gameState.players.filter(p => p.id !== playerId)
+    };
+
+    // Store data in Redis
+    await setGameStateInRedis(boardId, mapId, newGameState);
+
     return {
       success: true
     };
