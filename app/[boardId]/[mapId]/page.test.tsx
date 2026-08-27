@@ -1,32 +1,22 @@
 import "@testing-library/jest-dom";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { useParams } from "next/navigation";
 
 import Page from "./page";
-import { getGameState } from "@/lib/store/gameState";
-import GameTopicService from "../../message-bus/game-topic-service";
 import gameStateSyncService from "./game/game-state-sync-service";
 
 jest.mock("next/navigation", () => ({
   useParams: jest.fn(),
 }));
 
-jest.mock("@/lib/store/gameState", () => ({
-  getGameState: jest.fn(),
-}));
-
-jest.mock("@/lib/message-types", () => ({
-  getGameTopicId: jest.fn((boardId: string, mapId: string) => `${boardId}-${mapId}`),
-}));
-
-jest.mock("../../message-bus/game-topic-service", () => ({
-  __esModule: true,
-  default: { subscribe: jest.fn() },
-}));
-
 jest.mock("./game/game-state-sync-service", () => ({
   __esModule: true,
-  default: { set: jest.fn() },
+  default: {
+    get: jest.fn(),
+    set: jest.fn(),
+    subscribe: jest.fn(),
+    loading: false,
+  },
 }));
 
 jest.mock("./create-game", () => ({
@@ -41,19 +31,15 @@ jest.mock("./game/play-game", () => ({
   default: ({ name }: { name: string }) => <div>Playing {name}</div>,
 }));
 
-jest.mock("../../error", () => ({
-  __esModule: true,
-  default: ({ error }: { error: Error }) => <div>Error: {error.message}</div>,
-}));
-
 describe("Route Page", () => {
-  let stateListener: (() => void) | undefined;
+  let stateListener: ((gameState: { name: string } | undefined) => void) | undefined;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (gameStateSyncService as any).loading = false;
     (useParams as jest.Mock).mockReturnValue({ boardId: "board-1", mapId: "map-2" });
-    (GameTopicService.subscribe as jest.Mock).mockImplementation(
-      (_topicId: string, listener: () => void) => {
+    (gameStateSyncService.subscribe as jest.Mock).mockImplementation(
+      (_boardId: string, _mapId: string, listener: (gameState: { name: string } | undefined) => void) => {
         stateListener = listener;
         return jest.fn();
       },
@@ -61,7 +47,8 @@ describe("Route Page", () => {
   });
 
   it("shows loading while game state is being fetched", () => {
-    (getGameState as jest.Mock).mockReturnValue(new Promise(() => {}));
+    (gameStateSyncService as any).loading = true;
+    (gameStateSyncService.get as jest.Mock).mockReturnValue(undefined);
 
     render(<Page />);
 
@@ -69,52 +56,35 @@ describe("Route Page", () => {
   });
 
   it("renders CreateGame when no game exists", async () => {
-    (getGameState as jest.Mock).mockResolvedValue({ success: true });
+    (gameStateSyncService.get as jest.Mock).mockReturnValue(undefined);
 
     render(<Page />);
 
     expect(await screen.findByText("Create game for board-1/map-2")).toBeInTheDocument();
-    expect(GameTopicService.subscribe).toHaveBeenCalledWith("board-1-map-2", expect.any(Function));
-    expect(gameStateSyncService.set).toHaveBeenCalledWith("board-1", "map-2", undefined);
+    expect(gameStateSyncService.subscribe).toHaveBeenCalledWith("board-1", "map-2", expect.any(Function));
   });
 
   it("renders PlayGame for an existing game", async () => {
-    (getGameState as jest.Mock).mockResolvedValue({
-      success: true,
-      data: { name: "Test Game" },
-    });
+    (gameStateSyncService.get as jest.Mock).mockReturnValue({ name: "Test Game" });
 
     render(<Page />);
 
     expect(await screen.findByText("Playing Test Game")).toBeInTheDocument();
-    expect(getGameState).toHaveBeenCalledWith("board-1", "map-2");
-    expect(gameStateSyncService.set).toHaveBeenCalledWith("board-1", "map-2", { name: "Test Game" });
+    expect(gameStateSyncService.get).toHaveBeenCalledWith("board-1", "map-2");
+    expect(gameStateSyncService.subscribe).toHaveBeenCalledWith("board-1", "map-2", expect.any(Function));
   });
 
-  it("renders the error component when fetching fails", async () => {
-    (getGameState as jest.Mock).mockResolvedValue({
-      success: false,
-      error: "Unable to load game",
+  it("updates the UI when the sync service reports a new game state", async () => {
+    (gameStateSyncService.get as jest.Mock).mockReturnValue({ name: "Original Game" });
+
+    render(<Page />);
+    await waitFor(() => expect(screen.getByText("Playing Original Game")).toBeInTheDocument());
+
+    await act(async () => {
+      stateListener?.({ name: "Updated Game" });
     });
 
-    render(<Page />);
-
-    expect(await screen.findByText("Error: Unable to load game")).toBeInTheDocument();
-    expect(gameStateSyncService.set).toHaveBeenCalledWith("board-1", "map-2", undefined);
-  });
-
-  it("refetches game state when the topic reports an update", async () => {
-    (getGameState as jest.Mock)
-      .mockResolvedValueOnce({ success: true })
-      .mockResolvedValueOnce({ success: true, data: { name: "Updated Game" } });
-
-    render(<Page />);
-    await waitFor(() => expect(getGameState).toHaveBeenCalledTimes(1));
-
-    stateListener?.();
-
     expect(await screen.findByText("Playing Updated Game")).toBeInTheDocument();
-    expect(getGameState).toHaveBeenCalledTimes(2);
-    expect(gameStateSyncService.set).toHaveBeenLastCalledWith("board-1", "map-2", { name: "Updated Game" });
+    expect(gameStateSyncService.subscribe).toHaveBeenCalledWith("board-1", "map-2", expect.any(Function));
   });
 });
