@@ -1,6 +1,7 @@
 'use client'
 import Swal from 'sweetalert2'
 import { DropdownMenu } from "radix-ui";
+import { useRouter } from 'next/navigation';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import styles from "./play-header-menu.module.css";
@@ -10,6 +11,8 @@ import { deleteGameState } from "@/lib/store/gameState";
 export default function PlayHeaderMenu(  { boardId, mapId }
   : { boardId: string, mapId: string }
 ) {
+  const router = useRouter();
+
   const deleteGameAction = async () => {
     const result = await Swal.fire({
       title: 'Reset game?',
@@ -22,6 +25,7 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 
     if (result.isConfirmed) {
       await deleteGameState(boardId, mapId);
+      router.push(`/${boardId}/${mapId}`);
     }
   };
 

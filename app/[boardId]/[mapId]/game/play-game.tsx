@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Swal from 'sweetalert2'
+import { useRouter } from 'next/navigation';
 
 import styles from './play-game.module.css';
 import { GameState, PlayerState } from "@/lib/store/types";
@@ -12,12 +13,16 @@ export default function PlayGame(
   { boardId, mapId, name, gameState }
   : { boardId: string, mapId: string, name: string, gameState: GameState }
 ) {
+  const router = useRouter();
+
   const bindCreateCharacterAction = (character: CharacterListEntry) => {
     const id = character.id;
     const name = character.defaultName;
 
     return async () => {
       await createPlayerForGame(boardId, mapId, { id, name });
+
+      router.push(`/${boardId}/${mapId}/${id}`);
     };
   }
 
@@ -39,6 +44,7 @@ export default function PlayGame(
 
   const bindPlayAsCharacterAction = (player: PlayerState) => 
     async () => {
+      router.push(`/${boardId}/${mapId}/${player.id}`);
     };
   
   const characterCard = (character: CharacterListEntry) => {

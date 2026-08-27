@@ -12,6 +12,9 @@ class GameStateSyncService {
     return `${boardId}:${mapId}`;
   }
 
+  private _loading = true;
+  public get loading() { return this._loading; }
+
   get(boardId: string, mapId: string): GameState | undefined {
     return this.gameStates.get(this.getKey(boardId, mapId));
   }
@@ -19,6 +22,7 @@ class GameStateSyncService {
   set(boardId: string, mapId: string, gameState: GameState | undefined): void {
     const key = this.getKey(boardId, mapId);
     this.gameStates.set(key, gameState);
+    this._loading = false;
     this.listeners.get(key)?.forEach(listener => listener(gameState));
   }
 

@@ -1,16 +1,16 @@
 'use server'
-'force-no-store'
 
 import { ApiResponse } from "../api-response";
-import { GameTopicMessageType, getGameTopicId } from "../message-types";
+import { GameTopicMessageType, GameStateUpdatedMessage } from "../message-types";
 import { GameState, gameStateOptions, PlayerState } from "./types";
 import { games } from '../games/games';
+import { publishMessage } from '../messages/message-publisher';
+import { deleteReadyState } from './playerReadyState';
 
 import { Redis } from '@upstash/redis';
 const redis = Redis.fromEnv();
 
 const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
-const getGameTopic = (boardId: string, mapId: string) => `game:${getGameTopicId(boardId, mapId)}`;
 
 async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
   return await redis.get(getGameKey(boardId, mapId)) as GameState;
@@ -22,29 +22,10 @@ async function setGameStateInRedis(boardId: string, mapId: string, newGameState:
 }
 
 async function publishGameStateUpdated(boardId: string, mapId: string): Promise<void> {
-  const apiKey = process.env.ABLY_API_KEY;
-  if (!apiKey) {
-    throw new Error('ABLY_API_KEY is not configured');
-  }
-
-  const response = await fetch(
-    `https://rest.ably.io/channels/${encodeURIComponent(getGameTopic(boardId, mapId))}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(apiKey).toString('base64')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: GameTopicMessageType.GameStateUpdated,
-        data: { type: GameTopicMessageType.GameStateUpdated },
-      }),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(`Failed to publish game state update: ${response.status}`);
-  }
+  const msg: GameStateUpdatedMessage = {
+    type: GameTopicMessageType.GameStateUpdated
+  };
+  await publishMessage(boardId, mapId, msg);
 }
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
@@ -97,6 +78,10 @@ export async function deleteGameState(boardId: string, mapId: string): Promise<A
   try {
     // Delete data from Redis
     await redis.del(getGameKey(boardId, mapId));
+
+    // Also delete any related game state in Redis
+    await deleteReadyState(boardId, mapId);
+
     await publishGameStateUpdated(boardId, mapId);
     return {
       success: true
