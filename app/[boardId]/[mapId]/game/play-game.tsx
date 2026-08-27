@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image';
+import Swal from 'sweetalert2'
 
 import styles from './play-game.module.css';
 import { GameState, PlayerState } from "@/lib/store/types";
@@ -22,38 +23,60 @@ export default function PlayGame(
 
   const bindDeleteCharacterAction = (player: PlayerState) => 
     async () => {
+      const result = await Swal.fire({
+        title: 'Delete player?',
+        icon: 'warning',
+        text: "This will delete the current player. A new player can be created, but this one can't be restored.",
+        showCancelButton: true,
+        confirmButtonColor: 'var(--color-error)',
+        confirmButtonText: 'Delete!'
+      })
+
+      if (result.isConfirmed) {
       await deletePlayerFromGame(boardId, mapId, player.id);
+      }
+    };
+
+  const bindPlayAsCharacterAction = (player: PlayerState) => 
+    async () => {
     };
   
   const characterCard = (character: CharacterListEntry) => {
     const player = gameState.players?.find(p => p.id === character.id);
 
     const formAction = player ? bindDeleteCharacterAction(player) : bindCreateCharacterAction(character);
-    return <form action={formAction}>
-      <h4>{player ? player.name : character.prompt}</h4>
-      <Image
-        className={styles.playerHero}
-        src={character.image}
-        width={1400}
-        height={1100}
-        loading="eager"
-        alt={character.prompt}
-      />
+    const cardClass = player ? styles.playerCardExisting : styles.playerCardNew;
 
-      <p className={ styles.characterDesc }>{character.description}</p>
-      { !player && <button type="submit">Create</button> }
-      { player && <><button type="submit">Delete</button></> }
-    </form>;
+    return (<li key={character.id}>
+        <div className={`${cardClass} card`}>
+          <form action={formAction}>
+            <h4>{player ? player.name : character.prompt}</h4>
+            <Image
+              className={styles.playerHero}
+              src={character.image}
+              width={1400}
+              height={1100}
+              loading="eager"
+              alt={character.prompt}
+            />
+
+            <p className={ styles.characterDesc }>{character.description}</p>
+            <div className={styles.playerCardButtons}>
+              { !player && <button type="submit">Create</button> }
+              { player && <>
+                <button type="button" className="btn-secondary" onClick={bindPlayAsCharacterAction(player)}>Play</button>
+                <button type="submit" className={`${styles.deleteButton} btn-delete material-symbols-outlined`}>delete_forever</button>
+              </>}
+            </div>
+          </form>
+        </div>
+      </li>);
   }
 
   return (<>
     <ul className={styles.characterList}>
       {gameState.characters?.map((character) => (
-        <li key={character.id}>
-          <div className="card">
-            {characterCard(character)}
-          </div>
-        </li>
+        characterCard(character)
       ))}
     </ul>
   </>);

@@ -25,6 +25,11 @@
   --gold-dark: #57421c;
   --gold-glow: rgba(212, 175, 55, 0.2);
 
+  --red-bright: #ff5050;
+  --red-antique: #e03030;
+  --red-dark: #a62b2b;
+  --red-glow: rgba(255, 30, 30, 0.15);
+
   --border-stone: #bdae99;
   --border-stone-light: #9e8e76;
 
@@ -61,6 +66,11 @@
     --gold-antique: #c5a059;
     --gold-dark: #8c6d31;
     --gold-glow: rgba(255, 215, 0, 0.15);
+
+    --red-bright: #ff5050;
+    --red-antique: #e03030;
+    --red-dark: #a62b2b;
+    --red-glow: rgba(255, 30, 30, 0.15);
 
     --border-stone: #3a3126;
     --border-stone-light: #5c4e3c;
@@ -201,6 +211,7 @@ button,
 .btn {
   display: inline-flex;
   align-items: center;
+  height: 48px;
   justify-content: center;
   font-family: var(--font-header);
   font-weight: 700;
@@ -210,7 +221,7 @@ button,
   background: linear-gradient(135deg, var(--gold-bright), var(--gold-antique));
   border: 2px solid var(--gold-dark);
   border-radius: 4px;
-  padding: 0.75rem 1.5rem;
+  padding: 0 1.5rem;
   margin: 0.5rem 0;
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -303,6 +314,28 @@ button:disabled,
   }
 }
 
+/* Delete Button */
+
+.btn-delete {
+  background: linear-gradient(135deg, var(--red-bright), var(--red-antique));
+  border: 2px solid var(--red-dark);
+}
+
+@media (hover: hover) {
+  .btn-delete:hover {
+    background: linear-gradient(135deg, #ffa3a3, var(--red-bright));
+    box-shadow: 0 0 12px var(--red-glow), 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.btn-delete:active {
+  background: linear-gradient(135deg, var(--red-antique), var(--red-dark));
+}
+
+.btn-delete:focus-visible {
+  outline: 2px solid var(--red-bright);
+}
+
 /* ==========================================================================
    Components: Panels & Cards
    ========================================================================== */
@@ -311,7 +344,7 @@ button:disabled,
   background-color: var(--bg-card);
   border: 2px solid var(--border-stone);
   border-radius: 6px;
-  padding: 1.5rem;
+  padding: 1rem;
   margin-bottom: 1.5rem;
   position: relative;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);

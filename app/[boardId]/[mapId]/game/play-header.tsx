@@ -4,6 +4,7 @@ import Image from 'next/image';
 import gameStateSyncService from "./game-state-sync-service";
 import PlayHeaderMenu from './play-header-menu';
 import styles from './play-header.module.css';
+import { PlayerState } from "@/lib/store/types";
 
 export default function PlayHeader(
   { boardId, mapId }
@@ -19,29 +20,31 @@ export default function PlayHeader(
     </div>;
   }
 
-  const bindSelectPlayerAction = (playerId: string) => {
-    return async () => {
-//      await createNewGameState(boardId, mapId, gameId);
-    };
-  };
-
   const getPlayerIcon = (characterId: string) =>
     gameState.characters.find(c => c.id === characterId)?.icon || '';
 
+  const bindPlayAsCharacterAction = (player: PlayerState) => 
+    async () => {
+    };
+  
   return (
     <div className={styles.headerContainerGame}>
       <div className={styles.headerContent}>
         <ul className={styles.playerList}>
           {gameState.players?.map((player) => (
             <li key={player.id}>
-              <Image
-                className={styles.playerIcon}
-                src={getPlayerIcon(player.id)}
-                width={53}
-                height={80}
-                loading="eager"
-                alt={player.name}
-              />
+              <button type="button" className={styles.playerButton}
+                onClick={bindPlayAsCharacterAction(player)}
+              >
+                <Image
+                  className={styles.playerIcon}
+                  src={getPlayerIcon(player.id)}
+                  width={53}
+                  height={80}
+                  loading="eager"
+                  alt={player.name}
+                />
+              </button>
             </li>
           ))}
         </ul>

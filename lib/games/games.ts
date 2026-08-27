@@ -10,7 +10,9 @@ export const games: GameListEntry[] = [
     heroImage: '/hero-barbarian-witch.png',
     characters: [
       { ...characters.barbarian },
-      { ...characters.witch }
+      { ...characters.witch },
+      { ...characters.mage },
+      { ...characters.ranger }
     ]
   }
 ];
