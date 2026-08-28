@@ -20,4 +20,37 @@
   }
 }
 
-.actionsList {}
+.actionsList {
+  margin-top: 20px;
+  max-width: 400px;
+
+  h3 {
+    margin-top: 0;
+  }
+
+  li {
+    padding: 5px 5px;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 3px;
+
+    span {
+      margin: auto 0;
+    }
+
+    &:hover {
+      background-color: var(--bg-card-hover);
+    }
+  }
+}
+
+.actionDeleteIcon {
+  height: 32px;
+  padding: 0 5px;
+  margin: 0 0 0 20px;
+  &:not(:hover):not(:hover) {
+    /* background: none;
+    background-color: transparent;
+    color: var(--color-text-primary); */
+  }
+}

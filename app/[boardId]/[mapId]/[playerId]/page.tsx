@@ -1,5 +1,5 @@
 'use client'
-import { useParams } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 import { setPlayerReady } from '@/lib/store/playerReadyState';
@@ -11,6 +11,7 @@ import PlayerLocation from './player-location';
 import gameStateSyncService from "../game/game-state-sync-service";
 
 export default function Page() {
+  const router = useRouter();
   const params = useParams();
   const boardId = params.boardId?.toString() || '';
   const mapId = params.mapId?.toString() || '';
@@ -19,7 +20,12 @@ export default function Page() {
   const [readyState, setReadyState] = useState<PlayerReadyState>({ readyPlayerIds: [] });
   const [gameState, setGameState] = useState(() => gameStateSyncService.get(boardId, mapId));
 
-  useEffect(() => gameStateSyncService.subscribe(boardId, mapId, setGameState), [boardId, mapId]);
+  useEffect(() => gameStateSyncService.subscribe(boardId, mapId, state => {
+      setGameState(state);
+      if (!state) {
+        router.push(`/${boardId}/${mapId}`);
+      }
+    }), [boardId, mapId]);
 
   useEffect(() => {
     readyStateSyncService.subscribe(boardId, mapId, setReadyState);

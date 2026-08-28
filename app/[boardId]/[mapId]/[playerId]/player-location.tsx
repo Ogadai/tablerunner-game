@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
 import { LocationMove } from "@/lib/games/types";
-import { PlayerActionMove, PlayerActionsState, PlayerActionType, PlayerState } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, PlayerState } from "@/lib/store/types";
 import { moveDescriptions } from './move-descriptions';
 import styles from './player-location.module.css';
-import { addPlayerAction, getPlayerActionsState } from "@/lib/store/playerActionsState";
+import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 
 export default function PlayerLocation(
   {
@@ -19,11 +19,11 @@ export default function PlayerLocation(
   const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
 
   useEffect(() => {
-    async function fetchGameState() {
+    async function fetchPlayerActionState() {
       const state = await getPlayerActionsState(boardId, mapId, playerState.id);
       setActionsState(state.data!);
     }
-    fetchGameState();
+    fetchPlayerActionState();
   }, [playerState]);
 
   const getMoveName = (locationMove: LocationMove): string => {
@@ -34,7 +34,7 @@ export default function PlayerLocation(
     return moveDescriptions[locationMove.direction];
   }
 
-  const bindMoveaction = (locationMove: LocationMove) =>
+  const bindMoveAction = (locationMove: LocationMove) =>
     async () => {
       const actionNumber = actionsState.actions.reduce((number, action) => 
         Math.max(number, action.id + 1), 0);
@@ -50,6 +50,12 @@ export default function PlayerLocation(
       setActionsState(state.data!);
     };
 
+  const bindRemoveAction = (action: PlayerAction) => 
+    async () => {
+      const state = await removePlayerAction(boardId, mapId, playerState.id, action.id);
+      setActionsState(state.data!);
+    };
+
   return (<div>
     <div className={styles.playerHeader}>
       <h2>{playerState.name}</h2>
@@ -60,15 +66,22 @@ export default function PlayerLocation(
     <div className={styles.moveActionButtons}>
       {playerState.location.move.map(mv => 
         <button type="button" key={mv.direction}
-          onClick={bindMoveaction(mv)}>{getMoveName(mv)}
+          onClick={bindMoveAction(mv)}>{getMoveName(mv)}
         </button>
       )}
     </div>
 
-    <ul className={styles.actionsList}>
-      { actionsState.actions.map(action => <li key={action.id}>
-        { action.description }
-      </li>) }
-    </ul>
+    { actionsState.actions.length > 0 && <div className={`${styles.actionsList} card`}>
+      <h3>Actions</h3>
+      <ul >
+        { actionsState.actions.map(action => <li key={action.id}>
+          <span>{ action.description }</span>
+          <button
+            onClick={bindRemoveAction(action)}
+            className={`${styles.actionDeleteIcon} btn-delete material-symbols-outlined`}
+          >delete_forever</button>
+        </li>) }
+      </ul>
+    </div> }
   </div>);
 }

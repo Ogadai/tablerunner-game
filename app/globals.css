@@ -217,7 +217,7 @@ button,
   font-weight: 700;
   font-size: 0.95rem;
   letter-spacing: 0.05em;
-  color: #120f0d;
+  color: var(--color-text-primary);
   background: linear-gradient(135deg, var(--gold-bright), var(--gold-antique));
   border: 2px solid var(--gold-dark);
   border-radius: 4px;

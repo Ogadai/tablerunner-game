@@ -9,11 +9,14 @@ const BLE_PREFIX = 'TABLERUNNER';
 
 type BleListener = (state: BleState) => void;
 
+const maxCommandLength = 256;
+
 export class BluetoothService {
   private device: BluetoothDevice | null = null;
   private characteristic: BluetoothRemoteGATTCharacteristic | null = null;
   private state = BleState.Disconnected;
   private readonly listeners = new Set<BleListener>();
+  private messageQueue: Promise<void> = Promise.resolve();
 
   getState(): BleState {
     return this.state;
@@ -58,18 +61,16 @@ export class BluetoothService {
       this.device.addEventListener('gattserverdisconnected', this.onDisconnected);
       localStorage.setItem('ble_connected', 'true');
       this.setState(BleState.Connected);
-
-      this.runTest();
     } catch (error) {
       this.setState(BleState.Error);
       throw error;
     }
   }
   
-  async runTest () {
-    await new Promise(r => setTimeout(r, 200));
+  async runWelcome () {
+    await new Promise(r => setTimeout(r, 100));
     await this.setAll('ff0000');
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 100));
     await this.setAll('000000');
     // await new Promise(r => setTimeout(r, 200));
     // await this.setAll('00ff00');
@@ -86,15 +87,27 @@ export class BluetoothService {
     // }
   }
 
-  async setAll(rgb: string) {
-    const leds: string[] = [];
-    for(let n = 0; n < 240; n++) {
-      leds.push(`${n}`);
+  async setColourForLeds(leds: number[], rgb: string) {
+    const ledIDs: string[] = leds.map(l => `${l}`);
+    const maxLength = maxCommandLength - rgb.length - 10;
+
+    let startIndex = 0;
+    let chunkLength = 0;
+    for (let i = 0; i < leds.length; i++) {
+      const nextLen = ledIDs[i].length + 1;
+      if (chunkLength + nextLen > maxLength) {
+        const chunk = leds.slice(startIndex, i);
+        await this.sendMessage(`LED|${chunk.join('/')}:${rgb}`);
+
+        chunkLength = 0;
+        startIndex = i;
+      } else {
+        chunkLength += nextLen;
+      }
     }
 
-    const chunkSize = 120;
-    for (let i = 0; i < leds.length; i += chunkSize) {
-      const chunk = leds.slice(i, i + chunkSize);
+    if (startIndex < leds.length) {
+      const chunk = leds.slice(startIndex);
       await this.sendMessage(`LED|${chunk.join('/')}:${rgb}`);
     }
   }
@@ -104,13 +117,26 @@ export class BluetoothService {
     this.onDisconnected();
   }
 
-  async sendMessage(message: string): Promise<boolean> {
+  async sendMessage(message: string): Promise<void> {
+    this.messageQueue = this.messageQueue.then(
+      async() => await this.sendMessageInternal(message)
+    );
+  }
+
+  private async sendMessageInternal(message: string): Promise<void> {
     if (!this.characteristic || !this.device?.gatt?.connected) {
-      return false;
+      return;
+    }
+    await this.characteristic.writeValue(new TextEncoder().encode(message));
+  }
+
+  private async setAll(rgb: string) {
+    const leds: number[] = [];
+    for(let n = 0; n < 240; n++) {
+      leds.push(n);
     }
 
-    await this.characteristic.writeValue(new TextEncoder().encode(message));
-    return true;
+    await this.setColourForLeds(leds, rgb);
   }
 
   private readonly onDisconnected = (): void => {

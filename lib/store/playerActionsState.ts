@@ -48,7 +48,7 @@ export async function addPlayerAction(boardId: string, mapId: string, playerId: 
   }
 }
 
-async function removePlayerAction(boardId: string, mapId: string, playerId: string, actionId: number): Promise<ApiResponse<PlayerActionsState>> {
+export async function removePlayerAction(boardId: string, mapId: string, playerId: string, actionId: number): Promise<ApiResponse<PlayerActionsState>> {
   try {
     const currentState = (await getActionsStateFromRedis(boardId, mapId, playerId));
     const newState: PlayerActionsState = {

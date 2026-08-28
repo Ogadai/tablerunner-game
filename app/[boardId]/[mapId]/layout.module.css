@@ -19,6 +19,7 @@
     &:not(:hover):not(:hover) {
       background: none;
       background-color: transparent;
+      color: var(--color-text-primary);
     }
   }
 

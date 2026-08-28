@@ -1,6 +1,7 @@
 'use client';
 
 import { GameState } from '../../../../lib/store/types';
+import gameStateLightingService from './game-state-lighting-service';
 
 type GameStateListener = (gameState: GameState | undefined) => void;
 
@@ -24,6 +25,8 @@ class GameStateSyncService {
     this.gameStates.set(key, gameState);
     this._loading = false;
     this.listeners.get(key)?.forEach(listener => listener(gameState));
+
+    gameStateLightingService.update(gameState);
   }
 
   subscribe(boardId: string, mapId: string, listener: GameStateListener): () => void {
