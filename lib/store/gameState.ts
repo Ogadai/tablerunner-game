@@ -1,32 +1,9 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { GameTopicMessageType, GameStateUpdatedMessage } from "../message-types";
-import { GameState, gameStateOptions, PlayerState } from "./types";
+import { GameState, PlayerState } from "./types";
 import { games } from '../games/games';
-import { publishMessage } from '../messages/message-publisher';
-import { deleteReadyState } from './playerReadyState';
-
-import { Redis } from '@upstash/redis';
-const redis = Redis.fromEnv();
-
-const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
-
-async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
-  return await redis.get(getGameKey(boardId, mapId)) as GameState;
-}
-
-async function setGameStateInRedis(boardId: string, mapId: string, newGameState: GameState): Promise<void> {
-  await redis.set(getGameKey(boardId, mapId), newGameState, gameStateOptions);
-  await publishGameStateUpdated(boardId, mapId);
-}
-
-async function publishGameStateUpdated(boardId: string, mapId: string): Promise<void> {
-  const msg: GameStateUpdatedMessage = {
-    type: GameTopicMessageType.GameStateUpdated
-  };
-  await publishMessage(boardId, mapId, msg);
-}
+import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
@@ -76,13 +53,8 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
 
 export async function deleteGameState(boardId: string, mapId: string): Promise<ApiResponse<null>> {
   try {
-    // Delete data from Redis
-    await redis.del(getGameKey(boardId, mapId));
+    await deleteGameStateFromRedis(boardId, mapId);
 
-    // Also delete any related game state in Redis
-    await deleteReadyState(boardId, mapId);
-
-    await publishGameStateUpdated(boardId, mapId);
     return {
       success: true
     };
