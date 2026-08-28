@@ -20,7 +20,7 @@ export default function PlayGame(
     const name = character.defaultName;
 
     return async () => {
-      await createPlayerForGame(boardId, mapId, { id, name });
+      await createPlayerForGame(boardId, mapId, id);
 
       router.push(`/${boardId}/${mapId}/${id}`);
     };

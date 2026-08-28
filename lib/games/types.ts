@@ -5,6 +5,8 @@ export interface GameListEntry {
   description: string;
   heroImage: string;
   characters: CharacterListEntry[];
+  locations: Location[];
+  startLocation: number;
 }
 
 export interface CharacterListEntry {
@@ -14,4 +16,18 @@ export interface CharacterListEntry {
   description: string;
   image: string;
   icon: string;
+}
+
+export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
+
+export interface LocationMove {
+  direction: LocationMoveDirection;
+  id: number;
+  description?: string;
+}
+
+export interface Location {
+  id: number;
+  description: string;
+  move: LocationMove[];
 }

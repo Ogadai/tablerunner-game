@@ -1,3 +1,17 @@
+.playerScreen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.playerScreenContent {
+  flex: 1 1 auto;
+}
+
+.endTurnForm {
+  margin: 0 0 0 auto;
+}
+
 .endTurnCheck {
   margin-left: 10px;
   border-radius: 15px;

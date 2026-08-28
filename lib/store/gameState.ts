@@ -3,6 +3,7 @@
 import { ApiResponse } from "../api-response";
 import { GameState, PlayerState } from "./types";
 import { games } from '../games/games';
+import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
@@ -31,9 +32,11 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
   }
 
   const newGameState: GameState = {
+    gameId,
     name: `${gameId} on board ${boardId} and map ${mapId}`,
     characters: gameDef.characters,
     players: [],
+    visited: [gameDef.startLocation]
   };
 
   try {
@@ -66,26 +69,38 @@ export async function deleteGameState(boardId: string, mapId: string): Promise<A
   }
 }
 
-export async function createPlayerForGame(boardId: string, mapId: string, player: PlayerState): Promise<ApiResponse<null>> {
+export async function createPlayerForGame(boardId: string, mapId: string, playerId: string): Promise<ApiResponse<null>> {
   try {
     // Get game from Redis
     const gameState = await getGameStateFromRedis(boardId, mapId);
     if (!gameState) {
       throw Error(`Couldn't find Game state for game`);
     }
+    const gameDef = games.find(g => g.id === gameState.gameId)!;
 
-    if (gameState.players.find(p => p.id === player.id)) {
+    if (gameState.players.find(p => p.id === playerId)) {
       return {
         success: false,
-        error: `Player ${player.id} has already been created`
+        error: `Player ${playerId} has already been created`
       };
     }
 
-    const newGameState = {
+    const characterDef = characters[playerId];
+    if (!characterDef) {
+      return {
+        success: false,
+        error: `Couldn't find character for ${playerId}`
+      };
+    }
+
+    const newGameState: GameState = {
       ...gameState,
       players: [
-        ...gameState.players,
-        player
+        ...gameState.players, {
+          id: playerId,
+          name: characterDef.defaultName,
+          location: gameDef.locations.find(l => l.id === gameDef.startLocation)!
+        }
       ]
     };
 
