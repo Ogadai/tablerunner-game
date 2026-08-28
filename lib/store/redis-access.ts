@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
@@ -8,6 +8,8 @@ const redis = Redis.fromEnv();
 const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
 
 const getPlayersReadyKey = (boardId: string, mapId: string) => `playersReady:${boardId}:${mapId}`;
+
+const getPlayerActionsKey = (boardId: string, mapId: string, playerId: string) => `playerActions:${boardId}:${mapId}:${playerId}`;
 
 export async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
   return await redis.get(getGameKey(boardId, mapId)) as GameState;
@@ -48,8 +50,8 @@ export async function setReadyStateInRedis(boardId: string, mapId: string, newRe
 }
 
 export async function deleteReadyStateFromRedis(boardId: string, mapId: string): Promise<void> {
-      // Delete data from Redis
-    await redis.del(getPlayersReadyKey(boardId, mapId));
+  // Delete data from Redis
+  await redis.del(getPlayersReadyKey(boardId, mapId));
 }
 
 async function publishReadyStateUpdated(boardId: string, mapId: string, newReadyState: PlayerReadyState): Promise<void> {
@@ -58,4 +60,13 @@ async function publishReadyStateUpdated(boardId: string, mapId: string, newReady
     readyPlayerIds: newReadyState.readyPlayerIds
   };
   await publishMessage(boardId, mapId, msg);
+}
+
+export async function getActionsStateFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerActionsState> {
+  const result = await redis.get(getPlayerActionsKey(boardId, mapId, playerId)) as PlayerActionsState;
+  return result || { actions: [] };
+}
+
+export async function setActionsStateInRedis(boardId: string, mapId: string, playerId: string, newActionsState: PlayerActionsState): Promise<void> {
+  await redis.set(getPlayerActionsKey(boardId, mapId, playerId), newActionsState, gameStateOptions);
 }

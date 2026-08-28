@@ -1,5 +1,5 @@
 import { SetCommandOptions } from "@upstash/redis";
-import { CharacterListEntry, LocationMove } from "../games/types";
+import { CharacterListEntry, LocationMove, LocationMoveDirection } from "../games/types";
 
 export const Expiry1Day = 60 * 60 * 24;
 export const Expiry1Week = Expiry1Day * 7;
@@ -30,3 +30,21 @@ export interface PlayerReadyState {
   readyPlayerIds: string[];
 }
 
+export enum PlayerActionType {
+  Move = 'move'
+}
+
+export interface PlayerAction {
+  id: number;
+  type: PlayerActionType
+  description: string;
+}
+
+export interface PlayerActionMove extends PlayerAction {
+  type: PlayerActionType.Move,
+  direction: LocationMoveDirection;
+}
+
+export interface PlayerActionsState {
+  actions: PlayerAction[];
+}

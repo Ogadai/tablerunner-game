@@ -1,3 +1,15 @@
+.playerHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  h2, h3, h4 {
+    margin-top: auto;
+    margin-bottom: auto;
+    vertical-align: middle;
+  }
+}
+
 .moveActionButtons {
   display: flex;
   flex-direction: row;
@@ -7,3 +19,5 @@
     margin: 10px;
   }
 }
+
+.actionsList {}

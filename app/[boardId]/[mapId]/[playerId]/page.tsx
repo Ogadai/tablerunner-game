@@ -40,7 +40,7 @@ export default function Page() {
 
   return (<div className={styles.playerScreen}>
     <div className={styles.playerScreenContent}>
-      <PlayerLocation playerState={playerState} />
+      <PlayerLocation boardId={boardId} mapId={mapId} playerState={playerState} />
     </div>
     <form className={styles.endTurnForm} action={endTurnAction}>
       { !isPlayerReady() && <button type="submit">
