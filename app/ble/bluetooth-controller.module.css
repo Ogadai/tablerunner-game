@@ -22,22 +22,24 @@
     animation-direction: alternate;
   }
   &.connected {
-    color: var(--color-connected);
+    color: var(--color-connected) !important;
   }
   &.otherconnected {
-    color: var(--color-success);
+    color: var(--color-success) !important;
   }
   &.notsupported {
-    color: var(--color-error);
+    color: var(--color-error) !important;
   }
   &.error {
-    color: var(--color-error);
+    color: var(--color-error) !important;
   }
   
-  &:active, &:hover {
-    background: linear-gradient(135deg, #0002a3, var(--color-connected));
-    background-color: var(--color-connected);
-    color: var(--color-text-primary);
+  & button, & .btn {
+    &:active, &:hover {
+      background: linear-gradient(135deg, #0002a3, var(--color-connected));
+      background-color: var(--color-connected);
+      color: var(--color-text-primary) !important;
+    }
   }
 
 }

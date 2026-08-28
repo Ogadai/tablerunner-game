@@ -37,16 +37,6 @@ export default function BluetoothController({
     bluetoothService.disconnect();
   };
 
-  const sendMessage = async () => {
-    try {
-      if (await bluetoothService.sendMessage(message)) {
-        setMessage('');
-      }
-    } catch (error) {
-      console.error(`Send error: ${error instanceof Error ? error.message : 'Unknown'}`);
-    }
-  };
-
   const askReconnect = useCallback(async () => {
     const result = await Swal.fire({
       title: 'Reconnect to board?',

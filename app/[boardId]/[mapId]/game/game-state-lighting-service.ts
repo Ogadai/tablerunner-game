@@ -23,7 +23,6 @@ class GameStateLightingService {
     if (!this.subscribed) {
       bluetoothService.subscribe(async (state) => {
         if (state === BleState.Connected) {
-          await bluetoothService.runWelcome();
           await this.applyLighting(this.lastGameState);
         }
       })

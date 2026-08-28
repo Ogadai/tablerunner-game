@@ -60,6 +60,8 @@ export class BluetoothService {
       this.characteristic = characteristic;
       this.device.addEventListener('gattserverdisconnected', this.onDisconnected);
       localStorage.setItem('ble_connected', 'true');
+
+      await this.runWelcome();
       this.setState(BleState.Connected);
     } catch (error) {
       this.setState(BleState.Error);
@@ -67,11 +69,17 @@ export class BluetoothService {
     }
   }
   
-  async runWelcome () {
-    await new Promise(r => setTimeout(r, 100));
+  private async runWelcome () {
     await this.setAll('ff0000');
-    await new Promise(r => setTimeout(r, 100));
+
+    this.messageQueue = this.messageQueue.then(
+      () => new Promise(r => setTimeout(r, 1000))
+    )
+    
     await this.setAll('000000');
+
+    // await new Promise(r => setTimeout(r, 1000));
+    // await this.setAll('000000');
     // await new Promise(r => setTimeout(r, 200));
     // await this.setAll('00ff00');
     // await new Promise(r => setTimeout(r, 200));
@@ -88,7 +96,7 @@ export class BluetoothService {
   }
 
   async setColourForLeds(leds: number[], rgb: string) {
-    const ledIDs: string[] = leds.map(l => `${l}`);
+    const ledIDs: string[] = leds.map(l => `${l-1}`);
     const maxLength = maxCommandLength - rgb.length - 10;
 
     let startIndex = 0;
@@ -96,7 +104,7 @@ export class BluetoothService {
     for (let i = 0; i < leds.length; i++) {
       const nextLen = ledIDs[i].length + 1;
       if (chunkLength + nextLen > maxLength) {
-        const chunk = leds.slice(startIndex, i);
+        const chunk = ledIDs.slice(startIndex, i);
         await this.sendMessage(`LED|${chunk.join('/')}:${rgb}`);
 
         chunkLength = 0;
@@ -107,7 +115,7 @@ export class BluetoothService {
     }
 
     if (startIndex < leds.length) {
-      const chunk = leds.slice(startIndex);
+      const chunk = ledIDs.slice(startIndex);
       await this.sendMessage(`LED|${chunk.join('/')}:${rgb}`);
     }
   }
@@ -133,7 +141,7 @@ export class BluetoothService {
   private async setAll(rgb: string) {
     const leds: number[] = [];
     for(let n = 0; n < 240; n++) {
-      leds.push(n);
+      leds.push(n + 1);
     }
 
     await this.setColourForLeds(leds, rgb);
