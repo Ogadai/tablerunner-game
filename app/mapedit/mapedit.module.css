@@ -5,6 +5,22 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.title {
+  position: absolute;
+  background: #f2ebd9;
+  color: #2b221a;
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  padding: 12px;
+}
+
+.mapImage {
+  position: absolute;
+  z-index: -1;
 }
 
 .gridContainer {
@@ -30,6 +46,35 @@
   }
 }
 
+.pageOne {
+  
+  .title {
+    display: none;
+  }
+
+  .mapImage {
+    width: 1500px;
+    height: 948px;
+    top: 39px;
+    left: -39px;
+  }
+}
+
+.pageTwo {
+
+  .title {
+    top: 31px;
+    left: 536px;
+  }
+
+  .mapImage {
+    width: 1500px;
+    height: 948px;
+    top: 39px;
+    left: -666px;
+  }
+}
+
 .doublePage {
   /* @page {
     size: A3 landscape;
@@ -38,6 +83,18 @@
  */
   width: 420mm;
   height: 297mm;
+
+  .title {
+    top: 31px;
+    left: 1276px;
+  }
+
+  .mapImage {
+    top: 40px;
+    left: 44px;
+    width: 1500px;
+    height: 948px;
+  }
 
   .gridContainer {
     grid-template-columns: repeat(20, 16.6mm);

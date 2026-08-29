@@ -2,7 +2,9 @@
 
 import styles from './mapedit.module.css';
 import { useSearchParams } from 'next/navigation';
- 
+import { cinzel } from '@/app/fonts';
+import Image from 'next/image';
+
 export default function MapEdit() {
   const searchParams = useSearchParams();
 
@@ -13,7 +15,18 @@ export default function MapEdit() {
   const two = (!page || page === '2');
 
   return (
-    <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage}`}>
+    <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''}`}>
+      <Image
+        src="/map.png"
+        width={1536}
+        height={1024}
+        className={styles.mapImage}
+        loading="eager"
+        alt="The map of Couldron of Fire"
+      />
+
+      <h3 className={`${cinzel.className} antialiased ${styles.title}`} >Cauldron of Fire</h3>
+
       <div className={`${styles.gridContainer}`}>
         { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>240</span></div></div> }
         { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>239</span></div></div> }
