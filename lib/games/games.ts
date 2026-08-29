@@ -5,7 +5,7 @@ export const games: GameListEntry[] = [
   {
     id: 'cauldronfire',
     name: 'Cauldron of Fire',
-    map: 'test',
+    map: 'cauldron',
     description: 'Explore the lands of the volcano and defeat the evil king.',
     heroImage: '/hero-barbarian-witch.png',
     characters: [
