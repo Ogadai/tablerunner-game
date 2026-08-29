@@ -37,7 +37,7 @@ export async function setPlayerReady(boardId: string, mapId: string, playerId: s
     await setReadyStateInRedis(boardId, mapId, newState);
 
     if (ready) {
-      checkAllPlayersReady(boardId, mapId, newState);
+      await checkAllPlayersReady(boardId, mapId, newState);
     }
 
     return {
