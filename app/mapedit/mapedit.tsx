@@ -52,6 +52,18 @@ export default function MapEdit() {
   const renderCell = (cell: number) => {
     const location = mapState.find(l => l.id === cell);
     const description = location?.description || '';
+    const moves = location?.move ?? [];
+
+    const directionAngles: Record<string, number> = {
+      n: -90,
+      ne: -45,
+      e: 0,
+      se: 45,
+      s: 90,
+      sw: 135,
+      w: 180,
+      nw: -135,
+    };
 
     const page = Math.floor((cell + 9) / 20) %2;
     return (
@@ -60,6 +72,16 @@ export default function MapEdit() {
         onClick={bindClickLocation(cell)}
         className={styles.cell} title={description}
       >
+        {moves.map(move => (
+          <div
+            key={`${cell}-${move.direction}-${move.id}`}
+            className={styles.moveLine}
+            style={{
+              transform: `translateY(-50%) rotate(${directionAngles[move.direction]}deg)`
+            }}
+            aria-hidden="true"
+          />
+        ))}
         <div className={`${styles.circle} ${ (!singlePage && description.length > 0) ? styles.namedCircle : ''}`}>
           <span className={styles.number}>{ cell }</span>
         </div>

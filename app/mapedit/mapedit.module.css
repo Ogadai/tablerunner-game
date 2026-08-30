@@ -111,6 +111,20 @@
   justify-content: center;
   align-items: center;
   background: transparent;
+  position: relative;
+}
+
+.moveLine {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 50%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-stamina);
+  transform-origin: 0 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .circle {
@@ -123,6 +137,8 @@
   align-items: center;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
   cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .namedCircle {

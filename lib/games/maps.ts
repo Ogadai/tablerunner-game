@@ -157,7 +157,10 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 31,
     "description": "There is a wooden gate to the South. A road leads North West, and a small trail leads into the trees to the West.",
-    "move": []
+    "move": [{
+      direction: 's',
+      id: 10
+    }]
   },
   {
     "id": 32,
