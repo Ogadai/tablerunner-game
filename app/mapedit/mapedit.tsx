@@ -60,12 +60,17 @@ export default function MapEdit() {
         onClick={bindClickLocation(cell)}
         className={styles.cell} title={description}
       >
-        <div className={`${styles.circle} ${ (description.length > 0) ? styles.namedCircle : ''}`}>
+        <div className={`${styles.circle} ${ (!singlePage && description.length > 0) ? styles.namedCircle : ''}`}>
           <span className={styles.number}>{ cell }</span>
         </div>
       </div>
     );
   };
+
+  const copyToClipboard = async () => {
+    const mapJson = JSON.stringify(mapState, null, 2);
+    await navigator.clipboard.writeText(mapJson);
+  }
 
   return (
     <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''}`}>
@@ -83,6 +88,11 @@ export default function MapEdit() {
       <div className={`${styles.gridContainer}`}>
         { GRID_CELLS.map(renderCell) }
       </div>
+
+      { !singlePage && <button
+          className={styles.copyButton}
+          onClick={copyToClipboard}
+        >Copy to clipboard</button> }
     </main>
   );
 }

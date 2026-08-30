@@ -24,7 +24,6 @@ export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' |
 export interface LocationMove {
   direction: LocationMoveDirection;
   id: number;
-  description?: string;
 }
 
 export interface Location {

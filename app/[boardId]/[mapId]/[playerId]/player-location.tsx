@@ -27,10 +27,6 @@ export default function PlayerLocation(
   }, [playerState]);
 
   const getMoveName = (locationMove: LocationMove): string => {
-    if (locationMove.description) {
-      return locationMove.description;
-    }
-
     return moveDescriptions[locationMove.direction];
   }
 

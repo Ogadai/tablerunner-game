@@ -137,3 +137,9 @@
   text-align: center;
   line-height: 1;
 }
+
+.copyButton {
+  position: absolute;
+  left: 44px;
+  top: 263mm;
+}
