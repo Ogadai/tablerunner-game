@@ -19,12 +19,26 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 4,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 5
+      }
+    ]
   },
   {
     "id": 5,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 6
+      },
+      {
+        "direction": "w",
+        "id": 4
+      }
+    ]
   },
   {
     "id": 6,
@@ -33,17 +47,30 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "n",
         "id": 35
+      },
+      {
+        "direction": "w",
+        "id": 5
+      },
+      {
+        "direction": "e",
+        "id": 7
       }
     ]
   },
   {
     "id": 7,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 6
+      }
+    ]
   },
   {
     "id": 8,
-    "description": "",
+    "description": "A track leads to the North West, or to the East.",
     "move": [
       {
         "direction": "e",
@@ -57,7 +84,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 9,
-    "description": "",
+    "description": "A track that leads from East to West.",
     "move": [
       {
         "direction": "e",
@@ -89,7 +116,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 11,
-    "description": "",
+    "description": "A track that leads from East to West.",
     "move": [
       {
         "direction": "w",
@@ -103,7 +130,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 12,
-    "description": "",
+    "description": "A track leads to the North East, or to the West.",
     "move": [
       {
         "direction": "w",
@@ -224,7 +251,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 30,
-    "description": "",
+    "description": "A clearing in the trees. The road is to the West, and the forest is North.",
     "move": [
       {
         "direction": "n",
@@ -238,7 +265,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 31,
-    "description": "There is a wooden gate to the South. A road leads North West, and a small trail leads into the trees to the West.",
+    "description": "There is a wooden gate to the South. A road leads North West. A small trail leads into the trees to the West. There is a clearing to the East.",
     "move": [
       {
         "direction": "s",
@@ -260,7 +287,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 32,
-    "description": "",
+    "description": "A trail leads towards the road in the East, or away to the West.",
     "move": [
       {
         "direction": "e",
@@ -274,7 +301,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 33,
-    "description": "",
+    "description": "The trail leads East or West past some trees.",
     "move": [
       {
         "direction": "e",
@@ -301,6 +328,10 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "se",
         "id": 8
+      },
+      {
+        "direction": "ne",
+        "id": 48
       }
     ]
   },
@@ -392,18 +423,36 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "s",
         "id": 35
+      },
+      {
+        "direction": "e",
+        "id": 47
       }
     ]
   },
   {
     "id": 47,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 46
+      }
+    ]
   },
   {
     "id": 48,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 49
+      },
+      {
+        "direction": "sw",
+        "id": 34
+      }
+    ]
   },
   {
     "id": 49,
@@ -416,12 +465,16 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "ne",
         "id": 71
+      },
+      {
+        "direction": "w",
+        "id": 48
       }
     ]
   },
   {
     "id": 50,
-    "description": "",
+    "description": "A hidden corner of the forest, with trails leading East and North East.",
     "move": [
       {
         "direction": "ne",
@@ -435,7 +488,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 51,
-    "description": "",
+    "description": "The forest. Paths lead deeper into the trees to the North and North East, or back into the open to the South and South East. A narrow trail leads West.",
     "move": [
       {
         "direction": "n",
@@ -591,7 +644,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 70,
-    "description": "",
+    "description": "Deep in the forest. Trails lead East and West, and also to the South and South West.",
     "move": [
       {
         "direction": "w",
@@ -650,17 +703,48 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 73,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 74
+      }
+    ]
   },
   {
     "id": 74,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "n",
+        "id": 87
+      },
+      {
+        "direction": "w",
+        "id": 75
+      },
+      {
+        "direction": "e",
+        "id": 73
+      }
+    ]
   },
   {
     "id": 75,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 76
+      },
+      {
+        "direction": "n",
+        "id": 86
+      },
+      {
+        "direction": "e",
+        "id": 74
+      }
+    ]
   },
   {
     "id": 76,
@@ -669,6 +753,10 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "n",
         "id": 85
+      },
+      {
+        "direction": "e",
+        "id": 75
       }
     ]
   },
@@ -701,18 +789,36 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "n",
         "id": 83
+      },
+      {
+        "direction": "w",
+        "id": 79
       }
     ]
   },
   {
     "id": 79,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 78
+      },
+      {
+        "direction": "w",
+        "id": 80
+      }
+    ]
   },
   {
     "id": 80,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 79
+      }
+    ]
   },
   {
     "id": 81,
@@ -797,18 +903,44 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "n",
         "id": 116
+      },
+      {
+        "direction": "e",
+        "id": 86
       }
     ]
   },
   {
     "id": 86,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 85
+      },
+      {
+        "direction": "s",
+        "id": 75
+      },
+      {
+        "direction": "e",
+        "id": 87
+      }
+    ]
   },
   {
     "id": 87,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 86
+      },
+      {
+        "direction": "s",
+        "id": 74
+      }
+    ]
   },
   {
     "id": 88,
