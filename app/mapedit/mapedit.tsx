@@ -1,18 +1,71 @@
 'use client'
 
+import Swal from 'sweetalert2'
+import { useState } from 'react';
 import styles from './mapedit.module.css';
 import { useSearchParams } from 'next/navigation';
 import { cinzel } from '@/app/fonts';
 import Image from 'next/image';
 
+import { cauldronOfFire as mapData } from '@/lib/games/maps';
+
+const GRID_CELLS = [240, 239, 238, 237, 236, 235, 234, 233, 232, 231, 230, 229, 228, 227, 226, 225, 224, 223, 222, 221, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 200, 199, 198, 197, 196, 195, 194, 193, 192, 191, 190, 189, 188, 187, 186, 185, 184, 183, 182, 181, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 160, 159, 158, 157, 156, 155, 154, 153, 152, 151, 150, 149, 148, 147, 146, 145, 144, 143, 142, 141, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
 export default function MapEdit() {
   const searchParams = useSearchParams();
-
+  const [mapState, setMapState] = useState(mapData);
+  
   const page = searchParams.get('page');
   const singlePage = !!page;
  
   const one = (!page || page === '1');
   const two = (!page || page === '2');
+
+  const bindClickLocation = (cell: number) =>
+    async () => {
+      const location = mapState.find(l => l.id === cell);
+      const description = location?.description || '';
+
+      const { value: newDescription, isConfirmed } = await Swal.fire({
+        title: "Description",
+        input: "textarea",
+        inputLabel: "Enter the location description",
+        inputValue: description,
+        showCancelButton: true
+      });
+
+      if (location && isConfirmed) {
+        const newMapState = mapState.map(l => {
+          if (l.id === cell) {
+            return {
+              ...l,
+              description: newDescription
+            };
+          } else {
+            return l;
+          }
+        });
+        setMapState(newMapState);
+      }
+    }
+
+  const renderCell = (cell: number) => {
+    const location = mapState.find(l => l.id === cell);
+    const description = location?.description || '';
+
+    const page = Math.floor((cell + 9) / 20) %2;
+    return (
+      ((one && (page === 0)) || (two && (page === 1))) &&
+      <div
+        onClick={bindClickLocation(cell)}
+        className={styles.cell} title={description}
+      >
+        <div className={`${styles.circle} ${ (description.length > 0) ? styles.namedCircle : ''}`}>
+          <span className={styles.number}>{ cell }</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''}`}>
@@ -28,246 +81,7 @@ export default function MapEdit() {
       <h3 className={`${cinzel.className} antialiased ${styles.title}`} >Cauldron of Fire</h3>
 
       <div className={`${styles.gridContainer}`}>
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>240</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>239</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>238</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>237</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>236</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>235</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>234</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>233</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>232</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>231</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>230</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>229</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>228</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>227</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>226</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>225</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>224</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>223</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>222</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>221</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>201</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>202</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>203</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>204</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>205</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>206</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>207</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>208</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>209</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>210</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>211</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>212</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>213</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>214</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>215</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>216</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>217</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>218</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>219</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>220</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>200</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>199</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>198</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>197</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>196</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>195</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>194</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>193</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>192</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>191</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>190</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>189</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>188</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>187</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>186</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>185</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>184</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>183</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>182</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>181</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>161</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>162</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>163</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>164</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>165</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>166</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>167</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>168</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>169</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>170</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>171</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>172</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>173</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>174</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>175</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>176</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>177</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>178</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>179</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>180</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>160</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>159</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>158</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>157</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>156</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>155</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>154</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>153</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>152</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>151</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>150</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>149</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>148</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>147</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>146</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>145</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>144</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>143</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>142</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>141</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>121</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>122</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>123</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>124</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>125</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>126</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>127</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>128</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>129</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>130</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>131</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>132</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>133</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>134</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>135</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>136</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>137</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>138</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>139</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>140</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>120</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>119</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>118</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>117</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>116</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>115</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>114</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>113</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>112</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>111</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>110</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>109</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>108</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>107</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>106</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>105</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>104</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>103</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>102</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>101</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>81</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>82</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>83</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>84</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>85</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>86</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>87</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>88</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>89</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>90</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>91</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>92</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>93</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>94</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>95</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>96</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>97</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>98</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>99</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>100</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>80</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>79</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>78</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>77</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>76</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>75</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>74</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>73</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>72</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>71</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>70</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>69</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>68</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>67</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>66</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>65</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>64</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>63</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>62</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>61</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>41</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>42</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>43</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>44</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>45</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>46</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>47</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>48</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>49</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>50</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>51</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>52</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>53</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>54</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>55</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>56</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>57</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>58</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>59</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>60</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>40</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>39</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>38</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>37</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>36</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>35</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>34</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>33</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>32</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>31</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>30</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>29</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>28</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>27</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>26</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>25</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>24</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>23</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>22</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>21</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>1</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>2</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>3</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>4</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>5</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>6</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>7</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>8</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>9</span></div></div> }
-        { one && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>10</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>11</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>12</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>13</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>14</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>15</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>16</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>17</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>18</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>19</span></div></div> }
-        { two && <div className={styles.cell}><div className={styles.circle}><span className={styles.number}>20</span></div></div> }
+        { GRID_CELLS.map(renderCell) }
       </div>
     </main>
   );
