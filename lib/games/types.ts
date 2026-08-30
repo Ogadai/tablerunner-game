@@ -16,6 +16,7 @@ export interface CharacterListEntry {
   description: string;
   image: string;
   icon: string;
+  rgbColour: string;
 }
 
 export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';

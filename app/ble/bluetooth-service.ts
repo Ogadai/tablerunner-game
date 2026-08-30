@@ -2,6 +2,7 @@
 'use client';
 
 import { BleState } from './ble-states';
+import { skullImage } from './welcome-message';
 
 const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
@@ -9,7 +10,7 @@ const BLE_PREFIX = 'TABLERUNNER';
 
 type BleListener = (state: BleState) => void;
 
-const maxCommandLength = 256;
+const maxCommandLength = 250;
 
 export class BluetoothService {
   private device: BluetoothDevice | null = null;
@@ -70,10 +71,11 @@ export class BluetoothService {
   }
   
   private async runWelcome () {
-    await this.setAll('ff0000');
+    // await this.setAll('ff0000');
+    await this.sendLEDColoursMessage(skullImage);
 
     this.messageQueue = this.messageQueue.then(
-      () => new Promise(r => setTimeout(r, 1000))
+      () => new Promise(r => setTimeout(r, 3000))
     )
     
     await this.setAll('000000');
@@ -95,29 +97,42 @@ export class BluetoothService {
     // }
   }
 
+  async setAnimationForLeds(ledDefs: {leds: number[], rgbColours: string[]}[]) {
+    const ledCommands = ledDefs.map(ledDef =>
+      `${ledDef.leds.map(l => `${l-1}`).join('/')}:${ledDef.rgbColours.join('/')}`
+    );
+
+    await this.sendMessage(`ANIM|${ledCommands.join(',')}`);
+  }
+
   async setColourForLeds(leds: number[], rgb: string) {
     const ledIDs: string[] = leds.map(l => `${l-1}`);
-    const maxLength = maxCommandLength - rgb.length - 10;
+    const ledIDString = ledIDs.join('/');
 
-    let startIndex = 0;
-    let chunkLength = 0;
-    for (let i = 0; i < leds.length; i++) {
-      const nextLen = ledIDs[i].length + 1;
-      if (chunkLength + nextLen > maxLength) {
-        const chunk = ledIDs.slice(startIndex, i);
-        await this.sendMessage(`LED|${chunk.join('/')}:${rgb}`);
+    let remainLeds = ledIDString;
+    const maxLength = maxCommandLength - 12;
+    while (remainLeds.length > maxLength) {
+      // Split this message up
+      const splitIndex = remainLeds.lastIndexOf('/', maxLength);
 
-        chunkLength = 0;
-        startIndex = i;
-      } else {
-        chunkLength += nextLen;
-      }
+      await this.sendMessage(`LED|${remainLeds.substring(0, splitIndex)}:${rgb}`);
+      remainLeds = `${remainLeds.substring(splitIndex + 1)}`;
     }
 
-    if (startIndex < leds.length) {
-      const chunk = ledIDs.slice(startIndex);
-      await this.sendMessage(`LED|${chunk.join('/')}:${rgb}`);
+    await this.sendMessage(`LED|${remainLeds}:${rgb}`);
+  }
+
+  async sendLEDColoursMessage(ledsMessage: string) {
+    let remainMessage = ledsMessage;
+    while (remainMessage.length > maxCommandLength) {
+      // Split this message up
+      const splitIndex = remainMessage.lastIndexOf(',', maxCommandLength);
+
+      await this.sendMessage(remainMessage.substring(0, splitIndex));
+      remainMessage = `LED|${remainMessage.substring(splitIndex + 1)}`;
     }
+
+    await this.sendMessage(remainMessage);
   }
 
   disconnect(): void {
@@ -126,6 +141,7 @@ export class BluetoothService {
   }
 
   async sendMessage(message: string): Promise<void> {
+    console.log('sendMessage', message);
     this.messageQueue = this.messageQueue.then(
       async() => await this.sendMessageInternal(message)
     );

@@ -99,7 +99,8 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
         ...gameState.players, {
           id: playerId,
           name: characterDef.defaultName,
-          location: gameDef.locations.find(l => l.id === gameDef.startLocation)!
+          rgbColour: characterDef.rgbColour,
+          location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
         }
       ]
     };

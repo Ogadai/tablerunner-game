@@ -18,6 +18,7 @@ export interface PlayerState {
   id: string;
   name: string;
   location: PlayerStateLocation;
+  rgbColour: string;
 }
 
 export interface PlayerStateLocation {

@@ -8,6 +8,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     description: 'A warrior who excels at hand-to-hand combat',
     image: '/barbarian.png',
     icon: '/barbarian-small.png',
+    rgbColour: '604528',
   },
   witch: {
     id: 'witch',
@@ -16,6 +17,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     description: 'A powerful user of the dark magical arts',
     image: '/witch.png',
     icon: '/witch-small.png',
+    rgbColour: '411E47',
   },
   ranger: {
     id: 'ranger',
@@ -24,6 +26,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     description: 'A skilled fighter specialising in ranged combat',
     image: '/ranger.png',
     icon: '/ranger-small.png',
+    rgbColour: '303E15',
   },
   mage: {
     id: 'mage',
@@ -32,5 +35,6 @@ export const characters: { [id: string]: CharacterListEntry } = {
     description: 'A learned magician of great skill',
     image: '/mage.png',
     icon: '/mage-small.png',
+    rgbColour: '222F5B',
   }
 };
