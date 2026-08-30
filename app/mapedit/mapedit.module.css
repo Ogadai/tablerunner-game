@@ -27,6 +27,7 @@
   display: grid;
   background: transparent;
   padding: 16.6mm;
+  user-select: none;
 }
 
 .singlePage {
@@ -123,8 +124,12 @@
   border-radius: 999px;
   background: var(--color-stamina);
   transform-origin: 0 50%;
-  pointer-events: none;
+  cursor: pointer;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.moveLineDiagonal {
+  width: 70%;
 }
 
 .circle {

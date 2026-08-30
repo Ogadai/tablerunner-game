@@ -29,7 +29,12 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 6,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "n",
+        "id": 35
+      }
+    ]
   },
   {
     "id": 7,
@@ -39,30 +44,76 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 8,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 9
+      },
+      {
+        "direction": "nw",
+        "id": 34
+      }
+    ]
   },
   {
     "id": 9,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 10
+      },
+      {
+        "direction": "w",
+        "id": 8
+      }
+    ]
   },
   {
     "id": 10,
     "description": "The road North leads through a wooden gate. There are tracks leading East and West.",
-    "move": [{
-      direction: 'n',
-      id: 31
-    }]
+    "move": [
+      {
+        "direction": "n",
+        "id": 31
+      },
+      {
+        "direction": "w",
+        "id": 9
+      },
+      {
+        "direction": "e",
+        "id": 11
+      }
+    ]
   },
   {
     "id": 11,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 10
+      },
+      {
+        "direction": "e",
+        "id": 12
+      }
+    ]
   },
   {
     "id": 12,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 11
+      },
+      {
+        "direction": "ne",
+        "id": 28
+      }
+    ]
   },
   {
     "id": 13,
@@ -142,7 +193,12 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 28,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 12
+      }
+    ]
   },
   {
     "id": 29,
@@ -157,30 +213,84 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 31,
     "description": "There is a wooden gate to the South. A road leads North West, and a small trail leads into the trees to the West.",
-    "move": [{
-      direction: 's',
-      id: 10
-    }]
+    "move": [
+      {
+        "direction": "s",
+        "id": 10
+      },
+      {
+        "direction": "nw",
+        "id": 49
+      },
+      {
+        "direction": "w",
+        "id": 32
+      }
+    ]
   },
   {
     "id": 32,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 31
+      },
+      {
+        "direction": "w",
+        "id": 33
+      }
+    ]
   },
   {
     "id": 33,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 32
+      },
+      {
+        "direction": "w",
+        "id": 34
+      }
+    ]
   },
   {
     "id": 34,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 35
+      },
+      {
+        "direction": "e",
+        "id": 33
+      },
+      {
+        "direction": "se",
+        "id": 8
+      }
+    ]
   },
   {
     "id": 35,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "n",
+        "id": 46
+      },
+      {
+        "direction": "e",
+        "id": 34
+      },
+      {
+        "direction": "s",
+        "id": 6
+      }
+    ]
   },
   {
     "id": 36,
@@ -230,12 +340,30 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 45,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "nw",
+        "id": 77
+      },
+      {
+        "direction": "e",
+        "id": 46
+      }
+    ]
   },
   {
     "id": 46,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 45
+      },
+      {
+        "direction": "s",
+        "id": 35
+      }
+    ]
   },
   {
     "id": 47,
@@ -250,7 +378,16 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 49,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "se",
+        "id": 31
+      },
+      {
+        "direction": "ne",
+        "id": 71
+      }
+    ]
   },
   {
     "id": 50,
@@ -360,12 +497,34 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 71,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 49
+      },
+      {
+        "direction": "w",
+        "id": 72
+      }
+    ]
   },
   {
     "id": 72,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 71
+      },
+      {
+        "direction": "n",
+        "id": 89
+      },
+      {
+        "direction": "ne",
+        "id": 90
+      }
+    ]
   },
   {
     "id": 73,
@@ -385,17 +544,44 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 76,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "n",
+        "id": 85
+      }
+    ]
   },
   {
     "id": 77,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 78
+      },
+      {
+        "direction": "nw",
+        "id": 83
+      },
+      {
+        "direction": "se",
+        "id": 45
+      }
+    ]
   },
   {
     "id": 78,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 77
+      },
+      {
+        "direction": "n",
+        "id": 83
+      }
+    ]
   },
   {
     "id": 79,
@@ -410,27 +596,88 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 81,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 82
+      },
+      {
+        "direction": "n",
+        "id": 120
+      }
+    ]
   },
   {
     "id": 82,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 83
+      },
+      {
+        "direction": "w",
+        "id": 81
+      }
+    ]
   },
   {
     "id": 83,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "se",
+        "id": 77
+      },
+      {
+        "direction": "s",
+        "id": 78
+      },
+      {
+        "direction": "w",
+        "id": 82
+      },
+      {
+        "direction": "e",
+        "id": 84
+      }
+    ]
   },
   {
     "id": 84,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 83
+      },
+      {
+        "direction": "e",
+        "id": 85
+      },
+      {
+        "direction": "n",
+        "id": 117
+      }
+    ]
   },
   {
     "id": 85,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 84
+      },
+      {
+        "direction": "s",
+        "id": 76
+      },
+      {
+        "direction": "n",
+        "id": 116
+      }
+    ]
   },
   {
     "id": 86,
@@ -450,12 +697,22 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 89,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "s",
+        "id": 72
+      }
+    ]
   },
   {
     "id": 90,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 72
+      }
+    ]
   },
   {
     "id": 91,
@@ -585,12 +842,30 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 116,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 117
+      },
+      {
+        "direction": "s",
+        "id": 85
+      }
+    ]
   },
   {
     "id": 117,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "s",
+        "id": 84
+      },
+      {
+        "direction": "e",
+        "id": 116
+      }
+    ]
   },
   {
     "id": 118,
@@ -605,7 +880,12 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 120,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "s",
+        "id": 81
+      }
+    ]
   },
   {
     "id": 121,
