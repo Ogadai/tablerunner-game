@@ -8,7 +8,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     description: 'A warrior who excels at hand-to-hand combat',
     image: '/barbarian.png',
     icon: '/barbarian-small.png',
-    rgbColour: '604528',
+    rgbColour: '403018',
   },
   witch: {
     id: 'witch',
