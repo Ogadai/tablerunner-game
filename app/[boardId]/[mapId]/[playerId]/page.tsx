@@ -39,8 +39,7 @@ export default function Page() {
     await setPlayerReady(boardId, mapId, playerId, !isPlayerReady());
   }
 
-  const playerState = gameState?.players.find(p => p.id === playerId) || null;
-  if (!playerState) {
+  if (!gameState) {
     return <p>Loading...</p>;
   }
 
@@ -49,7 +48,8 @@ export default function Page() {
       <PlayerLocation
         boardId={boardId}
         mapId={mapId}
-        playerState={playerState}
+        gameState={gameState}
+        playerId={playerId}
         isPlayerReady={isPlayerReady()}
         endTurnAction={endTurnAction}
       />

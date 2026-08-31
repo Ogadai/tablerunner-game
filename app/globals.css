@@ -44,6 +44,9 @@
   --color-success: #26a269;
   --color-connected: #1a5fb4;
 
+  --color-enemy: #c01c28;
+  --color-friendly: #26a269;
+
   /* Typography */
   --font-header: 'Cinzel', 'MedievalSharp', Georgia, serif;
   --font-body: 'Lora', Georgia, serif;
@@ -85,6 +88,9 @@
     --color-error: #a62b2b;
     --color-success: #2be67a;
     --color-connected: #2b7ae6;
+
+    --color-enemy: #a62b2b;
+    --color-friendly: #2be67a;
   }
 }
 
