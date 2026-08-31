@@ -92,18 +92,19 @@ export default function PlayerLocation(
         <h4>Location {playerState.location.id}</h4>
       </div>
       <p>{playerState.location?.description}</p>
-      <div>
+      <ul>
         { otherPlayers.map(player => 
-          <Image key={player.id}
+          <li
             className={`${styles.entity} ${styles.friendly}`}
+          ><Image key={player.id}
             src={getPlayerIcon(player.id)}
             width={53}
             height={80}
             loading="eager"
             alt={player.name}
-          />
+          /></li>
         ) }
-      </div>
+      </ul>
     
       { actionsState.actions.length > 0 && <div className={`${styles.actionsList} card`}>
         <h3>Actions</h3>
