@@ -28,7 +28,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 5,
-    "description": "",
+    "description": "On a small road leading East to West",
     "move": [
       {
         "direction": "e",
@@ -42,12 +42,8 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 6,
-    "description": "",
+    "description": "The road leads West or North East. A small track enters the trees to the East.",
     "move": [
-      {
-        "direction": "n",
-        "id": 35
-      },
       {
         "direction": "w",
         "id": 5
@@ -55,12 +51,16 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "e",
         "id": 7
+      },
+      {
+        "direction": "ne",
+        "id": 34
       }
     ]
   },
   {
     "id": 7,
-    "description": "",
+    "description": "A hidden glade in the trees. The only way out it West.",
     "move": [
       {
         "direction": "w",
@@ -150,7 +150,12 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 14,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "nw",
+        "id": 28
+      }
+    ]
   },
   {
     "id": 15,
@@ -215,11 +220,16 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 27,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 28
+      }
+    ]
   },
   {
     "id": 28,
-    "description": "",
+    "description": "At a crossroads. Roads lead North East, East, South East, and South West. A path disappears into the trees to the West.",
     "move": [
       {
         "direction": "sw",
@@ -232,12 +242,24 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "nw",
         "id": 52
+      },
+      {
+        "direction": "ne",
+        "id": 54
+      },
+      {
+        "direction": "se",
+        "id": 14
+      },
+      {
+        "direction": "e",
+        "id": 27
       }
     ]
   },
   {
     "id": 29,
-    "description": "",
+    "description": "In Grassland. There are trees to the North West, and a road in the East.",
     "move": [
       {
         "direction": "e",
@@ -315,12 +337,8 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 34,
-    "description": "",
+    "description": "On a dusty road. Roads lead North West, South West and South East. There is a dense copse of trees to the North East.",
     "move": [
-      {
-        "direction": "w",
-        "id": 35
-      },
       {
         "direction": "e",
         "id": 33
@@ -332,26 +350,21 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "ne",
         "id": 48
+      },
+      {
+        "direction": "nw",
+        "id": 46
+      },
+      {
+        "direction": "sw",
+        "id": 6
       }
     ]
   },
   {
     "id": 35,
     "description": "",
-    "move": [
-      {
-        "direction": "n",
-        "id": 46
-      },
-      {
-        "direction": "e",
-        "id": 34
-      },
-      {
-        "direction": "s",
-        "id": 6
-      }
-    ]
+    "move": []
   },
   {
     "id": 36,
@@ -421,12 +434,12 @@ export const cauldronOfFire: Location[] = [
         "id": 45
       },
       {
-        "direction": "s",
-        "id": 35
-      },
-      {
         "direction": "e",
         "id": 47
+      },
+      {
+        "direction": "se",
+        "id": 34
       }
     ]
   },
@@ -442,7 +455,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 48,
-    "description": "",
+    "description": "Inside a dense copse of trees",
     "move": [
       {
         "direction": "e",
@@ -456,7 +469,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 49,
-    "description": "",
+    "description": "On the North to South road. There is a track leading into the trees to the West.",
     "move": [
       {
         "direction": "se",
@@ -514,7 +527,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 52,
-    "description": "",
+    "description": "Deep in the forest. Small tracks lead North and South East.",
     "move": [
       {
         "direction": "se",
@@ -532,7 +545,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 53,
-    "description": "",
+    "description": "A hidden glade in the forest. The only exit is West.",
     "move": [
       {
         "direction": "w",
@@ -543,7 +556,12 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 54,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 28
+      }
+    ]
   },
   {
     "id": 55,
@@ -622,7 +640,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 69,
-    "description": "",
+    "description": "Deep in the forest. Trails lead West, South West and South, and there is a road to the East.",
     "move": [
       {
         "direction": "s",
@@ -666,7 +684,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 71,
-    "description": "",
+    "description": "On the North to South road, which turns West here. There is a forest to the East.",
     "move": [
       {
         "direction": "sw",
@@ -684,19 +702,19 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 72,
-    "description": "",
+    "description": "A fork in the road. The East road leads towards a small village.",
     "move": [
       {
         "direction": "e",
         "id": 71
       },
       {
-        "direction": "n",
-        "id": 89
-      },
-      {
         "direction": "ne",
         "id": 90
+      },
+      {
+        "direction": "nw",
+        "id": 88
       }
     ]
   },
@@ -945,21 +963,21 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 88,
     "description": "",
-    "move": []
-  },
-  {
-    "id": 89,
-    "description": "",
     "move": [
       {
-        "direction": "s",
+        "direction": "se",
         "id": 72
       }
     ]
   },
   {
-    "id": 90,
+    "id": 89,
     "description": "",
+    "move": []
+  },
+  {
+    "id": 90,
+    "description": "The village, outside the blacksmith's shop. The main village square is East.",
     "move": [
       {
         "direction": "sw",
@@ -973,7 +991,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 91,
-    "description": "",
+    "description": "The village square. There is a blacksmith shop to the West, and a tavern to the North.",
     "move": [
       {
         "direction": "w",
@@ -1077,7 +1095,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 110,
-    "description": "",
+    "description": "The village tavern. The exit is to the South.",
     "move": [
       {
         "direction": "s",
