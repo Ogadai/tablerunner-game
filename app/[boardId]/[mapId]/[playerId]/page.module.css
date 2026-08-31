@@ -6,22 +6,6 @@
 
 .playerScreenContent {
   flex: 1 1 auto;
-}
-
-.endTurnForm {
-  margin: 0 0 0 auto;
-}
-
-.endTurnCheck {
-  margin-left: 10px;
-  border-radius: 15px;
-  background-color: var(--color-success);
-  color: var(--bg-main);
-}
-
-.notReadyCross {
-  margin-left: 10px;
-  border-radius: 15px;
-  background-color: var(--bg-main);
-  color: var(--red-dark);
+  display: flex;
+  flex-direction: column;
 }

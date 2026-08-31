@@ -12,19 +12,28 @@
   width: 100%;
   margin: auto 0;
   justify-content: flex-end;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .headerContent {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   margin: auto 0;
+  overflow: hidden;
 }
 
 .playerList {
   display: flex;
   flex-direction: row;
+  overflow: hidden;
+  justify-content: flex-end;
 
   li {
-    margin: 0 10px;
+    flex: 1 1 auto;
+    margin: 0;
+    min-width: 48px;
+    width: 60px;
+    max-width: 60px;
   }
 }
 

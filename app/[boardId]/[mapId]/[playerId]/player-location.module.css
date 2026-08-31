@@ -1,7 +1,13 @@
+.playerLocationScreen {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
 .playerHeader {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  line-height: 1;
 
   h2, h3, h4 {
     margin-top: auto;
@@ -14,9 +20,12 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  border-top: 2px solid var(--border-stone);
 
-  button {
-    margin: 10px;
+  button, .btn {
+    margin: 10px 5px 0 5px;
+    padding: 0 5px;
   }
 }
 
@@ -48,9 +57,11 @@
   height: 32px;
   padding: 0 5px;
   margin: 0 0 0 20px;
-  &:not(:hover):not(:hover) {
-    /* background: none;
-    background-color: transparent;
-    color: var(--color-text-primary); */
-  }
+}
+
+.notReadyCross {
+  margin-left: 10px;
+  border-radius: 15px;
+  background-color: var(--bg-main);
+  color: var(--red-dark);
 }

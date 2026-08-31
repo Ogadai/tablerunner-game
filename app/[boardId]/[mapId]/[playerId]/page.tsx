@@ -46,17 +46,13 @@ export default function Page() {
 
   return (<div className={styles.playerScreen}>
     <div className={styles.playerScreenContent}>
-      <PlayerLocation boardId={boardId} mapId={mapId} playerState={playerState} />
+      <PlayerLocation
+        boardId={boardId}
+        mapId={mapId}
+        playerState={playerState}
+        isPlayerReady={isPlayerReady()}
+        endTurnAction={endTurnAction}
+      />
     </div>
-    <form className={styles.endTurnForm} action={endTurnAction}>
-      { !isPlayerReady() && <button type="submit">
-        <span>End Turn</span>
-        <span className={`${styles.endTurnCheck} material-symbols-outlined`}>check</span>
-      </button> }
-      { isPlayerReady() && <button type="submit" className="btn-delete">
-        <span>Not Ready!</span>
-        <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
-      </button> }
-    </form>
   </div>);
 }
