@@ -3,26 +3,57 @@ import { Location } from './types';
 export const cauldronOfFire: Location[] = [
   {
     "id": 1,
-    "description": "",
-    "move": []
+    "description": "A wide open cave with a high ceiling and a dripping sound. Another tunnel leads East",
+    "move": [
+      {
+        "direction": "e",
+        "id": 2
+      },
+      {
+        "direction": "n",
+        "id": 40
+      }
+    ]
   },
   {
     "id": 2,
-    "description": "",
-    "move": []
+    "description": "An East to West tunnel with a junction leading North",
+    "move": [
+      {
+        "direction": "n",
+        "id": 39
+      },
+      {
+        "direction": "e",
+        "id": 3
+      },
+      {
+        "direction": "w",
+        "id": 1
+      }
+    ]
   },
   {
     "id": 3,
-    "description": "",
-    "move": []
+    "description": "This large cavern has a pit in the center. The only exit is West",
+    "move": [
+      {
+        "direction": "w",
+        "id": 2
+      }
+    ]
   },
   {
     "id": 4,
-    "description": "",
+    "description": "There appears to be a camp to the North West, and a path leads back East",
     "move": [
       {
         "direction": "e",
         "id": 5
+      },
+      {
+        "direction": "nw",
+        "id": 38
       }
     ]
   },
@@ -145,7 +176,12 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 13,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 14
+      }
+    ]
   },
   {
     "id": 14,
@@ -154,68 +190,212 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "nw",
         "id": 28
+      },
+      {
+        "direction": "w",
+        "id": 13
+      },
+      {
+        "direction": "e",
+        "id": 15
       }
     ]
   },
   {
     "id": 15,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 14
+      },
+      {
+        "direction": "e",
+        "id": 16
+      },
+      {
+        "direction": "ne",
+        "id": 25
+      }
+    ]
   },
   {
     "id": 16,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 15
+      }
+    ]
   },
   {
     "id": 17,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "ne",
+        "id": 23
+      },
+      {
+        "direction": "nw",
+        "id": 25
+      },
+      {
+        "direction": "e",
+        "id": 18
+      }
+    ]
   },
   {
     "id": 18,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 17
+      },
+      {
+        "direction": "e",
+        "id": 19
+      }
+    ]
   },
   {
     "id": 19,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 18
+      },
+      {
+        "direction": "e",
+        "id": 20
+      },
+      {
+        "direction": "ne",
+        "id": 21
+      }
+    ]
   },
   {
     "id": 20,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 19
+      }
+    ]
   },
   {
     "id": 21,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 22
+      },
+      {
+        "direction": "sw",
+        "id": 19
+      }
+    ]
   },
   {
     "id": 22,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 23
+      },
+      {
+        "direction": "e",
+        "id": 21
+      }
+    ]
   },
   {
     "id": 23,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 17
+      },
+      {
+        "direction": "w",
+        "id": 24
+      },
+      {
+        "direction": "n",
+        "id": 58
+      },
+      {
+        "direction": "e",
+        "id": 22
+      }
+    ]
   },
   {
     "id": 24,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 25
+      },
+      {
+        "direction": "e",
+        "id": 23
+      },
+      {
+        "direction": "n",
+        "id": 57
+      }
+    ]
   },
   {
     "id": 25,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 26
+      },
+      {
+        "direction": "sw",
+        "id": 15
+      },
+      {
+        "direction": "se",
+        "id": 17
+      },
+      {
+        "direction": "e",
+        "id": 24
+      },
+      {
+        "direction": "nw",
+        "id": 55
+      }
+    ]
   },
   {
     "id": 26,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 27
+      },
+      {
+        "direction": "e",
+        "id": 25
+      }
+    ]
   },
   {
     "id": 27,
@@ -224,6 +404,10 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "w",
         "id": 28
+      },
+      {
+        "direction": "e",
+        "id": 26
       }
     ]
   },
@@ -363,57 +547,151 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 35,
-    "description": "",
-    "move": []
+    "description": "A small underground cave",
+    "move": [
+      {
+        "direction": "w",
+        "id": 36
+      }
+    ]
   },
   {
     "id": 36,
-    "description": "",
-    "move": []
+    "description": "A large cave with light filtering down from above. There seem to be smaller caves to East and West",
+    "move": [
+      {
+        "direction": "nw",
+        "id": 44
+      },
+      {
+        "direction": "e",
+        "id": 35
+      },
+      {
+        "direction": "w",
+        "id": 37
+      }
+    ]
   },
   {
     "id": 37,
-    "description": "",
-    "move": []
+    "description": "A small underground cave",
+    "move": [
+      {
+        "direction": "e",
+        "id": 36
+      }
+    ]
   },
   {
     "id": 38,
-    "description": "",
-    "move": []
+    "description": "This looks like a mining camp. A tunnel leads down into the ground to the North",
+    "move": [
+      {
+        "direction": "se",
+        "id": 4
+      },
+      {
+        "direction": "n",
+        "id": 43
+      }
+    ]
   },
   {
     "id": 39,
-    "description": "",
-    "move": []
+    "description": "The tunnel continues North to South",
+    "move": [
+      {
+        "direction": "n",
+        "id": 42
+      },
+      {
+        "direction": "s",
+        "id": 2
+      }
+    ]
   },
   {
     "id": 40,
-    "description": "",
-    "move": []
+    "description": "The tunnel continues North to South",
+    "move": [
+      {
+        "direction": "s",
+        "id": 1
+      },
+      {
+        "direction": "n",
+        "id": 41
+      }
+    ]
   },
   {
     "id": 41,
-    "description": "",
-    "move": []
+    "description": "A collapse is blocking most of this cave. There is a small tunnel to the South",
+    "move": [
+      {
+        "direction": "s",
+        "id": 40
+      },
+      {
+        "direction": "e",
+        "id": 42
+      }
+    ]
   },
   {
     "id": 42,
-    "description": "",
-    "move": []
+    "description": "This small cave has exits East, West and South",
+    "move": [
+      {
+        "direction": "e",
+        "id": 43
+      },
+      {
+        "direction": "s",
+        "id": 39
+      },
+      {
+        "direction": "w",
+        "id": 41
+      }
+    ]
   },
   {
     "id": 43,
-    "description": "",
-    "move": []
+    "description": "The tunnel splits at a junction",
+    "move": [
+      {
+        "direction": "s",
+        "id": 38
+      },
+      {
+        "direction": "e",
+        "id": 44
+      },
+      {
+        "direction": "w",
+        "id": 42
+      }
+    ]
   },
   {
     "id": 44,
-    "description": "",
-    "move": []
+    "description": "This is a small cave with another tunnel leading South East",
+    "move": [
+      {
+        "direction": "w",
+        "id": 43
+      },
+      {
+        "direction": "se",
+        "id": 36
+      }
+    ]
   },
   {
     "id": 45,
-    "description": "",
+    "description": "The road leads North West or East.",
     "move": [
       {
         "direction": "nw",
@@ -427,7 +705,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 46,
-    "description": "",
+    "description": "The road here leads West or South East. There is a small clearing in the trees to the East",
     "move": [
       {
         "direction": "w",
@@ -445,7 +723,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 47,
-    "description": "",
+    "description": "A small clearing in the trees",
     "move": [
       {
         "direction": "w",
@@ -560,73 +838,198 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "sw",
         "id": 28
+      },
+      {
+        "direction": "e",
+        "id": 55
+      },
+      {
+        "direction": "nw",
+        "id": 68
       }
     ]
   },
   {
     "id": 55,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "se",
+        "id": 25
+      },
+      {
+        "direction": "w",
+        "id": 54
+      },
+      {
+        "direction": "e",
+        "id": 56
+      }
+    ]
   },
   {
     "id": 56,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 55
+      },
+      {
+        "direction": "ne",
+        "id": 64
+      }
+    ]
   },
   {
     "id": 57,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "s",
+        "id": 24
+      }
+    ]
   },
   {
     "id": 58,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "s",
+        "id": 23
+      }
+    ]
   },
   {
     "id": 59,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "n",
+        "id": 62
+      },
+      {
+        "direction": "e",
+        "id": 60
+      }
+    ]
   },
   {
     "id": 60,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 59
+      }
+    ]
   },
   {
     "id": 61,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 62
+      }
+    ]
   },
   {
     "id": 62,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 63
+      },
+      {
+        "direction": "e",
+        "id": 61
+      },
+      {
+        "direction": "s",
+        "id": 59
+      }
+    ]
   },
   {
     "id": 63,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 64
+      },
+      {
+        "direction": "e",
+        "id": 62
+      }
+    ]
   },
   {
     "id": 64,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 56
+      },
+      {
+        "direction": "w",
+        "id": 65
+      },
+      {
+        "direction": "nw",
+        "id": 96
+      },
+      {
+        "direction": "e",
+        "id": 63
+      },
+      {
+        "direction": "ne",
+        "id": 98
+      }
+    ]
   },
   {
     "id": 65,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 64
+      },
+      {
+        "direction": "w",
+        "id": 66
+      }
+    ]
   },
   {
     "id": 66,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 65
+      },
+      {
+        "direction": "w",
+        "id": 67
+      }
+    ]
   },
   {
     "id": 67,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 66
+      }
+    ]
   },
   {
     "id": 68,
@@ -635,6 +1038,22 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "w",
         "id": 69
+      },
+      {
+        "direction": "se",
+        "id": 54
+      },
+      {
+        "direction": "nw",
+        "id": 92
+      },
+      {
+        "direction": "ne",
+        "id": 94
+      },
+      {
+        "direction": "n",
+        "id": 93
       }
     ]
   },
@@ -702,7 +1121,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 72,
-    "description": "A fork in the road. The East road leads towards a small village.",
+    "description": "A fork in the road. North East road leads towards a small village. There is a small track into the woods to the North",
     "move": [
       {
         "direction": "e",
@@ -715,12 +1134,16 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "nw",
         "id": 88
+      },
+      {
+        "direction": "n",
+        "id": 89
       }
     ]
   },
   {
     "id": 73,
-    "description": "",
+    "description": "A large circular hall deep underground. The only exit is West",
     "move": [
       {
         "direction": "w",
@@ -730,7 +1153,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 74,
-    "description": "",
+    "description": "A small chamber with exits to the North, East and West",
     "move": [
       {
         "direction": "n",
@@ -748,7 +1171,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 75,
-    "description": "",
+    "description": "The East to West tunnel has a fork to the North.",
     "move": [
       {
         "direction": "w",
@@ -766,7 +1189,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 76,
-    "description": "",
+    "description": "A small chamber with exits to the North and East",
     "move": [
       {
         "direction": "n",
@@ -780,7 +1203,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 77,
-    "description": "",
+    "description": "The road leads West or South East. There is a large cave entrance to the North West",
     "move": [
       {
         "direction": "w",
@@ -798,7 +1221,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 78,
-    "description": "",
+    "description": "The road leads West or East. There is a large cave entrance to the North",
     "move": [
       {
         "direction": "e",
@@ -816,7 +1239,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 79,
-    "description": "",
+    "description": "There are small buildings to the West. The road leads East.",
     "move": [
       {
         "direction": "e",
@@ -830,7 +1253,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 80,
-    "description": "",
+    "description": "The witch's hut",
     "move": [
       {
         "direction": "e",
@@ -840,7 +1263,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 81,
-    "description": "",
+    "description": "A small widening of the tunnel as it turns North",
     "move": [
       {
         "direction": "e",
@@ -854,7 +1277,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 82,
-    "description": "",
+    "description": "The tunnel goes steeply down towards the West",
     "move": [
       {
         "direction": "e",
@@ -868,7 +1291,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 83,
-    "description": "",
+    "description": "A large cave entrance. Tunnels lead down into the dark to the East or West",
     "move": [
       {
         "direction": "se",
@@ -890,7 +1313,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 84,
-    "description": "",
+    "description": "The East to West tunnel has a fork to the North.",
     "move": [
       {
         "direction": "w",
@@ -908,7 +1331,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 85,
-    "description": "",
+    "description": "A large chamber at a crossroads deep underground",
     "move": [
       {
         "direction": "w",
@@ -930,7 +1353,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 86,
-    "description": "",
+    "description": "The East to West tunnel has a fork to the South.",
     "move": [
       {
         "direction": "w",
@@ -948,7 +1371,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 87,
-    "description": "",
+    "description": "A small chamber with exits to the South and West",
     "move": [
       {
         "direction": "w",
@@ -962,18 +1385,31 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 88,
-    "description": "",
+    "description": "The road goes from the North West to the South East",
     "move": [
       {
         "direction": "se",
         "id": 72
+      },
+      {
+        "direction": "nw",
+        "id": 114
       }
     ]
   },
   {
     "id": 89,
-    "description": "",
-    "move": []
+    "description": "A small track leads into the woods behind the village",
+    "move": [
+      {
+        "direction": "s",
+        "id": 72
+      },
+      {
+        "direction": "n",
+        "id": 112
+      }
+    ]
   },
   {
     "id": 90,
@@ -1000,98 +1436,288 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "n",
         "id": 110
+      },
+      {
+        "direction": "e",
+        "id": 92
       }
     ]
   },
   {
     "id": 92,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "se",
+        "id": 68
+      },
+      {
+        "direction": "w",
+        "id": 91
+      }
+    ]
   },
   {
     "id": 93,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "s",
+        "id": 68
+      },
+      {
+        "direction": "ne",
+        "id": 107
+      },
+      {
+        "direction": "e",
+        "id": 94
+      }
+    ]
   },
   {
     "id": 94,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 68
+      },
+      {
+        "direction": "e",
+        "id": 95
+      },
+      {
+        "direction": "w",
+        "id": 93
+      }
+    ]
   },
   {
     "id": 95,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 94
+      },
+      {
+        "direction": "e",
+        "id": 96
+      },
+      {
+        "direction": "ne",
+        "id": 105
+      }
+    ]
   },
   {
     "id": 96,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 95
+      },
+      {
+        "direction": "se",
+        "id": 64
+      },
+      {
+        "direction": "ne",
+        "id": 104
+      }
+    ]
   },
   {
     "id": 97,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 98
+      }
+    ]
   },
   {
     "id": 98,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 64
+      },
+      {
+        "direction": "e",
+        "id": 99
+      },
+      {
+        "direction": "w",
+        "id": 97
+      }
+    ]
   },
   {
     "id": 99,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 98
+      },
+      {
+        "direction": "e",
+        "id": 100
+      },
+      {
+        "direction": "n",
+        "id": 102
+      }
+    ]
   },
   {
     "id": 100,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 99
+      },
+      {
+        "direction": "n",
+        "id": 101
+      }
+    ]
   },
   {
     "id": 101,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "s",
+        "id": 100
+      },
+      {
+        "direction": "w",
+        "id": 102
+      }
+    ]
   },
   {
     "id": 102,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 101
+      },
+      {
+        "direction": "s",
+        "id": 99
+      },
+      {
+        "direction": "w",
+        "id": 103
+      }
+    ]
   },
   {
     "id": 103,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 102
+      },
+      {
+        "direction": "w",
+        "id": 104
+      }
+    ]
   },
   {
     "id": 104,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 96
+      },
+      {
+        "direction": "e",
+        "id": 103
+      }
+    ]
   },
   {
     "id": 105,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "nw",
+        "id": 135
+      },
+      {
+        "direction": "sw",
+        "id": 95
+      }
+    ]
   },
   {
     "id": 106,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "n",
+        "id": 135
+      }
+    ]
   },
   {
     "id": 107,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 93
+      },
+      {
+        "direction": "ne",
+        "id": 135
+      },
+      {
+        "direction": "w",
+        "id": 108
+      }
+    ]
   },
   {
     "id": 108,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 107
+      },
+      {
+        "direction": "w",
+        "id": 109
+      }
+    ]
   },
   {
     "id": 109,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 108
+      },
+      {
+        "direction": "ne",
+        "id": 133
+      }
+    ]
   },
   {
     "id": 110,
@@ -1105,32 +1731,77 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 111,
-    "description": "",
-    "move": []
+    "description": "A sheltered clearing in the woods",
+    "move": [
+      {
+        "direction": "w",
+        "id": 112
+      }
+    ]
   },
   {
     "id": 112,
-    "description": "",
-    "move": []
+    "description": "A clearing in the woods with tracks to the East, West and South",
+    "move": [
+      {
+        "direction": "s",
+        "id": 89
+      },
+      {
+        "direction": "e",
+        "id": 111
+      },
+      {
+        "direction": "w",
+        "id": 113
+      }
+    ]
   },
   {
     "id": 113,
-    "description": "",
-    "move": []
+    "description": "A sheltered clearing in the woods",
+    "move": [
+      {
+        "direction": "e",
+        "id": 112
+      }
+    ]
   },
   {
     "id": 114,
-    "description": "",
-    "move": []
+    "description": "The road forks to the West and North East, or South East",
+    "move": [
+      {
+        "direction": "se",
+        "id": 88
+      },
+      {
+        "direction": "w",
+        "id": 115
+      },
+      {
+        "direction": "ne",
+        "id": 128
+      }
+    ]
   },
   {
     "id": 115,
-    "description": "",
-    "move": []
+    "description": "The road bends around to the North West",
+    "move": [
+      {
+        "direction": "e",
+        "id": 114
+      },
+      {
+        "direction": "nw",
+        "id": 125
+      }
+    ]
   },
   {
     "id": 116,
-    "description": "",
+    "description": "A medium sized chamber with exits to the West and South",
     "move": [
       {
         "direction": "w",
@@ -1144,7 +1815,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 117,
-    "description": "",
+    "description": "A small damp chamber with exits to the East and South",
     "move": [
       {
         "direction": "s",
@@ -1158,17 +1829,43 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 118,
-    "description": "",
-    "move": []
+    "description": "A peaceful and prosperous village. There is a general store to the North",
+    "move": [
+      {
+        "direction": "ne",
+        "id": 124
+      },
+      {
+        "direction": "w",
+        "id": 119
+      },
+      {
+        "direction": "n",
+        "id": 123
+      }
+    ]
   },
   {
     "id": 119,
-    "description": "",
-    "move": []
+    "description": "A peaceful and prosperous village. There is an inn to the North West, and a small alley directly North",
+    "move": [
+      {
+        "direction": "e",
+        "id": 118
+      },
+      {
+        "direction": "nw",
+        "id": 121
+      },
+      {
+        "direction": "n",
+        "id": 122
+      }
+    ]
   },
   {
     "id": 120,
-    "description": "",
+    "description": "A large cavern with light from above",
     "move": [
       {
         "direction": "s",
@@ -1178,48 +1875,121 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 121,
-    "description": "",
-    "move": []
+    "description": "The village inn",
+    "move": [
+      {
+        "direction": "se",
+        "id": 119
+      }
+    ]
   },
   {
     "id": 122,
-    "description": "",
-    "move": []
+    "description": "A small work area behind the general store",
+    "move": [
+      {
+        "direction": "s",
+        "id": 119
+      }
+    ]
   },
   {
     "id": 123,
-    "description": "",
-    "move": []
+    "description": "The village general store",
+    "move": [
+      {
+        "direction": "s",
+        "id": 118
+      }
+    ]
   },
   {
     "id": 124,
-    "description": "",
-    "move": []
+    "description": "The road turns South West into the village",
+    "move": [
+      {
+        "direction": "sw",
+        "id": 118
+      },
+      {
+        "direction": "e",
+        "id": 125
+      }
+    ]
   },
   {
     "id": 125,
-    "description": "",
-    "move": []
+    "description": "The road West towards a small village in the distance",
+    "move": [
+      {
+        "direction": "se",
+        "id": 115
+      },
+      {
+        "direction": "w",
+        "id": 124
+      },
+      {
+        "direction": "e",
+        "id": 126
+      }
+    ]
   },
   {
     "id": 126,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 125
+      },
+      {
+        "direction": "e",
+        "id": 127
+      }
+    ]
   },
   {
     "id": 127,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 126
+      },
+      {
+        "direction": "e",
+        "id": 128
+      }
+    ]
   },
   {
     "id": 128,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 114
+      },
+      {
+        "direction": "w",
+        "id": 127
+      },
+      {
+        "direction": "e",
+        "id": 129
+      }
+    ]
   },
   {
     "id": 129,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 128
+      }
+    ]
   },
   {
     "id": 130,
@@ -1239,17 +2009,52 @@ export const cauldronOfFire: Location[] = [
   {
     "id": 133,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "e",
+        "id": 134
+      },
+      {
+        "direction": "sw",
+        "id": 109
+      }
+    ]
   },
   {
     "id": 134,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "w",
+        "id": 133
+      },
+      {
+        "direction": "e",
+        "id": 135
+      }
+    ]
   },
   {
     "id": 135,
     "description": "",
-    "move": []
+    "move": [
+      {
+        "direction": "sw",
+        "id": 107
+      },
+      {
+        "direction": "se",
+        "id": 105
+      },
+      {
+        "direction": "w",
+        "id": 134
+      },
+      {
+        "direction": "s",
+        "id": 106
+      }
+    ]
   },
   {
     "id": 136,
