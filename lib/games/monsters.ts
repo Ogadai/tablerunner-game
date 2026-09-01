@@ -7,8 +7,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     image: '/rat.png',
     icon: '/rat-small.png',
     baseStats: {
-      melee: 4,
-      ranged: 0,
+      attack: 4,
       damage: 2,
       defence: 2,
       magic: 0,
@@ -21,8 +20,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     image: '/spider.png',
     icon: '/spider-small.png',
     baseStats: {
-      melee: 4,
-      ranged: 0,
+      attack: 4,
       damage: 2,
       defence: 2,
       magic: 0,
