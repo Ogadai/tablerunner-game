@@ -1705,11 +1705,15 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 110,
-    "description": "The village tavern. The exit is to the South.",
+    "description": "The village tavern. The exit is to the South. The back door goes North",
     "move": [
       {
         "direction": "s",
         "id": 91
+      },
+      {
+        "direction": "n",
+        "id": 131
       }
     ]
   },
@@ -2007,7 +2011,7 @@ export const cauldronOfFire: Location[] = [
   },
   {
     "id": 131,
-    "description": "The road forks, leading East, West or North East",
+    "description": "The road forks, leading East, West or North East. The back entrance of the village tavern is South",
     "move": [
       {
         "direction": "ne",
@@ -2020,6 +2024,10 @@ export const cauldronOfFire: Location[] = [
       {
         "direction": "w",
         "id": 130
+      },
+      {
+        "direction": "s",
+        "id": 110
       }
     ]
   },
