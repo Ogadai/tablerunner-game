@@ -65,23 +65,3 @@
   background-color: var(--bg-main);
   color: var(--red-dark);
 }
-
-.entity {
-  display: inline-block;
-  padding: 5px;
-  border-radius: 3px;
-  margin: 0 5px;
-  line-height: 1;
-}
-
-.self {
-  border: 2px solid var(--color-self);
-}
-
-.friendly {
-  border: 2px solid var(--color-friendly);
-}
-
-.enemy {
-  border: 2px solid var(--color-enemy);
-}

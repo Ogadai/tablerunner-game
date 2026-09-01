@@ -8,7 +8,7 @@ import styles from './player-location.module.css';
 import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
-import { monsters } from '@/lib/games/monsters';
+import PlayerLocationList from './player-location-list';
 
 export default function PlayerLocation(
   {
@@ -87,9 +87,6 @@ export default function PlayerLocation(
       setActionsState(state.data!);
     };
 
-  const getPlayerIcon = (characterId: string) =>
-    gameState.characters.find(c => c.id === characterId)?.icon || '';
-
   if (!playerState) {
     return <p>Loading...</p>;
   }
@@ -101,39 +98,11 @@ export default function PlayerLocation(
         <h4>Location {playerState.location.id}</h4>
       </div>
       <p>{playerState.location?.description}</p>
-      <ul>
-        <li key={playerState.id}
-          className={`${styles.entity} ${styles.self}`}
-        ><Image
-          src={getPlayerIcon(playerState.id)}
-          width={53}
-          height={80}
-          loading="eager"
-          alt={playerState.name}
-        /></li>
-        { otherPlayers.map(player => 
-          <li key={player.id}
-            className={`${styles.entity} ${styles.friendly}`}
-          ><Image
-            src={getPlayerIcon(player.id)}
-            width={53}
-            height={80}
-            loading="eager"
-            alt={player.name}
-          /></li>
-        ) }
-        { locationState.monsters.map(monster => 
-          <li key={monster.key}
-            className={`${styles.entity} ${styles.enemy}`}
-          ><Image
-            src={monsters[monster.id].icon}
-            width={53}
-            height={80}
-            loading="eager"
-            alt={monsters[monster.id].name}
-          /></li>
-        ) }
-      </ul>
+      <PlayerLocationList
+        player={playerState}
+        otherPlayers={otherPlayers}
+        monsters={locationState.monsters}
+      />
     
       { actionsState.actions.length > 0 && <div className={`${styles.actionsList} card`}>
         <h3>Actions</h3>
