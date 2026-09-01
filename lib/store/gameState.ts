@@ -2,6 +2,7 @@
 
 import { ApiResponse } from "../api-response";
 import { GameState, PlayerState } from "./types";
+import { BaseStats, CharacterStats } from "../games/types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
@@ -93,16 +94,24 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       };
     }
 
+    const newPlayer: PlayerState = {
+      id: playerId,
+      name: characterDef.defaultName,
+      rgbColour: characterDef.rgbColour,
+      location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
+      characterStats: { ...characterDef.characterStats },
+      health: 0
+    };
+
+    const baseStats = getPlayerStats(newPlayer);
+
     const newGameState: GameState = {
       ...gameState,
-      players: [
-        ...gameState.players, {
-          id: playerId,
-          name: characterDef.defaultName,
-          rgbColour: characterDef.rgbColour,
-          location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
-        }
-      ]
+      players: [...gameState.players, {
+        ...newPlayer,
+        baseStats: baseStats,
+        health: baseStats.health - 3
+      }]
     };
 
     // Store data in Redis
@@ -117,6 +126,17 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       error: (error as Error).message
     };
   }
+}
+
+function getPlayerStats(playerState: PlayerState): BaseStats {
+  return {
+    melee: playerState.characterStats.strength,
+    ranged: playerState.characterStats.skill,
+    damage: playerState.characterStats.strength,
+    defence: playerState.characterStats.speed,
+    magic: playerState.characterStats.magic,
+    health: playerState.characterStats.resiliance,
+  };
 }
 
 export async function deletePlayerFromGame(boardId: string, mapId: string, playerId: string): Promise<ApiResponse<null>> {

@@ -3,10 +3,12 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation'
 
 import { LocationMove } from "@/lib/games/types";
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, PlayerState, GameState } from "@/lib/store/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
+import { getLocationState } from '@/lib/store/locationState';
+import { monsters } from '@/lib/games/monsters';
 
 export default function PlayerLocation(
   {
@@ -25,6 +27,7 @@ export default function PlayerLocation(
     endTurnAction: () => void
   }) {
   const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
+  const [locationState, setLocationState] = useState<LocationState>({ monsters: [] });
   const router = useRouter();
 
   const playerState = gameState.players.find(p => p.id === playerId);
@@ -39,7 +42,13 @@ export default function PlayerLocation(
         setActionsState(state.data!);
       }
 
+      async function fetchLocationState() {
+        const state = await getLocationState(boardId, mapId, playerState!.location.id);
+        setLocationState(state.data!);
+      }
+
       fetchPlayerActionState();
+      fetchLocationState();
     }
   }, [gameState]);
 
@@ -93,15 +102,35 @@ export default function PlayerLocation(
       </div>
       <p>{playerState.location?.description}</p>
       <ul>
+        <li key={playerState.id}
+          className={`${styles.entity} ${styles.self}`}
+        ><Image
+          src={getPlayerIcon(playerState.id)}
+          width={53}
+          height={80}
+          loading="eager"
+          alt={playerState.name}
+        /></li>
         { otherPlayers.map(player => 
-          <li
+          <li key={player.id}
             className={`${styles.entity} ${styles.friendly}`}
-          ><Image key={player.id}
+          ><Image
             src={getPlayerIcon(player.id)}
             width={53}
             height={80}
             loading="eager"
             alt={player.name}
+          /></li>
+        ) }
+        { locationState.monsters.map(monster => 
+          <li key={monster.key}
+            className={`${styles.entity} ${styles.enemy}`}
+          ><Image
+            src={monsters[monster.id].icon}
+            width={53}
+            height={80}
+            loading="eager"
+            alt={monsters[monster.id].name}
           /></li>
         ) }
       </ul>

@@ -1,5 +1,5 @@
 import { SetCommandOptions } from "@upstash/redis";
-import { CharacterListEntry, LocationMove, LocationMoveDirection } from "../games/types";
+import { CharacterListEntry, LocationMove, LocationMoveDirection, BaseStats, CharacterStats } from "../games/types";
 
 export const Expiry1Day = 60 * 60 * 24;
 export const Expiry1Week = Expiry1Day * 7;
@@ -19,6 +19,9 @@ export interface PlayerState {
   name: string;
   location: PlayerStateLocation;
   rgbColour: string;
+  baseStats?: BaseStats;
+  characterStats: CharacterStats;
+  health: number;
 }
 
 export interface PlayerStateLocation {
@@ -48,4 +51,19 @@ export interface PlayerActionMove extends PlayerAction {
 
 export interface PlayerActionsState {
   actions: PlayerAction[];
+}
+
+export interface MonsterState {
+  key: string;
+  id: string;
+  location: number;
+  health: number;
+}
+
+export interface AllMonsterState {
+  monsters: MonsterState[];
+}
+
+export interface LocationState {
+  monsters: MonsterState[];
 }

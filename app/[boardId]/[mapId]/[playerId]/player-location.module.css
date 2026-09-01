@@ -74,10 +74,14 @@
   line-height: 1;
 }
 
+.self {
+  border: 2px solid var(--color-self);
+}
+
 .friendly {
   border: 2px solid var(--color-friendly);
 }
 
 .enemy {
-  border: 2px solid var(--color-friendly);
+  border: 2px solid var(--color-enemy);
 }

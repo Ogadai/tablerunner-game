@@ -17,6 +17,7 @@ export interface CharacterListEntry {
   image: string;
   icon: string;
   rgbColour: string;
+  characterStats: CharacterStats;
 }
 
 export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -30,4 +31,29 @@ export interface Location {
   id: number;
   description: string;
   move: LocationMove[];
+}
+
+export interface CharacterStats {
+  strength: number;
+  skill: number;
+  speed: number;
+  resiliance: number;
+  magic: number;
+}
+
+export interface BaseStats {
+  melee: number;
+  ranged: number;
+  damage: number;
+  defence: number;
+  magic: number;
+  health: number;
+}
+
+export interface MonsterListEntry {
+  id: string;
+  name: string;
+  image: string;
+  icon: string;
+  baseStats: BaseStats;
 }

@@ -44,6 +44,7 @@
   --color-success: #26a269;
   --color-connected: #1a5fb4;
 
+  --color-self: #8c6d31;
   --color-enemy: #c01c28;
   --color-friendly: #26a269;
 
@@ -89,6 +90,7 @@
     --color-success: #2be67a;
     --color-connected: #2b7ae6;
 
+    --color-self: #c5a059;
     --color-enemy: #a62b2b;
     --color-friendly: #2be67a;
   }
