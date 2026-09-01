@@ -130,8 +130,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
 
 function getPlayerStats(playerState: PlayerState): BaseStats {
   return {
-    melee: playerState.characterStats.strength,
-    ranged: playerState.characterStats.skill,
+    attack: playerState.characterStats.strength,
     damage: playerState.characterStats.strength,
     defence: playerState.characterStats.speed,
     magic: playerState.characterStats.magic,

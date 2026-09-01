@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import Image from 'next/image';
 import { useRouter } from 'next/navigation'
+import Swal from 'sweetalert2'
 
-import { LocationMove } from "@/lib/games/types";
+import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
 import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState } from "@/lib/store/types";
@@ -54,6 +54,16 @@ export default function PlayerLocation(
 
   const bindMoveAction = (locationMove: LocationMove) =>
     async () => {
+      if (!canMoveDirection(locationMove.direction)) {
+        await Swal.fire({
+          title: 'Movement blocked!',
+          icon: 'warning',
+          text: "You cannot move through this location while there are enemies. You can only retreat.",
+        });
+          
+        return;
+      }
+
       const actionNumber = actionsState.actions.reduce((number, action) => 
         Math.max(number, action.id + 1), 0);
 
@@ -91,6 +101,9 @@ export default function PlayerLocation(
     return <p>Loading...</p>;
   }
 
+  const canMoveDirection = (direction: LocationMoveDirection): boolean =>
+    locationState.monsters.length === 0 || direction === playerState.retreatDirection;
+
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
@@ -121,7 +134,7 @@ export default function PlayerLocation(
     <div className={styles.moveActionButtons}>
       {!isPlayerReady && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
         <button type="button" key={mv.direction}
-          className="material-symbols-outlined"
+          className={`${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
           onClick={bindMoveAction(mv)}
         >{moveLabels[mv.direction]}
         </button>

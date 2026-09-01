@@ -4,7 +4,6 @@ import {
   PlayerActionType,
   PlayerReadyState,
   PlayerState,
-  MonsterState,
   AllMonsterState,
 } from "../store/types";
 import {
@@ -18,6 +17,7 @@ import {
 } from '../store/redis-access';
 import { games } from "../games/games";
 import { monsters } from "../games/monsters";
+import { OPPOSITE_DIRECTION } from '@/lib/games/types';
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -52,12 +52,15 @@ async function runGameTurn(boardId: string, mapId: string, gameState: GameState)
 
   for(const player of newGameState.players) {
     const actionState = await getActionsStateFromRedis(boardId, mapId, player.id);
+    const monstersAtLocation = monsterState.monsters.filter(m => m.location === player.location.id);
 
     // Apply the actions
     for(const action of actionState.actions) {
       switch(action.type) {
         case PlayerActionType.Move:
-          actionMove(boardId, mapId, player, newGameState, action as PlayerActionMove);
+          if (monstersAtLocation.length === 0 || (action as PlayerActionMove).direction === player.retreatDirection) {
+            actionMove(boardId, mapId, player, newGameState, action as PlayerActionMove);
+          }
           break;
       }
     }
@@ -109,6 +112,7 @@ function actionMove(boardId: string, mapId: string, player: PlayerState, gameSta
     const newLocation = gameDef.locations.find(l => l.id === locationMove.id)!;
 
     player.location = newLocation;
+    player.retreatDirection = OPPOSITE_DIRECTION[action.direction];
     gameState.visited = [
       ...gameState.visited.filter(v => v !== locationMove.id),
       locationMove.id

@@ -18,6 +18,7 @@ export interface PlayerState {
   id: string;
   name: string;
   location: PlayerStateLocation;
+  retreatDirection?: string;
   rgbColour: string;
   baseStats?: BaseStats;
   characterStats: CharacterStats;

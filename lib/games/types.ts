@@ -21,6 +21,16 @@ export interface CharacterListEntry {
 }
 
 export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
+export const OPPOSITE_DIRECTION = {
+  n: 's',
+  ne: 'sw',
+  e: 'w',
+  se: 'nw',
+  s: 'n',
+  sw: 'ne',
+  w: 'e',
+  nw: 'se'
+};
 
 export interface LocationMove {
   direction: LocationMoveDirection;
@@ -42,8 +52,7 @@ export interface CharacterStats {
 }
 
 export interface BaseStats {
-  melee: number;
-  ranged: number;
+  attack: number;
   damage: number;
   defence: number;
   magic: number;
