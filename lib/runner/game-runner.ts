@@ -66,8 +66,12 @@ async function runGameTurn(params: BaseParams): Promise<GameState> {
   params.gameState = newGameState;
 
   const monsterState = await getMonsterState(params);
-  const monsterLocations = new Set<number>();
+  const monsterLocationTargets: Record<string, PlayerState[]> = {};
   let playerMoved = false;
+
+  for(const player of newGameState.players) {
+    params.messages[player.id] = { messages: []};
+  }
 
   // Process player actions
   for(const player of newGameState.players) {
@@ -75,6 +79,11 @@ async function runGameTurn(params: BaseParams): Promise<GameState> {
 
     const actionState = await getActionsStateFromRedis(params.boardId, params.mapId, player.id);
     const monstersAtLocation = monsterState.monsters.filter(m => m.location === player.location.id);
+
+    if (monstersAtLocation.length === 0 && player.health < player.baseStats!.health) {
+      // Healing if not fighting
+      player.health++;
+    }
 
     // Apply the actions
     for(const action of actionState.actions) {
@@ -92,15 +101,20 @@ async function runGameTurn(params: BaseParams): Promise<GameState> {
     }
 
     if (!playerMoved) {
-      monsterLocations.add(player.location.id);
+      const locId = `${player.location.id}`;
+      if (!monsterLocationTargets[locId]) {
+        monsterLocationTargets[locId] = [];
+        monsterLocationTargets[locId].push(player);
+      }
     }
   }
 
   // Process monster attacks
-  for(const locationId of monsterLocations) {
+  for(const [locId, players] of Object.entries(monsterLocationTargets)) {
+    const locationId = parseInt(locId, 10);
     const monstersAtLocation = monsterState.monsters.filter(m => m.location === locationId);
     for(const monster of monstersAtLocation) {
-      monsterAttack(params, monster);
+      monsterAttack(params, monster, players);
     }
   }
 
@@ -178,10 +192,9 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
   }
 }
 
-function monsterAttack(params: BaseParams, monster: MonsterState): void {
+function monsterAttack(params: BaseParams, monster: MonsterState, targets: PlayerState[]): void {
   const monsterDef = monsters[monster.type];
   // Get the available targets
-  const targets = params.gameState.players.filter(p => p.location.id === monster.location && p.health > 0);
   if (targets.length === 0) {
     return;
   }
@@ -213,11 +226,11 @@ function playerMessageAtLocation(params: BaseParams, playerId: string, message: 
   });
 
   const otherPlayers = params.gameState.players.filter(p => p.id !== playerId && p.location.id === player.location.id);
-  otherPlayers.forEach(otherPlayer => {
+  for(const otherPlayer of otherPlayers) {
     params.messages[otherPlayer.id].messages.push({
       text: message.replace('{player}', player.name).replace('{playerNoun}', 'is')
     });
-  });
+  };
 }
 
 function processAttackForDamage(attackerStats: BaseStats, defenderStats: BaseStats): number {

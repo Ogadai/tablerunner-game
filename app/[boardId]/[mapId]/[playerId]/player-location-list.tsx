@@ -6,7 +6,8 @@ import { characters } from '@/lib/games/characters';
 import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
 import styles from './player-location-list.module.css';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
-import EntityBaseStats from './entity-base-stats';
+import MonsterCard from './monster-card';
+import CharacterCard from './character-card';
 
 export interface PlayerLocationListProps {
   player: PlayerState;
@@ -24,6 +25,7 @@ export default function PlayerLocationList({
   addNewAction
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
+  const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
 
   const entities: EntityItemDetail[] = [
     {
@@ -56,6 +58,10 @@ export default function PlayerLocationList({
     if (entity.className === EntityItemClass.enemy) {
       const monster = locationMonsters.find(m => m.id === entity.id)!;
       setMonsterOpen(monster);
+    } else if (player.id === entity.id) {
+      setCharacterOpen(player);
+    } else {
+      setCharacterOpen(otherPlayers.find(p => p.id === entity.id)!);
     }
   }
 
@@ -75,33 +81,36 @@ export default function PlayerLocationList({
       && (a as PlayerActionAttack).target === monster.id
     );
 
+  const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
+  const dialogTitle =  (monsterOpen !== null)
+    ? monsters[monsterOpen.type].name
+    : (characterOpen !== null) ? characterOpen.name : '';
+  const onCloseDialog = () => {
+    setMonsterOpen(null);
+    setCharacterOpen(null);
+  }
+
   return (<>
     <EntityList entities={entities} onClickEntity={onClickEntity} />
 
-    <Dialog.Root open={monsterOpen !== null} onOpenChange={open => { if (!open) setMonsterOpen(null) }}>
+    <Dialog.Root open={dialogOpen} onOpenChange={open => { if (!open) onCloseDialog() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className="DialogContent">
-          <Dialog.Title className="DialogTitle">{monsterOpen ? monsters[monsterOpen.type].name : ""}</Dialog.Title>
-            { monsterOpen && <Image
-              className={styles.monsterImage}
-              src={monsters[monsterOpen.type].image}
-              width={256}
-              height={384}
-              loading="eager"
-              alt={monsters[monsterOpen.type].name}
-            /> }
-            { monsterOpen && 
-              <div className={`card ${styles.statsCard}`}>
-                <EntityBaseStats health={monsterOpen.health} baseStats={monsters[monsterOpen.type].baseStats} />
-              </div>
+          <Dialog.Title className="DialogTitle">{dialogTitle}</Dialog.Title>
+          <div className="DialogContentBody">
+            { monsterOpen &&
+              <MonsterCard
+                monster={monsterOpen}
+                isAttacking={isAttackingEntity(monsterOpen)}
+                onAttack={() => onAttackMonster(monsterOpen)}
+              ></MonsterCard>
             }
-          <div>
-            { !isAttackingEntity(monsterOpen) && (
-              <button className="btn" onClick={() => monsterOpen && onAttackMonster(monsterOpen)}>
-                Attack
-              </button>
-            ) }
+            { characterOpen &&
+              <CharacterCard
+                player={characterOpen}
+              ></CharacterCard>
+            }
           </div>
           <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">close</Dialog.Close>
         </Dialog.Content>

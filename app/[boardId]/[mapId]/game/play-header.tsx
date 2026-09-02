@@ -55,7 +55,7 @@ export default function PlayHeader(
 
   if (!gameState) {
     return <div className={styles.headerContainer}>
-      <h3>Welcome to TableRunner</h3>
+      <h3>TableRunner</h3>
     </div>;
   }
 

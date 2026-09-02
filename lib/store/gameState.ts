@@ -110,7 +110,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       players: [...gameState.players, {
         ...newPlayer,
         baseStats: baseStats,
-        health: baseStats.health - 3
+        health: baseStats.health
       }]
     };
 

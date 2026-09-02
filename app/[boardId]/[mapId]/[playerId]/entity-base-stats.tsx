@@ -15,7 +15,7 @@ export default function EntityBaseStats({ health, baseStats }: { health: number,
   const healthClass = getHealthClass();
 
   return (<>
-    <table className={styles.statsTable}>
+    <table className={styles.statsTable}><tbody>
       <tr>
         <th>Health</th>
         <td>
@@ -35,6 +35,6 @@ export default function EntityBaseStats({ health, baseStats }: { health: number,
       <tr><th>Defence</th><td>{baseStats.defence}</td></tr>
       <tr><th>Damage</th><td>{baseStats.damage}</td></tr>
       <tr><th>Magic</th><td>{baseStats.magic}</td></tr>
-    </table>
+    </tbody></table>
   </>);
 };

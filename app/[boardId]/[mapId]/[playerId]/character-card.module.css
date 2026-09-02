@@ -1,0 +1,14 @@
+.characterHeader {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.statsCard {
+  margin-bottom: 10px;
+}
+
+.characterImage {
+  position: relative;
+  width: 53px;
+  height: 80px;
+}
