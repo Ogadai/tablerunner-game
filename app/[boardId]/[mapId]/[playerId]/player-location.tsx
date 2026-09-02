@@ -143,6 +143,7 @@ export default function PlayerLocation(
         player={playerState}
         otherPlayers={otherPlayers}
         monsters={locationState.monsters}
+        actionsState={actionsState}
         addNewAction={addNewAction}
       />
     

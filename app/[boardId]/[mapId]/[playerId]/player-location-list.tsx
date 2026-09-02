@@ -1,14 +1,17 @@
+import { useState } from "react";
+import { Dialog, Popover } from "radix-ui";
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
-import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
 import styles from './player-location-list.module.css';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
+import EntityBaseStats from './entity-base-stats';
 
 export interface PlayerLocationListProps {
   player: PlayerState;
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
+  actionsState: PlayerActionsState;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
 }
 
@@ -16,8 +19,11 @@ export default function PlayerLocationList({
   player,
   otherPlayers,
   monsters: locationMonsters,
+  actionsState,
   addNewAction
 }: PlayerLocationListProps) {
+  const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
+
   const entities: EntityItemDetail[] = [
     {
       id: player.id,
@@ -47,15 +53,50 @@ export default function PlayerLocationList({
   
   const onClickEntity = async (entity: EntityItemDetail) => {
     if (entity.className === EntityItemClass.enemy) {
-      await addNewAction({
-        type: PlayerActionType.Attack,
-        description: `Attack ${entity.name}`,
-        target: entity.id
-      } as Omit<PlayerActionAttack, 'id'>);
+      const monster = locationMonsters.find(m => m.id === entity.id)!;
+      setMonsterOpen(monster);
     }
   }
 
-  return (
+  const onAttackMonster = async (monster: MonsterState) => {
+    setMonsterOpen(null);
+
+    await addNewAction({
+      type: PlayerActionType.Attack,
+      description: `Attack ${monsters[monster.type].name}`,
+      target: monster.id
+    } as Omit<PlayerActionAttack, 'id'>);
+  }
+
+  const isAttackingEntity = (monster: MonsterState | null): boolean =>
+    !!monster && actionsState.actions.some(a =>
+      a.type === PlayerActionType.Attack
+      && (a as PlayerActionAttack).target === monster.id
+    );
+
+  return (<>
     <EntityList entities={entities} onClickEntity={onClickEntity} />
-  );
+
+    <Dialog.Root open={monsterOpen !== null} onOpenChange={open => { if (!open) setMonsterOpen(null) }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="DialogOverlay" />
+        <Dialog.Content className="DialogContent">
+          <Dialog.Title className="DialogTitle">{monsterOpen ? monsters[monsterOpen.type].name : ""}</Dialog.Title>
+            { monsterOpen && 
+              <div className={`card ${styles.statsCard}`}>
+                <EntityBaseStats health={monsterOpen.health} baseStats={monsters[monsterOpen.type].baseStats} />
+              </div>
+            }
+          <div>
+            { !isAttackingEntity(monsterOpen) && (
+              <button className="btn" onClick={() => monsterOpen && onAttackMonster(monsterOpen)}>
+                Attack
+              </button>
+            ) }
+          </div>
+          <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">close</Dialog.Close>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  </>);
 }

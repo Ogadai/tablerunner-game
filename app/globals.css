@@ -536,6 +536,53 @@ ul {
   list-style-type: none;
 }
 
+.DialogOverlay {
+	background-color: rgba(0, 0, 0, 0.5);
+	position: fixed;
+	inset: 0;
+	animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.DialogContent {
+  z-index: 100;
+	background-color: var(--bg-main);
+  border: 2px solid var(--border-stone);
+	border-radius: 6px;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: fit-content;
+  min-width: 500px;
+	max-width: 800px;
+	max-height: 85vh;
+	padding: 10px;
+	animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.DialogContent:focus {
+	outline: none;
+}
+
+@media screen and (max-width: 600px) {
+  .DialogContent {
+    min-width: 300px;
+    max-width: 300px;
+  }
+}
+
+.DialogTitle {
+	margin: 0 0 10px 0;
+	font-weight: 500;
+	font-size: 17px;
+  text-align: left;
+}
+
+.DialogDescription {
+	margin: 10px 0 20px;
+	font-size: 15px;
+	line-height: 1.5;
+}
+
 .PopoverContent {
   z-index: 100;
 	border-radius: 4px;
@@ -574,7 +621,7 @@ ul {
   stroke: var(--border-stone);
 }
 
-.PopoverClose {
+.PopoverClose, .DialogClose {
 	font-family: inherit;
   margin: auto;
   padding: 5px;
@@ -599,6 +646,26 @@ ul {
 }
 .PopoverClose:focus {
 	box-shadow: 0 0 0 2px var(--violet-7);
+}
+
+@keyframes overlayShow {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes contentShow {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -48%) scale(0.96);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
 }
 
 @keyframes slideUpAndFade {

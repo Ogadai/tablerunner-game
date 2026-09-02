@@ -1,0 +1,45 @@
+.statsTable {
+  width: 100%;
+
+  th {
+    text-align: left;
+  }
+
+  td {
+    text-align: center;
+    position: relative;
+  }
+}
+
+.healthBarBorder {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border: 1px solid var(--border-stone);
+}
+
+.healthBar {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0.3;
+}
+
+.healthy {
+  background-color: var(--color-success);
+}
+
+.hurt {
+  background-color: var(--color-warning);
+  opacity: 0.5;
+}
+
+.critical {
+  background-color: var(--color-error);
+  opacity: 0.5;
+}
