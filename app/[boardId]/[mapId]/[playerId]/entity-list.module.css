@@ -58,4 +58,6 @@
   top: 50%;
   margin-top: -20px;
   font-size: 40px;
+  color: var(--color-error);
+  text-shadow: 0 0 5px var(--bg-main), 0 0 10px var(--bg-main), 0 0 15px var(--bg-main);
 }

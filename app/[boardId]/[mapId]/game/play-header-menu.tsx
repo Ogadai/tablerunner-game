@@ -1,5 +1,7 @@
 'use client'
 import Swal from 'sweetalert2'
+import { swalDefaultOptions } from '@/app/swal';
+
 import { DropdownMenu } from "radix-ui";
 import { useRouter } from 'next/navigation';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
@@ -15,6 +17,7 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 
   const deleteGameAction = async () => {
     const result = await Swal.fire({
+      ...swalDefaultOptions,
       title: 'Reset game?',
       icon: 'warning',
       text: "This will delete your current game and start a new game. This action cannot be undone!",

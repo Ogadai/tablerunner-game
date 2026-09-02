@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
+import { swalDefaultOptions } from '@/app/swal';
 
 import { monsters } from '@/lib/games/monsters';
 import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
@@ -10,7 +11,6 @@ import { PlayerAction, PlayerActionMove, PlayerActionAttack, PlayerActionsState,
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
-import AttackPickTarget from './attack-pick-target';
 import { EntityItemClass, EntityItemDetail } from "./entity-list";
 
 export default function PlayerLocation(
@@ -71,6 +71,7 @@ export default function PlayerLocation(
     async () => {
       if (!canMoveDirection(locationMove.direction)) {
         await Swal.fire({
+          ...swalDefaultOptions,
           title: 'Movement blocked!',
           icon: 'warning',
           text: "You cannot move through this location while there are enemies. You can only retreat.",
@@ -142,6 +143,7 @@ export default function PlayerLocation(
         player={playerState}
         otherPlayers={otherPlayers}
         monsters={locationState.monsters}
+        addNewAction={addNewAction}
       />
     
       { actionsState.actions.length > 0 && <div className={`${styles.actionsList}`}>
@@ -159,10 +161,6 @@ export default function PlayerLocation(
     </div>
 
     { playerAlive && <>
-      <div>
-        <AttackPickTarget entities={targetEntities} onAttackTarget={attackAction} />
-      </div>
-
       <div className={styles.moveActionButtons}>
         {(!isPlayerReady && !isAttacking) && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
           <button type="button" key={mv.direction}

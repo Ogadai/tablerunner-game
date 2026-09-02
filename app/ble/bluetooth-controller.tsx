@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import Swal from 'sweetalert2'
+import { swalDefaultOptions } from '@/app/swal';
 
 import { BleState } from './ble-states';
 import { bluetoothService } from './bluetooth-service';
@@ -39,6 +40,7 @@ export default function BluetoothController({
 
   const askReconnect = useCallback(async () => {
     const result = await Swal.fire({
+      ...swalDefaultOptions,
       title: 'Reconnect to board?',
       text: "Would you like to reconnect to the Tablerunner board?",
       showCancelButton: true,
@@ -74,6 +76,7 @@ export default function BluetoothController({
         break;
       case BleState.Connected:
         const result = await Swal.fire({
+          ...swalDefaultOptions,
           title: 'Disconnect from board?',
           text: "Are you sure you want to disconnect from the Tablerunner board?",
           showCancelButton: true,
@@ -91,6 +94,7 @@ export default function BluetoothController({
           : "Unfortunately, your browser doesn't support Bluetooth devices.";
         
         await Swal.fire({
+          ...swalDefaultOptions,
           title: 'Not supported',
           text: iosMessage,
           confirmButtonColor: 'var(--gold-antique)',
@@ -99,6 +103,7 @@ export default function BluetoothController({
         break;
       case BleState.OtherConnected:
         await Swal.fire({
+          ...swalDefaultOptions,
           title: 'Already connected',
           text: "Another device is already connected to this Tablerunner board. You only need to connect one device.",
           confirmButtonColor: 'var(--gold-antique)',

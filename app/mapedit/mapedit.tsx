@@ -1,6 +1,7 @@
 'use client'
 
 import Swal from 'sweetalert2'
+import { swalDefaultOptions } from '@/app/swal';
 import { useRef, useState } from 'react';
 import styles from './mapedit.module.css';
 import { useSearchParams } from 'next/navigation';
@@ -151,6 +152,8 @@ export default function MapEdit() {
       const description = location?.description || '';
 
       const { value: newDescription, isConfirmed } = await Swal.fire({
+        heightAuto: false,
+        theme: 'auto',
         title: "Description",
         input: "textarea",
         inputLabel: "Enter the location description",
@@ -208,6 +211,7 @@ export default function MapEdit() {
 
   const handleMoveLineClick = async (cell: number, move: { id: number; direction: LocationMoveDirection }) => {
     const result = await Swal.fire({
+      ...swalDefaultOptions,
       title: 'Delete link?',
       text: `Remove the connection from ${cell} to ${move.id}?`,
       icon: 'warning',

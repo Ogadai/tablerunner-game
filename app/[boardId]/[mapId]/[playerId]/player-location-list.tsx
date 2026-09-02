@@ -1,6 +1,7 @@
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
-import { MonsterState, PlayerState } from '@/lib/store/types';
+import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
+import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
 import styles from './player-location-list.module.css';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 
@@ -8,12 +9,14 @@ export interface PlayerLocationListProps {
   player: PlayerState;
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
+  addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
 }
 
 export default function PlayerLocationList({
   player,
   otherPlayers,
   monsters: locationMonsters,
+  addNewAction
 }: PlayerLocationListProps) {
   const entities: EntityItemDetail[] = [
     {
@@ -41,8 +44,18 @@ export default function PlayerLocationList({
       maxHealth: monsters[monster.type].baseStats.health
     }))
   ];
+  
+  const onClickEntity = async (entity: EntityItemDetail) => {
+    if (entity.className === EntityItemClass.enemy) {
+      await addNewAction({
+        type: PlayerActionType.Attack,
+        description: `Attack ${entity.name}`,
+        target: entity.id
+      } as Omit<PlayerActionAttack, 'id'>);
+    }
+  }
 
   return (
-    <EntityList entities={entities} />
+    <EntityList entities={entities} onClickEntity={onClickEntity} />
   );
 }
