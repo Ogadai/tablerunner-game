@@ -2,7 +2,7 @@
 
 import { ApiResponse } from "../api-response";
 import { GameState, PlayerState } from "./types";
-import { BaseStats, CharacterStats } from "../games/types";
+import { BaseStats } from "../games/types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';

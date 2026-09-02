@@ -48,3 +48,14 @@
   background-color: var(--color-error);
   opacity: 0.5;
 }
+
+.playerDead {
+  position: absolute;
+  z-index: 10;
+  margin: auto;
+  inset: 0;
+  text-align: center;
+  top: 50%;
+  margin-top: -20px;
+  font-size: 40px;
+}

@@ -34,7 +34,7 @@ export async function checkAllPlayersReady(boardId: string, mapId: string, ready
   const gameState = await getGameStateFromRedis(boardId, mapId);
 
   if (gameState.players.every(player =>
-    readyState.readyPlayerIds.includes(player.id)
+    (player.health === 0) || readyState.readyPlayerIds.includes(player.id)
   )) {
     await processGameTurn({ boardId, mapId, gameState, messages: {} });
   }
@@ -63,9 +63,13 @@ async function runGameTurn(params: BaseParams): Promise<GameState> {
     ...params.gameState,
     players: params.gameState.players.map(p => ({...p}))
   };
+  params.gameState = newGameState;
 
   const monsterState = await getMonsterState(params);
+  const monsterLocations = new Set<number>();
+  let playerMoved = false;
 
+  // Process player actions
   for(const player of newGameState.players) {
     params.messages[player.id] = { messages: []};
 
@@ -78,12 +82,25 @@ async function runGameTurn(params: BaseParams): Promise<GameState> {
         case PlayerActionType.Move:
           if (monstersAtLocation.length === 0 || (action as PlayerActionMove).direction === player.retreatDirection) {
             actionMove(params, player, action as PlayerActionMove);
+            playerMoved = true;
           }
           break;
         case PlayerActionType.Attack:
           actionAttack(params, player, action as PlayerActionAttack, monsterState);
           break;
       }
+    }
+
+    if (!playerMoved) {
+      monsterLocations.add(player.location.id);
+    }
+  }
+
+  // Process monster attacks
+  for(const locationId of monsterLocations) {
+    const monstersAtLocation = monsterState.monsters.filter(m => m.location === locationId);
+    for(const monster of monstersAtLocation) {
+      monsterAttack(params, monster);
     }
   }
 
@@ -154,15 +171,53 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
         monstersState.monsters = monstersState.monsters.filter(m => m.id !== action.target);
       }
 
-      params.messages[player.id].messages.push({
-        text: `**You** hit **${monster.type}** for ${damage} damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`
-      });
+      playerMessageAtLocation(params, player.id, `**{player}** hit **${monsterDef.name}** for **${damage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
     } else {
-      params.messages[player.id].messages.push({
-        text: `**You** missed **${monster.type}**`
-      });
+      playerMessageAtLocation(params, player.id, `**{player}** missed **${monsterDef.name}**`);
     }
   }
+}
+
+function monsterAttack(params: BaseParams, monster: MonsterState): void {
+  const monsterDef = monsters[monster.type];
+  // Get the available targets
+  const targets = params.gameState.players.filter(p => p.location.id === monster.location && p.health > 0);
+  if (targets.length === 0) {
+    return;
+  }
+
+  const target = targets[Math.floor(Math.random() * targets.length)];
+
+  const damage = processAttackForDamage(monsterDef.baseStats, target.baseStats!);
+
+  if (damage > 0) {
+    target.health -= damage;
+    if (target.health <= 0) {
+      target.health = 0;
+    }
+
+    playerMessageAtLocation(params, target.id, `**${monsterDef.name}** hit **{player}** for **${damage}** damage${target.health <= 0 ? ' and **defeated** you!' : ''}`);
+    if (target.health <= 0) {
+      playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
+    }
+  } else {
+    playerMessageAtLocation(params, target.id, `**${monsterDef.name}** missed **{player}**`);
+  }
+}
+
+function playerMessageAtLocation(params: BaseParams, playerId: string, message: string) {
+  const player = params.gameState.players.find(p => p.id === playerId)!;
+
+  params.messages[playerId].messages.push({
+    text: message.replace('{player}', 'You').replace('{playerNoun}', 'are')
+  });
+
+  const otherPlayers = params.gameState.players.filter(p => p.id !== playerId && p.location.id === player.location.id);
+  otherPlayers.forEach(otherPlayer => {
+    params.messages[otherPlayer.id].messages.push({
+      text: message.replace('{player}', player.name).replace('{playerNoun}', 'is')
+    });
+  });
 }
 
 function processAttackForDamage(attackerStats: BaseStats, defenderStats: BaseStats): number {

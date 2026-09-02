@@ -34,6 +34,7 @@ export default function PlayerLocation(
   const router = useRouter();
 
   const playerState = gameState.players.find(p => p.id === playerId);
+  const playerAlive = playerState && playerState.health > 0;
   const otherPlayers = gameState.players.filter(p => p.id !== playerId && p.location.id === playerState?.location.id);
 
   useEffect(() => {
@@ -157,25 +158,27 @@ export default function PlayerLocation(
       </div> }
     </div>
 
-    <div>
-      <AttackPickTarget entities={targetEntities} onAttackTarget={attackAction} />
-    </div>
+    { playerAlive && <>
+      <div>
+        <AttackPickTarget entities={targetEntities} onAttackTarget={attackAction} />
+      </div>
 
-    <div className={styles.moveActionButtons}>
-      {(!isPlayerReady && !isAttacking) && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
-        <button type="button" key={mv.direction}
-          className={`${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
-          onClick={bindMoveAction(mv)}
-        >{moveLabels[mv.direction]}
-        </button>
-      )}
+      <div className={styles.moveActionButtons}>
+        {(!isPlayerReady && !isAttacking) && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
+          <button type="button" key={mv.direction}
+            className={`${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
+            onClick={bindMoveAction(mv)}
+          >{moveLabels[mv.direction]}
+          </button>
+        )}
 
-      { (!isPlayerReady && !isAttacking) && <button type="submit" onClick={endTurnAction}>Stay</button> }
-      { (!isPlayerReady && isAttacking) && <button type="submit" onClick={endTurnAction}>Ready</button> }
-      { isPlayerReady && <button type="submit" className="btn-delete" onClick={notReadyAction}>
-        <span>Not Ready!</span>
-        <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
-      </button> }
-    </div>
+        { (!isPlayerReady && !isAttacking) && <button type="submit" onClick={endTurnAction}>Stay</button> }
+        { (!isPlayerReady && isAttacking) && <button type="submit" onClick={endTurnAction}>Ready</button> }
+        { isPlayerReady && <button type="submit" className="btn-delete" onClick={notReadyAction}>
+          <span>Not Ready!</span>
+          <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
+        </button> }
+      </div>
+    </>}
   </>);
 }

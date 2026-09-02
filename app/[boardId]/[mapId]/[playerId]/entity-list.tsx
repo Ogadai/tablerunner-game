@@ -50,11 +50,16 @@ export default function PlayerLocationList({
             alt={entity.name}
           />
 
-          { entity.health < entity.maxHealth &&
+          { entity.health > 0 && entity.health < entity.maxHealth &&
             <div
               className={`${styles.healthBar} ${getHealthClass(entity)}`}
               style={{ height: `${100 * entity.health / entity.maxHealth}%` }}
-            ></div> }
+            ></div>
+          }
+
+          { entity.health <= 0 &&
+            <div className={`${styles.playerDead} material-symbols-outlined`}>skull</div>
+          }
         </li>
       ))}
     </ul>

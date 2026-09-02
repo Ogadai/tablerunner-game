@@ -28,6 +28,7 @@ export default function PlayHeaderMessages(  { boardId, mapId, playerId, gameSta
   }, [gameState]);
 
   const hasMessages = playerMessages?.messages && playerMessages.messages.length > 0;
+  const messagesWithIDs = playerMessages?.messages.map((message, index) => ({ ...message, id: index })) || [];
 
   return (<>
     { hasMessages && <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
@@ -37,8 +38,8 @@ export default function PlayHeaderMessages(  { boardId, mapId, playerId, gameSta
       <Popover.Portal>
         <Popover.Content className={ `PopoverContent ${styles.popoverContent}` }>
           <ul>
-            { playerMessages?.messages.map(message => (
-              <li key={message.text}><Markdown>{message.text}</Markdown></li>
+            { messagesWithIDs.map(message => (
+              <li key={message.id}><Markdown>{message.text}</Markdown></li>
             ))}
           </ul>
           <Popover.Close className="PopoverClose material-symbols-outlined">close</Popover.Close>
