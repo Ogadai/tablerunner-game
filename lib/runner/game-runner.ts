@@ -89,13 +89,13 @@ async function getMonsterState(boardId: string, mapId: string, gameState: GameSt
 async function populateMonsters(boardId: string, mapId: string, gameState: GameState): Promise<AllMonsterState> {
   const monsterState = {
     monsters: [
-      { key: 'rat.1', id: 'rat', location: 50, health: 5 },
-      { key: 'rat.2', id: 'rat', location: 50, health: 3 },
-      { key: 'rat.3', id: 'rat', location: 32, health: 5 },
-      { key: 'spider.1', id: 'spider', location: 51, health: 2 },
-      { key: 'spider.2', id: 'spider', location: 51, health: 5 },
-      { key: 'spider.3', id: 'spider', location: 52, health: 4 },
-      { key: 'spider.4', id: 'spider', location: 52, health: 5 }
+      { id: 'rat.1', type: 'rat', location: 50, health: 5 },
+      { id: 'rat.2', type: 'rat', location: 50, health: 3 },
+      { id: 'rat.3', type: 'rat', location: 32, health: 5 },
+      { id: 'spider.1', type: 'spider', location: 51, health: 2 },
+      { id: 'spider.2', type: 'spider', location: 51, health: 5 },
+      { id: 'spider.3', type: 'spider', location: 52, health: 4 },
+      { id: 'spider.4', type: 'spider', location: 52, health: 5 }
     ]
   };
 

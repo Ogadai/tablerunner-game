@@ -535,3 +535,107 @@ textarea {
 ul {
   list-style-type: none;
 }
+
+.PopoverContent {
+  z-index: 100;
+	border-radius: 4px;
+	padding: 20px;
+	width: 260px;
+	background-color: var(--bg-main);
+  border: 2px solid var(--border-stone);
+	box-shadow:
+		hsl(206 22% 7% / 35%) 0px 10px 38px -10px,
+		hsl(206 22% 7% / 20%) 0px 10px 20px -15px;
+	animation-duration: 400ms;
+	animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+	will-change: transform, opacity;
+}
+.PopoverContent:focus {
+	box-shadow:
+		hsl(206 22% 7% / 35%) 0px 10px 38px -10px,
+		hsl(206 22% 7% / 20%) 0px 10px 20px -15px,
+		0 0 0 2px var(--violet-7);
+}
+.PopoverContent[data-state="open"][data-side="top"] {
+	animation-name: slideDownAndFade;
+}
+.PopoverContent[data-state="open"][data-side="right"] {
+	animation-name: slideLeftAndFade;
+}
+.PopoverContent[data-state="open"][data-side="bottom"] {
+	animation-name: slideUpAndFade;
+}
+.PopoverContent[data-state="open"][data-side="left"] {
+	animation-name: slideRightAndFade;
+}
+
+.PopoverArrow {
+	fill: var(--border-stone);
+  stroke: var(--border-stone);
+}
+
+.PopoverClose {
+	font-family: inherit;
+  margin: auto;
+  padding: 5px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	position: absolute;
+	top: 0;
+	right: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.PopoverClose:hover {
+	background-color: var(--violet-4);
+}
+.PopoverClose:focus {
+	box-shadow: 0 0 0 2px var(--violet-7);
+}
+
+@keyframes slideUpAndFade {
+	from {
+		opacity: 0;
+		transform: translateY(2px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideRightAndFade {
+	from {
+		opacity: 0;
+		transform: translateX(-2px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes slideDownAndFade {
+	from {
+		opacity: 0;
+		transform: translateY(-2px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideLeftAndFade {
+	from {
+		opacity: 0;
+		transform: translateX(2px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}

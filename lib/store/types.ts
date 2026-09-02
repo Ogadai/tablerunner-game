@@ -36,7 +36,8 @@ export interface PlayerReadyState {
 }
 
 export enum PlayerActionType {
-  Move = 'move'
+  Move = 'move',
+  Attack = 'attack'
 }
 
 export interface PlayerAction {
@@ -50,13 +51,18 @@ export interface PlayerActionMove extends PlayerAction {
   direction: LocationMoveDirection;
 }
 
+export interface PlayerActionAttack extends PlayerAction {
+  type: PlayerActionType.Attack,
+  target: string;
+}
+
 export interface PlayerActionsState {
   actions: PlayerAction[];
 }
 
 export interface MonsterState {
-  key: string;
   id: string;
+  type: string;
   location: number;
   health: number;
 }

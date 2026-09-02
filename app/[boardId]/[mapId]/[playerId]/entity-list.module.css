@@ -1,0 +1,50 @@
+
+.entity {
+  display: inline-block;
+  position: relative;
+  padding: 5px;
+  border-radius: 3px;
+  margin: 0 5px 5px 0;
+  line-height: 1;
+  cursor: pointer;
+
+  img {
+    z-index: 10;
+    position: relative;
+  }
+}
+
+.self {
+  border: 2px solid var(--color-self);
+}
+
+.friendly {
+  border: 2px solid var(--color-friendly);
+}
+
+.enemy {
+  border: 2px solid var(--color-enemy);
+}
+
+.healthBar {
+  position: absolute;
+  z-index: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  opacity: 0.3;
+}
+
+.healthy {
+  background-color: var(--color-success);
+}
+
+.hurt {
+  background-color: var(--color-warning);
+  opacity: 0.5;
+}
+
+.critical {
+  background-color: var(--color-error);
+  opacity: 0.5;
+}

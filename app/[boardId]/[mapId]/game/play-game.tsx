@@ -21,6 +21,7 @@ export default function PlayGame(
 
     return async () => {
       await createPlayerForGame(boardId, mapId, id);
+      await new Promise(r => setTimeout(r, 500));
 
       router.push(`/${boardId}/${mapId}/${id}`);
     };
@@ -38,7 +39,7 @@ export default function PlayGame(
       })
 
       if (result.isConfirmed) {
-      await deletePlayerFromGame(boardId, mapId, player.id);
+        await deletePlayerFromGame(boardId, mapId, player.id);
       }
     };
 

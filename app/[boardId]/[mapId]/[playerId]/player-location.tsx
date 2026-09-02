@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 
+import { monsters } from '@/lib/games/monsters';
 import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionAttack, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
+import AttackPickTarget from './attack-pick-target';
+import { EntityItemClass, EntityItemDetail } from "./entity-list";
 
 export default function PlayerLocation(
   {
@@ -52,6 +55,17 @@ export default function PlayerLocation(
     }
   }, [gameState]);
 
+  const addNewAction = async (opts: Omit<PlayerAction, 'id'>) => {
+      const actionNumber = actionsState.actions.reduce((number, action) => 
+        Math.max(number, action.id + 1), 0);
+
+      const state = await addPlayerAction(boardId, mapId, playerState!.id, {
+        ...opts,
+        id: actionNumber,
+      });
+      setActionsState(state.data!);
+  }
+
   const bindMoveAction = (locationMove: LocationMove) =>
     async () => {
       if (!canMoveDirection(locationMove.direction)) {
@@ -64,21 +78,22 @@ export default function PlayerLocation(
         return;
       }
 
-      const actionNumber = actionsState.actions.reduce((number, action) => 
-        Math.max(number, action.id + 1), 0);
-
-      const moveAction: PlayerActionMove = {
-        id: actionNumber,
+      await addNewAction({
         type: PlayerActionType.Move,
         description: moveDescriptions[locationMove.direction],
         direction: locationMove.direction
-      };
-
-      const state = await addPlayerAction(boardId, mapId, playerState!.id, moveAction);
-      setActionsState(state.data!);
+      } as Omit<PlayerActionMove, 'id'>);
 
       endTurnAction();
     };
+
+  const attackAction = async (target: EntityItemDetail) => {
+    await addNewAction({
+        type: PlayerActionType.Attack,
+        description: `Attack ${target.name}`,
+        target: target.id
+      } as Omit<PlayerActionAttack, 'id'>);
+  }
   
   const notReadyAction = async () => {
     const moveAction = actionsState.actions.find(a => a.type === PlayerActionType.Move);
@@ -104,6 +119,17 @@ export default function PlayerLocation(
   const canMoveDirection = (direction: LocationMoveDirection): boolean =>
     locationState.monsters.length === 0 || direction === playerState.retreatDirection;
 
+  const isAttacking = actionsState.actions.some(a => a.type === PlayerActionType.Attack);
+
+  const targetEntities = locationState.monsters.map(monster => ({
+    id: monster.id,
+    name: monsters[monster.type].name,
+    icon: monsters[monster.type].icon,
+    className: EntityItemClass.enemy,
+    health: monster.health,
+    maxHealth: monsters[monster.type].baseStats.health
+  }));
+
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
@@ -117,9 +143,9 @@ export default function PlayerLocation(
         monsters={locationState.monsters}
       />
     
-      { actionsState.actions.length > 0 && <div className={`${styles.actionsList} card`}>
-        <h3>Actions</h3>
-        <ul >
+      { actionsState.actions.length > 0 && <div className={`${styles.actionsList}`}>
+        <h4>Actions</h4>
+        <ul>
           { actionsState.actions.map(action => <li key={action.id}>
             <span>{ action.description }</span>
             <button
@@ -131,8 +157,12 @@ export default function PlayerLocation(
       </div> }
     </div>
 
+    <div>
+      <AttackPickTarget entities={targetEntities} onAttackTarget={attackAction} />
+    </div>
+
     <div className={styles.moveActionButtons}>
-      {!isPlayerReady && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
+      {(!isPlayerReady && !isAttacking) && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
         <button type="button" key={mv.direction}
           className={`${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
           onClick={bindMoveAction(mv)}
@@ -140,7 +170,8 @@ export default function PlayerLocation(
         </button>
       )}
 
-      { !isPlayerReady && <button type="submit" onClick={endTurnAction}>Stay</button> }
+      { (!isPlayerReady && !isAttacking) && <button type="submit" onClick={endTurnAction}>Stay</button> }
+      { (!isPlayerReady && isAttacking) && <button type="submit" onClick={endTurnAction}>Ready</button> }
       { isPlayerReady && <button type="submit" className="btn-delete" onClick={notReadyAction}>
         <span>Not Ready!</span>
         <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
