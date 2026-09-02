@@ -13,6 +13,7 @@ import { getPlayerReadyState } from "@/lib/store/playerReadyState";
 import { GameState, PlayerReadyState } from "@/lib/store/types";
 import GameTopicService from '../../../message-bus/game-topic-service';
 import PlayerReadyTopicService from '../../../message-bus/playerReady-topic-service';
+import PlayHeaderMessages from "./play-header-messages";
 
 export default function PlayHeader(
   { boardId, mapId }
@@ -86,6 +87,9 @@ export default function PlayHeader(
   
   return (
     <div className={styles.headerContainerGame}>
+      { (gameState && playerId.length > 0) &&
+        <PlayHeaderMessages boardId={boardId} mapId={mapId} playerId={playerId} gameState={gameState} />
+      }
       <div className={styles.headerContent}>
         <ul className={styles.playerList}>
           {!!playerId && <li key="add">

@@ -1,0 +1,10 @@
+.popoverContent {
+  padding-top: 45px;
+  width: 600px;
+}
+
+@media screen and (max-width: 600px) {
+  .popoverContent {
+    width: 300px;
+  }
+}

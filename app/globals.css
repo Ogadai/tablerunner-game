@@ -539,8 +539,8 @@ ul {
 .PopoverContent {
   z-index: 100;
 	border-radius: 4px;
-	padding: 20px;
-	width: 260px;
+	padding: 10px;
+  width: 300px;
 	background-color: var(--bg-main);
   border: 2px solid var(--border-stone);
 	box-shadow:
@@ -587,7 +587,12 @@ ul {
   background: transparent;
   border: 1px solid transparent;
   border-color: transparent;
+  color: var(--color-text-primary);
   box-shadow: none;
+
+  &:focus-visible {
+    outline: none;
+  }
 }
 .PopoverClose:hover {
 	background-color: var(--violet-4);

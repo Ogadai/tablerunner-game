@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { Popover } from 'radix-ui';
 
 import  EntityList, { EntityItemDetail } from './entity-list';
-import { useState } from 'react';
 
 export default function AttackPickTarget({
   entities,
@@ -30,9 +30,9 @@ export default function AttackPickTarget({
             <button className="btn">Attack</button>
           </Popover.Trigger>
           <Popover.Portal>
-            <Popover.Content className="PopoverContent" sideOffset={5}>
+            <Popover.Content className="PopoverContent">
               <EntityList entities={entities} onClickEntity={attackAction} />
-            <Popover.Arrow className="PopoverArrow" width={15} height={10} />
+              <Popover.Arrow className="PopoverArrow" width={15} height={10} />
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>

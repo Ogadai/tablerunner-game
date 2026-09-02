@@ -60,6 +60,14 @@ export interface PlayerActionsState {
   actions: PlayerAction[];
 }
 
+export interface PlayerMessage {
+  text: string
+}
+
+export interface PlayerMessagesState {
+  messages: PlayerMessage[];
+}
+
 export interface MonsterState {
   id: string;
   type: string;

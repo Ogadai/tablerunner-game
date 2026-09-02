@@ -5,6 +5,9 @@ import {
   PlayerReadyState,
   PlayerState,
   AllMonsterState,
+  PlayerMessagesState,
+  PlayerActionAttack,
+  MonsterState,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -14,10 +17,18 @@ import {
   setReadyStateInRedis,
   getMonstersStateFromRedis,
   setMonstersStateInRedis,
+  setPlayerMessagesInRedis,
 } from '../store/redis-access';
 import { games } from "../games/games";
+import { BaseStats, OPPOSITE_DIRECTION } from '@/lib/games/types';
 import { monsters } from "../games/monsters";
-import { OPPOSITE_DIRECTION } from '@/lib/games/types';
+
+interface BaseParams {
+  boardId: string;
+  mapId: string;
+  gameState: GameState;
+  messages: Record<string, PlayerMessagesState>;
+}
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -25,33 +36,40 @@ export async function checkAllPlayersReady(boardId: string, mapId: string, ready
   if (gameState.players.every(player =>
     readyState.readyPlayerIds.includes(player.id)
   )) {
-    await processGameTurn(boardId, mapId, gameState)
+    await processGameTurn({ boardId, mapId, gameState, messages: {} });
   }
 }
 
-export async function processGameTurn(boardId: string, mapId: string, gameState: GameState): Promise<void> {
+export async function processGameTurn(params: BaseParams): Promise<void> {
   // Run the game turn
-  const newGameState = await runGameTurn(boardId, mapId, gameState);
+  const newGameState = await runGameTurn(params);
 
   // Update game state
-  await setGameStateInRedis(boardId, mapId, newGameState);
+  await setGameStateInRedis(params.boardId, params.mapId, newGameState);
 
   // Reset ready state
-  await setReadyStateInRedis(boardId, mapId, {
+  await setReadyStateInRedis(params.boardId, params.mapId, {
     readyPlayerIds: []
   });
+
+  // Set messages
+  for(const player of newGameState.players) {
+    await setPlayerMessagesInRedis(params.boardId, params.mapId, player.id, params.messages[player.id]);
+  }
 }
 
-async function runGameTurn(boardId: string, mapId: string, gameState: GameState): Promise<GameState> {
+async function runGameTurn(params: BaseParams): Promise<GameState> {
   const newGameState: GameState = {
-    ...gameState,
-    players: gameState.players.map(p => ({...p}))
+    ...params.gameState,
+    players: params.gameState.players.map(p => ({...p}))
   };
 
-  const monsterState = await getMonsterState(boardId, mapId, newGameState);
+  const monsterState = await getMonsterState(params);
 
   for(const player of newGameState.players) {
-    const actionState = await getActionsStateFromRedis(boardId, mapId, player.id);
+    params.messages[player.id] = { messages: []};
+
+    const actionState = await getActionsStateFromRedis(params.boardId, params.mapId, player.id);
     const monstersAtLocation = monsterState.monsters.filter(m => m.location === player.location.id);
 
     // Apply the actions
@@ -59,34 +77,37 @@ async function runGameTurn(boardId: string, mapId: string, gameState: GameState)
       switch(action.type) {
         case PlayerActionType.Move:
           if (monstersAtLocation.length === 0 || (action as PlayerActionMove).direction === player.retreatDirection) {
-            actionMove(boardId, mapId, player, newGameState, action as PlayerActionMove);
+            actionMove(params, player, action as PlayerActionMove);
           }
+          break;
+        case PlayerActionType.Attack:
+          actionAttack(params, player, action as PlayerActionAttack, monsterState);
           break;
       }
     }
   }
 
   for(const player of newGameState.players) {
-    setActionsStateInRedis(boardId, mapId, player.id, {
+    setActionsStateInRedis(params.boardId, params.mapId, player.id, {
       actions: []
     });
   }
 
-  setMonstersStateInRedis(boardId, mapId, monsterState);
+  setMonstersStateInRedis(params.boardId, params.mapId, monsterState);
 
   return newGameState;
 }
 
-async function getMonsterState(boardId: string, mapId: string, gameState: GameState): Promise<AllMonsterState> {
-  let monsterState = await getMonstersStateFromRedis(boardId, mapId);
+async function getMonsterState(params: BaseParams): Promise<AllMonsterState> {
+  let monsterState = await getMonstersStateFromRedis(params.boardId, params.mapId);
   if (!monsterState.monsters?.length) {
-    return await populateMonsters(boardId, mapId, gameState);
+    return await populateMonsters(params);
   }
 
   return monsterState
 }
 
-async function populateMonsters(boardId: string, mapId: string, gameState: GameState): Promise<AllMonsterState> {
+async function populateMonsters(params: BaseParams): Promise<AllMonsterState> {
   const monsterState = {
     monsters: [
       { id: 'rat.1', type: 'rat', location: 50, health: 5 },
@@ -102,8 +123,8 @@ async function populateMonsters(boardId: string, mapId: string, gameState: GameS
   return monsterState;
 }
 
-function actionMove(boardId: string, mapId: string, player: PlayerState, gameState: GameState, action: PlayerActionMove): void {
-  const gameDef = games.find(g => g.id === gameState.gameId)!;
+function actionMove(params: BaseParams, player: PlayerState, action: PlayerActionMove): void {
+  const gameDef = games.find(g => g.id === params.gameState.gameId)!;
 
   const currentLocation = gameDef.locations.find(l => l.id === player.location.id)!;
   const locationMove = currentLocation.move.find(m => m.direction === action.direction);
@@ -113,9 +134,44 @@ function actionMove(boardId: string, mapId: string, player: PlayerState, gameSta
 
     player.location = newLocation;
     player.retreatDirection = OPPOSITE_DIRECTION[action.direction];
-    gameState.visited = [
-      ...gameState.visited.filter(v => v !== locationMove.id),
+    params.gameState.visited = [
+      ...params.gameState.visited.filter(v => v !== locationMove.id),
       locationMove.id
     ]
   }
+}
+
+function actionAttack(params: BaseParams, player: PlayerState, action: PlayerActionAttack, monstersState: AllMonsterState): void {
+  const monster = monstersState.monsters.find(m => m.id === action.target);
+
+  if (monster) {
+    const monsterDef = monsters[monster.type];
+    const damage = processAttackForDamage(player.baseStats!, monsterDef.baseStats);
+
+    if (damage > 0) {
+      monster.health -= damage;
+      if (monster.health <= 0) {
+        monstersState.monsters = monstersState.monsters.filter(m => m.id !== action.target);
+      }
+
+      params.messages[player.id].messages.push({
+        text: `**You** hit **${monster.type}** for ${damage} damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`
+      });
+    } else {
+      params.messages[player.id].messages.push({
+        text: `**You** missed **${monster.type}**`
+      });
+    }
+  }
+}
+
+function processAttackForDamage(attackerStats: BaseStats, defenderStats: BaseStats): number {
+  const attackScore = Math.random() * attackerStats.attack;
+  const defenseScore = Math.random() * defenderStats.defence;
+
+  if (attackScore >= defenseScore) {
+    return Math.ceil(Math.random() * attackerStats.damage);
+  }
+
+  return 0;
 }

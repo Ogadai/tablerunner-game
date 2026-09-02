@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllMonsterState } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllMonsterState, PlayerMessagesState } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
@@ -10,6 +10,8 @@ const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}
 const getPlayersReadyKey = (boardId: string, mapId: string) => `playersReady:${boardId}:${mapId}`;
 
 const getPlayerActionsKey = (boardId: string, mapId: string, playerId: string) => `playerActions:${boardId}:${mapId}:${playerId}`;
+
+const getPlayerMessagesKey = (boardId: string, mapId: string, playerId: string) => `playerMessages:${boardId}:${mapId}:${playerId}`;
 
 const getMonstersKey = (boardId: string, mapId: string) => `monsters:${boardId}:${mapId}`;
 
@@ -36,6 +38,7 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
 
     for(const player of gameState.players) {
       await deleteActionsStateFromRedis(boardId, mapId, player.id);
+      await deletePlayerMessagesFromRedis(boardId, mapId, player.id);
     }
 
     // Delete the monsters state from Redis
@@ -92,6 +95,21 @@ export async function setActionsStateInRedis(boardId: string, mapId: string, pla
 
 export async function deleteActionsStateFromRedis(boardId: string, mapId: string, playerId: string): Promise<void> {
   await redis.del(getPlayerActionsKey(boardId, mapId, playerId));
+}
+
+/* Individual Player Message List */
+
+export async function getPlayerMessagesFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerMessagesState> {
+  const result = await redis.get(getPlayerMessagesKey(boardId, mapId, playerId)) as PlayerMessagesState;
+  return result || { messages: [] };
+}
+
+export async function setPlayerMessagesInRedis(boardId: string, mapId: string, playerId: string, newMessagesState: PlayerMessagesState): Promise<void> {
+  await redis.set(getPlayerMessagesKey(boardId, mapId, playerId), newMessagesState, gameStateOptions);
+}
+
+export async function deletePlayerMessagesFromRedis(boardId: string, mapId: string, playerId: string): Promise<void> {
+  await redis.del(getPlayerMessagesKey(boardId, mapId, playerId));
 }
 
 /* Monsters State */
