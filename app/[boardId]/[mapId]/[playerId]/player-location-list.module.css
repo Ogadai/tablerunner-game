@@ -1,3 +1,11 @@
 .statsCard {
   margin-bottom: 0;
 }
+
+.monsterImage {
+  position: relative;
+  width: 128px;
+  height: 192px;
+  left: 50%;
+  margin-left: -64px;
+}

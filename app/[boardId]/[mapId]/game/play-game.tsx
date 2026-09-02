@@ -63,8 +63,8 @@ export default function PlayGame(
             <Image
               className={styles.playerHero}
               src={character.image}
-              width={1400}
-              height={1100}
+              width={256}
+              height={384}
               loading="eager"
               alt={character.prompt}
             />

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Dialog, Popover } from "radix-ui";
+import Image from 'next/image';
+import { Dialog } from "radix-ui";
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
 import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
@@ -82,6 +83,14 @@ export default function PlayerLocationList({
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className="DialogContent">
           <Dialog.Title className="DialogTitle">{monsterOpen ? monsters[monsterOpen.type].name : ""}</Dialog.Title>
+            { monsterOpen && <Image
+              className={styles.monsterImage}
+              src={monsters[monsterOpen.type].image}
+              width={256}
+              height={384}
+              loading="eager"
+              alt={monsters[monsterOpen.type].name}
+            /> }
             { monsterOpen && 
               <div className={`card ${styles.statsCard}`}>
                 <EntityBaseStats health={monsterOpen.health} baseStats={monsters[monsterOpen.type].baseStats} />
