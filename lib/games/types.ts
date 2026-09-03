@@ -18,6 +18,7 @@ export interface CharacterListEntry {
   icon: string;
   rgbColour: string;
   characterStats: CharacterStats;
+  equipment: PlayerItem[];
 }
 
 export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -68,4 +69,30 @@ export interface MonsterListEntry {
   image: string;
   icon: string;
   baseStats: BaseStats;
+}
+
+export enum PlayerItemType {
+  weapon = 'weapon',
+  armour = 'armour',
+  helmet = 'helmet',
+  consumable = 'consumable'
+}
+
+export interface PlayerItem {
+  id: string;
+  type: PlayerItemType;
+  name: string;
+  icon: string;
+}
+
+export interface PlayerEquipableItem extends PlayerItem {
+  ranged?: boolean;
+  bonusStats: {
+    attack?: number;
+    damage?: number;
+    defence?: number;
+    magic?: number;
+    health?: number;
+    speed?: number;
+  };
 }

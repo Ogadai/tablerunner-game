@@ -1,5 +1,5 @@
 import { SetCommandOptions } from "@upstash/redis";
-import { CharacterListEntry, LocationMove, LocationMoveDirection, BaseStats, CharacterStats } from "../games/types";
+import { CharacterListEntry, LocationMove, LocationMoveDirection, BaseStats, CharacterStats, PlayerItem } from "../games/types";
 
 export const Expiry1Day = 60 * 60 * 24;
 export const Expiry1Week = Expiry1Day * 7;
@@ -26,6 +26,12 @@ export interface PlayerState {
   level: number;
   points: number;
   availableStats: number;
+  equipment: PlayerItem[];
+  equipped: {
+    helmet?: string | null;
+    armour?: string | null;
+    weapon?: string | null;
+  }
 }
 
 export interface PlayerStateLocation {

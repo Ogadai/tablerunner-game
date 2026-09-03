@@ -1,4 +1,5 @@
 import { CharacterListEntry } from "./types";
+import { allItems } from './items';
 
 export const characters: { [id: string]: CharacterListEntry } = {
   barbarian: {
@@ -16,6 +17,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
       resiliance: 8,
       intelligence: 1,
     },
+    equipment: [
+      allItems.swordRusty
+    ]
   },
   witch: {
     id: 'witch',
@@ -32,6 +36,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
       resiliance: 5,
       intelligence: 10,
     },
+    equipment: [
+      allItems.staffSkull
+    ]
   },
   ranger: {
     id: 'ranger',
@@ -48,6 +55,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
       resiliance: 7,
       intelligence: 3,
     },
+    equipment: [
+      allItems.bowWarped
+    ]
   },
   mage: {
     id: 'mage',
@@ -64,5 +74,8 @@ export const characters: { [id: string]: CharacterListEntry } = {
       resiliance: 6,
       intelligence: 10,
     },
+    equipment: [
+      allItems.staffOrb
+    ]
   }
 };

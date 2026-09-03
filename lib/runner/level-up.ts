@@ -4,7 +4,7 @@ import { getPlayerStats } from '../store/playerStats';
 import { BaseParams } from "./base-params";
 import { playerMessageAtLocation } from './game-messages';
 
-const LEVEL_UP_RATIO = 0.4;
+const LEVEL_UP_RATIO = 0.3;
 const STATS_PER_LEVEL = 2;
 
 export async function levelUpPlayer(params: BaseParams, player: PlayerState): Promise<void> {

@@ -1,6 +1,10 @@
 .popoverContent {
   padding-top: 45px;
   width: 600px;
+
+  p {
+    margin-bottom: 5px;
+  }
 }
 
 @media screen and (max-width: 600px) {

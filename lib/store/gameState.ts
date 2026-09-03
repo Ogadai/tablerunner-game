@@ -106,7 +106,13 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       health: 0,
       points: 0,
       level: 1,
-      availableStats: INITIAL_AVAILABLE_STATS
+      availableStats: INITIAL_AVAILABLE_STATS,
+      equipment: [
+        ...characterDef.equipment
+      ],
+      equipped: {
+        weapon: characterDef.equipment[0].id
+      }
     };
 
     const baseStats = getPlayerStats(newPlayer);

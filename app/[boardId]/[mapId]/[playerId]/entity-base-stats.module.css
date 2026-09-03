@@ -46,7 +46,9 @@
 }
 
 .statBonus {
-  margin-left: 5px;
+  display: inline-block;
+  width: 30px;
+  margin: 0 -30px 0 5px;
   font-size: 14px;
 }
 

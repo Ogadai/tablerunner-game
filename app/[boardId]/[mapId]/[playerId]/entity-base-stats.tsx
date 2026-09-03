@@ -26,10 +26,9 @@ export default function EntityBaseStats({ health, baseStats }: { health: number,
 
     return <>
       <span>{ formattedStat }</span>
-      { (bonusValue !== 0) &&
-        <span className={ `${styles.statBonus} ${(bonusValue < 0) ? styles.statNegative : styles.statPositive}` }>
-          ({ formattedBonus })
-        </span> }
+      <span className={ `${styles.statBonus} ${(bonusValue < 0) ? styles.statNegative : styles.statPositive}` }>
+        { bonusValue !== 0 && formattedBonus }
+      </span>
     </>;
   }
 

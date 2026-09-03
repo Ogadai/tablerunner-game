@@ -77,6 +77,7 @@ export default function CharacterCard({
   };
 
   const refreshBaseStats = (characterStats: CharacterStats) => {
+    console.log('Getting player stats for', player);
     const newBaseStats = getPlayerStats({
       ...player,
       characterStats: {
