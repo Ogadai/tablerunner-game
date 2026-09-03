@@ -7,11 +7,11 @@ import EntityBaseStats from './entity-base-stats';
 
 export default function MonsterCard({
   monster,
-  isAttacking,
+  canAttack,
   onAttack
 }: {
   monster: MonsterState,
-  isAttacking: boolean,
+  canAttack: boolean,
   onAttack: () => void,
 }) {
   return <>
@@ -27,7 +27,7 @@ export default function MonsterCard({
       <EntityBaseStats health={monster.health} baseStats={monsters[monster.type].baseStats} />
     </div>
     <div>
-      { !isAttacking && (
+      { canAttack && (
         <button className="btn" onClick={onAttack}>
           Attack
         </button>

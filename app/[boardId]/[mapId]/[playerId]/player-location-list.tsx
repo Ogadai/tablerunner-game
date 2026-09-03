@@ -6,6 +6,7 @@ import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, Pla
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
+import { PlayerActionsPerTurn } from "@/lib/store/playerStats";
 
 export interface PlayerLocationListProps {
   boardId: string;
@@ -14,6 +15,8 @@ export interface PlayerLocationListProps {
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
   actionsState: PlayerActionsState;
+  actionsPerTurn: PlayerActionsPerTurn;
+  actionPointsLeft: number;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
 }
 
@@ -24,6 +27,8 @@ export default function PlayerLocationList({
   otherPlayers,
   monsters: locationMonsters,
   actionsState,
+  actionsPerTurn,
+  actionPointsLeft,
   addNewAction
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
@@ -83,12 +88,6 @@ export default function PlayerLocationList({
     } as Omit<PlayerActionAttack, 'id'>);
   }
 
-  const isAttackingEntity = (monster: MonsterState | null): boolean =>
-    !!monster && actionsState.actions.some(a =>
-      a.type === PlayerActionType.Attack
-      && (a as PlayerActionAttack).target === monster.id
-    );
-
   const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
   
   const dialogTitle =  (monsterOpen !== null)
@@ -100,6 +99,8 @@ export default function PlayerLocationList({
     setMonsterOpen(null);
     setCharacterOpen(null);
   }
+
+  const canAttack = actionPointsLeft >= actionsPerTurn.attack;
 
   return (<>
     <EntityList entities={entities} onClickEntity={onClickEntity} />
@@ -116,7 +117,7 @@ export default function PlayerLocationList({
             { monsterOpen &&
               <MonsterCard
                 monster={monsterOpen}
-                isAttacking={isAttackingEntity(monsterOpen)}
+                canAttack={canAttack}
                 onAttack={() => onAttackMonster(monsterOpen)}
               ></MonsterCard>
             }

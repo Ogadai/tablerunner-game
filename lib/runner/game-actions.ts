@@ -5,6 +5,7 @@ import {
   MonsterState,
   PlayerActionType,
   PlayerAction,
+  PlayerActionsState,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -14,6 +15,7 @@ import { BaseStats, OPPOSITE_DIRECTION } from '@/lib/games/types';
 import { monsters } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation } from './game-messages';
+import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
 
 const DAMAGE_AWARD_RATIO = 0.1;
 
@@ -52,6 +54,10 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       }
 
       const playerActionState = await getActionsStateFromRedis(params.boardId, params.mapId, player.id);
+
+      // Check there aren't too many actions
+      limitPlayerActionsToCost(player, playerActionState);
+
       // Filter out the moves
       playerMoves[player.id] = playerActionState.actions
         .filter(a => a.type === PlayerActionType.Move)
@@ -119,6 +125,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         for(const entityActions of entityActionsForLocations[locId].entities) {
           if (entityActions.actions.length > 0) {
             await processNextAction(params, entityActions);
+            moreActions = true;
           }
         }
       }
@@ -139,6 +146,14 @@ export async function runGameActions(params: BaseParams): Promise<void> {
   } catch(error) {
     console.error('Error: runGameActions');
     throw error;
+  }
+}
+
+function limitPlayerActionsToCost(playerState: PlayerState, actionsState: PlayerActionsState) {
+  const actionsPerTurn = getPlayerActionsPerTurn(playerState);
+  while (getPlayerActionsCosts(playerState, actionsState) > actionsPerTurn.total) {
+    // Remove the last action
+    actionsState.actions.splice(actionsState.actions.length - 1, 1);
   }
 }
 

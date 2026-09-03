@@ -1,5 +1,45 @@
 import { BaseStats, PlayerEquipableItem } from '../games/types';
-import { PlayerState } from './types';
+import { PlayerActionsState, PlayerActionType, PlayerState } from './types';
+
+const BASE_ACTIONS_PER_TURN = 20;
+const BASE_MOVE_ACTION_COST = 18;
+const BASE_ATTACK_ACTION_COST = 15;
+
+export interface PlayerActionsPerTurn {
+  total: number,
+  move: number,
+  attack: number,
+}
+
+export function getPlayerActionsPerTurn(playerState: PlayerState): PlayerActionsPerTurn {
+  const playerSpeed = playerState.baseStats!.speed;
+  const speedBonus = Math.min(10, Math.floor(playerSpeed / 5));
+
+  return {
+    total: BASE_ACTIONS_PER_TURN,
+    move: BASE_MOVE_ACTION_COST - speedBonus,
+    attack: BASE_ATTACK_ACTION_COST - speedBonus,
+  };
+}
+
+export function getPlayerActionsCosts(playerState: PlayerState, actionsState: PlayerActionsState): number {
+  if (!actionsState || !actionsState.actions) {
+    return 0;
+  }
+
+  const actionsPerTurn = getPlayerActionsPerTurn(playerState);
+
+  return actionsState.actions.reduce((total, action) => {
+    switch(action.type) {
+      case PlayerActionType.Attack:
+        return total + actionsPerTurn.attack;
+      case PlayerActionType.Move:
+        return total + actionsPerTurn.move;
+      default:
+        return total;
+    }
+  }, 0);
+}
 
 export function getPlayerStats(playerState: PlayerState): BaseStats {
   const weaponId = playerState.equipped.weapon;

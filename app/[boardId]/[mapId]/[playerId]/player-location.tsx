@@ -11,7 +11,7 @@ import { PlayerAction, PlayerActionMove, PlayerActionAttack, PlayerActionsState,
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
-import { EntityItemClass, EntityItemDetail } from "./entity-list";
+import { getPlayerActionsPerTurn, PlayerActionsPerTurn, getPlayerActionsCosts } from "@/lib/store/playerStats";
 
 export default function PlayerLocation(
   {
@@ -31,6 +31,7 @@ export default function PlayerLocation(
   }) {
   const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
   const [locationState, setLocationState] = useState<LocationState>({ monsters: [] });
+  const [actionsPerTurn, setActionsPerTurn] = useState<PlayerActionsPerTurn>({ total: 0, attack: 0, move: 0 });
   const router = useRouter();
 
   const playerState = gameState.players.find(p => p.id === playerId);
@@ -53,6 +54,7 @@ export default function PlayerLocation(
 
       fetchPlayerActionState();
       fetchLocationState();
+      setActionsPerTurn(getPlayerActionsPerTurn(playerState));
     }
   }, [gameState]);
 
@@ -88,14 +90,6 @@ export default function PlayerLocation(
 
       endTurnAction();
     };
-
-  const attackAction = async (target: EntityItemDetail) => {
-    await addNewAction({
-        type: PlayerActionType.Attack,
-        description: `Attack ${target.name}`,
-        target: target.id
-      } as Omit<PlayerActionAttack, 'id'>);
-  }
   
   const notReadyAction = async () => {
     const moveAction = actionsState.actions.find(a => a.type === PlayerActionType.Move);
@@ -121,16 +115,11 @@ export default function PlayerLocation(
   const canMoveDirection = (direction: LocationMoveDirection): boolean =>
     locationState.monsters.length === 0 || direction === playerState.retreatDirection;
 
-  const isAttacking = actionsState.actions.some(a => a.type === PlayerActionType.Attack);
+  const actionPointsUsed = getPlayerActionsCosts(playerState, actionsState);
+  const actionPointsLeft = actionsPerTurn.total - actionPointsUsed;
 
-  const targetEntities = locationState.monsters.map(monster => ({
-    id: monster.id,
-    name: monsters[monster.type].name,
-    icon: monsters[monster.type].icon,
-    className: EntityItemClass.enemy,
-    health: monster.health,
-    maxHealth: monsters[monster.type].baseStats.health
-  }));
+  const isAttacking = actionsState.actions.some(a => a.type === PlayerActionType.Attack);
+  const playerCanMove = playerAlive && !isAttacking &&  actionPointsLeft >= actionsPerTurn.move;
 
   return (<>
     <div className={styles.playerLocationScreen}>
@@ -146,11 +135,16 @@ export default function PlayerLocation(
         otherPlayers={otherPlayers}
         monsters={locationState.monsters}
         actionsState={actionsState}
+        actionsPerTurn={actionsPerTurn}
+        actionPointsLeft={actionPointsLeft}
         addNewAction={addNewAction}
       />
     
       { actionsState.actions.length > 0 && <div className={`${styles.actionsList}`}>
-        <h4>Actions</h4>
+        <div className={styles.actionsHeader}>
+          <h4>Actions</h4>
+          <span>{actionPointsUsed}/{actionsPerTurn.total}</span>
+        </div>
         <ul>
           { actionsState.actions.map(action => <li key={action.id}>
             <span>{ action.description }</span>
@@ -165,7 +159,7 @@ export default function PlayerLocation(
 
     { playerAlive && <>
       <div className={styles.moveActionButtons}>
-        {(!isPlayerReady && !isAttacking) && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
+        {(!isPlayerReady && playerCanMove) && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
           <button type="button" key={mv.direction}
             className={`${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
             onClick={bindMoveAction(mv)}
@@ -173,8 +167,8 @@ export default function PlayerLocation(
           </button>
         )}
 
-        { (!isPlayerReady && !isAttacking) && <button type="submit" onClick={endTurnAction}>Stay</button> }
-        { (!isPlayerReady && isAttacking) && <button type="submit" onClick={endTurnAction}>Ready</button> }
+        { (!isPlayerReady && playerCanMove) && <button type="submit" onClick={endTurnAction}>Stay</button> }
+        { (!isPlayerReady && !playerCanMove) && <button type="submit" onClick={endTurnAction}>Ready</button> }
         { isPlayerReady && <button type="submit" className="btn-delete" onClick={notReadyAction}>
           <span>Not Ready!</span>
           <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
