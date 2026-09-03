@@ -6,6 +6,7 @@ import { BaseStats } from "../games/types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
+import { getPlayerStats } from './playerStats';
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
@@ -126,17 +127,6 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       error: (error as Error).message
     };
   }
-}
-
-function getPlayerStats(playerState: PlayerState): BaseStats {
-  return {
-    attack: playerState.characterStats.strength,
-    damage: playerState.characterStats.strength,
-    defence: playerState.characterStats.speed,
-    magic: playerState.characterStats.magic,
-    health: playerState.characterStats.resiliance,
-    speed: playerState.characterStats.speed,
-  };
 }
 
 export async function deletePlayerFromGame(boardId: string, mapId: string, playerId: string): Promise<ApiResponse<null>> {

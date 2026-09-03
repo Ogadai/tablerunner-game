@@ -46,9 +46,9 @@ export interface Location {
 export interface CharacterStats {
   strength: number;
   skill: number;
-  speed: number;
+  reactions: number;
   resiliance: number;
-  magic: number;
+  intelligence: number;
 }
 
 export interface BaseStats {
@@ -58,6 +58,8 @@ export interface BaseStats {
   magic: number;
   health: number;
   speed: number;
+  
+  bonuses?: BaseStats;
 }
 
 export interface MonsterListEntry {

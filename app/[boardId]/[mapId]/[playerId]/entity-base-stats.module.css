@@ -8,7 +8,7 @@
   td {
     text-align: center;
     position: relative;
-    width: 100px;
+    width: 130px;
   }
 }
 
@@ -43,4 +43,17 @@
 .critical {
   background-color: var(--color-error);
   opacity: 0.5;
+}
+
+.statBonus {
+  margin-left: 5px;
+  font-size: 14px;
+}
+
+.statNegative {
+  color: var(--color-enemy);
+}
+
+.statPositive {
+  color: var(--color-friendly);
 }

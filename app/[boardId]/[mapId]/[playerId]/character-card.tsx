@@ -17,8 +17,8 @@ export default function CharacterCard({
       <Image
         className={styles.characterImage}
         src={characters[player.id].icon}
-        width={256}
-        height={384}
+        width={53}
+        height={80}
         loading="eager"
         alt={player.name}
       />
@@ -28,9 +28,9 @@ export default function CharacterCard({
       <table className={statsStyles.statsTable}><tbody>
         <tr><th>Strength</th><td>{player.characterStats.strength}</td></tr>
         <tr><th>Skill</th><td>{player.characterStats.skill}</td></tr>
+        <tr><th>Intelligence</th><td>{player.characterStats.intelligence}</td></tr>
         <tr><th>Resilience</th><td>{player.characterStats.resiliance}</td></tr>
-        <tr><th>Speed</th><td>{player.characterStats.speed}</td></tr>
-        <tr><th>Magic</th><td>{player.characterStats.magic}</td></tr>
+        <tr><th>Reactions</th><td>{player.characterStats.reactions}</td></tr>
       </tbody></table>
     </div>
 

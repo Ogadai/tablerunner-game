@@ -12,9 +12,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
     characterStats: {
       strength: 10,
       skill: 3,
-      speed: 4,
+      reactions: 4,
       resiliance: 8,
-      magic: 1,
+      intelligence: 1,
     },
   },
   witch: {
@@ -28,9 +28,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
     characterStats: {
       strength: 3,
       skill: 4,
-      speed: 5,
+      reactions: 5,
       resiliance: 5,
-      magic: 10,
+      intelligence: 10,
     },
   },
   ranger: {
@@ -44,9 +44,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
     characterStats: {
       strength: 6,
       skill: 10,
-      speed: 4,
+      reactions: 4,
       resiliance: 7,
-      magic: 3,
+      intelligence: 3,
     },
   },
   mage: {
@@ -60,9 +60,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
     characterStats: {
       strength: 4,
       skill: 3,
-      speed: 4,
+      reactions: 4,
       resiliance: 6,
-      magic: 10,
+      intelligence: 10,
     },
   }
 };
