@@ -10,8 +10,8 @@ import Image from 'next/image';
 
 import { cauldronOfFire as mapData } from '@/lib/games/maps';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
+import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 
-const GRID_CELLS = [240, 239, 238, 237, 236, 235, 234, 233, 232, 231, 230, 229, 228, 227, 226, 225, 224, 223, 222, 221, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 200, 199, 198, 197, 196, 195, 194, 193, 192, 191, 190, 189, 188, 187, 186, 185, 184, 183, 182, 181, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 160, 159, 158, 157, 156, 155, 154, 153, 152, 151, 150, 149, 148, 147, 146, 145, 144, 143, 142, 141, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
 export const getCellCoordinates = (cell: number) => {
@@ -22,8 +22,8 @@ export const getCellCoordinates = (cell: number) => {
   }
 
   return {
-    row: Math.floor(index / 20),
-    col: index % 20,
+    row: Math.floor(index / MAP_COLUMNS),
+    col: index % MAP_COLUMNS,
   };
 };
 
@@ -243,7 +243,7 @@ export default function MapEdit() {
       nw: -135,
     };
 
-    const page = Math.floor((cell + 9) / 20) %2;
+    const page = Math.floor((cell + MAP_ROWS - 1) / MAP_COLUMNS) %2;
     return (
       ((one && (page === 0)) || (two && (page === 1))) &&
       <div key={cell}

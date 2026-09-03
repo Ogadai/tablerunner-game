@@ -99,7 +99,7 @@ async function runGameTurn(params: BaseParams): Promise<void> {
 async function getMonsterState(boardId: string, mapId: string): Promise<AllMonsterState> {
   let monsterState = await getMonstersStateFromRedis(boardId, mapId);
   if (!monsterState.monsters?.length) {
-    return await populateMonsters();
+    return await populateMonsters(mapId);
   }
 
   return monsterState

@@ -12,12 +12,10 @@ import {
 } from '../store/redis-access';
 import { games } from "../games/games";
 import { BaseStats, OPPOSITE_DIRECTION } from '@/lib/games/types';
-import { monsters } from "../games/monsters";
+import { monsters, getPointsForDamage } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
-
-const DAMAGE_AWARD_RATIO = 0.1;
 
 enum EntityActionEntityTypes {
   player,
@@ -249,15 +247,6 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
     console.error(`Error: actionAttack for ${player.id}`, action);
     throw error;
   }
-}
-
-function getPointsForDamage(monsterType: string, damage: number): number {
-  const monsterDef = monsters[monsterType];
-  return damage
-    * monsterDef.baseStats.attack
-    * monsterDef.baseStats.damage
-    * monsterDef.baseStats.defence
-    * DAMAGE_AWARD_RATIO;
 }
 
 function monsterPickTarget(targets: PlayerState[]): PlayerState {
