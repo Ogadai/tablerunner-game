@@ -14,14 +14,16 @@ export async function levelUpPlayer(params: BaseParams, player: PlayerState): Pr
     playerMessageAtLocation(params, player.id,
       `**{player}** went up to **level ${newLevel}**`
     )
-    player.level = newLevel;
 
     player.availableStats = (player.availableStats || 0) + (newLevel - player.level) * STATS_PER_LEVEL;
+    player.level = newLevel;
+
+    console.log('Assigned player stats', player.level, player.availableStats);
   }
 }
 
 export async function applyPlayerAddedStats(params: BaseParams, player: PlayerState, addStats: PlayerAddStatsState): Promise<void> {
-  if (addStats !== null && addStats.characterStats !== null) {
+  if (addStats !== null && !!addStats.characterStats) {
     for(const statKey of Object.keys(addStats.characterStats) as (keyof CharacterStats)[]) {
       const addAmount = Math.min(addStats.characterStats[statKey], player.availableStats);
       if (addAmount > 0) {

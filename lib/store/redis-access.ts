@@ -104,7 +104,7 @@ export async function deleteActionsStateFromRedis(boardId: string, mapId: string
 
 export async function getPlayerStatsFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerAddStatsState> {
   const result = await redis.get(getPlayerStatsKey(boardId, mapId, playerId)) as PlayerAddStatsState;
-  return result || { actions: [] };
+  return result || { characterStats: null };
 }
 
 export async function setPlayerStatsInRedis(boardId: string, mapId: string, playerId: string, newActionsState: PlayerAddStatsState): Promise<void> {

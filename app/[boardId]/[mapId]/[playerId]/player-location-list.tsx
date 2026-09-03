@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog } from "radix-ui";
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
@@ -55,6 +55,12 @@ export default function PlayerLocationList({
       maxHealth: monsters[monster.type].baseStats.health
     }))
   ];
+
+  useEffect(() => {
+    if (player.availableStats > 0) {
+      setCharacterOpen(player);
+    }
+  }, [player]);
   
   const onClickEntity = async (entity: EntityItemDetail) => {
     if (entity.className === EntityItemClass.enemy) {
