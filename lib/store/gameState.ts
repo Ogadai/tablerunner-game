@@ -8,6 +8,8 @@ import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
 import { getPlayerStats } from './playerStats';
 
+const INITIAL_AVAILABLE_STATS = 5;
+
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
     const result = await getGameStateFromRedis(boardId, mapId);
@@ -101,7 +103,10 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       rgbColour: characterDef.rgbColour,
       location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
       characterStats: { ...characterDef.characterStats },
-      health: 0
+      health: 0,
+      points: 0,
+      level: 1,
+      availableStats: INITIAL_AVAILABLE_STATS
     };
 
     const baseStats = getPlayerStats(newPlayer);

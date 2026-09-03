@@ -140,6 +140,8 @@ export default function PlayerLocation(
       </div>
       <p>{playerState.location?.description}</p>
       <PlayerLocationList
+        boardId={boardId}
+        mapId={mapId}
         player={playerState}
         otherPlayers={otherPlayers}
         monsters={locationState.monsters}

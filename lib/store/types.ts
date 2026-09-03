@@ -23,6 +23,9 @@ export interface PlayerState {
   baseStats?: BaseStats;
   characterStats: CharacterStats;
   health: number;
+  level: number;
+  points: number;
+  availableStats: number;
 }
 
 export interface PlayerStateLocation {
@@ -33,6 +36,10 @@ export interface PlayerStateLocation {
 
 export interface PlayerReadyState {
   readyPlayerIds: string[];
+}
+
+export interface PlayerAddStatsState {
+  characterStats: CharacterStats | null;
 }
 
 export enum PlayerActionType {

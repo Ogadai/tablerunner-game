@@ -3,6 +3,17 @@
   margin-bottom: 10px;
 }
 
+.availablePointsPrompt {
+  flex: 1 1 auto;
+  text-align: right;
+  margin: auto 15px 0 0;
+}
+
+.availablePoints {
+  font-weight: bold;
+  color: var(--color-success);
+}
+
 .statsCard {
   margin-bottom: 10px;
 }

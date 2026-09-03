@@ -15,6 +15,8 @@ import { monsters } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation } from './game-messages';
 
+const DAMAGE_AWARD_RATIO = 0.1;
+
 enum EntityActionEntityTypes {
   player,
   monster
@@ -210,12 +212,20 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
       const damage = processAttackForDamage(player.baseStats!, monsterDef.baseStats);
 
       if (damage > 0) {
-        monster.health -= damage;
+        const appliedDamage = Math.min(damage, monster.health);
+        monster.health -= appliedDamage;
         if (monster.health <= 0) {
           params.monsters = params.monsters.filter(m => m.id !== action.target);
         }
 
-        playerMessageAtLocation(params, player.id, `**{player}** hit **${monsterDef.name}** for **${damage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
+        // Assign points to all players at location
+        const players = params.gameState.players.filter(p => p.location.id === player.location.id);
+        const totalPoints = getPointsForDamage(monster.type, appliedDamage);
+        for(const player of players) {
+          player.points += Math.ceil(totalPoints / players.length);
+        }
+
+        playerMessageAtLocation(params, player.id, `**{player}** hit **${monsterDef.name}** for **${appliedDamage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
       } else {
         playerMessageAtLocation(params, player.id, `**{player}** missed **${monsterDef.name}**`);
       }
@@ -224,6 +234,15 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
     console.error(`Error: actionAttack for ${player.id}`, action);
     throw error;
   }
+}
+
+function getPointsForDamage(monsterType: string, damage: number): number {
+  const monsterDef = monsters[monsterType];
+  return damage
+    * monsterDef.baseStats.attack
+    * monsterDef.baseStats.damage
+    * monsterDef.baseStats.defence
+    * DAMAGE_AWARD_RATIO;
 }
 
 function monsterPickTarget(targets: PlayerState[]): PlayerState {

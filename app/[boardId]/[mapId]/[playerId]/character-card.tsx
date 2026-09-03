@@ -1,17 +1,49 @@
+import { useState, useEffect } from "react";
 import Image from 'next/image';
 import { characters } from '@/lib/games/characters';
+import { CharacterStats } from '@/lib/games/types';
 
 import styles from './character-card.module.css';
 import statsStyles from './entity-base-stats.module.css';
 
-import { PlayerState } from '@/lib/store/types';
+import { PlayerState, PlayerAddStatsState } from '@/lib/store/types';
 import EntityBaseStats from './entity-base-stats';
 
+import { getPlayerAddStatsState, setPlayerAddStatsState } from '@/lib/store/playerStatsState';
+
+const emptyStats: CharacterStats = {
+  strength: 0,
+  skill: 0,
+  reactions: 0,
+  intelligence: 0,
+  resiliance: 0,
+};
+
 export default function CharacterCard({
+  boardId,
+  mapId,
   player,
 }: {
-  player: PlayerState,
+  boardId: string;
+  mapId: string;
+  player: PlayerState;
 }) {
+  const [playerAddStats, setPlayerAddStats] = useState<PlayerAddStatsState>({ characterStats: emptyStats });
+
+  useEffect(() => {
+    const fetchPlayerAddStats = async () => {
+      const response = await getPlayerAddStatsState(boardId, mapId, player.id);
+      if (response.success) {
+        setPlayerAddStats(response.data || { characterStats: emptyStats });
+      }
+    }
+
+    fetchPlayerAddStats();
+  });
+
+  const savePlayerAddStats = async () =>
+    await setPlayerAddStatsState(boardId, mapId, player.id, playerAddStats);
+
   return <>
     <div className={styles.characterHeader}>
       <Image
@@ -22,6 +54,9 @@ export default function CharacterCard({
         loading="eager"
         alt={player.name}
       />
+      { player.availableStats > 0 && <div className={ styles.availablePointsPrompt }>
+        Assign points: <span className={ styles.availablePoints }>{ player.availableStats }</span>
+      </div> }
     </div>
 
     <div className={`card ${styles.statsCard}`}>

@@ -1,15 +1,15 @@
 import { useState } from "react";
-import Image from 'next/image';
 import { Dialog } from "radix-ui";
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
 import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
-import styles from './player-location-list.module.css';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
 
 export interface PlayerLocationListProps {
+  boardId: string;
+  mapId: string;
   player: PlayerState;
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
@@ -18,6 +18,8 @@ export interface PlayerLocationListProps {
 }
 
 export default function PlayerLocationList({
+  boardId,
+  mapId,
   player,
   otherPlayers,
   monsters: locationMonsters,
@@ -82,9 +84,12 @@ export default function PlayerLocationList({
     );
 
   const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
+  
   const dialogTitle =  (monsterOpen !== null)
     ? monsters[monsterOpen.type].name
     : (characterOpen !== null) ? characterOpen.name : '';
+  const dialogSubTitle = (characterOpen !== null) ? `Level ${characterOpen.level}` : null;
+
   const onCloseDialog = () => {
     setMonsterOpen(null);
     setCharacterOpen(null);
@@ -97,7 +102,10 @@ export default function PlayerLocationList({
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className="DialogContent">
-          <Dialog.Title className="DialogTitle">{dialogTitle}</Dialog.Title>
+          <Dialog.Title className="DialogTitle">
+            <span>{dialogTitle}</span>
+            { dialogSubTitle && <span className="DialogSubTitle">{dialogSubTitle}</span> }
+            </Dialog.Title>
           <div className="DialogContentBody">
             { monsterOpen &&
               <MonsterCard
@@ -108,6 +116,8 @@ export default function PlayerLocationList({
             }
             { characterOpen &&
               <CharacterCard
+                boardId={boardId}
+                mapId={mapId}
                 player={characterOpen}
               ></CharacterCard>
             }
