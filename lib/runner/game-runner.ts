@@ -49,7 +49,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     };
     params.gameState = newGameState;
 
-    for(const player of newGameState.players) {
+    for(const player of params.gameState.players) {
       const addedStats = await getPlayerStatsFromRedis(params.boardId, params.mapId, player.id);
       applyPlayerAddedStats(params, player, addedStats);
     }
@@ -57,12 +57,12 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     // Run the game turn
     await runGameTurn(params);
 
-    for(const player of newGameState.players) {
+    for(const player of params.gameState.players) {
       levelUpPlayer(params, player);
     }
 
     // Update game state
-    await setGameStateInRedis(params.boardId, params.mapId, newGameState);
+    await setGameStateInRedis(params.boardId, params.mapId, params.gameState);
 
     // Reset ready state
     await setReadyStateInRedis(params.boardId, params.mapId, {
@@ -70,7 +70,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     });
 
     // Reset actions and set messages
-    for(const player of newGameState.players) {
+    for(const player of params.gameState.players) {
       setActionsStateInRedis(params.boardId, params.mapId, player.id, {
         actions: []
       });
@@ -87,12 +87,6 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 }
 
 async function runGameTurn(params: BaseParams): Promise<void> {
-  const newGameState: GameState = {
-    ...params.gameState,
-    players: params.gameState.players.map(p => ({...p}))
-  };
-  params.gameState = newGameState;
-
   await runGameActions(params);
 
   // Store monsters
