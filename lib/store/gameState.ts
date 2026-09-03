@@ -135,6 +135,7 @@ function getPlayerStats(playerState: PlayerState): BaseStats {
     defence: playerState.characterStats.speed,
     magic: playerState.characterStats.magic,
     health: playerState.characterStats.resiliance,
+    speed: playerState.characterStats.speed,
   };
 }
 

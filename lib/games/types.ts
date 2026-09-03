@@ -57,6 +57,7 @@ export interface BaseStats {
   defence: number;
   magic: number;
   health: number;
+  speed: number;
 }
 
 export interface MonsterListEntry {

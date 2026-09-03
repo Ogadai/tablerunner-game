@@ -12,6 +12,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       defence: 2,
       magic: 0,
       health: 5,
+      speed: 5
     },
   },
   'spider': {
@@ -25,6 +26,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       defence: 2,
       magic: 0,
       health: 5,
+      speed: 8,
     },
   }
 };
