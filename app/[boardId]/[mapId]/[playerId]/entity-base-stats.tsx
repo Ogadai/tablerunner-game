@@ -20,7 +20,7 @@ export default function EntityBaseStats({ health, baseStats }: { health: number,
 
     const formattedStat = (statName === 'health')
       ? (health < baseStats.health ? `${health}/${baseStats.health}` : `${health}`)
-      : `${statValue}`;
+      : `${statValue - bonusValue}`;
 
     const formattedBonus = `${bonusValue > 0 ? '+' : ''}${bonusValue}`;
 
