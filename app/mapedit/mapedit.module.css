@@ -159,6 +159,23 @@
   line-height: 1;
 }
 
+.monsterCount {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  min-width: 1.4em;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: #2b221a;
+  color: #ffffff;
+  font-family: 'Cinzel', serif;
+  font-size: 7pt;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  z-index: 1;
+}
+
 .copyButton {
   position: absolute;
   left: 44px;

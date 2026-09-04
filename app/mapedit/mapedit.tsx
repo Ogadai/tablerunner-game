@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { cauldronOfFire as mapData } from '@/lib/games/maps';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
+import { monsters1 } from '@/lib/games/monster-pack';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
@@ -231,6 +232,7 @@ export default function MapEdit() {
     const location = mapState.find(l => l.id === cell);
     const description = location?.description || '';
     const moves = location?.move ?? [];
+    const monsterCount = monsters1.monsters.filter(monster => monster.location === cell).length;
 
     const directionAngles: Record<string, number> = {
       n: -90,
@@ -275,6 +277,7 @@ export default function MapEdit() {
         >
           <span className={styles.number}>{ cell }</span>
         </div>
+        {monsterCount > 0 && <span className={styles.monsterCount}>{monsterCount}</span>}
       </div>
     );
   };
