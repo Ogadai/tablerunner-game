@@ -57,7 +57,8 @@ export interface PlayerAddStatsState {
 
 export enum PlayerActionType {
   Move = 'move',
-  Attack = 'attack'
+  Attack = 'attack',
+  UseItem = 'useItem',
 }
 
 export interface PlayerAction {
@@ -74,6 +75,11 @@ export interface PlayerActionMove extends PlayerAction {
 export interface PlayerActionAttack extends PlayerAction {
   type: PlayerActionType.Attack,
   target: string;
+}
+
+export interface PlayerActionUseItem extends PlayerAction {
+  type: PlayerActionType.UseItem,
+  itemId: string;
 }
 
 export interface PlayerActionsState {

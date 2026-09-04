@@ -88,6 +88,7 @@ export interface PlayerItem {
   type: PlayerItemType;
   name: string;
   iconXY: { x: number, y: number };
+  iconScale?: number;
   bonusStats?: {
     attack?: number;
     damage?: number;
@@ -101,12 +102,8 @@ export interface PlayerItem {
 export interface PlayerEquipableItem extends PlayerItem {
   ranged?: boolean;
   staff?: boolean;
-  bonusStats: {
-    attack?: number;
-    damage?: number;
-    defence?: number;
-    magic?: number;
-    health?: number;
-    speed?: number;
-  };
+}
+
+export interface PlayerConsumableItem extends PlayerItem {
+  useCost: number;
 }

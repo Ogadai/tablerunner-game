@@ -1,4 +1,4 @@
-import { PlayerItem, PlayerItemType, PlayerEquipableItem } from './types';
+import { PlayerItem, PlayerItemType, PlayerEquipableItem, PlayerConsumableItem } from './types';
 
 export enum EquipableIds {
   swordRusty = 'swordRusty',
@@ -153,20 +153,22 @@ export enum ConsumableIds {
   elixir = 'elixir',
 };
 
-export const consumableItems: Record<ConsumableIds, PlayerItem> = {
+export const consumableItems: Record<ConsumableIds, PlayerConsumableItem> = {
   [ConsumableIds.healingPotion]: {
     id: ConsumableIds.healingPotion.toString(),
     type: PlayerItemType.consumable,
     name: 'Minor Healing Potion',
     iconXY: { x: 0, y: 7 },
+    useCost: 5,
+    iconScale: 0.7,
     bonusStats: {
       health: 5,
     }
   },
-  [ConsumableIds.greaterHealingPotion]: { id: 'greaterHealingPotion', type: PlayerItemType.consumable, name: 'Greater Healing Potion', iconXY: { x: 1, y: 7 }, bonusStats: { health: 12 } },
-  [ConsumableIds.manaPotion]: { id: 'manaPotion', type: PlayerItemType.consumable, name: 'Mana Potion', iconXY: { x: 2, y: 7 }, bonusStats: { magic: 5 } },
-  [ConsumableIds.swiftPotion]: { id: 'swiftPotion', type: PlayerItemType.consumable, name: 'Swift Potion', iconXY: { x: 3, y: 7 }, bonusStats: { speed: 3 } },
-  [ConsumableIds.elixir]: { id: 'elixir', type: PlayerItemType.consumable, name: 'Mighty Elixir', iconXY: { x: 4, y: 7 }, bonusStats: { health: 8, attack: 2, magic: 2 } },
+  [ConsumableIds.greaterHealingPotion]: { id: 'greaterHealingPotion', type: PlayerItemType.consumable, name: 'Greater Healing Potion', iconXY: { x: 0, y: 7 }, useCost: 5, bonusStats: { health: 12 } },
+  [ConsumableIds.manaPotion]: { id: 'manaPotion', type: PlayerItemType.consumable, name: 'Mana Potion', iconXY: { x: 1, y: 7 }, useCost: 5, bonusStats: { magic: 5 } },
+  [ConsumableIds.swiftPotion]: { id: 'swiftPotion', type: PlayerItemType.consumable, name: 'Swift Potion', iconXY: { x: 2, y: 7 }, useCost: 5,bonusStats: { speed: 3 } },
+  [ConsumableIds.elixir]: { id: 'elixir', type: PlayerItemType.consumable, name: 'Mighty Elixir', iconXY: { x: 3, y: 7 }, useCost: 5, bonusStats: { health: 8, attack: 2, magic: 2 } },
 };
 
 export type ItemIds = EquipableIds | ConsumableIds;

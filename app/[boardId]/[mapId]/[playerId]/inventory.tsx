@@ -4,10 +4,11 @@ import { Popover } from 'radix-ui';
 import styles from './inventory.module.css';
 import { PlayerItem, PlayerItemType } from '@/lib/games/types';
 
-export default function Inventory({ player, isSelf, onEquipItem }: {
+export default function Inventory({ player, isSelf, onEquipItem, onUseItem }: {
   player: PlayerState;
   isSelf: boolean,
   onEquipItem: (id: string) => void;
+  onUseItem: (id: string) => void;
 }) {
   const isEquipped = (item: PlayerItem) => {
     return (player.equipped as any)[item.type] === item.id;
@@ -15,13 +16,14 @@ export default function Inventory({ player, isSelf, onEquipItem }: {
 
   return (
     <div className={styles.inventoryGrid}>
-      {player.equipment.map(item => {
+      {player.equipment.map((item, i) => {
         return <InventoryItem
           isSelf={isSelf}
-          key={item.id}
+          key={`${i}}`}
           item={item}
           isEquipped={isEquipped(item)}
           onEquipped={() => onEquipItem(item.id)}
+          onUsed={() => onUseItem(item.id)}
         />;
       })}
     </div>
@@ -33,11 +35,13 @@ function InventoryItem({
   item,
   isEquipped,
   onEquipped,
+  onUsed,
 }: {
   isSelf: boolean,
   item: PlayerItem;
   isEquipped: boolean;
   onEquipped: () => void;
+  onUsed: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const position = item.iconXY;
@@ -48,7 +52,13 @@ function InventoryItem({
     onEquipped();
   }
 
+  const onClickUse = () => {
+    setIsOpen(false);
+    onUsed();
+  }
+
   const isEquipable = item.type !== PlayerItemType.consumable;
+  const isConsumable = item.type === PlayerItemType.consumable;
 
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
@@ -58,10 +68,14 @@ function InventoryItem({
           className={`${styles.inventoryItem} ${isEquipped ? styles.equippedItem : ''}`}
           aria-label={item.name}
           title={item.name}
-          style={position ? {
-            backgroundPosition: `-${position.x * 80}px -${position.y * 80}px`,
-          } : undefined}
-        />
+        >
+          <span className={styles.itemIcon}
+            style={position ? {
+              backgroundPosition: `-${position.x * 80}px -${position.y * 80}px`,
+              transform: item.iconScale ? `scale(${item.iconScale})` : undefined,
+            } : undefined}
+          />
+        </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={`PopoverContent ${styles.itemPopover}`}>
@@ -84,6 +98,13 @@ function InventoryItem({
               className={`btn ${styles.equipButton}`}
               onClick={onClickEquip}
             >Equip</button>
+          )}
+          {isSelf && isConsumable && (
+            <button
+              type="button"
+              className={`btn ${styles.equipButton}`}
+              onClick={onClickUse}
+            >Use</button>
           )}
           <Popover.Arrow className="PopoverArrow" width={15} height={10} />
         </Popover.Content>

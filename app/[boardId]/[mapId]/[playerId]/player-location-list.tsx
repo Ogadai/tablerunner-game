@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Dialog } from "radix-ui";
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
-import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
+import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
 import { PlayerActionsPerTurn } from "@/lib/store/playerStats";
+import { allItems } from "@/lib/games/items";
+import { PlayerItem } from "@/lib/games/types";
 
 export interface PlayerLocationListProps {
   boardId: string;
@@ -96,6 +98,17 @@ export default function PlayerLocationList({
     } as Omit<PlayerActionAttack, 'id'>);
   }
 
+  const onUseItem = async (id: string) => {
+    setCharacterOpen(null);
+    const item: PlayerItem = (allItems as any)[id];
+
+    await addNewAction({
+      type: PlayerActionType.UseItem,
+      description: `Use ${item.name}`,
+      itemId: id,
+    } as Omit<PlayerActionUseItem, 'id'>);
+  }
+
   const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
   
   const dialogTitle =  (monsterOpen !== null)
@@ -143,6 +156,7 @@ export default function PlayerLocationList({
                 mapId={mapId}
                 player={characterOpen}
                 isSelf={characterOpen.id === player.id}
+                onUseItem={onUseItem}
               ></CharacterCard>
             }
           </div>

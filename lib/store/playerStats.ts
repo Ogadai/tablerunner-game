@@ -1,5 +1,6 @@
-import { BaseStats, PlayerEquipableItem } from '../games/types';
-import { PlayerActionsState, PlayerActionType, PlayerState } from './types';
+import { allItems } from '../games/items';
+import { BaseStats, PlayerConsumableItem, PlayerEquipableItem } from '../games/types';
+import { PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
 
 const BASE_ACTIONS_PER_TURN = 20;
 const BASE_MOVE_ACTION_COST = 18;
@@ -35,6 +36,10 @@ export function getPlayerActionsCosts(playerState: PlayerState, actionsState: Pl
         return total + actionsPerTurn.attack;
       case PlayerActionType.Move:
         return total + actionsPerTurn.move;
+      case PlayerActionType.UseItem:
+        const useAction = action as PlayerActionUseItem;
+        const item: PlayerConsumableItem = (allItems as any)[useAction.itemId];
+        return total + item.useCost;
       default:
         return total;
     }
@@ -68,7 +73,7 @@ export function getPlayerStats(playerState: PlayerState): BaseStats {
     const itemId = (playerState.equipped as any)[slot] as (string | undefined | null);
     const item = !!itemId && playerState.equipment.find(e => e.id == itemId) as PlayerEquipableItem;
     if (item) {
-      for(const stat of Object.keys(item.bonusStats)) {
+      for(const stat of Object.keys(item.bonusStats!)) {
         const bonusAmount = (item.bonusStats as any)[stat];
         if (bonusAmount) {
           (baseStats as any)[stat] += bonusAmount;
