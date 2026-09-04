@@ -75,6 +75,11 @@ export enum PlayerItemType {
   weapon = 'weapon',
   armour = 'armour',
   helmet = 'helmet',
+  gloves = 'gloves',
+  boots = 'boots',
+  belt = 'belt',
+  ring = 'ring',
+  necklace = 'necklace',
   consumable = 'consumable'
 }
 

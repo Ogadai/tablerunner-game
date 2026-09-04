@@ -7,7 +7,7 @@ export enum WeaponIds {
   staffOrb = 'staffOrb',
 };
 
-export const weapons: Record<WeaponIds, PlayerEquipableItem> = {
+export const equipableItems: Record<WeaponIds, PlayerEquipableItem> = {
   [WeaponIds.swordRusty]: {
     id: WeaponIds.swordRusty.toString(),
     type: PlayerItemType.weapon,
@@ -51,6 +51,25 @@ export const weapons: Record<WeaponIds, PlayerEquipableItem> = {
   },
 };
 
-export const allItems: Record<WeaponIds, PlayerItem> = {
-  ...weapons
+export enum ConsumableIds {
+  healingPotion = 'healingPotion',
+};
+
+export const consumableItems: Record<ConsumableIds, PlayerItem> = {
+  [ConsumableIds.healingPotion]: {
+    id: ConsumableIds.healingPotion.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Minor Healing Potion',
+    iconXY: { x: 0, y: 7 },
+    bonusStats: {
+      health: 5,
+    }
+  },
+};
+
+export type ItemIds = WeaponIds | ConsumableIds;
+
+export const allItems: Record<ItemIds, PlayerItem> = {
+  ...equipableItems,
+  ...consumableItems,
 };
