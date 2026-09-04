@@ -16,7 +16,7 @@ export interface EntityItemDetail {
   maxHealth: number;
 }
 
-export default function PlayerLocationList({
+export default function EntityList({
   entities,
   onClickEntity
 }: {

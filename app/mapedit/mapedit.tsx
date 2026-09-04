@@ -1,6 +1,8 @@
 'use client'
 
 import Swal from 'sweetalert2'
+import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
+import { Dialog } from 'radix-ui';
 import { getSwalDefaultOptions } from '@/app/swal';
 import { useRef, useState } from 'react';
 import styles from './mapedit.module.css';
@@ -9,9 +11,11 @@ import { cinzel } from '@/app/fonts';
 import Image from 'next/image';
 
 import { cauldronOfFire as mapData } from '@/lib/games/maps';
+import { monsters } from '@/lib/games/monsters';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 import { monsters1 } from '@/lib/games/monster-pack';
+import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
@@ -138,6 +142,7 @@ export const removeBidirectionalMove = (mapState: Location[], startCell: number,
 export default function MapEdit() {
   const searchParams = useSearchParams();
   const [mapState, setMapState] = useState(mapData);
+  const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
   const dragStartCell = useRef<number | null>(null);
   const dragActionTaken = useRef(false);
   
@@ -228,6 +233,19 @@ export default function MapEdit() {
     setMapState(current => removeBidirectionalMove(current, cell, move.id));
   };
 
+  const monsterDialogEntities: EntityItemDetail[] = monsterDialogCell === null
+    ? []
+    : monsters1.monsters
+      .filter(monster => monster.location === monsterDialogCell)
+      .map(monster => ({
+        id: monster.id,
+        name: monsters[monster.type].name,
+        icon: monsters[monster.type].icon,
+        className: EntityItemClass.enemy,
+        health: monster.health,
+        maxHealth: monsters[monster.type].baseStats.health,
+      }));
+
   const renderCell = (cell: number) => {
     const location = mapState.find(l => l.id === cell);
     const description = location?.description || '';
@@ -277,7 +295,19 @@ export default function MapEdit() {
         >
           <span className={styles.number}>{ cell }</span>
         </div>
-        {monsterCount > 0 && <span className={styles.monsterCount}>{monsterCount}</span>}
+        {monsterCount > 0 &&
+          <button
+            type="button"
+            className={styles.monsterCount}
+            aria-label={`Show monsters at cell ${cell}`}
+            onClick={event => {
+              event.stopPropagation();
+              setMonsterDialogCell(cell);
+            }}
+          >
+            {monsterCount}
+          </button>
+        }
       </div>
     );
   };
@@ -287,7 +317,7 @@ export default function MapEdit() {
     await navigator.clipboard.writeText(mapJson);
   }
 
-  return (
+  return (<>
     <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''}`}>
       <Image
         src="/map.png"
@@ -309,5 +339,29 @@ export default function MapEdit() {
           onClick={copyToClipboard}
         >Copy to clipboard</button> }
     </main>
-  );
+
+    <Dialog.Root
+      open={monsterDialogCell !== null}
+      onOpenChange={open => {
+        if (!open) {
+          setMonsterDialogCell(null);
+        }
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="DialogOverlay" />
+        <Dialog.Content className={`DialogContent ${styles.mosterDialog}`}>
+          <Dialog.Title className="DialogTitle">
+            Monsters at cell {monsterDialogCell}
+          </Dialog.Title>
+          <div className="DialogContentBody">
+            <EntityList entities={monsterDialogEntities} />
+          </div>
+          <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">
+            close
+          </Dialog.Close>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  </>);
 }
