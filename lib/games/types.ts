@@ -100,6 +100,7 @@ export interface PlayerItem {
 
 export interface PlayerEquipableItem extends PlayerItem {
   ranged?: boolean;
+  staff?: boolean;
   bonusStats: {
     attack?: number;
     damage?: number;

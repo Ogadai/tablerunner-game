@@ -11,7 +11,7 @@ import {
   getActionsStateFromRedis,
 } from '../store/redis-access';
 import { games } from "../games/games";
-import { BaseStats, OPPOSITE_DIRECTION } from '@/lib/games/types';
+import { BaseStats, OPPOSITE_DIRECTION, PlayerEquipableItem } from '@/lib/games/types';
 import { monsters, getPointsForDamage } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation } from './game-messages';
@@ -250,7 +250,24 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
 }
 
 function monsterPickTarget(targets: PlayerState[]): PlayerState {
-    return targets[Math.floor(Math.random() * targets.length)];
+  const targetWeights = targets.map(target => {
+    const weaponId = target.equipped.weapon;
+    const weapon = weaponId ? target.equipment.find(item => item.id === weaponId) as PlayerEquipableItem | undefined : undefined;
+    const hasRangedOrStaffWeapon = !!weapon?.ranged || !!weapon?.staff;
+
+    return hasRangedOrStaffWeapon ? 0.5 : 1;
+  });
+  const totalWeight = targetWeights.reduce((total, weight) => total + weight, 0);
+  let selection = Math.random() * totalWeight;
+
+  for (let index = 0; index < targets.length; index++) {
+    selection -= targetWeights[index];
+    if (selection < 0) {
+      return targets[index];
+    }
+  }
+
+  return targets[targets.length - 1];
 }
 
 function monsterAttack(params: BaseParams, monster: MonsterState, target: PlayerState): void {

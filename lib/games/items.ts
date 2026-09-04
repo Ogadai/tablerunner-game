@@ -94,6 +94,7 @@ export const equipableItems: Record<EquipableIds, PlayerEquipableItem> = {
     type: PlayerItemType.weapon,
     name: 'Skull Staff',
     iconXY: { x: 4, y: 1 },
+    staff: true,
     bonusStats: {
       magic: 1,
       defence: 1,
@@ -104,13 +105,14 @@ export const equipableItems: Record<EquipableIds, PlayerEquipableItem> = {
     type: PlayerItemType.weapon,
     name: 'Orb Staff',
     iconXY: { x: 1, y: 1 },
+    staff: true,
     bonusStats: {
       magic: 1,
       health: 1,
     }
   },
-  [EquipableIds.staffRuby]: { id: 'staffRuby', type: PlayerItemType.weapon, name: 'Ruby Staff', iconXY: { x: 2, y: 1 }, bonusStats: { magic: 3, damage: 2 } },
-  [EquipableIds.staffCrystal]: { id: 'staffCrystal', type: PlayerItemType.weapon, name: 'Crystal Staff', iconXY: { x: 5, y: 1 }, bonusStats: { magic: 5, damage: 3, health: 2 } },
+  [EquipableIds.staffRuby]: { id: 'staffRuby', type: PlayerItemType.weapon, name: 'Ruby Staff', iconXY: { x: 2, y: 1 }, staff: true, bonusStats: { magic: 3, damage: 2 } },
+  [EquipableIds.staffCrystal]: { id: 'staffCrystal', type: PlayerItemType.weapon, name: 'Crystal Staff', iconXY: { x: 5, y: 1 }, staff: true, bonusStats: { magic: 5, damage: 3, health: 2 } },
   [EquipableIds.shieldWooden]: { id: 'shieldWooden', type: PlayerItemType.armour, name: 'Wooden Shield', iconXY: { x: 0, y: 2 }, bonusStats: { defence: 1 } },
   [EquipableIds.shieldLion]: { id: 'shieldLion', type: PlayerItemType.armour, name: 'Lion Shield', iconXY: { x: 1, y: 2 }, bonusStats: { defence: 3, health: 1 } },
   [EquipableIds.shieldKnight]: { id: 'shieldKnight', type: PlayerItemType.armour, name: 'Knight Shield', iconXY: { x: 2, y: 2 }, bonusStats: { defence: 5, health: 2 } },
