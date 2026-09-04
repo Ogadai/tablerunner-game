@@ -1,15 +1,15 @@
 import { PlayerItem, PlayerItemType, PlayerEquipableItem } from './types';
 
-export enum WeaponIds {
+export enum EquipableIds {
   swordRusty = 'swordRusty',
   bowWarped = 'bowWarped',
   staffSkull = 'staffSkull',
   staffOrb = 'staffOrb',
 };
 
-export const equipableItems: Record<WeaponIds, PlayerEquipableItem> = {
-  [WeaponIds.swordRusty]: {
-    id: WeaponIds.swordRusty.toString(),
+export const equipableItems: Record<EquipableIds, PlayerEquipableItem> = {
+  [EquipableIds.swordRusty]: {
+    id: EquipableIds.swordRusty.toString(),
     type: PlayerItemType.weapon,
     name: 'Rusty Sword',
     iconXY: { x: 0, y: 0 },
@@ -18,8 +18,8 @@ export const equipableItems: Record<WeaponIds, PlayerEquipableItem> = {
       damage: 1
     }
   },
-  [WeaponIds.bowWarped]: {
-    id: WeaponIds.bowWarped.toString(),
+  [EquipableIds.bowWarped]: {
+    id: EquipableIds.bowWarped.toString(),
     type: PlayerItemType.weapon,
     name: 'Warped Bow',
     ranged: true,
@@ -29,8 +29,8 @@ export const equipableItems: Record<WeaponIds, PlayerEquipableItem> = {
       damage: 1
     }
   },
-  [WeaponIds.staffSkull]: {
-    id: WeaponIds.staffSkull.toString(),
+  [EquipableIds.staffSkull]: {
+    id: EquipableIds.staffSkull.toString(),
     type: PlayerItemType.weapon,
     name: 'Skull Staff',
     iconXY: { x: 4, y: 1 },
@@ -39,8 +39,8 @@ export const equipableItems: Record<WeaponIds, PlayerEquipableItem> = {
       defence: 1,
     }
   },
-  [WeaponIds.staffOrb]: {
-    id: WeaponIds.staffOrb.toString(),
+  [EquipableIds.staffOrb]: {
+    id: EquipableIds.staffOrb.toString(),
     type: PlayerItemType.weapon,
     name: 'Orb Staff',
     iconXY: { x: 1, y: 1 },
@@ -67,7 +67,7 @@ export const consumableItems: Record<ConsumableIds, PlayerItem> = {
   },
 };
 
-export type ItemIds = WeaponIds | ConsumableIds;
+export type ItemIds = EquipableIds | ConsumableIds;
 
 export const allItems: Record<ItemIds, PlayerItem> = {
   ...equipableItems,
