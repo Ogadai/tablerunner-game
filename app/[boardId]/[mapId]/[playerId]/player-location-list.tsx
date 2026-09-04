@@ -142,6 +142,7 @@ export default function PlayerLocationList({
                 boardId={boardId}
                 mapId={mapId}
                 player={characterOpen}
+                isSelf={characterOpen.id === player.id}
               ></CharacterCard>
             }
           </div>

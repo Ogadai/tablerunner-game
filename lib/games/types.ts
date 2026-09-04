@@ -82,7 +82,7 @@ export interface PlayerItem {
   id: string;
   type: PlayerItemType;
   name: string;
-  icon: string;
+  iconXY: { x: number, y: number };
 }
 
 export interface PlayerEquipableItem extends PlayerItem {

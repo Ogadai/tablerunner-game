@@ -15,7 +15,54 @@
 }
 
 .statsCard {
-  margin-bottom: 10px;
+  margin: 10px 0 0 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  height: 44px;
+  padding: 6px 12px;
+  border: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.activeTab {
+  height: 48px;
+  border-top: 1px solid var(--gold-antique);
+  border-left: 1px solid var(--gold-antique);
+  border-right: 1px solid var(--gold-antique);
+  border-bottom-color: currentColor;
+  font-weight: bold;
+  background: none;
+  background-color: var(--bg-main);
+  color: var(--color-text-primary);
+
+  &:hover, &:active, &:focus-within, &:focus-visible {
+    background: none;
+    background-color: var(--bg-main);
+    color: var(--color-text-primary);
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.tabContent {
+  margin-top: -2px;
+  height: 460px;
+  border: 1px solid var(--gold-antique);
+  padding: 5px;
+  border-radius: 6px;
+}
+
+.tabContentFirst {
+  border-top-left-radius: 0;
 }
 
 td.statActions {

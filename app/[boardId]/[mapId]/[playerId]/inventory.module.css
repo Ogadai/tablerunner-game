@@ -1,0 +1,21 @@
+.inventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 70px);
+  grid-auto-rows: 70px;
+  gap: 6px;
+  padding: 6px;
+}
+
+.inventoryItem {
+  width: 70px;
+  height: 70px;
+  border: 2px solid var(--border-stone);
+  background-image: url('/item-grid.png');
+  background-repeat: no-repeat;
+  background-size: 627px 627px;
+  border-radius: 3px;
+}
+
+.equippedItem {
+  border: 2px solid var(--gold-antique);
+}

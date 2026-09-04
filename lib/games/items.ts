@@ -12,7 +12,7 @@ export const weapons: Record<WeaponIds, PlayerEquipableItem> = {
     id: WeaponIds.swordRusty.toString(),
     type: PlayerItemType.weapon,
     name: 'Rusty Sword',
-    icon: 'sword-1.png',
+    iconXY: { x: 0, y: 0 },
     bonusStats: {
       attack: 1,
       damage: 1
@@ -23,7 +23,7 @@ export const weapons: Record<WeaponIds, PlayerEquipableItem> = {
     type: PlayerItemType.weapon,
     name: 'Warped Bow',
     ranged: true,
-    icon: 'bow-1.png',
+    iconXY: { x: 5, y: 0 },
     bonusStats: {
       attack: 1,
       damage: 1
@@ -33,7 +33,7 @@ export const weapons: Record<WeaponIds, PlayerEquipableItem> = {
     id: WeaponIds.staffSkull.toString(),
     type: PlayerItemType.weapon,
     name: 'Skull Staff',
-    icon: 'staff-skull.png',
+    iconXY: { x: 4, y: 1 },
     bonusStats: {
       magic: 1,
       defence: 1,
@@ -43,7 +43,7 @@ export const weapons: Record<WeaponIds, PlayerEquipableItem> = {
     id: WeaponIds.staffOrb.toString(),
     type: PlayerItemType.weapon,
     name: 'Orb Staff',
-    icon: 'staff-orb.png',
+    iconXY: { x: 1, y: 1 },
     bonusStats: {
       magic: 1,
       health: 1,
