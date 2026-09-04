@@ -6,10 +6,10 @@ import { AllMonsterState } from "../store/types";
 import { cauldronOfFire } from '../games/maps';
 import { monsters, getPointsForDamage } from '../games/monsters';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '../games/gridCells';
-import { monsters1 } from '../games/monster-pack';
+import { getMonsters } from '../games/monster-pack';
 
 export async function populateMonsters(mapId: string): Promise<AllMonsterState> {
-  return monsters1;
+  return getMonsters();
   // const aiMonsters = await askAIForMonsters(mapId);
   // return aiMonsters;
 }
@@ -51,14 +51,17 @@ async function askAIForMonsters(mapId: string): Promise<AllMonsterState> {
       model: google(googleModel),
       system: `You are in charge of populating a map for a fantasy RPG game with monsters for the players to fight.
               Analyse the Game Info mapRows for descriptions of each location in the 20 by 12 grid.
-              A location should have a probability of containing mosters as follows -
-              Village: 0%, Road: 20%, Trail 40%, Desert: 50%, Forest: 70%, Tunnel: 70%, In the mountain: 760%, Cave/Chamber: 90%, Castle: 95%.
-              The monsters at a location are usually the same time, but sometimes a mix. e.g Rat + Snake or Goblin + Orc.
+              A location should have the following probability of containing monsters, based on the location description:
+              Village 0%, Road 40%, Trail/Track 60%, Desert 70%, Forest 70%, Tunnel 70%, In the mountain 70%, Cave/Chamber 100%, Castle 95%.
+              There should not be any large connected areas without any monsters.
+              The monsters at a location are often the same type, but sometimes a mix. e.g Rat + Snake or Goblin + Orc etc.
               Forests and Mountains and Desert should be populated with monsters suitable for the environment.
               The castle should mainly be populated with skeletons since the king is a necromancer who can summon them. Maximum 20 skeletons total in the whole castle.
+              Under the mountain should be the hardest zone on the map.
               The players start in the middle of the first row at the gate. This location should not have any monsters.
-              Areas nearer the starting area should be easier, with 1-3 less strong monsters.
-              Areas further from the starting area should be progressivly harder, getting stronger monsters and up to 10 at a location`,
+              Locations nearer the starting area should be easier, with 1-3 less strong monsters.
+              Locations further from the starting area should be proportinally harder, with up to 10 monsters at the hardest level.
+              The castle and mountain zones should be especially difficult`,
       prompt: `Game Info: ${JSON.stringify(gameInfo)}`,
       
       // Pass the output constraint here instead

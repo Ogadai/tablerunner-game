@@ -4,7 +4,7 @@ import Swal from 'sweetalert2'
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import { Dialog } from 'radix-ui';
 import { getSwalDefaultOptions } from '@/app/swal';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import styles from './mapedit.module.css';
 import { useSearchParams } from 'next/navigation';
 import { cinzel } from '@/app/fonts';
@@ -14,8 +14,9 @@ import { cauldronOfFire as mapData } from '@/lib/games/maps';
 import { monsters } from '@/lib/games/monsters';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
-import { monsters1 } from '@/lib/games/monster-pack';
+import { getMonsters } from '@/lib/games/monster-pack';
 import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
+import { AllMonsterState } from '@/lib/store/types';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
@@ -143,6 +144,7 @@ export default function MapEdit() {
   const searchParams = useSearchParams();
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
+  const [monsterList, setMonsterList] = useState<AllMonsterState>({ monsters: [] });
   const dragStartCell = useRef<number | null>(null);
   const dragActionTaken = useRef(false);
   
@@ -151,6 +153,10 @@ export default function MapEdit() {
  
   const one = (!page || page === '1');
   const two = (!page || page === '2');
+
+  useEffect(() => {
+    setMonsterList(getMonsters());
+  }, []);
 
   const bindClickLocation = (cell: number) =>
     async () => {
@@ -235,7 +241,7 @@ export default function MapEdit() {
 
   const monsterDialogEntities: EntityItemDetail[] = monsterDialogCell === null
     ? []
-    : monsters1.monsters
+    : monsterList.monsters
       .filter(monster => monster.location === monsterDialogCell)
       .map(monster => ({
         id: monster.id,
@@ -250,7 +256,7 @@ export default function MapEdit() {
     const location = mapState.find(l => l.id === cell);
     const description = location?.description || '';
     const moves = location?.move ?? [];
-    const monsterCount = monsters1.monsters.filter(monster => monster.location === cell).length;
+    const monsterCount = monsterList.monsters.filter(monster => monster.location === cell).length;
 
     const directionAngles: Record<string, number> = {
       n: -90,
