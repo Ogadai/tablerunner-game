@@ -9,13 +9,56 @@
 .inventoryItem {
   width: 70px;
   height: 70px;
+  padding: 0;
   border: 2px solid var(--border-stone);
   background-image: url('/item-grid.png');
   background-repeat: no-repeat;
   background-size: 627px 627px;
   border-radius: 3px;
+
+  &:hover, &:active, &:focus-within, &:focus-visible {
+    background: none;
+    background-image: url('/item-grid.png');
+    background-repeat: no-repeat;
+    background-size: 627px 627px;
+  }
 }
 
 .equippedItem {
   border: 2px solid var(--gold-antique);
+}
+
+.itemPopover {
+  width: auto;
+  min-width: 150px;
+}
+
+.itemPopover h3 {
+  margin: 0 20px 8px 0;
+}
+
+.itemPopover ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.itemPopover p {
+  margin: 0;
+}
+
+.statEntry {
+  display: flex;
+}
+
+.statName {
+  flex: 1 1 auto;
+  text-transform: capitalize;
+}
+
+.statValue {
+  width: 40px;
+  text-align: center;
+  flex: 0 0 auto;
+  font-weight: bold;
+  color: var(--color-success);
 }
