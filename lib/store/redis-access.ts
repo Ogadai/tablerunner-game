@@ -121,16 +121,16 @@ export async function deletePlayerStatsFromRedis(boardId: string, mapId: string,
 /* Individual Player Inventory Changes */
 
 export async function getPlayerInventoryFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerInventoryState> {
-  const result = await redis.get(getPlayerStatsKey(boardId, mapId, playerId)) as PlayerInventoryState;
+  const result = await redis.get(getPlayerInventoryKey(boardId, mapId, playerId)) as PlayerInventoryState;
   return result || { equipped: null };
 }
 
 export async function setPlayerInventoryInRedis(boardId: string, mapId: string, playerId: string, newInventoryState: PlayerInventoryState): Promise<void> {
-  await redis.set(getPlayerStatsKey(boardId, mapId, playerId), newInventoryState, gameStateOptions);
+  await redis.set(getPlayerInventoryKey(boardId, mapId, playerId), newInventoryState, gameStateOptions);
 }
 
 export async function deletePlayerInventoryFromRedis(boardId: string, mapId: string, playerId: string): Promise<void> {
-  await redis.del(getPlayerStatsKey(boardId, mapId, playerId));
+  await redis.del(getPlayerInventoryKey(boardId, mapId, playerId));
 }
 
 /* Individual Player Message List */

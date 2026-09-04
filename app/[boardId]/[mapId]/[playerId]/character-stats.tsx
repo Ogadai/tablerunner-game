@@ -57,6 +57,7 @@ export default function CharacterStats({
           ? response.data : { characterStats: emptyStats };
 
         setPlayerAddStats(stats);
+        console.log('refreshBaseStats', stats.characterStats);
         refreshBaseStats(stats.characterStats!);
       }
     }
@@ -66,7 +67,7 @@ export default function CharacterStats({
     } else {
       setPlayerAddStats({ characterStats: emptyStats });
     }
-  }, [boardId, mapId, player.id, isSelf, refreshBaseStats]);
+  }, [boardId, mapId, player.id, isSelf]);
 
   const savePlayerAddStats = async (nextStats: PlayerAddStatsState = playerAddStats) =>
     await setPlayerAddStatsState(boardId, mapId, player.id, nextStats);

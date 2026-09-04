@@ -23,15 +23,15 @@ export default function CharacterCard({
   const [activePlayer, setActivePlayer] = useState<PlayerState>(player);
 
   useEffect(() => {
-    const fetchPlayerAddStats = async () => {
+    const fetchPlayerInventory = async () => {
       const response = await getPlayerInventory(boardId, mapId, player.id);
       useInventoryResponse(response);
     }
 
     if (isSelf) {
-      fetchPlayerAddStats();
+      fetchPlayerInventory();
     }
-  });
+  }, [player]);
 
   const useInventoryResponse = (response: ApiResponse<PlayerInventoryState>) => {
     if (response.success && response.data?.equipped) {
