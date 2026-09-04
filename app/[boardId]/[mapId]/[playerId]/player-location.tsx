@@ -157,23 +157,24 @@ export default function PlayerLocation(
       </div> }
     </div>
 
-    { playerAlive && <>
-      <div className={styles.moveActionButtons}>
-        {(!isPlayerReady && playerCanMove) && playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
+    { playerAlive && <div className={styles.actionButtonContainer}>
+      { (!isPlayerReady && playerCanMove) && <div className={styles.moveActionButtons}>
+        {playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
           <button type="button" key={mv.direction}
-            className={`${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
+            className={`${styles[`move-${mv.direction}`]} ${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
             onClick={bindMoveAction(mv)}
           >{moveLabels[mv.direction]}
           </button>
         )}
 
-        { (!isPlayerReady && playerCanMove) && <button type="submit" onClick={endTurnAction}>Stay</button> }
-        { (!isPlayerReady && !playerCanMove) && <button type="submit" onClick={endTurnAction}>Ready</button> }
-        { isPlayerReady && <button type="submit" className="btn-delete" onClick={notReadyAction}>
-          <span>Not Ready!</span>
-          <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
-        </button> }
-      </div>
-    </>}
+        { (!isPlayerReady && playerCanMove) && <button className={styles.stay} type="submit" onClick={endTurnAction}>Stay</button> }
+      </div> }
+
+      { (!isPlayerReady && !playerCanMove) && <button className={styles.stay} type="submit" onClick={endTurnAction}>Ready</button> }
+      { isPlayerReady && <button type="submit" className={`${styles.stay} btn-delete`} onClick={notReadyAction}>
+        <span>Not Ready!</span>
+        <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
+      </button> }
+    </div>}
   </>);
 }

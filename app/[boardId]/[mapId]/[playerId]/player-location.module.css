@@ -16,18 +16,37 @@
   }
 }
 
-.moveActionButtons {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+.actionButtonContainer {
   border-top: 2px solid var(--border-stone);
+  height: 162px;
+}
+
+.moveActionButtons {
+  display: grid;
+  width: 160px;
+  height: 160px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "nw n ne"
+    "w stay e"
+    "sw s se";
 
   button, .btn {
-    margin: 10px 5px 0 5px;
-    padding: 0 5px;
+    margin: 2px;
+    padding: 0;
   }
 }
+
+.move-nw { grid-area: nw; }
+.move-n { grid-area: n; }
+.move-ne { grid-area: ne; }
+.move-w { grid-area: w; }
+.stay { grid-area: stay; }
+.move-e { grid-area: e; }
+.move-sw { grid-area: sw; }
+.move-s { grid-area: s; }
+.move-se { grid-area: se; }
 
 .actionsList {
   margin-top: 20px;
