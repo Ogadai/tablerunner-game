@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllMonsterState, PlayerMessagesState, PlayerAddStatsState } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllMonsterState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
@@ -12,6 +12,8 @@ const getPlayersReadyKey = (boardId: string, mapId: string) => `playersReady:${b
 const getPlayerActionsKey = (boardId: string, mapId: string, playerId: string) => `playerActions:${boardId}:${mapId}:${playerId}`;
 
 const getPlayerStatsKey = (boardId: string, mapId: string, playerId: string) => `playerStats:${boardId}:${mapId}:${playerId}`;
+
+const getPlayerInventoryKey = (boardId: string, mapId: string, playerId: string) => `playerInventory:${boardId}:${mapId}:${playerId}`;
 
 const getPlayerMessagesKey = (boardId: string, mapId: string, playerId: string) => `playerMessages:${boardId}:${mapId}:${playerId}`;
 
@@ -42,6 +44,7 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
       await deleteActionsStateFromRedis(boardId, mapId, player.id);
       await deletePlayerMessagesFromRedis(boardId, mapId, player.id);
       await deletePlayerStatsFromRedis(boardId, mapId, player.id);
+      await deletePlayerInventoryFromRedis(boardId, mapId, player.id);
     }
 
     // Delete the monsters state from Redis
@@ -112,6 +115,21 @@ export async function setPlayerStatsInRedis(boardId: string, mapId: string, play
 }
 
 export async function deletePlayerStatsFromRedis(boardId: string, mapId: string, playerId: string): Promise<void> {
+  await redis.del(getPlayerStatsKey(boardId, mapId, playerId));
+}
+
+/* Individual Player Inventory Changes */
+
+export async function getPlayerInventoryFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerInventoryState> {
+  const result = await redis.get(getPlayerStatsKey(boardId, mapId, playerId)) as PlayerInventoryState;
+  return result || { equipped: null };
+}
+
+export async function setPlayerInventoryInRedis(boardId: string, mapId: string, playerId: string, newInventoryState: PlayerInventoryState): Promise<void> {
+  await redis.set(getPlayerStatsKey(boardId, mapId, playerId), newInventoryState, gameStateOptions);
+}
+
+export async function deletePlayerInventoryFromRedis(boardId: string, mapId: string, playerId: string): Promise<void> {
   await redis.del(getPlayerStatsKey(boardId, mapId, playerId));
 }
 

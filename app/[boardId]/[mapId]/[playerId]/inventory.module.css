@@ -62,3 +62,8 @@
   font-weight: bold;
   color: var(--color-success);
 }
+
+.equipButton {
+  display: block;
+  margin: 12px auto 0;
+}

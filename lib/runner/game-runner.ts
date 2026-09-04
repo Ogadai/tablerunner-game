@@ -18,6 +18,7 @@ import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
 import { populateMonsters } from './populate-monsters';
 import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
+import { applyPlayerInventory } from "./apply-inventory";
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -51,7 +52,8 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 
     for(const player of params.gameState.players) {
       const addedStats = await getPlayerStatsFromRedis(params.boardId, params.mapId, player.id);
-      applyPlayerAddedStats(params, player, addedStats);
+      await applyPlayerAddedStats(params, player, addedStats);
+      await applyPlayerInventory(params, player);
     }
 
     // Run the game turn

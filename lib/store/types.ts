@@ -14,6 +14,12 @@ export interface GameState {
   visited: number[];
 }
 
+export interface PlayerInventoryEquipSlots {
+  helmet?: string | null;
+  armour?: string | null;
+  weapon?: string | null;
+}
+
 export interface PlayerState {
   id: string;
   name: string;
@@ -27,11 +33,7 @@ export interface PlayerState {
   points: number;
   availableStats: number;
   equipment: PlayerItem[];
-  equipped: {
-    helmet?: string | null;
-    armour?: string | null;
-    weapon?: string | null;
-  }
+  equipped: PlayerInventoryEquipSlots
 }
 
 export interface PlayerStateLocation {
@@ -94,4 +96,8 @@ export interface AllMonsterState {
 
 export interface LocationState {
   monsters: MonsterState[];
+}
+
+export interface PlayerInventoryState {
+  equipped: PlayerInventoryEquipSlots | null
 }

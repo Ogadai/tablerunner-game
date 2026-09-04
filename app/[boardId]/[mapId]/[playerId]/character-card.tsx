@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import styles from './character-card.module.css';
 
-import { PlayerState } from '@/lib/store/types';
+import { PlayerInventoryState, PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import Inventory from './inventory';
+import { getPlayerInventory, playerEquipItem } from '@/lib/store/playerInventory';
+import { ApiResponse } from "@/lib/api-response";
 
 export default function CharacterCard({
   boardId,
@@ -18,6 +20,37 @@ export default function CharacterCard({
   isSelf: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
+  const [activePlayer, setActivePlayer] = useState<PlayerState>(player);
+
+  useEffect(() => {
+    const fetchPlayerAddStats = async () => {
+      const response = await getPlayerInventory(boardId, mapId, player.id);
+      useInventoryResponse(response);
+    }
+
+    if (isSelf) {
+      fetchPlayerAddStats();
+    }
+  });
+
+  const useInventoryResponse = (response: ApiResponse<PlayerInventoryState>) => {
+    if (response.success && response.data?.equipped) {
+      const combinedPlayer = {
+        ...player,
+        equipped: {
+          ...player.equipped,
+          ...response.data.equipped
+        }
+      };
+
+      setActivePlayer(combinedPlayer);
+    }
+  }
+
+  const onEquipItem = async (itemId: string) => {
+    const response = await playerEquipItem(boardId, mapId, player.id, itemId);
+    useInventoryResponse(response);
+  }
 
   return <>
     <div className={styles.tabs} role="tablist" aria-label="Character details">
@@ -39,8 +72,8 @@ export default function CharacterCard({
     <div className={`${styles.tabContent} ${activeTab === 'stats' ? styles.tabContentFirst : ''}`}
       id={`${activeTab}-panel`} role="tabpanel" aria-label={activeTab === 'stats' ? 'Stats' : 'Inventory'}>
       {activeTab === 'stats'
-        ? <CharacterStats boardId={boardId} mapId={mapId} player={player} isSelf={isSelf} />
-        : <Inventory player={player} />}
+        ? <CharacterStats boardId={boardId} mapId={mapId} player={activePlayer} isSelf={isSelf} />
+        : <Inventory player={activePlayer} isSelf={isSelf} onEquipItem={onEquipItem} />}
     </div>
   </>;
 };
