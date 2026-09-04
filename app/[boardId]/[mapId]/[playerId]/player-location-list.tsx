@@ -156,6 +156,7 @@ export default function PlayerLocationList({
                 mapId={mapId}
                 player={characterOpen}
                 isSelf={characterOpen.id === player.id}
+                actionPointsLeft={actionPointsLeft}
                 onUseItem={onUseItem}
               ></CharacterCard>
             }

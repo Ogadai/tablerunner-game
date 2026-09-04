@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { PlayerState } from '@/lib/store/types';
 import { Popover } from 'radix-ui';
 import styles from './inventory.module.css';
-import { PlayerItem, PlayerItemType } from '@/lib/games/types';
+import { PlayerConsumableItem, PlayerItem, PlayerItemType } from '@/lib/games/types';
 
-export default function Inventory({ player, isSelf, onEquipItem, onUseItem }: {
+export default function Inventory({ player, isSelf, actionPointsLeft, onEquipItem, onUseItem }: {
   player: PlayerState;
   isSelf: boolean,
+  actionPointsLeft: number;
   onEquipItem: (id: string) => void;
   onUseItem: (id: string) => void;
 }) {
@@ -22,6 +23,7 @@ export default function Inventory({ player, isSelf, onEquipItem, onUseItem }: {
           key={`${i}}`}
           item={item}
           isEquipped={isEquipped(item)}
+          actionPointsLeft={actionPointsLeft}
           onEquipped={() => onEquipItem(item.id)}
           onUsed={() => onUseItem(item.id)}
         />;
@@ -34,12 +36,14 @@ function InventoryItem({
   isSelf,
   item,
   isEquipped,
+  actionPointsLeft,
   onEquipped,
   onUsed,
 }: {
   isSelf: boolean,
   item: PlayerItem;
   isEquipped: boolean;
+  actionPointsLeft: number;
   onEquipped: () => void;
   onUsed: () => void;
 }) {
@@ -59,6 +63,7 @@ function InventoryItem({
 
   const isEquipable = item.type !== PlayerItemType.consumable;
   const isConsumable = item.type === PlayerItemType.consumable;
+  const canUse = isConsumable && actionPointsLeft >= (item as PlayerConsumableItem).useCost;
 
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
@@ -99,7 +104,7 @@ function InventoryItem({
               onClick={onClickEquip}
             >Equip</button>
           )}
-          {isSelf && isConsumable && (
+          {isSelf && canUse && (
             <button
               type="button"
               className={`btn ${styles.equipButton}`}
