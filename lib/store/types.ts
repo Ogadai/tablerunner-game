@@ -18,6 +18,11 @@ export interface PlayerInventoryEquipSlots {
   helmet?: string | null;
   armour?: string | null;
   weapon?: string | null;
+  gloves?: string | null;
+  boots?: string | null;
+  belt?: string | null;
+  ring?: string | null;
+  necklace?: string | null;
 }
 
 export interface PlayerState {

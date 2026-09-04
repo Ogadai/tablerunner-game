@@ -19,7 +19,8 @@ export const characters: { [id: string]: CharacterListEntry } = {
     },
     equipment: [
       allItems.swordRusty,
-      allItems.bowWarped
+      allItems.healingPotion,
+      allItems.healingPotion,
     ]
   },
   witch: {
@@ -38,7 +39,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
       intelligence: 10,
     },
     equipment: [
-      allItems.staffSkull
+      allItems.staffSkull,
+      allItems.healingPotion,
+      allItems.healingPotion,
     ]
   },
   ranger: {
@@ -57,7 +60,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
       intelligence: 3,
     },
     equipment: [
-      allItems.bowWarped
+      allItems.bowWarped,
+      allItems.healingPotion,
+      allItems.healingPotion,
     ]
   },
   mage: {
@@ -76,7 +81,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
       intelligence: 10,
     },
     equipment: [
-      allItems.staffOrb
+      allItems.staffOrb,
+      allItems.healingPotion,
+      allItems.healingPotion,
     ]
   }
 };

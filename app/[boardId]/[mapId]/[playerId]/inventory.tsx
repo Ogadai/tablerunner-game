@@ -10,13 +10,7 @@ export default function Inventory({ player, isSelf, onEquipItem }: {
   onEquipItem: (id: string) => void;
 }) {
   const isEquipped = (item: PlayerItem) => {
-    if (item.type === PlayerItemType.helmet ||
-      item.type === PlayerItemType.armour ||
-      item.type === PlayerItemType.weapon) {
-      return player.equipped[item.type] === item.id;
-    }
-
-    return false;
+    return (player.equipped as any)[item.type] === item.id;
   };
 
   return (
@@ -54,6 +48,8 @@ function InventoryItem({
     onEquipped();
   }
 
+  const isEquipable = item.type !== PlayerItemType.consumable;
+
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
@@ -82,7 +78,7 @@ function InventoryItem({
           ) : (
             <p>No bonuses</p>
           )}
-          {!isEquipped && isSelf && (
+          {!isEquipped && isSelf && isEquipable && (
             <button
               type="button"
               className={`btn ${styles.equipButton}`}

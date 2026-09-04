@@ -29,7 +29,6 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
     const updatedInventory: PlayerInventoryState = {
       equipped: {
         ...playerInventory.equipped,
-        ...playerInventory.equipped
       }
     };
 
@@ -37,17 +36,7 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
     if (player && updatedInventory.equipped) {
       const item = player.equipment.find(i => i.id === itemId);
       if (item) {
-        switch(item.type) {
-          case PlayerItemType.helmet:
-            updatedInventory.equipped.helmet = item.id;
-            break;
-          case PlayerItemType.armour:
-            updatedInventory.equipped.armour = item.id;
-            break;
-          case PlayerItemType.weapon:
-            updatedInventory.equipped.weapon = item.id;
-            break;
-        }
+        (updatedInventory.equipped as any)[item.type] = item.id;
       }
     }
 
