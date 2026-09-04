@@ -18,7 +18,8 @@ export const characters: { [id: string]: CharacterListEntry } = {
       intelligence: 1,
     },
     equipment: [
-      allItems.swordRusty
+      allItems.swordRusty,
+      allItems.bowWarped
     ]
   },
   witch: {

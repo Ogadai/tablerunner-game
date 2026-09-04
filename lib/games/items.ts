@@ -23,7 +23,7 @@ export const weapons: Record<WeaponIds, PlayerEquipableItem> = {
     type: PlayerItemType.weapon,
     name: 'Warped Bow',
     ranged: true,
-    iconXY: { x: 5, y: 0 },
+    iconXY: { x: 6, y: 0 },
     bonusStats: {
       attack: 1,
       damage: 1

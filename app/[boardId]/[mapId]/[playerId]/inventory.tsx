@@ -27,7 +27,7 @@ export default function Inventory({ player }: { player: PlayerState }) {
                 aria-label={item.name}
                 title={item.name}
                 style={position ? {
-                  backgroundPosition: `-${position.x * 78 + 6}px -${position.y * 78 + 6}px`,
+                  backgroundPosition: `-${position.x * 80}px -${position.y * 80}px`,
                 } : undefined}
               />
             </Popover.Trigger>
