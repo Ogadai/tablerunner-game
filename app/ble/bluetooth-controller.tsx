@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import Swal from 'sweetalert2'
-import { swalDefaultOptions } from '@/app/swal';
+import { getSwalDefaultOptions } from '@/app/swal';
 
 import { BleState } from './ble-states';
 import { bluetoothService } from './bluetooth-service';
@@ -15,6 +15,11 @@ const isIOS = (): boolean => {
   return /iPhone|iPad|iPod/.test(navigator.userAgent);
 };
 
+const GLOBAL_STATE: { connectTimeout: any, isPrompting: boolean } = {
+  connectTimeout: null,
+  isPrompting: false
+}
+
 export default function BluetoothController({
   bleOtherPlayer,
 }: {
@@ -22,7 +27,6 @@ export default function BluetoothController({
 }) {
   const params = useParams();
   const [bleState, setBleState] = useState<BleState>(bluetoothService.getState());
-  const [message, setMessage] = useState<string>('');
 
   const boardId = params.boardId?.toString() || '';
   // Manual pair workflow (Used if no cached device exists)
@@ -38,9 +42,9 @@ export default function BluetoothController({
     bluetoothService.disconnect();
   };
 
-  const askReconnect = useCallback(async () => {
+  const askReconnect = async () => {
     const result = await Swal.fire({
-      ...swalDefaultOptions,
+      ...getSwalDefaultOptions(),
       title: 'Reconnect to board?',
       text: "Would you like to reconnect to the Tablerunner board?",
       showCancelButton: true,
@@ -53,17 +57,58 @@ export default function BluetoothController({
     } else {
       localStorage.setItem('ble_connected', 'false');
     }
-  }, [connectBluetooth]);
+  };
+
+  const checkAskConnect = () => {
+    if (!GLOBAL_STATE.connectTimeout) {
+      const timeout = setTimeout(async () => {
+        GLOBAL_STATE.connectTimeout = null;
+        GLOBAL_STATE.isPrompting = true;
+        await askConnect();
+        GLOBAL_STATE.isPrompting = false;
+      }, 2000);
+
+      GLOBAL_STATE.connectTimeout = timeout;
+    }
+  }
+
+  const askConnect = async () => {
+    const result = await Swal.fire({
+      ...getSwalDefaultOptions(),
+      title: 'Connect to board?',
+      text: "One device should be connected to the Tablerunner board. Connect this device?",
+      showCancelButton: true,
+      confirmButtonColor: 'var(--gold-antique)',
+      confirmButtonText: 'Connect'
+    });
+
+    if (result.isConfirmed) {
+      await connectBluetooth();
+    }
+  };
 
   useEffect(() => {
+    if (GLOBAL_STATE.connectTimeout) {
+      clearTimeout(GLOBAL_STATE.connectTimeout);
+      GLOBAL_STATE.connectTimeout = null;
+    }
+    if (bleOtherPlayer && GLOBAL_STATE.isPrompting) {
+      Swal.close({ isConfirmed: false });
+    }
+
     bluetoothService.initialize();
     const unsubscribe = bluetoothService.subscribe(setBleState);
 
-    if (localStorage.getItem('ble_connected') === 'true') {
-      askReconnect();
+    // if (localStorage.getItem('ble_connected') === 'true') {
+    //   askReconnect();
+    // } else
+    if (!bleOtherPlayer &&
+      bluetoothService.getState() !== BleState.Connected &&
+      bluetoothService.getState() !== BleState.OtherConnected) {
+      checkAskConnect();
     }
     return unsubscribe;
-  }, [askReconnect]);
+  }, [bleOtherPlayer]);
 
   const showBleState = bleOtherPlayer ? BleState.OtherConnected : bleState;
   const onClick = async () => {
@@ -76,7 +121,7 @@ export default function BluetoothController({
         break;
       case BleState.Connected:
         const result = await Swal.fire({
-          ...swalDefaultOptions,
+          ...getSwalDefaultOptions(),
           title: 'Disconnect from board?',
           text: "Are you sure you want to disconnect from the Tablerunner board?",
           showCancelButton: true,
@@ -94,7 +139,7 @@ export default function BluetoothController({
           : "Unfortunately, your browser doesn't support Bluetooth devices.";
         
         await Swal.fire({
-          ...swalDefaultOptions,
+          ...getSwalDefaultOptions(),
           title: 'Not supported',
           text: iosMessage,
           confirmButtonColor: 'var(--gold-antique)',
@@ -103,7 +148,7 @@ export default function BluetoothController({
         break;
       case BleState.OtherConnected:
         await Swal.fire({
-          ...swalDefaultOptions,
+          ...getSwalDefaultOptions(),
           title: 'Already connected',
           text: "Another device is already connected to this Tablerunner board. You only need to connect one device.",
           confirmButtonColor: 'var(--gold-antique)',

@@ -94,6 +94,28 @@ describe('BluetoothService', () => {
     expect(service.getState()).toBe(BleState.Error);
   });
 
+  it('should retry a failed connection and connect on a later attempt', async () => {
+    const error = new Error('temporary failure');
+    mockBluetooth.requestDevice
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce(mockDevice);
+
+    await service.connect('board-42');
+
+    expect(mockBluetooth.requestDevice).toHaveBeenCalledTimes(2);
+    expect(service.getState()).toBe(BleState.Connected);
+  });
+
+  it('should stop after three failed connection attempts', async () => {
+    const error = new Error('persistent failure');
+    mockBluetooth.requestDevice.mockRejectedValue(error);
+
+    await expect(service.connect('board-42')).rejects.toThrow('persistent failure');
+
+    expect(mockBluetooth.requestDevice).toHaveBeenCalledTimes(3);
+    expect(service.getState()).toBe(BleState.Error);
+  });
+
   it('should set state to NotSupported and return early when no Bluetooth is available', async () => {
     delete (navigator as any).bluetooth;
 

@@ -62,6 +62,14 @@ export default function PlayerLocationList({
   ];
 
   useEffect(() => {
+    // Listen for the custom Swal signal
+    window.addEventListener('close-active-radix-dialogs', onCloseDialog);
+    return () => {
+      window.removeEventListener('close-active-radix-dialogs', onCloseDialog);
+    };
+  });
+
+  useEffect(() => {
     if (player.availableStats > 0) {
       setCharacterOpen(player);
     }
@@ -108,7 +116,15 @@ export default function PlayerLocationList({
     <Dialog.Root open={dialogOpen} onOpenChange={open => { if (!open) onCloseDialog() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
-        <Dialog.Content className="DialogContent">
+        <Dialog.Content className="DialogContent"
+          onPointerDownOutside={(event) => {
+            console.log('onPointerDownOutside', event.target);
+            // If the click is hitting a SweetAlert2 element, prevent Radix from blocking it
+            if ((event.target as HTMLElement).closest('.swal2-container')) {
+              event.preventDefault();
+            }
+          }}
+        >
           <Dialog.Title className="DialogTitle">
             <span>{dialogTitle}</span>
             { dialogSubTitle && <span className="DialogSubTitle">{dialogSubTitle}</span> }

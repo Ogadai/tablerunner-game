@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
-import { swalDefaultOptions } from '@/app/swal';
+import { getSwalDefaultOptions } from '@/app/swal';
 
 import { monsters } from '@/lib/games/monsters';
 import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
@@ -73,7 +73,7 @@ export default function PlayerLocation(
     async () => {
       if (!canMoveDirection(locationMove.direction)) {
         await Swal.fire({
-          ...swalDefaultOptions,
+          ...getSwalDefaultOptions(),
           title: 'Movement blocked!',
           icon: 'warning',
           text: "You cannot move through this location while there are enemies. You can only retreat.",

@@ -47,6 +47,7 @@ describe('BluetoothController', () => {
     (useParams as jest.Mock).mockReturnValue({ boardId: mockBoardId });
     (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.Disconnected);
     (bluetoothService.subscribe as jest.Mock).mockReturnValue(jest.fn());
+    (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
     // Reset userAgent to default (non-iOS)
     Object.defineProperty(navigator, 'userAgent', {
       value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -371,6 +372,38 @@ describe('BluetoothController', () => {
   });
 
   describe('LocalStorage interactions', () => {
+    it('should prompt to connect when initially disconnected', async () => {
+      render(<BluetoothController bleOtherPlayer={false} />);
+
+      await waitFor(() => {
+        expect(Swal.fire).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Connect to board?',
+          })
+        );
+      });
+    });
+
+    it('should not prompt to connect when another player is connected', async () => {
+      (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.OtherConnected);
+
+      render(<BluetoothController bleOtherPlayer={true} />);
+
+      await waitFor(() => {
+        expect(Swal.fire).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should not prompt to connect when already connected', async () => {
+      (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.Connected);
+
+      render(<BluetoothController bleOtherPlayer={false} />);
+
+      await waitFor(() => {
+        expect(Swal.fire).not.toHaveBeenCalled();
+      });
+    });
+
     it('should prompt to reconnect if ble_connected is true on mount', async () => {
       localStorage.setItem('ble_connected', 'true');
       (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
@@ -408,13 +441,19 @@ describe('BluetoothController', () => {
       });
     });
 
-    it('should not prompt for reconnection if ble_connected is false', async () => {
+    it('should prompt for connection if ble_connected is false', async () => {
       localStorage.setItem('ble_connected', 'false');
       (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
 
       render(<BluetoothController bleOtherPlayer={false} />);
 
-      expect(Swal.fire).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(Swal.fire).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Connect to board?',
+          })
+        );
+      });
     });
   });
 

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Swal from 'sweetalert2'
-import { swalDefaultOptions } from '@/app/swal';
+import { getSwalDefaultOptions } from '@/app/swal';
 import { useRouter } from 'next/navigation';
 
 import styles from './play-game.module.css';
@@ -31,7 +31,7 @@ export default function PlayGame(
   const bindDeleteCharacterAction = (player: PlayerState) => 
     async () => {
       const result = await Swal.fire({
-        ...swalDefaultOptions,
+        ...getSwalDefaultOptions(),
         title: 'Delete player?',
         icon: 'warning',
         text: "This will delete the current player. A new player can be created, but this one can't be restored.",

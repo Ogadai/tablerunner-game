@@ -1,6 +1,11 @@
 import { SweetAlertOptions } from "sweetalert2";
 
-export const swalDefaultOptions: SweetAlertOptions = {
-  heightAuto: false,
-  theme: 'auto',
+export function getSwalDefaultOptions(): SweetAlertOptions {
+  return {
+    heightAuto: false,
+    theme: 'auto',
+    willOpen: (modal) => {
+      window.dispatchEvent(new Event('close-active-radix-dialogs'));
+    }
+  };
 };
