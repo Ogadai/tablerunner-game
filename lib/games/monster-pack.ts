@@ -13,10 +13,14 @@ export function getMonsters() {
     monsters: []
   };
 
+  let monsterId = 1;
+
   for(let n = 1; n <= GRID_CELL_COUNT; n++) {
     const listIndex = Math.floor(Math.random() * monsterLists.length);
     const monstersAtLocation = monsterLists[listIndex].monsters.filter(m => m.location === n);
-    allMonsters.monsters.push(...monstersAtLocation);
+    allMonsters.monsters.push(
+      ...monstersAtLocation.map(m => ({...m, id: `m-${monsterId++}`}))
+    );
   }
 
   return allMonsters;

@@ -122,10 +122,12 @@ export default function PlayerLocationList({
     setCharacterOpen(null);
   }
 
+  // TODO: Can't attack or use items if dead!
+
   const canAttack = actionPointsLeft >= actionsPerTurn.attack;
   const usedItemUniqueIds = actionsState.actions
     .filter(a => a.type === PlayerActionType.UseItem)
-    .map(a => (a as PlayerActionUseItem).uniqueId);
+    .map(a => (a as PlayerActionUseItem).uniqueId || '');
 
   return (<>
     <EntityList entities={entities} onClickEntity={onClickEntity} />

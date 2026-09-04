@@ -6,15 +6,16 @@ import {
   PlayerActionType,
   PlayerAction,
   PlayerActionsState,
+  PlayerActionUseItem,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
 } from '../store/redis-access';
 import { games } from "../games/games";
-import { BaseStats, OPPOSITE_DIRECTION, PlayerEquipableItem } from '@/lib/games/types';
+import { BaseStats, OPPOSITE_DIRECTION, PlayerConsumableItem, PlayerEquipableItem, PlayerItemType } from '@/lib/games/types';
 import { monsters, getPointsForDamage } from "../games/monsters";
 import { BaseParams } from './base-params';
-import { playerMessageAtLocation } from './game-messages';
+import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
 
 enum EntityActionEntityTypes {
@@ -169,6 +170,9 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
           case PlayerActionType.Attack:
             actionAttack(params, player, nextAction as PlayerActionAttack);
             break;
+          case PlayerActionType.UseItem:
+            actionUseItem(params, player, nextAction as PlayerActionUseItem);
+            break;
         }
       }
     } else if (entityActions.entityType === EntityActionEntityTypes.monster) {
@@ -304,4 +308,26 @@ function processAttackForDamage(attackerStats: BaseStats, defenderStats: BaseSta
   }
 
   return 0;
+}
+
+function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerActionUseItem): void {
+  const item = player.equipment.find(item => item.type === PlayerItemType.consumable
+    && (item as PlayerConsumableItem).uniqueId === action.uniqueId);
+  if (item) {
+    const consumableItem = item as PlayerConsumableItem;
+
+    // Apply benefit
+    if (consumableItem.bonusStats?.health) {
+      const addedHealth = Math.min(consumableItem.bonusStats?.health,
+        player.baseStats!.health - player.health);
+      player.health += addedHealth;
+
+      soloMessageAtLocation(params, player.id,
+        `**You** drank **${consumableItem.name}** for **${addedHealth}** health!`);
+    }
+
+    // Remove from equipment
+    player.equipment = player.equipment.filter(item => item.type !== PlayerItemType.consumable
+      || (item as PlayerConsumableItem).uniqueId !== action.uniqueId)
+  }
 }
