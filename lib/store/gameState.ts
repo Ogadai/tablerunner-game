@@ -2,11 +2,11 @@
 
 import { ApiResponse } from "../api-response";
 import { GameState, PlayerState } from "./types";
-import { BaseStats } from "../games/types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
 import { getPlayerStats } from './playerStats';
+import { createItemForInventory } from "../runner/apply-inventory";
 
 const INITIAL_AVAILABLE_STATS = 5;
 
@@ -108,7 +108,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       level: 1,
       availableStats: INITIAL_AVAILABLE_STATS,
       equipment: [
-        ...characterDef.equipment
+        ...characterDef.equipment.map(createItemForInventory)
       ],
       equipped: {
         weapon: characterDef.equipment[0].id

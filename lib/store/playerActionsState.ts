@@ -27,7 +27,7 @@ export async function addPlayerAction(boardId: string, mapId: string, playerId: 
       ...currentState,
       actions: [
         ...currentState.actions.filter(a => {
-          return a.type !== PlayerActionType.Move || a.type !== PlayerActionType.Move
+          return action.type !== PlayerActionType.Move || a.type !== PlayerActionType.Move
         }),
         { ...action }
       ]

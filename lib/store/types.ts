@@ -80,6 +80,7 @@ export interface PlayerActionAttack extends PlayerAction {
 export interface PlayerActionUseItem extends PlayerAction {
   type: PlayerActionType.UseItem,
   itemId: string;
+  uniqueId?: string;
 }
 
 export interface PlayerActionsState {

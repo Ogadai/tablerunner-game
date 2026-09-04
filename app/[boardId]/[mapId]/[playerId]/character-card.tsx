@@ -15,13 +15,15 @@ export default function CharacterCard({
   isSelf,
   actionPointsLeft,
   onUseItem,
+  usedItemUniqueIds,
 }: {
   boardId: string;
   mapId: string;
   player: PlayerState;
   isSelf: boolean;
   actionPointsLeft: number;
-  onUseItem: (id: string) => void;
+  onUseItem: (id: string, uniqueId?: string) => void;
+  usedItemUniqueIds: string[];
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
   const [activePlayer, setActivePlayer] = useState<PlayerState>(player);
@@ -77,7 +79,7 @@ export default function CharacterCard({
       id={`${activeTab}-panel`} role="tabpanel" aria-label={activeTab === 'stats' ? 'Stats' : 'Inventory'}>
       {activeTab === 'stats'
         ? <CharacterStats boardId={boardId} mapId={mapId} player={activePlayer} isSelf={isSelf} />
-        : <Inventory player={activePlayer} isSelf={isSelf} actionPointsLeft={actionPointsLeft} onEquipItem={onEquipItem} onUseItem={onUseItem} />}
+        : <Inventory player={activePlayer} isSelf={isSelf} actionPointsLeft={actionPointsLeft} onEquipItem={onEquipItem} onUseItem={onUseItem} usedItemUniqueIds={usedItemUniqueIds} />}
     </div>
   </>;
 };

@@ -105,5 +105,6 @@ export interface PlayerEquipableItem extends PlayerItem {
 }
 
 export interface PlayerConsumableItem extends PlayerItem {
+  uniqueId?: string;
   useCost: number;
 }

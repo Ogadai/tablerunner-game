@@ -57,7 +57,6 @@ export default function CharacterStats({
           ? response.data : { characterStats: emptyStats };
 
         setPlayerAddStats(stats);
-        console.log('refreshBaseStats', stats.characterStats);
         refreshBaseStats(stats.characterStats!);
       }
     }

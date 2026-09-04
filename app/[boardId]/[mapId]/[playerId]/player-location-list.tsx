@@ -98,7 +98,7 @@ export default function PlayerLocationList({
     } as Omit<PlayerActionAttack, 'id'>);
   }
 
-  const onUseItem = async (id: string) => {
+  const onUseItem = async (id: string, uniqueId?: string) => {
     setCharacterOpen(null);
     const item: PlayerItem = (allItems as any)[id];
 
@@ -106,6 +106,7 @@ export default function PlayerLocationList({
       type: PlayerActionType.UseItem,
       description: `Use ${item.name}`,
       itemId: id,
+      uniqueId
     } as Omit<PlayerActionUseItem, 'id'>);
   }
 
@@ -122,6 +123,9 @@ export default function PlayerLocationList({
   }
 
   const canAttack = actionPointsLeft >= actionsPerTurn.attack;
+  const usedItemUniqueIds = actionsState.actions
+    .filter(a => a.type === PlayerActionType.UseItem)
+    .map(a => (a as PlayerActionUseItem).uniqueId);
 
   return (<>
     <EntityList entities={entities} onClickEntity={onClickEntity} />
@@ -129,15 +133,7 @@ export default function PlayerLocationList({
     <Dialog.Root open={dialogOpen} onOpenChange={open => { if (!open) onCloseDialog() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
-        <Dialog.Content className="DialogContent"
-          onPointerDownOutside={(event) => {
-            console.log('onPointerDownOutside', event.target);
-            // If the click is hitting a SweetAlert2 element, prevent Radix from blocking it
-            if ((event.target as HTMLElement).closest('.swal2-container')) {
-              event.preventDefault();
-            }
-          }}
-        >
+        <Dialog.Content className="DialogContent">
           <Dialog.Title className="DialogTitle">
             <span>{dialogTitle}</span>
             { dialogSubTitle && <span className="DialogSubTitle">{dialogSubTitle}</span> }
@@ -158,6 +154,7 @@ export default function PlayerLocationList({
                 isSelf={characterOpen.id === player.id}
                 actionPointsLeft={actionPointsLeft}
                 onUseItem={onUseItem}
+                usedItemUniqueIds={usedItemUniqueIds}
               ></CharacterCard>
             }
           </div>

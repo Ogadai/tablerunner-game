@@ -4,15 +4,20 @@ import { Popover } from 'radix-ui';
 import styles from './inventory.module.css';
 import { PlayerConsumableItem, PlayerItem, PlayerItemType } from '@/lib/games/types';
 
-export default function Inventory({ player, isSelf, actionPointsLeft, onEquipItem, onUseItem }: {
+export default function Inventory({ player, isSelf, actionPointsLeft, onEquipItem, onUseItem, usedItemUniqueIds }: {
   player: PlayerState;
   isSelf: boolean,
   actionPointsLeft: number;
   onEquipItem: (id: string) => void;
-  onUseItem: (id: string) => void;
+  onUseItem: (id: string, uniqueId?: string) => void;
+  usedItemUniqueIds: string[];
 }) {
   const isEquipped = (item: PlayerItem) => {
     return (player.equipped as any)[item.type] === item.id;
+  };
+  const isUsed = (item: PlayerItem) => {
+    return item.type === PlayerItemType.consumable
+      && usedItemUniqueIds.includes((item as PlayerConsumableItem).uniqueId || '');
   };
 
   return (
@@ -23,9 +28,10 @@ export default function Inventory({ player, isSelf, actionPointsLeft, onEquipIte
           key={`${i}}`}
           item={item}
           isEquipped={isEquipped(item)}
+          isUsed={isUsed(item)}
           actionPointsLeft={actionPointsLeft}
           onEquipped={() => onEquipItem(item.id)}
-          onUsed={() => onUseItem(item.id)}
+          onUsed={() => onUseItem(item.id, (item as PlayerConsumableItem).uniqueId)}
         />;
       })}
     </div>
@@ -36,6 +42,7 @@ function InventoryItem({
   isSelf,
   item,
   isEquipped,
+  isUsed,
   actionPointsLeft,
   onEquipped,
   onUsed,
@@ -43,6 +50,7 @@ function InventoryItem({
   isSelf: boolean,
   item: PlayerItem;
   isEquipped: boolean;
+  isUsed: boolean;
   actionPointsLeft: number;
   onEquipped: () => void;
   onUsed: () => void;
@@ -63,7 +71,7 @@ function InventoryItem({
 
   const isEquipable = item.type !== PlayerItemType.consumable;
   const isConsumable = item.type === PlayerItemType.consumable;
-  const canUse = isConsumable && actionPointsLeft >= (item as PlayerConsumableItem).useCost;
+  const canUse = isConsumable && !isUsed && actionPointsLeft >= (item as PlayerConsumableItem).useCost;
 
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
