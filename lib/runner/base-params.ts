@@ -1,4 +1,4 @@
-import { GameState, PlayerMessagesState, MonsterState } from "../store/types";
+import { GameState, PlayerMessagesState, MonsterState, ItemLocationState } from "../store/types";
 
 export interface BaseParams {
   boardId: string;
@@ -6,4 +6,5 @@ export interface BaseParams {
   gameState: GameState;
   messages: Record<string, PlayerMessagesState>;
   monsters: MonsterState[];
+  items: ItemLocationState[];
 }

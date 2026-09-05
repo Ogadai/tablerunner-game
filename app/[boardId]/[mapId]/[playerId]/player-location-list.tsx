@@ -9,6 +9,8 @@ import CharacterCard from './character-card';
 import { PlayerActionsPerTurn } from "@/lib/store/playerStats";
 import { allItems } from "@/lib/games/items";
 import { PlayerItem } from "@/lib/games/types";
+import LocationItemList from "./location-item-list";
+import { takeItemAtLocation } from "@/lib/store/playerInventory";
 
 export interface PlayerLocationListProps {
   boardId: string;
@@ -16,6 +18,7 @@ export interface PlayerLocationListProps {
   player: PlayerState;
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
+  items: PlayerItem[];
   actionsState: PlayerActionsState;
   actionsPerTurn: PlayerActionsPerTurn;
   actionPointsLeft: number;
@@ -28,6 +31,7 @@ export default function PlayerLocationList({
   player,
   otherPlayers,
   monsters: locationMonsters,
+  items: locationItems,
   actionsState,
   actionsPerTurn,
   actionPointsLeft,
@@ -110,6 +114,10 @@ export default function PlayerLocationList({
     } as Omit<PlayerActionUseItem, 'id'>);
   }
 
+  const onTakeItem = async (id: string, uniqueId?: string) => {
+    await takeItemAtLocation(boardId, mapId, player.id, id, uniqueId);
+  }
+
   const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
   
   const dialogTitle =  (monsterOpen !== null)
@@ -131,6 +139,8 @@ export default function PlayerLocationList({
 
   return (<>
     <EntityList entities={entities} onClickEntity={onClickEntity} />
+
+    <LocationItemList items={locationItems} onTakeItem={onTakeItem} />
 
     <Dialog.Root open={dialogOpen} onOpenChange={open => { if (!open) onCloseDialog() }}>
       <Dialog.Portal>

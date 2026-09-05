@@ -102,14 +102,21 @@ export interface MonsterState {
   health: number;
 }
 
-export interface AllMonsterState {
+export interface ItemLocationState extends PlayerItem {
+  location: number;
+}
+
+export interface AllLocationsState {
   monsters: MonsterState[];
+  items: ItemLocationState[];
 }
 
 export interface LocationState {
   monsters: MonsterState[];
+  items: PlayerItem[];
 }
 
 export interface PlayerInventoryState {
   equipped: PlayerInventoryEquipSlots | null
+  equipment: PlayerItem[] | null;
 }

@@ -5,7 +5,7 @@ import styles from './character-card.module.css';
 import { PlayerInventoryState, PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import Inventory from './inventory';
-import { getPlayerInventory, playerEquipItem } from '@/lib/store/playerInventory';
+import { dropItemAtLocation, getPlayerInventory, playerEquipItem } from '@/lib/store/playerInventory';
 import { ApiResponse } from "@/lib/api-response";
 
 export default function CharacterCard({
@@ -46,15 +46,22 @@ export default function CharacterCard({
         equipped: {
           ...player.equipped,
           ...response.data.equipped
-        }
+        },
+        equipment: response.data.equipment !== null
+            ? response.data.equipment : player.equipment,
       };
 
       setActivePlayer(combinedPlayer);
     }
   }
 
-  const onEquipItem = async (itemId: string) => {
-    const response = await playerEquipItem(boardId, mapId, player.id, itemId);
+  const onEquipItem = async (itemId: string, uniqueId?: string) => {
+    const response = await playerEquipItem(boardId, mapId, player.id, itemId, uniqueId);
+    useInventoryResponse(response);
+  }
+
+  const onDropItem = async (itemId: string, uniqueId?: string) => {
+    const response = await dropItemAtLocation(boardId, mapId, player.id, itemId, uniqueId);
     useInventoryResponse(response);
   }
 
@@ -78,8 +85,21 @@ export default function CharacterCard({
     <div className={`${styles.tabContent} ${activeTab === 'stats' ? styles.tabContentFirst : ''}`}
       id={`${activeTab}-panel`} role="tabpanel" aria-label={activeTab === 'stats' ? 'Stats' : 'Inventory'}>
       {activeTab === 'stats'
-        ? <CharacterStats boardId={boardId} mapId={mapId} player={activePlayer} isSelf={isSelf} />
-        : <Inventory player={activePlayer} isSelf={isSelf} actionPointsLeft={actionPointsLeft} onEquipItem={onEquipItem} onUseItem={onUseItem} usedItemUniqueIds={usedItemUniqueIds} />}
+        ? <CharacterStats
+            boardId={boardId}
+            mapId={mapId}
+            player={activePlayer}
+            isSelf={isSelf}
+          />
+        : <Inventory
+            player={activePlayer}
+            isSelf={isSelf}
+            actionPointsLeft={actionPointsLeft}
+            onEquipItem={onEquipItem}
+            onUseItem={onUseItem}
+            onDropItem={onDropItem}
+            usedItemUniqueIds={usedItemUniqueIds}
+          />}
     </div>
   </>;
 };

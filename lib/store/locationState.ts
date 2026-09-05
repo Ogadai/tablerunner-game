@@ -2,13 +2,14 @@
 
 import { ApiResponse } from "../api-response";
 import { LocationState } from "./types";
-import { getMonstersStateFromRedis } from './redis-access';
+import { getLocationsStateFromRedis } from './redis-access';
 
 export async function getLocationState(boardId: string, mapId: string, location: number): Promise<ApiResponse<LocationState>> {
   try {
-    const monsterState = await getMonstersStateFromRedis(boardId, mapId);
+    const monsterState = await getLocationsStateFromRedis(boardId, mapId);
     const data: LocationState = {
       monsters: monsterState.monsters.filter(m => m.location === location),
+      items: monsterState.items.filter(i => i.location === location),
     };
 
     return {

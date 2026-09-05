@@ -16,7 +16,7 @@ import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 import { getMonsters } from '@/lib/games/monster-pack';
 import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
-import { AllMonsterState } from '@/lib/store/types';
+import { AllLocationsState } from '@/lib/store/types';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
@@ -144,7 +144,7 @@ export default function MapEdit() {
   const searchParams = useSearchParams();
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
-  const [monsterList, setMonsterList] = useState<AllMonsterState>({ monsters: [] });
+  const [monsterList, setMonsterList] = useState<AllLocationsState>({ monsters: [] });
   const dragStartCell = useRef<number | null>(null);
   const dragActionTaken = useRef(false);
   

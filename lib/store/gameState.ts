@@ -4,10 +4,11 @@ import { ApiResponse } from "../api-response";
 import { GameState, PlayerState } from "./types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
-import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
+import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis, setLocationsStateInRedis } from './redis-access';
 import { getPlayerStats } from './playerStats';
 import { createItemForInventory } from "../runner/apply-inventory";
 import { pickCharacterName } from "../games/character-names";
+import { populateMonsters } from "../runner/populate-monsters";
 
 const INITIAL_AVAILABLE_STATS = 5;
 
@@ -44,9 +45,13 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     visited: [gameDef.startLocation]
   };
 
+  const locationsState = await populateMonsters(mapId);
+
   try {
     // Store data in Redis
     await setGameStateInRedis(boardId, mapId, newGameState);
+
+    await setLocationsStateInRedis(boardId, mapId, locationsState);
     return {
       success: true,
       data: newGameState

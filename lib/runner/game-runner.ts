@@ -1,14 +1,14 @@
 import {
   GameState,
   PlayerReadyState,
-  AllMonsterState,
+  AllLocationsState,
 } from "../store/types";
 import {
   getGameStateFromRedis,
   setGameStateInRedis,
   setReadyStateInRedis,
-  getMonstersStateFromRedis,
-  setMonstersStateInRedis,
+  getLocationsStateFromRedis,
+  setLocationsStateInRedis,
   setPlayerMessagesInRedis,
   setActionsStateInRedis,
   setPlayerStatsInRedis,
@@ -22,7 +22,7 @@ import { applyPlayerInventory } from "./apply-inventory";
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   const gameState = await getGameStateFromRedis(boardId, mapId);
-  const monsterState = await getMonsterState(boardId, mapId);
+  const locationsState = await getLocationsStateFromRedis(boardId, mapId);;
 
   if (gameState.players.every(player =>
     (player.health === 0) || readyState.readyPlayerIds.includes(player.id)
@@ -32,7 +32,8 @@ export async function checkAllPlayersReady(boardId: string, mapId: string, ready
       mapId,
       gameState,
       messages: {},
-      monsters: monsterState.monsters
+      monsters: locationsState.monsters,
+      items: locationsState.items,
     });
   }
 }
@@ -92,17 +93,9 @@ async function runGameTurn(params: BaseParams): Promise<void> {
   await runGameActions(params);
 
   // Store monsters
-  const newMonsterState: AllMonsterState = {
-    monsters: params.monsters
+  const newLocationsState: AllLocationsState = {
+    monsters: params.monsters,
+    items: params.items,
   };
-  setMonstersStateInRedis(params.boardId, params.mapId, newMonsterState);
-}
-
-async function getMonsterState(boardId: string, mapId: string): Promise<AllMonsterState> {
-  let monsterState = await getMonstersStateFromRedis(boardId, mapId);
-  if (!monsterState.monsters?.length) {
-    return await populateMonsters(mapId);
-  }
-
-  return monsterState
+  setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
 }

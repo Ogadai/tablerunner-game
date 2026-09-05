@@ -1,4 +1,4 @@
-import { AllMonsterState } from '../store/types';
+import { AllLocationsState } from '../store/types';
 import { monsters as monsters1 } from './monster-packs/pack1';
 import { monsters as monsters2 } from './monster-packs/pack2';
 import { monsters as monsters3 } from './monster-packs/pack3';
@@ -9,8 +9,9 @@ const monsterLists = [
 ];
 
 export function getMonsters() {
-  const allMonsters: AllMonsterState = {
-    monsters: []
+  const allMonsters: AllLocationsState = {
+    monsters: [],
+    items: [],
   };
 
   let monsterId = 1;

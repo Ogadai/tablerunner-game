@@ -13,13 +13,16 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
     };
   }
 
+  if (result.equipment !== null) {
+    player.equipment = result.equipment;
+  }
+
   await deletePlayerInventoryFromRedis(params.boardId, params.mapId, player.id);
 }
 
 export const createItemForInventory = (item: PlayerItem): PlayerItem => {
-  const newItem = { ...item };
-  if (newItem.type === PlayerItemType.consumable) {
-    (newItem as PlayerConsumableItem).uniqueId = `i-${Math.ceil(Math.random() * 1000000)}`;
-  }
-  return newItem;
+  return {
+    ...item,
+    uniqueId: `i-${Math.ceil(Math.random() * 1000000)}`,
+  };
 }

@@ -12,6 +12,8 @@ import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/li
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
 import { getPlayerActionsPerTurn, PlayerActionsPerTurn, getPlayerActionsCosts } from "@/lib/store/playerStats";
+import LocationTopicService from "@/app/message-bus/location-topic-service";
+import { getGameTopicId } from "@/lib/message-types";
 
 export default function PlayerLocation(
   {
@@ -30,13 +32,14 @@ export default function PlayerLocation(
     endTurnAction: () => void
   }) {
   const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
-  const [locationState, setLocationState] = useState<LocationState>({ monsters: [] });
+  const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [] });
   const [actionsPerTurn, setActionsPerTurn] = useState<PlayerActionsPerTurn>({ total: 0, attack: 0, move: 0 });
   const router = useRouter();
 
   const playerState = gameState.players.find(p => p.id === playerId);
   const playerAlive = playerState && playerState.health > 0;
   const otherPlayers = gameState.players.filter(p => p.id !== playerId && p.location.id === playerState?.location.id);
+  const topicId = getGameTopicId(boardId, mapId);
 
   useEffect(() => {
     if (!playerState) {
@@ -52,9 +55,17 @@ export default function PlayerLocation(
         setLocationState(state.data!);
       }
 
+      const disposeGameSub = LocationTopicService.subscribe(topicId, locationId => {
+        if (locationId === playerState.location.id) {
+          fetchLocationState();
+        }
+      });
+
       fetchPlayerActionState();
       fetchLocationState();
       setActionsPerTurn(getPlayerActionsPerTurn(playerState));
+
+      return disposeGameSub;
     }
   }, [gameState]);
 
@@ -134,6 +145,7 @@ export default function PlayerLocation(
         player={playerState}
         otherPlayers={otherPlayers}
         monsters={locationState.monsters}
+        items={locationState.items}
         actionsState={actionsState}
         actionsPerTurn={actionsPerTurn}
         actionPointsLeft={actionPointsLeft}

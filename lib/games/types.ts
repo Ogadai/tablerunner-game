@@ -84,6 +84,7 @@ export enum PlayerItemType {
 
 export interface PlayerItem {
   id: string;
+  uniqueId?: string;
   type: PlayerItemType;
   name: string;
   iconXY: { x: number, y: number };
@@ -105,6 +106,5 @@ export interface PlayerEquipableItem extends PlayerItem {
 }
 
 export interface PlayerConsumableItem extends PlayerItem {
-  uniqueId?: string;
   useCost: number;
 }

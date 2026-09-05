@@ -4,12 +4,13 @@ import { Popover } from 'radix-ui';
 import styles from './inventory.module.css';
 import { PlayerConsumableItem, PlayerItem, PlayerItemType } from '@/lib/games/types';
 
-export default function Inventory({ player, isSelf, actionPointsLeft, onEquipItem, onUseItem, usedItemUniqueIds }: {
+export default function Inventory({ player, isSelf, actionPointsLeft, onEquipItem, onUseItem, onDropItem, usedItemUniqueIds }: {
   player: PlayerState;
   isSelf: boolean,
   actionPointsLeft: number;
-  onEquipItem: (id: string) => void;
+  onEquipItem: (id: string, uniqueId?: string) => void;
   onUseItem: (id: string, uniqueId?: string) => void;
+  onDropItem: (id: string, uniqueId?: string) => void;
   usedItemUniqueIds: string[];
 }) {
   const isEquipped = (item: PlayerItem) => {
@@ -22,16 +23,17 @@ export default function Inventory({ player, isSelf, actionPointsLeft, onEquipIte
 
   return (
     <div className={styles.inventoryGrid}>
-      {player.equipment.map((item, i) => {
+      {player.equipment.map(item => {
         return <InventoryItem
           isSelf={isSelf}
-          key={`${i}}`}
+          key={`${item.uniqueId}}`}
           item={item}
           isEquipped={isEquipped(item)}
           isUsed={isUsed(item)}
           actionPointsLeft={actionPointsLeft}
-          onEquipped={() => onEquipItem(item.id)}
-          onUsed={() => onUseItem(item.id, (item as PlayerConsumableItem).uniqueId)}
+          onEquipped={() => onEquipItem(item.id, item.uniqueId)}
+          onUsed={() => onUseItem(item.id, item.uniqueId)}
+          onDropped={() => onDropItem(item.id, item.uniqueId)}
         />;
       })}
     </div>
@@ -46,6 +48,7 @@ function InventoryItem({
   actionPointsLeft,
   onEquipped,
   onUsed,
+  onDropped,
 }: {
   isSelf: boolean,
   item: PlayerItem;
@@ -54,6 +57,7 @@ function InventoryItem({
   actionPointsLeft: number;
   onEquipped: () => void;
   onUsed: () => void;
+  onDropped: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const position = item.iconXY;
@@ -67,6 +71,11 @@ function InventoryItem({
   const onClickUse = () => {
     setIsOpen(false);
     onUsed();
+  }
+
+  const onClickDrop = () => {
+    setIsOpen(false);
+    onDropped();
   }
 
   const isEquipable = item.type !== PlayerItemType.consumable;
@@ -107,20 +116,29 @@ function InventoryItem({
           ) : (
             <p>No bonuses</p>
           )}
-          {!isEquipped && isSelf && isEquipable && (
-            <button
-              type="button"
-              className={`btn ${styles.equipButton}`}
-              onClick={onClickEquip}
-            >Equip</button>
-          )}
-          {isSelf && canUse && (
-            <button
-              type="button"
-              className={`btn ${styles.equipButton}`}
-              onClick={onClickUse}
-            >Use</button>
-          )}
+          <div className={styles.itemButtons}>
+            {!isEquipped && isSelf && isEquipable && (
+              <button
+                type="button"
+                className={`btn ${styles.equipButton}`}
+                onClick={onClickEquip}
+              >Equip</button>
+            )}
+            {isSelf && canUse && (
+              <button
+                type="button"
+                className={`btn ${styles.equipButton}`}
+                onClick={onClickUse}
+              >Use</button>
+            )}
+            {isSelf && (
+              <button
+                type="button"
+                className={`btn ${styles.equipButton}`}
+                onClick={onClickDrop}
+              >Drop</button>
+            )}
+          </div>
           <Popover.Arrow className="PopoverArrow" width={15} height={10} />
         </Popover.Content>
       </Popover.Portal>

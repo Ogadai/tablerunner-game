@@ -174,7 +174,7 @@ export const consumableItems: Record<ConsumableIds, PlayerConsumableItem> = {
     id: ConsumableIds.resurrectionStore.toString(),
     type: PlayerItemType.consumable,
     name: 'Resurrection Stone',
-    iconXY: { x: 9, y: 5 },
+    iconXY: { x: 9, y: 4 },
     useCost: 15,
     bonusStats: {
       special: 'Resurrects a dead player',

@@ -1,6 +1,7 @@
-import { AllMonsterState } from '../../store/types';
+import { AllLocationsState } from '../../store/types';
 
-export const monsters: AllMonsterState = {
+export const monsters: AllLocationsState = {
+  items: [],
   monsters: [
     {
       id: "m1",
