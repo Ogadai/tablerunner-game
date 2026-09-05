@@ -13,11 +13,12 @@ import {
 } from '../store/redis-access';
 import { games } from "../games/games";
 import { BaseStats, OPPOSITE_DIRECTION, PlayerConsumableItem, PlayerEquipableItem, PlayerItemType } from '@/lib/games/types';
-import { monsters, getPointsForDamage } from "../games/monsters";
+import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
-import { ConsumableIds } from "../games/items";
+import { ConsumableIds, lootItems } from "../games/items";
+import { createItemForInventory } from './apply-inventory';
 
 enum EntityActionEntityTypes {
   player,
@@ -234,6 +235,7 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
         monster.health -= appliedDamage;
         if (monster.health <= 0) {
           params.monsters = params.monsters.filter(m => m.id !== action.target);
+          monsterDropLoot(params, player, monster);
         }
 
         // Assign points to all living players at location
@@ -254,6 +256,28 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
   } catch(error) {
     console.error(`Error: actionAttack for ${player.id}`, action);
     throw error;
+  }
+}
+
+function monsterDropLoot(params: BaseParams, player: PlayerState, monster: MonsterState) {
+  const locationId = player.location.id;
+
+  const monsterStrength = getMonsterStrength(monsters[monster.type]);
+  const lootChance = 0.3 + monsterStrength * 0.4;
+
+  if (Math.random() >= lootChance) {
+    return;
+  }
+
+  const maxLootValue = 15 + monsterStrength * 100; // 285
+  const availableLoot = lootItems.filter(item => (item.value ?? 0) <= maxLootValue);
+  const lootItem = availableLoot[Math.floor(Math.random() * availableLoot.length)];
+
+  if (lootItem) {
+    params.items.push({
+      ...createItemForInventory(lootItem),
+      location: locationId,
+    });
   }
 }
 

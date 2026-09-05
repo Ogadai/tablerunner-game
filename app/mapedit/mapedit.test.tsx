@@ -12,7 +12,7 @@ describe('MapEdit movement helpers', () => {
   });
 
   it('adds symmetric moves between adjacent locations without duplicating entries', () => {
-    const mapState = [
+    const mapState: Location[] = [
       { id: 10, description: '', move: [] },
       { id: 31, description: '', move: [{ direction: 's', id: 10 }] },
     ];

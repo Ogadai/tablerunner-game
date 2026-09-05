@@ -1,14 +1,32 @@
 import { MonsterListEntry } from './types';
 
-const DAMAGE_AWARD_RATIO = 0.1;
+const DAMAGE_AWARD_RATIO = 20;
 
 export function getPointsForDamage(monsterType: string, damage: number): number {
   const monsterDef = monsters[monsterType];
-  return damage
-    * monsterDef.baseStats.attack
-    * monsterDef.baseStats.damage
-    * monsterDef.baseStats.defence
-    * DAMAGE_AWARD_RATIO;
+  const strength = getMonsterStrength(monsterDef);
+  return (strength + 0.1) * DAMAGE_AWARD_RATIO * damage;
+}
+
+export function getMonsterStrength(monster: MonsterListEntry): number {
+  const stats = monster.baseStats;
+  const strength = stats.attack + stats.damage + stats.defence + stats.health;
+
+  return Math.max(0, Math.min(1,
+    (strength - monsterRelativeStrengths.weakest)
+      / (monsterRelativeStrengths.strongest - monsterRelativeStrengths.weakest)
+  ));
+}
+
+function getMonsterStrenghtRange(): { weakest: number, strongest: number } {
+  const strengths = Object.values(monsters).map(monsterDef => {
+    const monsterStats = monsterDef.baseStats;
+    return monsterStats.attack + monsterStats.damage + monsterStats.defence + monsterStats.health;
+  });
+  return {
+    weakest: Math.min(...strengths),
+    strongest: Math.max(...strengths)
+  };
 }
 
 export const monsters: { [id: string]: MonsterListEntry } = {
@@ -111,3 +129,5 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     },
   }
 };
+
+const monsterRelativeStrengths = getMonsterStrenghtRange();

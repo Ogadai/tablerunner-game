@@ -45,8 +45,12 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
     };
 
     const player = gameState.players.find(p => p.id === playerId);
+
     if (player && updatedInventory.equipped) {
-      const item = player.equipment.find(i => i.id === itemId);
+      const sourceList = playerInventory.equipment != null
+          ? playerInventory.equipment : player.equipment;
+
+      const item = sourceList.find(i => i.id === itemId);
       if (item) {
         (updatedInventory.equipped as any)[item.type] = item.id;
       }

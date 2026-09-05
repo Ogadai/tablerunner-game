@@ -4,11 +4,12 @@ import { getPlayerStats } from '../store/playerStats';
 import { BaseParams } from "./base-params";
 import { playerMessageAtLocation } from './game-messages';
 
-const LEVEL_UP_RATIO = 0.3;
+const LEVEL_UP_RATIO = 0.2;
 const STATS_PER_LEVEL = 2;
 
 export async function levelUpPlayer(params: BaseParams, player: PlayerState): Promise<void> {
   const newLevel = calculateLevelFromPoints(player.points);
+console.log(`Level ${newLevel} with ${player.points} points`);
 
   if (newLevel > player.level) {
     playerMessageAtLocation(params, player.id,
@@ -17,8 +18,6 @@ export async function levelUpPlayer(params: BaseParams, player: PlayerState): Pr
 
     player.availableStats = (player.availableStats || 0) + (newLevel - player.level) * STATS_PER_LEVEL;
     player.level = newLevel;
-
-    console.log('Assigned player stats', player.level, player.availableStats);
   }
 }
 
