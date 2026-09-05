@@ -4,7 +4,7 @@
   flex-wrap: wrap;
 
   li {
-    width: 200px;
+    width: 260px;
     margin: 0 5px;
     max-width: 400px;
   }
@@ -13,10 +13,6 @@
 
 .playerCardNew {
   border-color: var(--color-success);
-}
-
-.playerCardExisting {
-  
 }
 
 .playerCardButtons {

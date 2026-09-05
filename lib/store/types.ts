@@ -38,7 +38,8 @@ export interface PlayerState {
   points: number;
   availableStats: number;
   equipment: PlayerItem[];
-  equipped: PlayerInventoryEquipSlots
+  equipped: PlayerInventoryEquipSlots;
+  zombie?: boolean;
 }
 
 export interface PlayerStateLocation {

@@ -133,7 +133,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
     // Process player moves and healing (if still alive)
     for(const player of params.gameState.players) {
-      if (player.health > 0) {
+      if (player.health > 0 && !player.zombie) {
         if (!playerFought[player.id] && player.health < player.baseStats!.health) {
           player.health++;
         }
@@ -330,8 +330,12 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
         `**You** drank **${consumableItem.name}** for **${addedHealth}** health!`);
     }
     
-    if (consumableItem.id === ConsumableIds.resurrectionStore) {
-      useResurrectionStone(params, player);
+    if (consumableItem.id === ConsumableIds.resurrectionStore
+      || consumableItem.id === ConsumableIds.resurrectionShard
+    ) {
+      useResurrectionStone(params, player,
+        consumableItem.id === ConsumableIds.resurrectionShard
+      );
     }
 
     // Remove from equipment
@@ -340,7 +344,7 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
   }
 }
 
-function useResurrectionStone(params: BaseParams, player: PlayerState) {
+function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZombies: boolean) {
   // Find dead players at location
   const deadPlayers = params.gameState.players.filter(p => p.health === 0);
   if (deadPlayers.length == 0) {
@@ -348,9 +352,13 @@ function useResurrectionStone(params: BaseParams, player: PlayerState) {
     return;
   }
 
-  const zombies = deadPlayers.length > 1;
+  const zombies = alwaysZombies || deadPlayers.length > 1;
+  const zombieMsg = alwaysZombies
+    ? ', it sparks and crackles!'
+    : (zombies ? ', but its power was divided!' : '')
+
   playerMessageAtLocation(params, player.id,
-    `**{player}** used a resurrection stone${zombies ? ', but its power was divided!' : ''}`
+    `**{player}** used a${alwaysZombies ? ' cracked' : ''} resurrection stone${zombieMsg}`
   );
 
   for(const deadPlayer of deadPlayers) {
@@ -359,6 +367,7 @@ function useResurrectionStone(params: BaseParams, player: PlayerState) {
     if (zombies) {
       playerMessageAtLocation(params, deadPlayer.id, `The body of **{player}** has been **reanimated**!`);
       deadPlayer.name = `Zombie ${deadPlayer.name.split(' ')[0]}`;
+      deadPlayer.zombie = true;
     } else {
       playerMessageAtLocation(params, deadPlayer.id, `**{player}** has been **resurrected**!`);
     }

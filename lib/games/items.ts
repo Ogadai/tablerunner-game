@@ -152,6 +152,7 @@ export enum ConsumableIds {
   swiftPotion = 'swiftPotion',
   elixir = 'elixir',
   resurrectionStore = 'resurrectionStore',
+  resurrectionShard = 'resurrectionShard',
 };
 
 export const consumableItems: Record<ConsumableIds, PlayerConsumableItem> = {
@@ -178,6 +179,16 @@ export const consumableItems: Record<ConsumableIds, PlayerConsumableItem> = {
     useCost: 15,
     bonusStats: {
       special: 'Resurrects a dead player',
+    }
+  },
+  [ConsumableIds.resurrectionShard]: {
+    id: ConsumableIds.resurrectionShard.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Cracked Resurrection Stone',
+    iconXY: { x: 9, y: 4 },
+    useCost: 15,
+    bonusStats: {
+      special: 'May resurrect a dead player',
     }
   },
 };
