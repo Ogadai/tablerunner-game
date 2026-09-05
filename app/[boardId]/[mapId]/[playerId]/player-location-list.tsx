@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog } from "radix-ui";
+import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
 import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
@@ -11,6 +12,7 @@ import { allItems } from "@/lib/games/items";
 import { PlayerItem } from "@/lib/games/types";
 import LocationItemList from "./location-item-list";
 import { takeItemAtLocation } from "@/lib/store/playerInventory";
+import { getSwalDefaultOptions } from "@/app/swal";
 
 export interface PlayerLocationListProps {
   boardId: string;
@@ -115,6 +117,16 @@ export default function PlayerLocationList({
   }
 
   const onTakeItem = async (id: string, uniqueId?: string) => {
+    if (locationMonsters.length > 0) {
+      await Swal.fire({
+        ...getSwalDefaultOptions(),
+        title: 'Item blocked!',
+        icon: 'warning',
+        text: "You cannot pick up items while there are enemies.",
+      });
+      return;
+    }
+
     await takeItemAtLocation(boardId, mapId, player.id, id, uniqueId);
   }
 

@@ -131,6 +131,10 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
 
     const playerState = gameState.players.find(p => p.id === playerId)!;
 
+    if (locationsState.monsters.some(m => m.location === playerState.location.id)) {
+      throw new Error('Cannot take item while there are enemies here');
+    }
+
     const sourceList = playerInventory.equipment != null
         ? playerInventory.equipment : playerState.equipment;
 

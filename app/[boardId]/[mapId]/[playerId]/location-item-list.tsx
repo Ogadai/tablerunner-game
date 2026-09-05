@@ -9,6 +9,7 @@ export default function LocationItemList({ items, onTakeItem }: {
     <div className={styles.inventoryGrid}>
       {items.map((item, i) => {
         return (<button
+            key={item.uniqueId}
             type="button"
             className={styles.inventoryItem}
             aria-label={item.name}
