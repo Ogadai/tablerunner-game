@@ -1,7 +1,6 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { PlayerItemType } from "../games/types";
 import { getGameStateFromRedis, getPlayerInventoryFromRedis, setLocationsStateInRedis, setPlayerInventoryInRedis } from './redis-access';
 import { PlayerInventoryEquipSlots, PlayerInventoryState } from './types';
 import { getLocationsStateFromRedis } from './redis-access';
@@ -78,6 +77,9 @@ export async function dropItemAtLocation(boardId: string, mapId: string, playerI
     const locationsState = await getLocationsStateFromRedis(boardId, mapId);
 
     const playerState = gameState.players.find(p => p.id === playerId)!;
+    if (playerState.health) {
+      throw new Error('Cannot drop item while dead');
+    }
 
     const sourceList = playerInventory.equipment != null
         ? playerInventory.equipment : playerState.equipment;
@@ -134,6 +136,9 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
     const locationsState = await getLocationsStateFromRedis(boardId, mapId);
 
     const playerState = gameState.players.find(p => p.id === playerId)!;
+    if (playerState.health) {
+      throw new Error('Cannot take item while dead');
+    }
 
     if (locationsState.monsters.some(m => m.location === playerState.location.id)) {
       throw new Error('Cannot take item while there are enemies here');

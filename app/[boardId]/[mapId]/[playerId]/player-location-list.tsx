@@ -117,6 +117,16 @@ export default function PlayerLocationList({
   }
 
   const onTakeItem = async (id: string, uniqueId?: string) => {
+    if (player.health === 0) {
+      await Swal.fire({
+        ...getSwalDefaultOptions(),
+        title: 'Item blocked!',
+        icon: 'warning',
+        text: "You cannot pick up items while you are dead.",
+      });
+      return;
+    }
+
     if (locationMonsters.length > 0) {
       await Swal.fire({
         ...getSwalDefaultOptions(),

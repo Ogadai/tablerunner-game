@@ -94,6 +94,7 @@ export default function CharacterCard({
         : <Inventory
             player={activePlayer}
             isSelf={isSelf}
+            isDead={activePlayer.health === 0}
             actionPointsLeft={actionPointsLeft}
             onEquipItem={onEquipItem}
             onUseItem={onUseItem}

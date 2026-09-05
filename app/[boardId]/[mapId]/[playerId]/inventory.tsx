@@ -4,10 +4,11 @@ import { Popover } from 'radix-ui';
 import styles from './inventory.module.css';
 import { PlayerConsumableItem, PlayerItem, PlayerItemType } from '@/lib/games/types';
 
-export default function Inventory({ player, isSelf, actionPointsLeft, onEquipItem, onUseItem, onDropItem, usedItemUniqueIds }: {
+export default function Inventory({ player, isSelf, actionPointsLeft, isDead, onEquipItem, onUseItem, onDropItem, usedItemUniqueIds }: {
   player: PlayerState;
   isSelf: boolean,
   actionPointsLeft: number;
+  isDead: boolean;
   onEquipItem: (id: string, uniqueId?: string) => void;
   onUseItem: (id: string, uniqueId?: string) => void;
   onDropItem: (id: string, uniqueId?: string) => void;
@@ -26,6 +27,7 @@ export default function Inventory({ player, isSelf, actionPointsLeft, onEquipIte
       {player.equipment.map(item => {
         return <InventoryItem
           isSelf={isSelf}
+          isDead={isDead}
           key={`${item.uniqueId}}`}
           item={item}
           isEquipped={isEquipped(item)}
@@ -42,6 +44,7 @@ export default function Inventory({ player, isSelf, actionPointsLeft, onEquipIte
 
 function InventoryItem({
   isSelf,
+  isDead,
   item,
   isEquipped,
   isUsed,
@@ -51,6 +54,7 @@ function InventoryItem({
   onDropped,
 }: {
   isSelf: boolean,
+  isDead: boolean,
   item: PlayerItem;
   isEquipped: boolean;
   isUsed: boolean;
@@ -131,7 +135,7 @@ function InventoryItem({
                 onClick={onClickUse}
               >Use</button>
             )}
-            {isSelf && (
+            {isSelf && !isDead && (
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
