@@ -14,6 +14,7 @@
   --bg-main: #f2ebd9;
   --bg-card: #eadeca;
   --bg-card-hover: #e0d1b8;
+  --bg-card-active: #e0d1b8;
   --bg-input: #fbf8f0;
   --bg-menu: #fbf8f0;
 
@@ -60,6 +61,7 @@
     --bg-main: #120f0d;
     --bg-card: #1c1612;
     --bg-card-hover: #261f1a;
+    --bg-card-active: #261f1a;
     --bg-input: #0d0a08;
     --bg-menu: #0d0a08;
 
@@ -571,8 +573,15 @@ ul {
 
 @media screen and (max-width: 600px) {
   .DialogContent {
-    min-width: 300px;
-    max-width: 300px;
+    min-width: 400px;
+    max-width: 400px;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .DialogContent {
+    min-width: 95vw;
+    max-width: 95vw;
   }
 }
 

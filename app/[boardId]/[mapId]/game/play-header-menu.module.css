@@ -49,6 +49,14 @@
 	}
 }
 
+.Item:hover {
+	background-color: var(--bg-card-hover);
+}
+
+.Item:active {
+	background-color: var(--bg-card-active);
+}
+
 .IconButton {
 	font-family: inherit;
 	border-radius: 100%;

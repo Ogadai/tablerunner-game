@@ -20,6 +20,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.swordRusty,
       allItems.healingPotion,
       allItems.healingPotion,
+      allItems.resurrectionStore,
     ]
   },
   witch: {
@@ -40,6 +41,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.staffSkull,
       allItems.healingPotion,
       allItems.healingPotion,
+      allItems.resurrectionStore,
     ]
   },
   ranger: {
@@ -60,6 +62,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.bowWarped,
       allItems.healingPotion,
       allItems.healingPotion,
+      allItems.resurrectionStore,
     ]
   },
   mage: {
@@ -80,6 +83,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.staffOrb,
       allItems.healingPotion,
       allItems.healingPotion,
+      allItems.resurrectionStore,
     ]
   }
 };

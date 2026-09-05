@@ -17,6 +17,7 @@ import { monsters, getPointsForDamage } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
+import { ConsumableIds } from "../games/items";
 
 enum EntityActionEntityTypes {
   player,
@@ -235,8 +236,11 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
           params.monsters = params.monsters.filter(m => m.id !== action.target);
         }
 
-        // Assign points to all players at location
-        const players = params.gameState.players.filter(p => p.location.id === player.location.id);
+        // Assign points to all living players at location
+        const players = params.gameState.players.filter(p =>
+          p.location.id === player.location.id && p.health > 0
+        );
+
         const totalPoints = getPointsForDamage(monster.type, appliedDamage);
         for(const player of players) {
           player.points += Math.ceil(totalPoints / players.length);
@@ -325,9 +329,38 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
       soloMessageAtLocation(params, player.id,
         `**You** drank **${consumableItem.name}** for **${addedHealth}** health!`);
     }
+    
+    if (consumableItem.id === ConsumableIds.resurrectionStore) {
+      useResurrectionStone(params, player);
+    }
 
     // Remove from equipment
     player.equipment = player.equipment.filter(item => item.type !== PlayerItemType.consumable
       || (item as PlayerConsumableItem).uniqueId !== action.uniqueId)
+  }
+}
+
+function useResurrectionStone(params: BaseParams, player: PlayerState) {
+  // Find dead players at location
+  const deadPlayers = params.gameState.players.filter(p => p.health === 0);
+  if (deadPlayers.length == 0) {
+    playerMessageAtLocation(params, player.id, `**{player}** wasted a resurrection stone`);
+    return;
+  }
+
+  const zombies = deadPlayers.length > 1;
+  playerMessageAtLocation(params, player.id,
+    `**{player}** used a resurrection stone${zombies ? ', but its power was divided!' : ''}`
+  );
+
+  for(const deadPlayer of deadPlayers) {
+    deadPlayer.health = 1;
+
+    if (zombies) {
+      playerMessageAtLocation(params, deadPlayer.id, `The body of **{player}** has been **reanimated**!`);
+      deadPlayer.name = `Zombie ${deadPlayer.name.split(' ')[0]}`;
+    } else {
+      playerMessageAtLocation(params, deadPlayer.id, `**{player}** has been **resurrected**!`);
+    }
   }
 }

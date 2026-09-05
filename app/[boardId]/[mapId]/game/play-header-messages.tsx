@@ -35,7 +35,7 @@ export default function PlayHeaderMessages(  { boardId, mapId, playerId, gameSta
     }
 
     fetchPlayerMessages();
-  }, [gameState]);
+  }, [gameState, playerId]);
 
   const hasMessages = playerMessages?.messages && playerMessages.messages.length > 0;
   const messagesWithIDs = playerMessages?.messages.map((message, index) => ({ ...message, id: index })) || [];

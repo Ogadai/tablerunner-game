@@ -95,6 +95,7 @@ export interface PlayerItem {
     magic?: number;
     health?: number;
     speed?: number;
+    special?: string;
   };
 }
 

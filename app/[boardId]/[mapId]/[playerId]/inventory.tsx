@@ -84,7 +84,7 @@ function InventoryItem({
         >
           <span className={styles.itemIcon}
             style={position ? {
-              backgroundPosition: `-${position.x * 80}px -${position.y * 80}px`,
+              backgroundPosition: `-${position.x * 60}px -${position.y * 60}px`,
               transform: item.iconScale ? `scale(${item.iconScale})` : undefined,
             } : undefined}
           />
@@ -97,8 +97,10 @@ function InventoryItem({
             <ul>
               {bonuses.map(([stat, value]) => (
                 <li key={stat} className={styles.statEntry}>
-                  <span className={styles.statName}>{stat}</span>
-                  <span className={styles.statValue}>+{value}</span>
+                  { (stat !== 'special')
+                    ? <><span className={styles.statName}>{stat}</span><span className={styles.statValue}>+{value}</span></>
+                    : <span className={styles.statName}>{value}</span>
+                  }
                 </li>
               ))}
             </ul>
