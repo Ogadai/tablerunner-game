@@ -263,13 +263,13 @@ function monsterDropLoot(params: BaseParams, player: PlayerState, monster: Monst
   const locationId = player.location.id;
 
   const monsterStrength = getMonsterStrength(monsters[monster.type]);
-  const lootChance = 0.3 + monsterStrength * 0.4;
+  const lootChance = 0.3 + monsterStrength * 0.6;
 
   if (Math.random() >= lootChance) {
     return;
   }
 
-  const maxLootValue = 15 + monsterStrength * 100; // 285
+  const maxLootValue = 15 + monsterStrength * monsterStrength * 285;
   const availableLoot = lootItems.filter(item => (item.value ?? 0) <= maxLootValue);
   const lootItem = availableLoot[Math.floor(Math.random() * availableLoot.length)];
 

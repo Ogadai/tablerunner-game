@@ -9,7 +9,6 @@ const STATS_PER_LEVEL = 2;
 
 export async function levelUpPlayer(params: BaseParams, player: PlayerState): Promise<void> {
   const newLevel = calculateLevelFromPoints(player.points);
-console.log(`Level ${newLevel} with ${player.points} points`);
 
   if (newLevel > player.level) {
     playerMessageAtLocation(params, player.id,
