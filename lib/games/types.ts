@@ -89,6 +89,7 @@ export interface PlayerItem {
   name: string;
   iconXY: { x: number, y: number };
   iconScale?: number;
+  value?: number;
   bonusStats?: {
     attack?: number;
     damage?: number;

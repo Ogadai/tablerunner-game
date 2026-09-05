@@ -330,7 +330,7 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
         `**You** drank **${consumableItem.name}** for **${addedHealth}** health!`);
     }
     
-    if (consumableItem.id === ConsumableIds.resurrectionStore
+    if (consumableItem.id === ConsumableIds.resurrectionStone
       || consumableItem.id === ConsumableIds.resurrectionShard
     ) {
       useResurrectionStone(params, player,

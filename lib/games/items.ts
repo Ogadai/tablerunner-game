@@ -151,7 +151,7 @@ export enum ConsumableIds {
   manaPotion = 'manaPotion',
   swiftPotion = 'swiftPotion',
   elixir = 'elixir',
-  resurrectionStore = 'resurrectionStore',
+  resurrectionStone = 'resurrectionStore',
   resurrectionShard = 'resurrectionShard',
 };
 
@@ -171,15 +171,15 @@ export const consumableItems: Record<ConsumableIds, PlayerConsumableItem> = {
   [ConsumableIds.manaPotion]: { id: 'manaPotion', type: PlayerItemType.consumable, name: 'Mana Potion', iconXY: { x: 1, y: 7 }, useCost: 5, bonusStats: { magic: 5 } },
   [ConsumableIds.swiftPotion]: { id: 'swiftPotion', type: PlayerItemType.consumable, name: 'Swift Potion', iconXY: { x: 2, y: 7 }, useCost: 5,bonusStats: { speed: 3 } },
   [ConsumableIds.elixir]: { id: 'elixir', type: PlayerItemType.consumable, name: 'Mighty Elixir', iconXY: { x: 3, y: 7 }, useCost: 5, bonusStats: { health: 8, attack: 2, magic: 2 } },
-  [ConsumableIds.resurrectionStore]: {
-    id: ConsumableIds.resurrectionStore.toString(),
+  [ConsumableIds.resurrectionStone]: {
+    id: ConsumableIds.resurrectionStone.toString(),
     type: PlayerItemType.consumable,
     name: 'Resurrection Stone',
     iconXY: { x: 9, y: 4 },
     useCost: 15,
     bonusStats: {
       special: 'Resurrects a dead player',
-    }
+    },
   },
   [ConsumableIds.resurrectionShard]: {
     id: ConsumableIds.resurrectionShard.toString(),
@@ -199,3 +199,10 @@ export const allItems: Record<ItemIds, PlayerItem> = {
   ...equipableItems,
   ...consumableItems,
 };
+
+const excludeFromLoot: string[] = [
+  ConsumableIds.resurrectionStone
+];
+export const lootItems: PlayerItem[] =
+  Object.entries(allItems).map(([id, item]) => item)
+    .filter(i => !excludeFromLoot.includes(i.id))
