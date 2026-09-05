@@ -144,7 +144,7 @@ h5,
 h6 {
   font-family: var(--font-header);
   color: var(--gold-antique);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
   margin-bottom: 1rem;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -163,7 +163,7 @@ h6 {
 }
 
 h1 {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   border-bottom: 2px solid var(--border-stone);
   padding-bottom: 0.5rem;
   margin-bottom: 1.5rem;
@@ -173,14 +173,18 @@ h1 {
 }
 
 h2 {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   margin-top: 1.5rem;
   text-align: center;
 }
 
 h3 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   margin-top: 1.25rem;
+}
+
+h4 {
+  font-size: 1rem;
 }
 
 p {

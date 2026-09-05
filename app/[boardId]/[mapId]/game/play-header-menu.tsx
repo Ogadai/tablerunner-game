@@ -32,6 +32,10 @@ export default function PlayHeaderMenu(  { boardId, mapId }
     }
   };
 
+  const characterListAction = async () => {
+    router.push(`/${boardId}/${mapId}`);
+  }
+
   return (
     <DropdownMenu.Root>
 			<DropdownMenu.Trigger asChild>
@@ -42,6 +46,9 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 
 			<DropdownMenu.Portal>
 				<DropdownMenu.Content className={styles.Content} sideOffset={5}>
+					<DropdownMenu.Item className={styles.Item} onClick={characterListAction}>
+						Player List <div className={`${styles.RightSlot} material-symbols-outlined`}>group</div>
+					</DropdownMenu.Item>
 					<DropdownMenu.Item className={styles.Item} onClick={deleteGameAction}>
 						Delete Game <div className={`${styles.RightSlot} ${styles.deleteIcon} material-symbols-outlined`}>delete_forever</div>
 					</DropdownMenu.Item>

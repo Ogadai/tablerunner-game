@@ -7,6 +7,7 @@ import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis } from './redis-access';
 import { getPlayerStats } from './playerStats';
 import { createItemForInventory } from "../runner/apply-inventory";
+import { pickCharacterName } from "../games/character-names";
 
 const INITIAL_AVAILABLE_STATS = 5;
 
@@ -99,7 +100,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
 
     const newPlayer: PlayerState = {
       id: playerId,
-      name: characterDef.defaultName,
+      name: pickCharacterName(characterDef.id),
       rgbColour: characterDef.rgbColour,
       location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
       characterStats: { ...characterDef.characterStats },

@@ -124,7 +124,7 @@ export default function PlayerLocation(
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
-        <h2>{playerState.name}</h2>
+        <h3>{playerState.name}</h3>
         <h4>Location {playerState.location.id}</h4>
       </div>
       <p>{playerState.location?.description}</p>

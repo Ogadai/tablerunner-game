@@ -18,7 +18,6 @@ export default function PlayGame(
 
   const bindCreateCharacterAction = (character: CharacterListEntry) => {
     const id = character.id;
-    const name = character.defaultName;
 
     return async () => {
       await createPlayerForGame(boardId, mapId, id);

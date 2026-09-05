@@ -17,7 +17,7 @@ export function getPlayerActionsPerTurn(playerState: PlayerState): PlayerActions
   const speedBonus = Math.min(10, Math.floor(playerSpeed / 5));
 
   return {
-    total: BASE_ACTIONS_PER_TURN,
+    total: playerState.health > 0 ? BASE_ACTIONS_PER_TURN : 0,
     move: BASE_MOVE_ACTION_COST - speedBonus,
     attack: BASE_ATTACK_ACTION_COST - speedBonus,
   };

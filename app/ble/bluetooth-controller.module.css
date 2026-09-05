@@ -11,9 +11,6 @@
   background: none;
   background-color: transparent;
 
-  &.disconnected {
-    color: var(--color-disconnected);
-  }
   &.connecting {
     color: var(--color-disconnected);
     animation-duration: 400ms;
@@ -42,4 +39,7 @@
     }
   }
 
+  &.disconnected {
+    color: var(--color-disconnected);
+  }
 }

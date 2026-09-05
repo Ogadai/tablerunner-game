@@ -92,7 +92,7 @@ export default function PlayHeader(
       }
       <div className={styles.headerContent}>
         <ul className={styles.playerList}>
-          {!!playerId && <li key="add">
+          {!!playerId && (gameState.players.length < 4) && <li key="add">
             <button type="button"
               className="material-symbols-outlined"
               onClick={navigateToNewPlayer}

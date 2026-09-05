@@ -59,18 +59,18 @@ export default function BluetoothController({
     }
   };
 
-  const checkAskConnect = () => {
-    if (!GLOBAL_STATE.connectTimeout) {
-      const timeout = setTimeout(async () => {
-        GLOBAL_STATE.connectTimeout = null;
-        GLOBAL_STATE.isPrompting = true;
-        await askConnect();
-        GLOBAL_STATE.isPrompting = false;
-      }, 2000);
+  // const checkAskConnect = () => {
+  //   if (!GLOBAL_STATE.connectTimeout) {
+  //     const timeout = setTimeout(async () => {
+  //       GLOBAL_STATE.connectTimeout = null;
+  //       GLOBAL_STATE.isPrompting = true;
+  //       await askConnect();
+  //       GLOBAL_STATE.isPrompting = false;
+  //     }, 2000);
 
-      GLOBAL_STATE.connectTimeout = timeout;
-    }
-  }
+  //     GLOBAL_STATE.connectTimeout = timeout;
+  //   }
+  // }
 
   const askConnect = async () => {
     const result = await Swal.fire({
@@ -99,14 +99,14 @@ export default function BluetoothController({
     bluetoothService.initialize();
     const unsubscribe = bluetoothService.subscribe(setBleState);
 
-    // if (localStorage.getItem('ble_connected') === 'true') {
-    //   askReconnect();
-    // } else
-    if (!bleOtherPlayer &&
-      bluetoothService.getState() !== BleState.Connected &&
-      bluetoothService.getState() !== BleState.OtherConnected) {
-      checkAskConnect();
-    }
+    if (localStorage.getItem('ble_connected') === 'true') {
+      askReconnect();
+    } else
+    // if (!bleOtherPlayer &&
+    //   bluetoothService.getState() !== BleState.Connected &&
+    //   bluetoothService.getState() !== BleState.OtherConnected) {
+    //   checkAskConnect();
+    // }
     return unsubscribe;
   }, [bleOtherPlayer]);
 

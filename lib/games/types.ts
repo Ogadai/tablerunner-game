@@ -12,7 +12,6 @@ export interface GameListEntry {
 export interface CharacterListEntry {
   id: string;
   prompt: string;
-  defaultName: string;
   description: string;
   image: string;
   icon: string;
