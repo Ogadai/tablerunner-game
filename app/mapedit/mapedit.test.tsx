@@ -1,4 +1,5 @@
 import { ensureBidirectionalMove, getDirectionBetweenCells, removeBidirectionalMove } from './mapedit';
+import { Location } from '@/lib/games/types';
 
 describe('MapEdit movement helpers', () => {
   it('calculates the correct direction between adjacent cells on the map grid', () => {
@@ -25,7 +26,7 @@ describe('MapEdit movement helpers', () => {
   });
 
   it('removes the matching link from both ends of an adjacent connection', () => {
-    const mapState = [
+    const mapState: Location[] = [
       { id: 10, description: '', move: [{ direction: 'n', id: 31 }] },
       { id: 31, description: '', move: [{ direction: 's', id: 10 }] },
     ];

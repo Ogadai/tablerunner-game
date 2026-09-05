@@ -144,7 +144,7 @@ export default function MapEdit() {
   const searchParams = useSearchParams();
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
-  const [monsterList, setMonsterList] = useState<AllLocationsState>({ monsters: [] });
+  const [monsterList, setMonsterList] = useState<AllLocationsState>({ monsters: [], items: [] });
   const dragStartCell = useRef<number | null>(null);
   const dragActionTaken = useRef(false);
   
