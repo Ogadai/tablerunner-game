@@ -20,6 +20,7 @@ import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages'
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
 import { allItems, ConsumableIds, consumableItems, lootItems } from "../games/items";
 import { createItemForInventory } from './apply-inventory';
+import { getMonsterStats } from './monster-stats';
 
 enum EntityActionEntityTypes {
   player,
@@ -106,7 +107,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
           entityActionsForLocations[locId].entities.push({
             entityType: EntityActionEntityTypes.monster,
             entityId: monster.id,
-            entitySpeed: monsters[monster.type].baseStats!.speed * Math.random(),
+            entitySpeed: getMonsterStats(monster).speed * Math.random(),
             actions: [monsterAction],
             random: Math.random(),
           });
@@ -237,7 +238,7 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
 
     if (monster) {
       const monsterDef = monsters[monster.type];
-      const damage = processAttackForDamage(player.baseStats!, monsterDef.baseStats);
+      const damage = processAttackForDamage(player.baseStats!, getMonsterStats(monster));
 
       if (damage > 0) {
         const appliedDamage = Math.min(damage, monster.health);
@@ -316,8 +317,9 @@ function monsterPickTarget(targets: PlayerState[]): PlayerState {
 function monsterAttack(params: BaseParams, monster: MonsterState, target: PlayerState): void {
   try {
     const monsterDef = monsters[monster.type];
+    const monsterStats = getMonsterStats(monster);
 
-    const damage = processAttackForDamage(monsterDef.baseStats, target.baseStats!);
+    const damage = processAttackForDamage(monsterStats, target.baseStats!);
 
     if (damage > 0) {
       target.health -= damage;

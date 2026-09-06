@@ -93,6 +93,8 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 async function runGameTurn(params: BaseParams): Promise<void> {
   await runGameActions(params);
 
+  processMonsterEffects(params);
+
   // Store monsters
   const newLocationsState: AllLocationsState = {
     monsters: params.monsters,
@@ -107,4 +109,13 @@ export function processPlayerEffects(params: BaseParams, player: PlayerState) {
       .map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
       .filter(e => e.turns > 0);
   }
+}
+
+export function processMonsterEffects(params: BaseParams) {
+  params.monsters = params.monsters.map(monster => ({
+    ...monster,
+    effects: monster.effects
+      ?.map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
+      .filter(effect => effect.turns > 0),
+  }));
 }

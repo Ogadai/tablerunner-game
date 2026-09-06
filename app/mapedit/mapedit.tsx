@@ -155,7 +155,9 @@ export default function MapEdit() {
   const two = (!page || page === '2');
 
   useEffect(() => {
-    setMonsterList(getMonsters());
+    setMonsterList(getMonsters({
+      counters: { monsterId: 0 }
+    } as any));
   }, []);
 
   const bindClickLocation = (cell: number) =>
