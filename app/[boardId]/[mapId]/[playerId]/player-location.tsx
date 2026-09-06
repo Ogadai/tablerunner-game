@@ -182,11 +182,17 @@ export default function PlayerLocation(
         { (!isPlayerReady && playerCanMove) && <button className={styles.stay} type="submit" onClick={endTurnAction}>Stay</button> }
       </div> }
 
-      { (!isPlayerReady && !playerCanMove) && <button className={styles.stay} type="submit" onClick={endTurnAction}>Ready</button> }
-      { isPlayerReady && <button type="submit" className={`${styles.stay} btn-delete`} onClick={notReadyAction}>
-        <span>Not Ready!</span>
-        <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
-      </button> }
+      { (!isPlayerReady && !playerCanMove) &&
+        <button
+          className={`${styles.stay} ${actionsState.actions.length > 0 ? styles.readyWithActions : ''}`} 
+          type="submit" onClick={endTurnAction}>Ready</button>
+      }
+      { isPlayerReady &&
+        <button type="submit" className={`${styles.stay} btn-delete`} onClick={notReadyAction}>
+          <span>Not Ready!</span>
+          <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
+        </button>
+      }
     </div>}
   </>);
 }
