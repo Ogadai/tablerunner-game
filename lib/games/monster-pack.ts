@@ -1,4 +1,4 @@
-import { AllLocationsState } from '../store/types';
+import { AllLocationsState, GameState } from '../store/types';
 import { monsters as monsters1 } from './monster-packs/pack1';
 import { monsters as monsters2 } from './monster-packs/pack2';
 import { monsters as monsters3 } from './monster-packs/pack3';
@@ -8,19 +8,17 @@ const monsterLists = [
   monsters1, monsters2, monsters3
 ];
 
-export function getMonsters() {
+export function getMonsters(gameState: GameState) {
   const allMonsters: AllLocationsState = {
     monsters: [],
     items: [],
   };
 
-  let monsterId = 1;
-
   for(let n = 1; n <= GRID_CELL_COUNT; n++) {
     const listIndex = Math.floor(Math.random() * monsterLists.length);
     const monstersAtLocation = monsterLists[listIndex].monsters.filter(m => m.location === n);
     allMonsters.monsters.push(
-      ...monstersAtLocation.map(m => ({...m, id: `m-${monsterId++}`}))
+      ...monstersAtLocation.map(m => ({...m, id: `m-${++gameState.counters.monsterId}`}))
     );
   }
 

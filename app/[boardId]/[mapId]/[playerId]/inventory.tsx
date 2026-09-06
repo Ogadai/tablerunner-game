@@ -10,9 +10,9 @@ export default function Inventory({ player, isSelf, actionPointsLeft, isDead, on
   isSelf: boolean,
   actionPointsLeft: number;
   isDead: boolean;
-  onEquipItem: (id: string, uniqueId?: string) => void;
-  onUseItem: (id: string, uniqueId?: string) => void;
-  onDropItem: (id: string, uniqueId?: string) => void;
+  onEquipItem: (item: PlayerItem) => void;
+  onUseItem: (item: PlayerItem) => void;
+  onDropItem: (item: PlayerItem) => void;
   usedItemIds: string[];
 }) {
   const isEquipped = (item: PlayerItem) => {
@@ -33,9 +33,9 @@ export default function Inventory({ player, isSelf, actionPointsLeft, isDead, on
           isEquipped={isEquipped(item)}
           isUsed={isUsed(item)}
           actionPointsLeft={actionPointsLeft}
-          onEquipped={() => onEquipItem(item.id)}
-          onUsed={() => onUseItem(item.id)}
-          onDropped={() => onDropItem(item.id)}
+          onEquipped={() => onEquipItem(item)}
+          onUsed={() => onUseItem(item)}
+          onDropped={() => onDropItem(item)}
         />;
       })}
     </div>

@@ -7,6 +7,7 @@ import CharacterStats from './character-stats';
 import Inventory from './inventory';
 import { dropItemAtLocation, getPlayerInventory, playerEquipItem } from '@/lib/store/playerInventory';
 import { ApiResponse } from "@/lib/api-response";
+import { PlayerItem } from "@/lib/games/types";
 
 export default function CharacterCard({
   boardId,
@@ -22,7 +23,7 @@ export default function CharacterCard({
   player: PlayerState;
   isSelf: boolean;
   actionPointsLeft: number;
-  onUseItem: (id: string, uniqueId?: string) => void;
+  onUseItem: (item: PlayerItem) => void;
   usedItemIds: string[];
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
@@ -50,18 +51,17 @@ export default function CharacterCard({
         equipment: response.data.equipment !== null
             ? response.data.equipment : player.equipment,
       };
-console.log('showing player', combinedPlayer)
       setActivePlayer(combinedPlayer);
     }
   }
 
-  const onEquipItem = async (itemId: string) => {
-    const response = await playerEquipItem(boardId, mapId, player.id, itemId);
+  const onEquipItem = async (item: PlayerItem) => {
+    const response = await playerEquipItem(boardId, mapId, player.id, item.id);
     useInventoryResponse(response);
   }
 
-  const onDropItem = async (itemId: string) => {
-    const response = await dropItemAtLocation(boardId, mapId, player.id, itemId);
+  const onDropItem = async (item: PlayerItem) => {
+    const response = await dropItemAtLocation(boardId, mapId, player.id, item.id);
     useInventoryResponse(response);
   }
 

@@ -34,7 +34,7 @@ export default function CharacterStats({
   const [playerAddStats, setPlayerAddStats] = useState<PlayerAddStatsState>({ characterStats: emptyStats });
   const [baseStats, setBaseStats] = useState<BaseStats>(player.baseStats!);
 
-  const refreshBaseStats = useCallback((characterStats: CharacterStatsType) => {
+  const refreshBaseStats = (characterStats: CharacterStatsType) => {
     const newBaseStats = getPlayerStats({
       ...player,
       characterStats: {
@@ -47,7 +47,7 @@ export default function CharacterStats({
     });
 
     setBaseStats(newBaseStats);
-  }, [player]);
+  };
 
   useEffect(() => {
     const fetchPlayerAddStats = async () => {
@@ -67,6 +67,10 @@ export default function CharacterStats({
       setPlayerAddStats({ characterStats: emptyStats });
     }
   }, [boardId, mapId, player.id, isSelf]);
+
+  useEffect(() => {
+    refreshBaseStats(playerAddStats.characterStats!);
+  }, [player]);
 
   const savePlayerAddStats = async (nextStats: PlayerAddStatsState = playerAddStats) =>
     await setPlayerAddStatsState(boardId, mapId, player.id, nextStats);

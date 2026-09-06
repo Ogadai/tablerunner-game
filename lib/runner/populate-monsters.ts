@@ -2,14 +2,14 @@ import { google } from '@ai-sdk/google';
 import { generateText, Output } from 'ai'; // <-- Import Output here
 import { z } from 'zod';
 
-import { AllLocationsState } from "../store/types";
+import { AllLocationsState, GameState } from "../store/types";
 import { cauldronOfFire } from '../games/maps';
 import { monsters, getPointsForDamage } from '../games/monsters';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '../games/gridCells';
 import { getMonsters } from '../games/monster-pack';
 
-export async function populateMonsters(mapId: string): Promise<AllLocationsState> {
-  return getMonsters();
+export async function populateMonsters(gameState: GameState, mapId: string): Promise<AllLocationsState> {
+  return getMonsters(gameState);
   // const aiMonsters = await askAIForMonsters(mapId);
   // return aiMonsters;
 }

@@ -108,6 +108,7 @@ export interface EquipableItemDef extends ItemDef {
 
 export interface ConsumableItemDef extends ItemDef {
   useCost: number;
+  turns?: number;
 }
 
 export interface PlayerItem {

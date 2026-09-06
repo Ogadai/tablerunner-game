@@ -71,6 +71,7 @@ export function getPlayerStats(playerState: PlayerState): BaseStats {
     }
   };
 
+  // Account for any equipment bonuses
   for(const slot of Object.keys(playerState.equipped)) {
     const itemId = (playerState.equipped as any)[slot] as (string | undefined | null);
     const item = !!itemId && playerState.equipment.find(e => e.id == itemId);
@@ -78,6 +79,21 @@ export function getPlayerStats(playerState: PlayerState): BaseStats {
     if (itemDef) {
       for(const stat of Object.keys(itemDef.bonusStats!)) {
         const bonusAmount = (itemDef.bonusStats as any)[stat];
+        if (bonusAmount) {
+          (baseStats as any)[stat] += bonusAmount;
+          (baseStats.bonuses as any)[stat] += bonusAmount;
+        }
+      }
+    }
+  }
+
+  // Account for any effects
+  if (playerState.effects) {
+    for(const effect of playerState.effects) {
+      const { description, special, turns, ...effectBonus } = effect;
+
+      for(const stat of Object.keys(effectBonus)) {
+        const bonusAmount = (effectBonus as any)[stat];
         if (bonusAmount) {
           (baseStats as any)[stat] += bonusAmount;
           (baseStats.bonuses as any)[stat] += bonusAmount;

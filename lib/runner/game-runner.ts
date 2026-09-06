@@ -2,6 +2,7 @@ import {
   GameState,
   PlayerReadyState,
   AllLocationsState,
+  PlayerState,
 } from "../store/types";
 import {
   getGameStateFromRedis,
@@ -16,7 +17,6 @@ import {
 } from '../store/redis-access';
 import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
-import { populateMonsters } from './populate-monsters';
 import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
 import { applyPlayerInventory } from "./apply-inventory";
 
@@ -62,6 +62,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 
     for(const player of params.gameState.players) {
       levelUpPlayer(params, player);
+      processPlayerEffects(params, player);
     }
 
     // Update game state
@@ -98,4 +99,12 @@ async function runGameTurn(params: BaseParams): Promise<void> {
     items: params.items,
   };
   setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
+}
+
+export function processPlayerEffects(params: BaseParams, player: PlayerState) {
+  if (player.effects) {
+    player.effects = player.effects!
+      .map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
+      .filter(e => e.turns > 0);
+  }
 }

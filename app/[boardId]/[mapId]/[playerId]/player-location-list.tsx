@@ -104,14 +104,13 @@ export default function PlayerLocationList({
     } as Omit<PlayerActionAttack, 'id'>);
   }
 
-  const onUseItem = async (itemId: string) => {
+  const onUseItem = async (item: PlayerItem) => {
     setCharacterOpen(null);
-    const itemDef: PlayerItem = player.equipment.find(i => i.id === itemId)!;
 
     await addNewAction({
       type: PlayerActionType.UseItem,
-      description: `Use ${allItems[itemDef.type].name}`,
-      itemId
+      description: `Use ${allItems[item.type].name}`,
+      itemId: item.id
     } as Omit<PlayerActionUseItem, 'id'>);
   }
 

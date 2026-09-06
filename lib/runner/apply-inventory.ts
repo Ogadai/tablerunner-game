@@ -1,4 +1,4 @@
-import { NOTHING_EQUPPED, PlayerState } from "../store/types";
+import { GameState, NOTHING_EQUPPED, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { getPlayerInventoryFromRedis, deletePlayerInventoryFromRedis } from '../store/redis-access';
 import { ItemDef, PlayerItem } from "../games/types";
@@ -24,9 +24,11 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
 }
 
 // TODO: Use a better id allocation system
-export const createItemForInventory = (item: ItemDef): PlayerItem => {
+export const createItemForInventory = (gameState: GameState, item: ItemDef): PlayerItem => {
+  const nextId = ++gameState.counters.itemId;
+  
   return {
     type: item.id,
-    id: `i-${Math.ceil(Math.random() * 1000000)}`,
+    id: `i-${nextId}`,
   };
 }

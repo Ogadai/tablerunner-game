@@ -7,6 +7,7 @@ import {
   PlayerAction,
   PlayerActionsState,
   PlayerActionUseItem,
+  PlayerEffect,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -275,7 +276,7 @@ function monsterDropLoot(params: BaseParams, player: PlayerState, monster: Monst
 
   if (lootItem) {
     params.items.push({
-      ...createItemForInventory(lootItem),
+      ...createItemForInventory(params.gameState, lootItem),
       location: locationId,
     });
   }
@@ -361,6 +362,18 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
       useResurrectionStone(params, player,
         consumableItem.id === ConsumableIds.resurrectionShard
       );
+    } else if (consumableItem.bonusStats && consumableItem.turns != undefined && consumableItem.turns > 0) {
+      const { health, magic, special, ...effectBonuses } = consumableItem.bonusStats;
+      const newEffect: PlayerEffect = {
+        description: consumableItem.name,
+        turns: consumableItem.turns + 1,
+        ...effectBonuses
+      };
+
+      if (!player.effects) {
+        player.effects = [];
+      }
+      player.effects.push(newEffect);
     }
 
     // Remove from equipment

@@ -174,8 +174,8 @@ export const consumableItems: Record<string, ConsumableItemDef> = {
   },
   [ConsumableIds.greaterHealingPotion]: { id: 'greaterHealingPotion', type: PlayerItemType.consumable, name: 'Greater Healing Potion', iconXY: { x: 0, y: 7 }, value: 35, useCost: 5, bonusStats: { health: 12 } },
   [ConsumableIds.manaPotion]: { id: 'manaPotion', type: PlayerItemType.consumable, name: 'Mana Potion', iconXY: { x: 1, y: 7 }, value: 30, useCost: 5, bonusStats: { magic: 5 } },
-  [ConsumableIds.swiftPotion]: { id: 'swiftPotion', type: PlayerItemType.consumable, name: 'Swift Potion', iconXY: { x: 2, y: 7 }, value: 25, useCost: 5, bonusStats: { speed: 3 } },
-  [ConsumableIds.elixir]: { id: 'elixir', type: PlayerItemType.consumable, name: 'Mighty Elixir', iconXY: { x: 3, y: 7 }, value: 90, useCost: 5, bonusStats: { health: 8, attack: 2, magic: 2 } },
+  [ConsumableIds.swiftPotion]: { id: 'swiftPotion', type: PlayerItemType.consumable, name: 'Swift Potion', iconXY: { x: 2, y: 7 }, value: 25, useCost: 5, bonusStats: { speed: 3 }, turns: 5 },
+  [ConsumableIds.elixir]: { id: 'elixir', type: PlayerItemType.consumable, name: 'Mighty Elixir', iconXY: { x: 3, y: 7 }, value: 90, useCost: 5, bonusStats: { attack: 4, defence: 4 }, turns: 10 },
   [ConsumableIds.resurrectionStone]: {
     id: ConsumableIds.resurrectionStone.toString(),
     type: PlayerItemType.consumable,

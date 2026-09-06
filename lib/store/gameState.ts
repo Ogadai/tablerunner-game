@@ -42,10 +42,14 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     name: `${gameId} on board ${boardId} and map ${mapId}`,
     characters: gameDef.characters,
     players: [],
-    visited: [gameDef.startLocation]
+    visited: [gameDef.startLocation],
+    counters: {
+      itemId: 0,
+      monsterId: 0,
+    }
   };
 
-  const locationsState = await populateMonsters(mapId);
+  const locationsState = await populateMonsters(newGameState, mapId);
 
   try {
     // Store data in Redis
@@ -103,7 +107,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       };
     }
 
-    const equipment = characterDef.equipment.map(createItemForInventory);
+    const equipment = characterDef.equipment.map(e => createItemForInventory(gameState, e));
 
     const newPlayer: PlayerState = {
       id: playerId,

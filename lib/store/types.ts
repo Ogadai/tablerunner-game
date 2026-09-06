@@ -12,6 +12,11 @@ export interface GameState {
   characters: CharacterListEntry[];
   players: PlayerState[];
   visited: number[];
+
+  counters: {
+    monsterId: number,
+    itemId: number,
+  }
 }
 
 export const NOTHING_EQUPPED = '<none>';
@@ -25,6 +30,16 @@ export interface PlayerInventoryEquipSlots {
   belt?: string | null;
   ring?: string | null;
   necklace?: string | null;
+}
+
+export interface PlayerEffect {
+  description: string;
+  attack?: number;
+  damage?: number;
+  defence?: number;
+  speed?: number;
+  special?: string;
+  turns: number;
 }
 
 export interface PlayerState {
@@ -42,6 +57,7 @@ export interface PlayerState {
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
   zombie?: boolean;
+  effects?: PlayerEffect[];
 }
 
 export interface PlayerStateLocation {
