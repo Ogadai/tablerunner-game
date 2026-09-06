@@ -32,7 +32,7 @@ export interface PlayerInventoryEquipSlots {
   necklace?: string | null;
 }
 
-export interface PlayerEffect {
+export interface CharacterEffect {
   description: string;
   attack?: number;
   damage?: number;
@@ -58,7 +58,7 @@ export interface PlayerState {
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
   zombie?: boolean;
-  effects?: PlayerEffect[];
+  effects?: CharacterEffect[];
 }
 
 export interface PlayerStateLocation {
@@ -119,6 +119,9 @@ export interface MonsterState {
   type: string;
   location: number;
   health: number;
+
+  // TODO: Monsters can also have effects
+  effects?: CharacterEffect[];
 }
 
 export interface ItemLocationState extends PlayerItem {

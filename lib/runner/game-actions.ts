@@ -7,7 +7,7 @@ import {
   PlayerAction,
   PlayerActionsState,
   PlayerActionUseItem,
-  PlayerEffect,
+  CharacterEffect,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -372,7 +372,7 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
       );
     } else if (consumableItem.bonusStats && consumableItem.turns != undefined && consumableItem.turns > 0) {
       const { health, magic, special, ...effectBonuses } = consumableItem.bonusStats;
-      const newEffect: PlayerEffect = {
+      const newEffect: CharacterEffect = {
         description: consumableItem.name,
         turns: consumableItem.turns + 1,
         ...effectBonuses
