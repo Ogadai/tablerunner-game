@@ -4,6 +4,7 @@ import { monsters } from '@/lib/games/monsters';
 import styles from './monster-card.module.css';
 import { MonsterState } from '@/lib/store/types';
 import EntityBaseStats from './entity-base-stats';
+import { getMonsterStats } from '@/lib/runner/monster-stats';
 
 export default function MonsterCard({
   monster,
@@ -14,6 +15,8 @@ export default function MonsterCard({
   canAttack: boolean,
   onAttack: () => void,
 }) {
+  const monsterStats = getMonsterStats(monster);
+
   return <>
     <Image
       className={styles.monsterImage}
@@ -24,7 +27,7 @@ export default function MonsterCard({
       alt={monsters[monster.type].name}
     />
     <div className={`card ${styles.statsCard}`}>
-      <EntityBaseStats current={{health: monster.health}} baseStats={monsters[monster.type].baseStats} />
+      <EntityBaseStats current={{health: monster.health}} baseStats={monsterStats} />
     </div>
     <div>
       { canAttack && (
