@@ -2,10 +2,11 @@
 
 import { ApiResponse } from "../api-response";
 import { getGameStateFromRedis, getPlayerInventoryFromRedis, setLocationsStateInRedis, setPlayerInventoryInRedis } from './redis-access';
-import { PlayerInventoryEquipSlots, PlayerInventoryState } from './types';
+import { NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState } from './types';
 import { getLocationsStateFromRedis } from './redis-access';
 import { GameTopicMessageType, LocationUpdatedMessage } from "../message-types";
 import { publishMessage } from "../messages/message-publisher";
+import { allItems } from "../games/items";
 
 async function publishLocationUpdated(boardId: string, mapId: string, locationId: number): Promise<void> {
   const msg: LocationUpdatedMessage = {
@@ -31,7 +32,7 @@ export async function getPlayerInventory(boardId: string, mapId: string, playerI
   }
 }
 
-export async function playerEquipItem(boardId: string, mapId: string, playerId: string, itemId: string, itemUniqueId?: string): Promise<ApiResponse<PlayerInventoryState>> {
+export async function playerEquipItem(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
   try {
     const gameState = await getGameStateFromRedis(boardId, mapId);
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
@@ -51,7 +52,7 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
 
       const item = sourceList.find(i => i.id === itemId);
       if (item) {
-        (updatedInventory.equipped as any)[item.type] = item.id;
+        (updatedInventory.equipped as any)[allItems[item.type].type] = item.id;
       }
     }
 
@@ -69,7 +70,7 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
   }
 }
 
-export async function dropItemAtLocation(boardId: string, mapId: string, playerId: string, itemId: string, itemUniqueId?: string): Promise<ApiResponse<PlayerInventoryState>> {
+export async function dropItemAtLocation(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
   try {
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
 
@@ -77,14 +78,14 @@ export async function dropItemAtLocation(boardId: string, mapId: string, playerI
     const locationsState = await getLocationsStateFromRedis(boardId, mapId);
 
     const playerState = gameState.players.find(p => p.id === playerId)!;
-    if (playerState.health) {
+    if (playerState.health === 0) {
       throw new Error('Cannot drop item while dead');
     }
 
     const sourceList = playerInventory.equipment != null
         ? playerInventory.equipment : playerState.equipment;
     const item = sourceList.find(i => i.id === itemId
-        && (!itemUniqueId || i.uniqueId === itemUniqueId));
+        && (!itemId || i.id === itemId));
     if (!item) {
       throw new Error(`Item ${itemId} not found in inventory`);
     }
@@ -94,14 +95,18 @@ export async function dropItemAtLocation(boardId: string, mapId: string, playerI
       equipped: {
         ...playerInventory.equipped,
       },
-      equipment: sourceList.filter(i => i.id !== itemId
-        || (itemUniqueId && i.uniqueId !== itemUniqueId)),
+      equipment: sourceList.filter(i => i.id !== itemId || (itemId && i.id !== itemId)),
     };
 
     // Un-equip it
+    for (const key of Object.keys(updatedInventory.equipped!) as (keyof PlayerInventoryEquipSlots)[]) {
+        if (updatedInventory.equipped![key] === itemId) {
+          updatedInventory.equipped![key] = NOTHING_EQUPPED;
+        }
+    }
     for (const key of Object.keys(playerState.equipped!) as (keyof PlayerInventoryEquipSlots)[]) {
-        if (playerState.equipped[key] === itemId || updatedInventory.equipped![key] === itemId)      {
-          updatedInventory.equipped![key] = null;
+        if (playerState.equipped![key] === itemId) {
+          updatedInventory.equipped![key] = NOTHING_EQUPPED;
         }
     }
 
@@ -109,7 +114,7 @@ export async function dropItemAtLocation(boardId: string, mapId: string, playerI
     locationsState.items.push({
       ...item,
       location: playerState.location.id,
-  });
+    });
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, updatedInventory);
     await setLocationsStateInRedis(boardId, mapId, locationsState);
@@ -128,7 +133,7 @@ export async function dropItemAtLocation(boardId: string, mapId: string, playerI
   }
 }
 
-export async function takeItemAtLocation(boardId: string, mapId: string, playerId: string, itemId: string, itemUniqueId?: string): Promise<ApiResponse<PlayerInventoryState>> {
+export async function takeItemAtLocation(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
   try {
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
 
@@ -136,7 +141,7 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
     const locationsState = await getLocationsStateFromRedis(boardId, mapId);
 
     const playerState = gameState.players.find(p => p.id === playerId)!;
-    if (playerState.health) {
+    if (playerState.health === 0) {
       throw new Error('Cannot take item while dead');
     }
 
@@ -147,8 +152,7 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
     const sourceList = playerInventory.equipment != null
         ? playerInventory.equipment : playerState.equipment;
 
-    const item = locationsState.items.find(i => i.id === itemId
-        && (!itemUniqueId || i.uniqueId === itemUniqueId));
+    const item = locationsState.items.find(i => i.id === itemId && (!itemId || i.id === itemId));
     if (!item) {
       throw new Error(`Item ${itemId} not found in location`);
     }
@@ -165,8 +169,7 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
     };
 
     // Remove for the location
-    locationsState.items = locationsState.items.filter(i => i.id !== itemId
-        || (itemUniqueId && i.uniqueId !== itemUniqueId));
+    locationsState.items = locationsState.items.filter(i => i.id !== itemId || (itemId && i.id !== itemId));
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, updatedInventory);
     await setLocationsStateInRedis(boardId, mapId, locationsState);

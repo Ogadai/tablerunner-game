@@ -104,19 +104,18 @@ export default function PlayerLocationList({
     } as Omit<PlayerActionAttack, 'id'>);
   }
 
-  const onUseItem = async (id: string, uniqueId?: string) => {
+  const onUseItem = async (itemId: string) => {
     setCharacterOpen(null);
-    const item: PlayerItem = (allItems as any)[id];
+    const itemDef: PlayerItem = player.equipment.find(i => i.id === itemId)!;
 
     await addNewAction({
       type: PlayerActionType.UseItem,
-      description: `Use ${item.name}`,
-      itemId: id,
-      uniqueId
+      description: `Use ${allItems[itemDef.type].name}`,
+      itemId
     } as Omit<PlayerActionUseItem, 'id'>);
   }
 
-  const onTakeItem = async (id: string, uniqueId?: string) => {
+  const onTakeItem = async (itemId: string) => {
     if (player.health === 0) {
       await Swal.fire({
         ...getSwalDefaultOptions(),
@@ -137,7 +136,7 @@ export default function PlayerLocationList({
       return;
     }
 
-    await takeItemAtLocation(boardId, mapId, player.id, id, uniqueId);
+    await takeItemAtLocation(boardId, mapId, player.id, itemId);
   }
 
   const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
@@ -155,9 +154,9 @@ export default function PlayerLocationList({
   // TODO: Can't attack or use items if dead!
 
   const canAttack = actionPointsLeft >= actionsPerTurn.attack;
-  const usedItemUniqueIds = actionsState.actions
+  const usedItemIds = actionsState.actions
     .filter(a => a.type === PlayerActionType.UseItem)
-    .map(a => (a as PlayerActionUseItem).uniqueId || '');
+    .map(a => (a as PlayerActionUseItem).itemId || '');
 
   return (<>
     <EntityList entities={entities} onClickEntity={onClickEntity} />
@@ -188,7 +187,7 @@ export default function PlayerLocationList({
                 isSelf={characterOpen.id === player.id}
                 actionPointsLeft={actionPointsLeft}
                 onUseItem={onUseItem}
-                usedItemUniqueIds={usedItemUniqueIds}
+                usedItemIds={usedItemIds}
               ></CharacterCard>
             }
           </div>

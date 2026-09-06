@@ -15,7 +15,7 @@ export default function CharacterCard({
   isSelf,
   actionPointsLeft,
   onUseItem,
-  usedItemUniqueIds,
+  usedItemIds,
 }: {
   boardId: string;
   mapId: string;
@@ -23,7 +23,7 @@ export default function CharacterCard({
   isSelf: boolean;
   actionPointsLeft: number;
   onUseItem: (id: string, uniqueId?: string) => void;
-  usedItemUniqueIds: string[];
+  usedItemIds: string[];
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
   const [activePlayer, setActivePlayer] = useState<PlayerState>(player);
@@ -50,18 +50,18 @@ export default function CharacterCard({
         equipment: response.data.equipment !== null
             ? response.data.equipment : player.equipment,
       };
-
+console.log('showing player', combinedPlayer)
       setActivePlayer(combinedPlayer);
     }
   }
 
-  const onEquipItem = async (itemId: string, uniqueId?: string) => {
-    const response = await playerEquipItem(boardId, mapId, player.id, itemId, uniqueId);
+  const onEquipItem = async (itemId: string) => {
+    const response = await playerEquipItem(boardId, mapId, player.id, itemId);
     useInventoryResponse(response);
   }
 
-  const onDropItem = async (itemId: string, uniqueId?: string) => {
-    const response = await dropItemAtLocation(boardId, mapId, player.id, itemId, uniqueId);
+  const onDropItem = async (itemId: string) => {
+    const response = await dropItemAtLocation(boardId, mapId, player.id, itemId);
     useInventoryResponse(response);
   }
 
@@ -99,7 +99,7 @@ export default function CharacterCard({
             onEquipItem={onEquipItem}
             onUseItem={onUseItem}
             onDropItem={onDropItem}
-            usedItemUniqueIds={usedItemUniqueIds}
+            usedItemIds={usedItemIds}
           />}
     </div>
   </>;

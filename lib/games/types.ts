@@ -17,7 +17,7 @@ export interface CharacterListEntry {
   icon: string;
   rgbColour: string;
   characterStats: CharacterStats;
-  equipment: PlayerItem[];
+  equipment: ItemDef[];
 }
 
 export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -82,7 +82,7 @@ export enum PlayerItemType {
   consumable = 'consumable'
 }
 
-export interface PlayerItem {
+export interface ItemDef {
   id: string;
   uniqueId?: string;
   type: PlayerItemType;
@@ -101,11 +101,16 @@ export interface PlayerItem {
   };
 }
 
-export interface PlayerEquipableItem extends PlayerItem {
+export interface EquipableItemDef extends ItemDef {
   ranged?: boolean;
   staff?: boolean;
 }
 
-export interface PlayerConsumableItem extends PlayerItem {
+export interface ConsumableItemDef extends ItemDef {
   useCost: number;
+}
+
+export interface PlayerItem {
+  id: string
+  type: string;
 }

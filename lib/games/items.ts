@@ -1,4 +1,4 @@
-import { PlayerItem, PlayerItemType, PlayerEquipableItem, PlayerConsumableItem } from './types';
+import { ItemDef, PlayerItemType, EquipableItemDef, ConsumableItemDef } from './types';
 
 export enum EquipableIds {
   swordRusty = 'swordRusty',
@@ -53,7 +53,7 @@ export enum EquipableIds {
   necklaceGold = 'necklaceGold',
 };
 
-export const equipableItems: Record<EquipableIds, PlayerEquipableItem> = {
+export const equipableItems: Record<string, EquipableItemDef> = {
   [EquipableIds.swordRusty]: {
     id: EquipableIds.swordRusty.toString(),
     type: PlayerItemType.weapon,
@@ -159,7 +159,7 @@ export enum ConsumableIds {
   resurrectionShard = 'resurrectionShard',
 };
 
-export const consumableItems: Record<ConsumableIds, PlayerConsumableItem> = {
+export const consumableItems: Record<string, ConsumableItemDef> = {
   [ConsumableIds.healingPotion]: {
     id: ConsumableIds.healingPotion.toString(),
     type: PlayerItemType.consumable,
@@ -202,7 +202,7 @@ export const consumableItems: Record<ConsumableIds, PlayerConsumableItem> = {
 
 export type ItemIds = EquipableIds | ConsumableIds;
 
-export const allItems: Record<ItemIds, PlayerItem> = {
+export const allItems: Record<string, ItemDef> = {
   ...equipableItems,
   ...consumableItems,
 };
@@ -210,6 +210,6 @@ export const allItems: Record<ItemIds, PlayerItem> = {
 const excludeFromLoot: string[] = [
   ConsumableIds.resurrectionStone
 ];
-export const lootItems: PlayerItem[] =
+export const lootItems: ItemDef[] =
   Object.entries(allItems).map(([id, item]) => item)
     .filter(i => !excludeFromLoot.includes(i.id))

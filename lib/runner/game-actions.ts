@@ -12,12 +12,12 @@ import {
   getActionsStateFromRedis,
 } from '../store/redis-access';
 import { games } from "../games/games";
-import { BaseStats, OPPOSITE_DIRECTION, PlayerConsumableItem, PlayerEquipableItem, PlayerItemType } from '@/lib/games/types';
+import { BaseStats, EquipableItemDef, OPPOSITE_DIRECTION, PlayerItem, PlayerItemType } from '@/lib/games/types';
 import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
-import { ConsumableIds, lootItems } from "../games/items";
+import { allItems, ConsumableIds, consumableItems, lootItems } from "../games/items";
 import { createItemForInventory } from './apply-inventory';
 
 enum EntityActionEntityTypes {
@@ -284,8 +284,10 @@ function monsterDropLoot(params: BaseParams, player: PlayerState, monster: Monst
 function monsterPickTarget(targets: PlayerState[]): PlayerState {
   const targetWeights = targets.map(target => {
     const weaponId = target.equipped.weapon;
-    const weapon = weaponId ? target.equipment.find(item => item.id === weaponId) as PlayerEquipableItem | undefined : undefined;
-    const hasRangedOrStaffWeapon = !!weapon?.ranged || !!weapon?.staff;
+    const weapon = weaponId ? target.equipment.find(item => item.id === weaponId) as PlayerItem | undefined : undefined;
+    const weaponType = weapon && allItems[weapon.type] as EquipableItemDef;
+
+    const hasRangedOrStaffWeapon = !!weaponType?.ranged || !!weaponType?.staff;
 
     return hasRangedOrStaffWeapon ? 0.5 : 1;
   });
@@ -339,11 +341,10 @@ function processAttackForDamage(attackerStats: BaseStats, defenderStats: BaseSta
 }
 
 function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerActionUseItem): void {
-  const item = player.equipment.find(item => item.type === PlayerItemType.consumable
-    && (item as PlayerConsumableItem).uniqueId === action.uniqueId);
-  if (item) {
-    const consumableItem = item as PlayerConsumableItem;
+  const item = player.equipment.find(item => item.id === action.itemId);
+  const consumableItem = item && consumableItems[item.type];
 
+  if (consumableItem) {
     // Apply benefit
     if (consumableItem.bonusStats?.health) {
       const addedHealth = Math.min(consumableItem.bonusStats?.health,
@@ -363,8 +364,7 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
     }
 
     // Remove from equipment
-    player.equipment = player.equipment.filter(item => item.type !== PlayerItemType.consumable
-      || (item as PlayerConsumableItem).uniqueId !== action.uniqueId)
+    player.equipment = player.equipment.filter(item => item.id !== action.itemId)
   }
 }
 

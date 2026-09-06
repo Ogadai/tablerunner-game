@@ -1,5 +1,5 @@
 import { allItems } from '../games/items';
-import { BaseStats, PlayerConsumableItem, PlayerEquipableItem } from '../games/types';
+import { BaseStats, ConsumableItemDef, EquipableItemDef } from '../games/types';
 import { PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
 
 const BASE_ACTIONS_PER_TURN = 20;
@@ -38,8 +38,9 @@ export function getPlayerActionsCosts(playerState: PlayerState, actionsState: Pl
         return total + actionsPerTurn.move;
       case PlayerActionType.UseItem:
         const useAction = action as PlayerActionUseItem;
-        const item: PlayerConsumableItem = (allItems as any)[useAction.itemId];
-        return total + item.useCost;
+        const item = playerState.equipment.find(e => e.id == useAction.itemId);
+        const itemDef: ConsumableItemDef = item && (allItems as any)[item.type];
+        return total + (itemDef ? itemDef.useCost : 0);
       default:
         return total;
     }
@@ -48,8 +49,9 @@ export function getPlayerActionsCosts(playerState: PlayerState, actionsState: Pl
 
 export function getPlayerStats(playerState: PlayerState): BaseStats {
   const weaponId = playerState.equipped.weapon;
-  const weapon = !!weaponId && playerState.equipment.find(e => e.id == weaponId) as PlayerEquipableItem;
-  const ranged = !!weapon && !!weapon.ranged;
+  const weapon = !!weaponId && playerState.equipment.find(e => e.id == weaponId);
+  const weaponType = weapon && allItems[weapon.type] as EquipableItemDef;
+  const ranged = !!weaponType && !!weaponType.ranged;
 
   const pStats = playerState.characterStats;
   const baseStats: BaseStats = {
@@ -71,10 +73,11 @@ export function getPlayerStats(playerState: PlayerState): BaseStats {
 
   for(const slot of Object.keys(playerState.equipped)) {
     const itemId = (playerState.equipped as any)[slot] as (string | undefined | null);
-    const item = !!itemId && playerState.equipment.find(e => e.id == itemId) as PlayerEquipableItem;
-    if (item) {
-      for(const stat of Object.keys(item.bonusStats!)) {
-        const bonusAmount = (item.bonusStats as any)[stat];
+    const item = !!itemId && playerState.equipment.find(e => e.id == itemId);
+    const itemDef = item && allItems[item.type];
+    if (itemDef) {
+      for(const stat of Object.keys(itemDef.bonusStats!)) {
+        const bonusAmount = (itemDef.bonusStats as any)[stat];
         if (bonusAmount) {
           (baseStats as any)[stat] += bonusAmount;
           (baseStats.bonuses as any)[stat] += bonusAmount;

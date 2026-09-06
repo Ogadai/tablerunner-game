@@ -103,6 +103,8 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       };
     }
 
+    const equipment = characterDef.equipment.map(createItemForInventory);
+
     const newPlayer: PlayerState = {
       id: playerId,
       name: pickCharacterName(characterDef.id),
@@ -113,11 +115,9 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       points: 0,
       level: 1,
       availableStats: INITIAL_AVAILABLE_STATS,
-      equipment: [
-        ...characterDef.equipment.map(createItemForInventory)
-      ],
+      equipment,
       equipped: {
-        weapon: characterDef.equipment[0].id
+        weapon: equipment[0].id
       }
     };
 

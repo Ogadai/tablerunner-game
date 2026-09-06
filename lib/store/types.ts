@@ -14,6 +14,8 @@ export interface GameState {
   visited: number[];
 }
 
+export const NOTHING_EQUPPED = '<none>';
+
 export interface PlayerInventoryEquipSlots {
   helmet?: string | null;
   armour?: string | null;
@@ -81,7 +83,6 @@ export interface PlayerActionAttack extends PlayerAction {
 export interface PlayerActionUseItem extends PlayerAction {
   type: PlayerActionType.UseItem,
   itemId: string;
-  uniqueId?: string;
 }
 
 export interface PlayerActionsState {
