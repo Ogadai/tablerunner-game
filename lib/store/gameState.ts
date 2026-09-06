@@ -116,6 +116,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
       characterStats: { ...characterDef.characterStats },
       health: 0,
+      magic: 0,
       points: 0,
       level: 1,
       availableStats: INITIAL_AVAILABLE_STATS,
@@ -132,7 +133,8 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       players: [...gameState.players, {
         ...newPlayer,
         baseStats: baseStats,
-        health: baseStats.health
+        health: baseStats.health,
+        magic: baseStats.magic
       }]
     };
 

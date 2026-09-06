@@ -154,7 +154,7 @@ export default function CharacterStats({
     </div>
 
     <div className={`card ${styles.statsCard}`}>
-      <EntityBaseStats health={player.health} baseStats={baseStats} />
+      <EntityBaseStats current={{health: player.health, magic: player.magic}} baseStats={baseStats} />
     </div>
   </>;
 };

@@ -24,7 +24,7 @@ export default function MonsterCard({
       alt={monsters[monster.type].name}
     />
     <div className={`card ${styles.statsCard}`}>
-      <EntityBaseStats health={monster.health} baseStats={monsters[monster.type].baseStats} />
+      <EntityBaseStats current={{health: monster.health}} baseStats={monsters[monster.type].baseStats} />
     </div>
     <div>
       { canAttack && (

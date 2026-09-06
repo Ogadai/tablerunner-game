@@ -51,6 +51,7 @@ export interface PlayerState {
   baseStats?: BaseStats;
   characterStats: CharacterStats;
   health: number;
+  magic: number;
   level: number;
   points: number;
   availableStats: number;

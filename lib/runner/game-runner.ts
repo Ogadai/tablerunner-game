@@ -52,9 +52,9 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     params.gameState = newGameState;
 
     for(const player of params.gameState.players) {
+      await applyPlayerInventory(params, player);
       const addedStats = await getPlayerStatsFromRedis(params.boardId, params.mapId, player.id);
       await applyPlayerAddedStats(params, player, addedStats);
-      await applyPlayerInventory(params, player);
     }
 
     // Run the game turn

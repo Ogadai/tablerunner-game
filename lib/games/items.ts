@@ -141,10 +141,8 @@ export const equipableItems: Record<string, EquipableItemDef> = {
   [EquipableIds.beltLeather]: { id: 'beltLeather', type: PlayerItemType.belt, name: 'Leather Belt', iconXY: { x: 6, y: 6 }, value: 10, bonusStats: { health: 1 } },
   [EquipableIds.beltGold]: { id: 'beltGold', type: PlayerItemType.belt, name: 'Golden Belt', iconXY: { x: 7, y: 6 }, value: 55, bonusStats: { defence: 2, health: 2 } },
   [EquipableIds.beltRoyal]: { id: 'beltRoyal', type: PlayerItemType.belt, name: 'Royal Belt', iconXY: { x: 8, y: 6 }, value: 140, bonusStats: { defence: 3, magic: 2, health: 3 } },
-  [EquipableIds.ringRuby]: { id: 'ringRuby', type: PlayerItemType.ring, name: 'Ruby Ring', iconXY: { x: 6, y: 7 }, value: 45, bonusStats: { attack: 2, damage: 1 } },
-  [EquipableIds.ringSapphire]: { id: 'ringSapphire', type: PlayerItemType.ring, name: 'Sapphire Ring', iconXY: { x: 7, y: 7 }, value: 85, bonusStats: { magic: 3, health: 1 } },
-  [EquipableIds.ringAmethyst]: { id: 'ringAmethyst', type: PlayerItemType.ring, name: 'Amethyst Ring', iconXY: { x: 8, y: 7 }, value: 110, bonusStats: { magic: 2, speed: 2 } },
-  [EquipableIds.ringTopaz]: { id: 'ringTopaz', type: PlayerItemType.ring, name: 'Topaz Ring', iconXY: { x: 9, y: 7 }, value: 125, bonusStats: { attack: 2, speed: 2 } },
+  [EquipableIds.ringSapphire]: { id: 'ringSapphire', type: PlayerItemType.ring, name: 'Sapphire Ring', iconXY: { x: 6, y: 7 }, value: 65, bonusStats: { magic: 5 } },
+  [EquipableIds.ringRuby]: { id: 'ringRuby', type: PlayerItemType.ring, name: 'Ruby Ring', iconXY: { x: 7, y: 7 }, value: 85, bonusStats: { health: 5 } },
   [EquipableIds.necklaceRuby]: { id: 'necklaceRuby', type: PlayerItemType.necklace, name: 'Ruby Necklace', iconXY: { x: 8, y: 7 }, value: 95, bonusStats: { health: 4, magic: 1 } },
   [EquipableIds.necklaceGold]: { id: 'necklaceGold', type: PlayerItemType.necklace, name: 'Golden Necklace', iconXY: { x: 9, y: 7 }, value: 160, bonusStats: { health: 3, defence: 2, magic: 2 } },
 };

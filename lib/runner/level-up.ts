@@ -29,8 +29,8 @@ export async function applyPlayerAddedStats(params: BaseParams, player: PlayerSt
         player.availableStats -= addAmount;
       }
     }
-    player.baseStats = getPlayerStats(player);
   }
+  player.baseStats = getPlayerStats(player);
 }
 
 function calculateLevelFromPoints(points: number): number {

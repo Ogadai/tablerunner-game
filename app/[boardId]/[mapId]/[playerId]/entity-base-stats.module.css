@@ -12,7 +12,7 @@
   }
 }
 
-.healthBarBorder {
+.statBarBorder {
   position: absolute;
   z-index: 0;
   top: 0;
@@ -22,7 +22,7 @@
   border: 1px solid var(--border-stone);
 }
 
-.healthBar {
+.statBar {
   position: absolute;
   z-index: 0;
   top: 0;
