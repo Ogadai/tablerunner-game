@@ -1,5 +1,6 @@
 import { CharacterListEntry } from "./types";
 import { allItems } from './items';
+import { SpellIds } from "./spells";
 
 export const characters: { [id: string]: CharacterListEntry } = {
   barbarian: {
@@ -21,7 +22,8 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.healingPotion,
       allItems.healingPotion,
       allItems.resurrectionStore,
-    ]
+    ],
+    spells: [],
   },
   witch: {
     id: 'witch',
@@ -42,7 +44,8 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.healingPotion,
       allItems.healingPotion,
       allItems.resurrectionStore,
-    ]
+    ],
+    spells: [],
   },
   ranger: {
     id: 'ranger',
@@ -63,7 +66,8 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.healingPotion,
       allItems.healingPotion,
       allItems.resurrectionStore,
-    ]
+    ],
+    spells: [],
   },
   mage: {
     id: 'mage',
@@ -84,6 +88,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.healingPotion,
       allItems.healingPotion,
       allItems.resurrectionStore,
-    ]
+    ],
+    spells: [
+      SpellIds.spiritArrow,
+    ],
   }
 };

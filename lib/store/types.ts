@@ -1,5 +1,6 @@
 import { SetCommandOptions } from "@upstash/redis";
 import { CharacterListEntry, LocationMove, LocationMoveDirection, BaseStats, CharacterStats, PlayerItem } from "../games/types";
+import { SpellIds } from "../games/spells";
 
 export const Expiry1Day = 60 * 60 * 24;
 export const Expiry1Week = Expiry1Day * 7;
@@ -57,6 +58,7 @@ export interface PlayerState {
   availableStats: number;
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
+  spells: SpellIds[];
   zombie?: boolean;
   effects?: CharacterEffect[];
 }

@@ -1,3 +1,5 @@
+import { SpellIds } from "./spells";
+
 export interface GameListEntry {
   map: string;
   id: string;
@@ -18,6 +20,7 @@ export interface CharacterListEntry {
   rgbColour: string;
   characterStats: CharacterStats;
   equipment: ItemDef[];
+  spells: SpellIds[];
 }
 
 export type LocationMoveDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -85,7 +88,6 @@ export enum PlayerItemType {
 
 export interface ItemDef {
   id: string;
-  uniqueId?: string;
   type: PlayerItemType;
   name: string;
   iconXY: { x: number, y: number };
@@ -115,4 +117,29 @@ export interface ConsumableItemDef extends ItemDef {
 export interface PlayerItem {
   id: string
   type: string;
+}
+
+export enum SpellTargetType {
+  friendly = 'friendly',
+  enemy = 'enemy',
+  dead = 'dead',
+}
+
+export interface SpellDef {
+  id: string;
+  name: string;
+  pickTarget: boolean;
+  targetType: SpellTargetType;
+  magicCost: number,
+  actionCost: number,
+  iconXY: { x: number, y: number };
+  bonusStats?: {
+    attack?: number;
+    damage?: number;
+    defence?: number;
+    magic?: number;
+    health?: number;
+    speed?: number;
+    special?: string;
+  };
 }
