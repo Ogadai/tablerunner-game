@@ -1,4 +1,5 @@
-import { ItemDef, PlayerItemType, EquipableItemDef, ConsumableItemDef } from './types';
+import { ItemDef, PlayerItemType, EquipableItemDef, ConsumableItemDef, ScrollItemDef } from './types';
+import { spells } from './spells';
 
 export enum EquipableIds {
   swordRusty = 'swordRusty',
@@ -202,6 +203,26 @@ export const consumableItems: Record<string, ConsumableItemDef> = {
   },
 };
 
+export enum ScrollIds {
+  spiritArrow = 'spiritArrowScroll',
+  fireBall = 'fireBallScroll',
+  fireWall = 'fireWallScroll',
+  iceShards = 'iceShardsScroll',
+  iceStorm = 'iceStormScroll',
+}
+export const scrollItems: Record<string, ScrollItemDef> = {
+}
+for(const [spellId, spell] of Object.entries(spells)) {
+  scrollItems[`${spell.id}Scroll`] = {
+    id: `${spell.id}Scroll`,
+    type: PlayerItemType.scroll,
+    name: `Scroll of ${spell.name}`,
+    iconXY: { x: 5, y: 7 },
+    value: spell.intelligence * 2,
+    spellId
+  }
+}
+
 export enum MiscellaneousIds {
   fireKey = 'fireKey',
   greenKey = 'greenKey',
@@ -210,7 +231,7 @@ export enum MiscellaneousIds {
   skeletonKey = 'skeletonKey',
   goldKey = 'goldKey',
 }
-export const miscellaneousItems: Record<string, ItemDef> = {
+export const keyItems: Record<string, ItemDef> = {
   [MiscellaneousIds.fireKey]: {
     id: MiscellaneousIds.fireKey.toString(),
     type: PlayerItemType.miscellanous,
@@ -261,16 +282,20 @@ export const miscellaneousItems: Record<string, ItemDef> = {
   },
 };
 
-export type ItemIds = EquipableIds | ConsumableIds | MiscellaneousIds;
+export type ItemIds = EquipableIds | ConsumableIds | ScrollIds | MiscellaneousIds;
 
 export const allItems: Record<string, ItemDef> = {
   ...equipableItems,
   ...consumableItems,
+  ...scrollItems,
+  ...keyItems,
 };
 
 const excludeFromLoot: string[] = [
-  ConsumableIds.resurrectionStone
+  ConsumableIds.resurrectionStone,
+  ...Object.keys(keyItems)
 ];
 export const lootItems: ItemDef[] =
   Object.entries(allItems).map(([id, item]) => item)
-    .filter(i => !excludeFromLoot.includes(i.id))
+    .filter(i => !excludeFromLoot.includes(i.id));
+

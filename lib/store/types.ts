@@ -83,6 +83,7 @@ export enum PlayerActionType {
   Attack = 'attack',
   UseItem = 'useItem',
   Cast = 'Cast',
+  ReadScroll = 'ReadScroll',
 }
 
 export interface PlayerAction {
@@ -110,6 +111,11 @@ export interface PlayerActionCast extends PlayerAction {
   type: PlayerActionType.Cast,
   spellId: string;
   targetId?: string;
+}
+
+export interface PlayerActionReadScroll extends PlayerAction {
+  type: PlayerActionType.ReadScroll,
+  itemId: string;
 }
 
 export interface PlayerActionsState {

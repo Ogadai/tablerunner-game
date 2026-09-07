@@ -9,6 +9,7 @@ import {
   PlayerActionUseItem,
   CharacterEffect,
   PlayerActionCast,
+  PlayerActionReadScroll,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -23,7 +24,7 @@ import { allItems, ConsumableIds, consumableItems, ItemIds } from "../games/item
 import { getMonsterStats } from './monster-stats';
 import { specialItemActions } from './special-item-actions';
 import { processAttackForDamage, genericAttackMonster } from './game-action-attack';
-import { actionCastSpell } from './game-action-spell';
+import { actionCastSpell, actionReadScroll } from './game-action-spell';
 
 enum EntityActionEntityTypes {
   player,
@@ -43,7 +44,7 @@ interface EntityActionsForLocation {
 }
 
 const MAGIC_BONUS_RATIO = 0.1;
-const AUTO_DROP_ITEMS: ItemIds = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
+const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
 
 export async function runGameActions(params: BaseParams): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
@@ -192,6 +193,9 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
           case PlayerActionType.Cast:
             actionCastSpell(params, player, nextAction as PlayerActionCast);
             break;
+          case PlayerActionType.ReadScroll:
+            actionReadScroll(params, player, nextAction as PlayerActionReadScroll);
+            break;
         }
       }
     } else if (entityActions.entityType === EntityActionEntityTypes.monster) {
@@ -285,8 +289,8 @@ function monsterAttack(params: BaseParams, monster: MonsterState, target: Player
         playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
 
         // auto drop special items if they have them
-        const drops = target.equipment.filter(i => i.type === AUTO_DROP_ITEMS);
-        target.equipment = target.equipment.filter(i => i.type !== AUTO_DROP_ITEMS);
+        const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));
+        target.equipment = target.equipment.filter(i => !AUTO_DROP_ITEMS.includes(i.type as ItemIds));
 
         params.items.push(...drops.map(i => ({
           ...i,

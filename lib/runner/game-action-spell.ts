@@ -1,5 +1,6 @@
+import { scrollItems } from "../games/items";
 import { SpellIds, spells } from "../games/spells";
-import { PlayerActionCast, PlayerState } from "../store/types";
+import { PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { genericAttackMonster } from "./game-action-attack";
 
@@ -31,4 +32,20 @@ export function actionCastSpell(params: BaseParams, player: PlayerState, action:
 
   player.magic = Math.max(0, player.magic - spell.magicCost);
   player.recentSpells = recentSpells.slice(0, MAX_RECENT_SPELLS);
+}
+
+export function actionReadScroll(params: BaseParams, player: PlayerState, action: PlayerActionReadScroll): void {
+  const item = player.equipment.find(item => item.id === action.itemId);
+  const scrollItem = item && scrollItems[item.type];
+
+  if (scrollItem) {
+    const spell = spells[scrollItem.spellId];
+
+    if (player.baseStats!.magic >= spell.intelligence) {
+      player.spells = [
+        ...player.spells,
+        scrollItem.spellId as SpellIds
+      ];
+    }
+  }
 }

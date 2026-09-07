@@ -83,6 +83,7 @@ export enum PlayerItemType {
   ring = 'ring',
   necklace = 'necklace',
   consumable = 'consumable',
+  scroll = 'scroll',
   miscellanous = 'miscellanous',
 }
 
@@ -112,6 +113,10 @@ export interface EquipableItemDef extends ItemDef {
 export interface ConsumableItemDef extends ItemDef {
   useCost: number;
   turns?: number;
+}
+
+export interface ScrollItemDef extends ItemDef {
+  spellId: string;
 }
 
 export interface PlayerItem {
