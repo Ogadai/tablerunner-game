@@ -41,11 +41,11 @@
 }
 
 .actionButtonGroup1 {
-  width: 220px;
+  padding: 0 10px;
 }
 
 .actionButtonGroup2 {
-  padding: 0 20px;
+  padding: 0 10px;
   border-left: 2px solid var(--border-stone);
 }
 
