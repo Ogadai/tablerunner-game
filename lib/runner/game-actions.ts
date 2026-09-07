@@ -83,7 +83,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     // Now get the monsters at those locations and assign them actions
     for(const locId of Object.keys(entityActionsForLocations)) {
       const locationId = parseInt(locId);
-      const monstersAtLocation = params.monsters.filter(m => m.location === locationId);
+      const monstersAtLocation = params.monsters.filter(m => m.location === locationId && m.health > 0);
 
       if (monstersAtLocation.length > 0) {
         const targetsAtLocation = entityActionsForLocations[locId].entities
@@ -189,7 +189,7 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
       }
     } else if (entityActions.entityType === EntityActionEntityTypes.monster) {
       const monster = getMonsterById(entityActions.entityId);
-      if (monster) {
+      if (monster && monster.health > 0) {
         switch(nextAction.type) {
           case PlayerActionType.Attack:
           {
@@ -236,7 +236,7 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
   try {
     const monster = params.monsters.find(m => m.id === action.target);
 
-    if (monster) {
+    if (monster && monster.health > 0) {
       const monsterDef = monsters[monster.type];
       const damage = processAttackForDamage(player.baseStats!, getMonsterStats(monster));
 
@@ -244,7 +244,7 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
         const appliedDamage = Math.min(damage, monster.health);
         monster.health -= appliedDamage;
         if (monster.health <= 0) {
-          params.monsters = params.monsters.filter(m => m.id !== action.target);
+          monster.health = 0;
           monsterDropLoot(params, player, monster);
         }
 

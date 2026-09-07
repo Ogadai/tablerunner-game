@@ -124,7 +124,7 @@ export default function PlayerLocation(
   }
 
   const canMoveDirection = (direction: LocationMoveDirection): boolean =>
-    locationState.monsters.length === 0 || direction === playerState.retreatDirection;
+    !locationState.monsters.some(monster => monster.health > 0) || direction === playerState.retreatDirection;
 
   const actionPointsUsed = getPlayerActionsCosts(playerState, actionsState);
   const actionPointsLeft = actionsPerTurn.total - actionPointsUsed;

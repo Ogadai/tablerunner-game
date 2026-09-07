@@ -125,7 +125,7 @@ export default function PlayerLocationList({
       return;
     }
 
-    if (locationMonsters.length > 0) {
+    if (locationMonsters.some(monster => monster.health > 0)) {
       await Swal.fire({
         ...getSwalDefaultOptions(),
         title: 'Item blocked!',

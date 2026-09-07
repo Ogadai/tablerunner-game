@@ -30,7 +30,7 @@ export default function MonsterCard({
       <EntityBaseStats current={{health: monster.health}} baseStats={monsterStats} />
     </div>
     <div>
-      { canAttack && (
+      { canAttack && monster.health > 0 && (
         <button className="btn" onClick={onAttack}>
           Attack
         </button>

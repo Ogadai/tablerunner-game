@@ -145,7 +145,7 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
       throw new Error('Cannot take item while dead');
     }
 
-    if (locationsState.monsters.some(m => m.location === playerState.location.id)) {
+    if (locationsState.monsters.some(m => m.location === playerState.location.id && m.health > 0)) {
       throw new Error('Cannot take item while there are enemies here');
     }
 
