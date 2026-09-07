@@ -163,6 +163,8 @@ function SpellIcon({
   const actionCost = getSpellActionCost(spell, player.baseStats!.magic);
 
   const canCast = actionCost <= actionPointsLeft && spell.magicCost <= magicLeft;
+  const targetType = spell.pickTarget ? spell.targetType
+    : (spell.targetType === SpellTargetType.enemy ? 'Multiple enemies' : 'Multiple friends');
 
   return (
     <li>
@@ -182,7 +184,7 @@ function SpellIcon({
             <ul>
               <li><span>Magic cost</span><strong>{spell.magicCost}</strong></li>
               <li><span>Action cost</span><strong>{actionCost}</strong></li>
-              <li><span>Target</span><strong>{spell.targetType}</strong></li>
+              <li><span>Target</span><strong>{targetType}</strong></li>
               {bonuses.map(([stat, value]) => (
                 <li key={stat}><span>{stat}</span><strong>{value}</strong></li>
               ))}

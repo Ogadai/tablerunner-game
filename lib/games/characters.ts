@@ -91,6 +91,8 @@ export const characters: { [id: string]: CharacterListEntry } = {
     ],
     spells: [
       SpellIds.spiritArrow,
+      SpellIds.fireBall,
+      SpellIds.fireWall,
     ],
   }
 };

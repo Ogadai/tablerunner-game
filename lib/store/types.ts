@@ -59,6 +59,7 @@ export interface PlayerState {
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
   spells: SpellIds[];
+  recentSpells?: SpellIds[];
   zombie?: boolean;
   effects?: CharacterEffect[];
 }
