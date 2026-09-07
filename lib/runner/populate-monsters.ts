@@ -45,7 +45,7 @@ async function askAIForMonsters(mapId: string): Promise<AllLocationsState> {
   const googleModel = process.env.GOOGLE_GENERATIVE_AI_MODEL;
   if (!googleModel) {
     console.error('No Google Model defined');
-    return { monsters: [], items: [] };
+    return { monsters: [], items: [], coins: [] };
   }
 
   try {
@@ -83,11 +83,11 @@ async function askAIForMonsters(mapId: string): Promise<AllLocationsState> {
         ...m,
         health: monsters[m.type].baseStats.health
       })),
-      items: []
+      items: [], coins: []
     };
   } catch(ex) {
     console.error(ex);
-    return { monsters: [], items: [] };
+    return { monsters: [], items: [], coins: [] };
   }
 
 }

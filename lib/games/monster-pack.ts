@@ -12,6 +12,7 @@ export function getMonsters(gameState: GameState) {
   const allMonsters: AllLocationsState = {
     monsters: [],
     items: [],
+    coins: [],
   };
 
   for(let n = 1; n <= GRID_CELL_COUNT; n++) {

@@ -125,6 +125,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
         weapon: equipment[0].id
       },
       spells: [...characterDef.spells],
+      coins: 0,
     };
 
     const baseStats = getPlayerStats(newPlayer);

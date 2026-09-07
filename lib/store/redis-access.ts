@@ -152,7 +152,7 @@ export async function deletePlayerMessagesFromRedis(boardId: string, mapId: stri
 
 export async function getLocationsStateFromRedis(boardId: string, mapId: string): Promise<AllLocationsState> {
   const result = await redis.get(getLocationsKey(boardId, mapId)) as AllLocationsState;
-  return result || { monsters: [] };
+  return result || { monsters: [], items: [], coins: [] };
 }
 
 export async function setLocationsStateInRedis(boardId: string, mapId: string, monsterState: AllLocationsState): Promise<void> {

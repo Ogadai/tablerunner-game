@@ -34,6 +34,7 @@ export async function checkAllPlayersReady(boardId: string, mapId: string, ready
       messages: {},
       monsters: locationsState.monsters,
       items: locationsState.items,
+      coins: locationsState.coins,
     });
   }
 }
@@ -99,6 +100,7 @@ async function runGameTurn(params: BaseParams): Promise<void> {
   const newLocationsState: AllLocationsState = {
     monsters: params.monsters,
     items: params.items,
+    coins: params.coins,
   };
   setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
 }

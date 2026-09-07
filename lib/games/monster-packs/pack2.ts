@@ -2,6 +2,7 @@ import { AllLocationsState } from '../../store/types';
 
 export const monsters: AllLocationsState = {
   items: [],
+  coins: [],
   monsters: [
     {
       id: "m1",

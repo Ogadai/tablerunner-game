@@ -62,6 +62,7 @@ export interface PlayerState {
   recentSpells?: SpellIds[];
   zombie?: boolean;
   effects?: CharacterEffect[];
+  coins: number;
 }
 
 export interface PlayerStateLocation {
@@ -144,9 +145,15 @@ export interface ItemLocationState extends PlayerItem {
   location: number;
 }
 
+export interface LocationCoinState {
+  location: number;
+  coins: number
+}
+
 export interface AllLocationsState {
   monsters: MonsterState[];
   items: ItemLocationState[];
+  coins: LocationCoinState[];
 }
 
 export interface LocationState {
