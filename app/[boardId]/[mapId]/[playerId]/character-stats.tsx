@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import Image from 'next/image';
 import { CharacterStats as CharacterStatsType, BaseStats } from '@/lib/games/types';
 
 import styles from './character-card.module.css';
@@ -10,6 +9,7 @@ import { getPlayerStats } from '@/lib/store/playerStats';
 import EntityBaseStats from './entity-base-stats';
 
 import { getPlayerAddStatsState, setPlayerAddStatsState } from '@/lib/store/playerStatsState';
+import CoinDisplay from './coin-display';
 
 const emptyStats: CharacterStatsType = {
   strength: 0,
@@ -102,18 +102,7 @@ export default function CharacterStats({
 
   return <>
     <div className={styles.characterHeader}>
-      <div className={styles.playerCoinLabel}>
-        <span>Coins: </span>
-        <span className={ styles.playerCoins }>{ player.coins }</span>
-        <Image
-          className={styles.playerCoinImage}
-          src="/coin.png"
-          width={40}
-          height={40}
-          loading="eager"
-          alt="Coins"
-        />
-      </div>
+      <CoinDisplay coins={player.coins} />
       { player.availableStats > 0 && <div className={ styles.availablePointsPrompt }>
         Assign points: <span className={ styles.availablePoints }>{ availablePoints }</span>
       </div> }

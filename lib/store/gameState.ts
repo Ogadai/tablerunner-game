@@ -11,6 +11,7 @@ import { pickCharacterName } from "../games/character-names";
 import { populateMonsters } from "../runner/populate-monsters";
 
 const INITIAL_AVAILABLE_STATS = 5;
+const INITIAL_COINS = 20;
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
@@ -125,7 +126,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
         weapon: equipment[0].id
       },
       spells: [...characterDef.spells],
-      coins: 0,
+      coins: INITIAL_COINS,
     };
 
     const baseStats = getPlayerStats(newPlayer);
