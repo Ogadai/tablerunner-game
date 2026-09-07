@@ -6,7 +6,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionAttack, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState, PlayerActionCast } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
@@ -14,6 +14,9 @@ import { getPlayerActionsPerTurn, PlayerActionsPerTurn, getPlayerActionsCosts } 
 import LocationTopicService from "@/app/message-bus/location-topic-service";
 import { getGameTopicId } from "@/lib/message-types";
 import PlayerSpells from './player-spells';
+import { characters } from '@/lib/games/characters';
+import { monsters } from '@/lib/games/monsters';
+import { EntityItemClass, EntityItemDetail } from './entity-list';
 
 export default function PlayerLocation(
   {
@@ -128,6 +131,32 @@ export default function PlayerLocation(
 
   const actionPointsUsed = getPlayerActionsCosts(playerState, actionsState);
   const actionPointsLeft = actionsPerTurn.total - actionPointsUsed;
+  const entities: EntityItemDetail[] = [
+    {
+      id: playerState.id,
+      name: playerState.name,
+      icon: characters[playerState.id].icon,
+      className: EntityItemClass.self,
+      health: playerState.health,
+      maxHealth: playerState.baseStats?.health || playerState.health
+    },
+    ...otherPlayers.map(otherPlayer => ({
+      id: otherPlayer.id,
+      name: otherPlayer.name,
+      icon: characters[otherPlayer.id].icon,
+      className: EntityItemClass.friendly,
+      health: otherPlayer.health,
+      maxHealth: otherPlayer.baseStats?.health || otherPlayer.health
+    })),
+    ...locationState.monsters.map(monster => ({
+      id: monster.id,
+      name: monsters[monster.type].name,
+      icon: monsters[monster.type].icon,
+      className: EntityItemClass.enemy,
+      health: monster.health,
+      maxHealth: monsters[monster.type].baseStats.health
+    }))
+  ];
 
   const isAttacking = actionsState.actions.some(a => a.type === PlayerActionType.Attack);
   const playerCanMove = playerAlive && !isAttacking &&  actionPointsLeft >= actionsPerTurn.move;
@@ -145,6 +174,7 @@ export default function PlayerLocation(
         player={playerState}
         otherPlayers={otherPlayers}
         monsters={locationState.monsters}
+        entities={entities}
         items={locationState.items}
         actionsState={actionsState}
         actionsPerTurn={actionsPerTurn}
@@ -198,8 +228,10 @@ export default function PlayerLocation(
         <PlayerSpells
           playerSpells={playerState.spells}
           player={playerState}
+          entities={entities}
           actionPointsLeft={actionPointsLeft}
           actionsState={actionsState}
+          addNewAction={addNewAction}
         />
       }
     </div></div>}

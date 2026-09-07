@@ -1,6 +1,7 @@
 import { allItems } from '../games/items';
+import { getSpellActionCost, spells } from '../games/spells';
 import { BaseStats, ConsumableItemDef, EquipableItemDef } from '../games/types';
-import { PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
+import { PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
 
 const BASE_ACTIONS_PER_TURN = 20;
 const BASE_MOVE_ACTION_COST = 18;
@@ -41,6 +42,10 @@ export function getPlayerActionsCosts(playerState: PlayerState, actionsState: Pl
         const item = playerState.equipment.find(e => e.id == useAction.itemId);
         const itemDef: ConsumableItemDef = item && (allItems as any)[item.type];
         return total + (itemDef ? itemDef.useCost : 0);
+      case PlayerActionType.Cast:
+        const castAction = action as PlayerActionCast;
+        const spell = spells[castAction.spellId];
+        return total + getSpellActionCost(spell, playerState.baseStats!.magic);
       default:
         return total;
     }

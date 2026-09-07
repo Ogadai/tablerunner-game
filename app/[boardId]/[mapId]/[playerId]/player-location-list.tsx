@@ -20,6 +20,7 @@ export interface PlayerLocationListProps {
   player: PlayerState;
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
+  entities: EntityItemDetail[],
   items: PlayerItem[];
   actionsState: PlayerActionsState;
   actionsPerTurn: PlayerActionsPerTurn;
@@ -33,6 +34,7 @@ export default function PlayerLocationList({
   player,
   otherPlayers,
   monsters: locationMonsters,
+  entities,
   items: locationItems,
   actionsState,
   actionsPerTurn,
@@ -41,33 +43,6 @@ export default function PlayerLocationList({
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
-
-  const entities: EntityItemDetail[] = [
-    {
-      id: player.id,
-      name: player.name,
-      icon: characters[player.id].icon,
-      className: EntityItemClass.self,
-      health: player.health,
-      maxHealth: player.baseStats?.health || player.health
-    },
-    ...otherPlayers.map(otherPlayer => ({
-      id: otherPlayer.id,
-      name: otherPlayer.name,
-      icon: characters[otherPlayer.id].icon,
-      className: EntityItemClass.friendly,
-      health: otherPlayer.health,
-      maxHealth: otherPlayer.baseStats?.health || otherPlayer.health
-    })),
-    ...locationMonsters.map(monster => ({
-      id: monster.id,
-      name: monsters[monster.type].name,
-      icon: monsters[monster.type].icon,
-      className: EntityItemClass.enemy,
-      health: monster.health,
-      maxHealth: monsters[monster.type].baseStats.health
-    }))
-  ];
 
   useEffect(() => {
     // Listen for the custom Swal signal
