@@ -8,20 +8,22 @@ import {
   PlayerActionsState,
   PlayerActionUseItem,
   CharacterEffect,
+  PlayerActionCast,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
 } from '../store/redis-access';
 import { games } from "../games/games";
-import { BaseStats, EquipableItemDef, OPPOSITE_DIRECTION, PlayerItem, PlayerItemType } from '@/lib/games/types';
-import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monsters";
+import { EquipableItemDef, OPPOSITE_DIRECTION, PlayerItem } from '@/lib/games/types';
+import { monsters } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
-import { allItems, ConsumableIds, consumableItems, lootItems } from "../games/items";
-import { createItemForInventory } from './apply-inventory';
+import { allItems, consumableItems } from "../games/items";
 import { getMonsterStats } from './monster-stats';
 import { specialItemActions } from './special-item-actions';
+import { processAttackForDamage, genericAttackMonster } from './game-action-attack';
+import { actionCastSpell } from './game-action-spell';
 
 enum EntityActionEntityTypes {
   player,
@@ -186,6 +188,9 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
           case PlayerActionType.UseItem:
             actionUseItem(params, player, nextAction as PlayerActionUseItem);
             break;
+          case PlayerActionType.Cast:
+            actionCastSpell(params, player, nextAction as PlayerActionCast);
+            break;
         }
       }
     } else if (entityActions.entityType === EntityActionEntityTypes.monster) {
@@ -234,62 +239,8 @@ function actionMove(params: BaseParams, player: PlayerState, action: PlayerActio
 }
 
 function actionAttack(params: BaseParams, player: PlayerState, action: PlayerActionAttack): void {
-  try {
-    const monster = params.monsters.find(m => m.id === action.target);
-
-    if (monster && monster.health > 0) {
-      const monsterDef = monsters[monster.type];
-      const damage = processAttackForDamage(player.baseStats!, getMonsterStats(monster));
-
-      if (damage > 0) {
-        const appliedDamage = Math.min(damage, monster.health);
-        monster.health -= appliedDamage;
-        if (monster.health <= 0) {
-          monster.health = 0;
-          monsterDropLoot(params, player, monster);
-        }
-
-        // Assign points to all living players at location
-        const players = params.gameState.players.filter(p =>
-          p.location.id === player.location.id && p.health > 0
-        );
-
-        const totalPoints = getPointsForDamage(monster.type, appliedDamage);
-        for(const player of players) {
-          player.points += Math.ceil(totalPoints / players.length);
-        }
-
-        playerMessageAtLocation(params, player.id, `**{player}** hit **${monsterDef.name}** for **${appliedDamage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
-      } else {
-        playerMessageAtLocation(params, player.id, `**{player}** missed **${monsterDef.name}**`);
-      }
-    }
-  } catch(error) {
-    console.error(`Error: actionAttack for ${player.id}`, action);
-    throw error;
-  }
-}
-
-function monsterDropLoot(params: BaseParams, player: PlayerState, monster: MonsterState) {
-  const locationId = player.location.id;
-
-  const monsterStrength = getMonsterStrength(monsters[monster.type]);
-  const lootChance = 0.3 + monsterStrength * 0.6;
-
-  if (Math.random() >= lootChance) {
-    return;
-  }
-
-  const maxLootValue = 15 + monsterStrength * monsterStrength * 285;
-  const availableLoot = lootItems.filter(item => (item.value ?? 0) <= maxLootValue);
-  const lootItem = availableLoot[Math.floor(Math.random() * availableLoot.length)];
-
-  if (lootItem) {
-    params.items.push({
-      ...createItemForInventory(params.gameState, lootItem),
-      location: locationId,
-    });
-  }
+  const monster = params.monsters.find(m => m.id === action.target)!;
+  genericAttackMonster(params, player, player.baseStats!, monster);
 }
 
 function monsterPickTarget(targets: PlayerState[]): PlayerState {
@@ -339,17 +290,6 @@ function monsterAttack(params: BaseParams, monster: MonsterState, target: Player
     console.error(`Error: monsterAttack for ${monster.id} against ${target.id}`);
     throw error;
   }
-}
-
-function processAttackForDamage(attackerStats: BaseStats, defenderStats: BaseStats): number {
-  const attackScore = Math.random() * attackerStats.attack;
-  const defenseScore = Math.random() * defenderStats.defence;
-
-  if (attackScore >= defenseScore) {
-    return Math.ceil(Math.random() * attackerStats.damage);
-  }
-
-  return 0;
 }
 
 function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerActionUseItem): void {

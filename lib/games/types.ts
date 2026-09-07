@@ -134,7 +134,7 @@ export interface SpellDef {
   magicCost: number,
   actionCost: number,
   iconXY: { x: number, y: number };
-  bonusStats?: {
+  bonusStats: {
     attack?: number;
     damage?: number;
     defence?: number;
