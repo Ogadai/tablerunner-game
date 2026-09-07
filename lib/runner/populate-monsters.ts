@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { AllLocationsState, GameState } from "../store/types";
 import { cauldronOfFire } from '../games/maps';
-import { monsters, getPointsForDamage } from '../games/monsters';
+import { monsters, getPointsForDamage, mostersExcludeFromAutoPopulate } from '../games/monsters';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '../games/gridCells';
 import { getMonsters } from '../games/monster-pack';
 
@@ -30,10 +30,12 @@ async function askAIForMonsters(mapId: string): Promise<AllLocationsState> {
     mapRows.push(cellDescriptions.slice(startCell, startCell + MAP_COLUMNS));
   }
 
-  const monsterList = Object.keys(monsters).map(id => ({
-    id,
-    strength: getPointsForDamage(id, 1)
-  }));
+  const monsterList = Object.keys(monsters)
+    .filter(id => !mostersExcludeFromAutoPopulate.includes(id))
+    .map(id => ({
+      id,
+      strength: getPointsForDamage(id, 1)
+    }));
 
   const gameInfo = {
     mapRows,
