@@ -21,6 +21,7 @@ import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerS
 import { allItems, ConsumableIds, consumableItems, lootItems } from "../games/items";
 import { createItemForInventory } from './apply-inventory';
 import { getMonsterStats } from './monster-stats';
+import { specialItemActions } from './special-item-actions';
 
 enum EntityActionEntityTypes {
   player,
@@ -366,12 +367,8 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
         `**You** drank **${consumableItem.name}** for **${addedHealth}** health!`);
     }
     
-    if (consumableItem.id === ConsumableIds.resurrectionStone
-      || consumableItem.id === ConsumableIds.resurrectionShard
-    ) {
-      useResurrectionStone(params, player,
-        consumableItem.id === ConsumableIds.resurrectionShard
-      );
+    if (specialItemActions[consumableItem.id]) {
+      specialItemActions[consumableItem.id](params, player);
     } else if (consumableItem.bonusStats && consumableItem.turns != undefined && consumableItem.turns > 0) {
       const { health, magic, special, ...effectBonuses } = consumableItem.bonusStats;
       const newEffect: CharacterEffect = {
@@ -388,35 +385,5 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
 
     // Remove from equipment
     player.equipment = player.equipment.filter(item => item.id !== action.itemId)
-  }
-}
-
-function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZombies: boolean) {
-  // Find dead players at location
-  const deadPlayers = params.gameState.players.filter(p => p.health === 0);
-  if (deadPlayers.length == 0) {
-    playerMessageAtLocation(params, player.id, `**{player}** wasted a resurrection stone`);
-    return;
-  }
-
-  const zombies = alwaysZombies || deadPlayers.length > 1;
-  const zombieMsg = alwaysZombies
-    ? ', it sparks and crackles!'
-    : (zombies ? ', but its power was divided!' : '')
-
-  playerMessageAtLocation(params, player.id,
-    `**{player}** used a${alwaysZombies ? ' cracked' : ''} resurrection stone${zombieMsg}`
-  );
-
-  for(const deadPlayer of deadPlayers) {
-    deadPlayer.health = 1;
-
-    if (zombies) {
-      playerMessageAtLocation(params, deadPlayer.id, `The body of **{player}** has been **reanimated**!`);
-      deadPlayer.name = `Zombie ${deadPlayer.name.split(' ')[0]}`;
-      deadPlayer.zombie = true;
-    } else {
-      playerMessageAtLocation(params, deadPlayer.id, `**{player}** has been **resurrected**!`);
-    }
   }
 }
