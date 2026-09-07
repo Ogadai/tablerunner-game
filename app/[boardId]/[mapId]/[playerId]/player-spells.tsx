@@ -96,10 +96,19 @@ export default function PlayerSpells({
     ? getTargetEntities(targetSpell.targetType)
     : [];
 
+  const recentSpells: { spell: SpellDef, canCast: boolean }[]
+      = (player.recentSpells || []).map(spellId => {
+        const spell = spells[spellId];
+        const actionCost = getSpellActionCost(spell, player.baseStats!.magic);
+        const canCast = actionCost <= actionPointsLeft && spell.magicCost <= magicLeft;
+
+        return { spell, canCast }
+      });
+
   return (<>
     <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
-        <button type="button">
+        <button type="button" className={styles.spellsButton}>
           <span>Spells</span>
           <span className="material-symbols-outlined">wand_stars</span>
         </button>
@@ -142,6 +151,21 @@ export default function PlayerSpells({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+    
+    <div className={styles.recentSpells}>
+      { recentSpells.map(({spell, canCast}) =>
+        <button
+          key={spell.id}
+          type="button"
+          className={`${styles.spellIcon} ${canCast ? '' : styles.disabledSpellIcon}`}
+          aria-label={spell.name}
+          title={spell.name}
+          style={{ backgroundPosition: `-${spell.iconXY.x * 40}px -${spell.iconXY.y * 40}px` }}
+          onClick={() => onCastSpell(spell.id)}
+        ></button>
+      )}
+    </div>
+
   </>);
 }
 
@@ -177,6 +201,7 @@ function SpellIcon({
             title={spell.name}
             style={{ backgroundPosition: `-${spell.iconXY.x * 80}px -${spell.iconXY.y * 80}px` }}
           />
+
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content className={`PopoverContent ${styles.spellPopover}`}>

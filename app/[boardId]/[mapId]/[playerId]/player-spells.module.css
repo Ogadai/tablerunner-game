@@ -1,3 +1,23 @@
+.recentSpells {
+  .spellIcon {
+    width: 40px;
+    height: 40px;
+    margin: 0 5px 0 0;
+    background-size: 280px 200px;
+  }
+  
+  .spellIcon:hover,
+  .spellIcon:active,
+  .spellIcon:focus-visible {
+    background-size: 280px 200px;
+  }
+
+  .disabledSpellIcon {
+    filter: grayscale(1);
+    pointer-events: none;
+  }
+}
+
 .spellsDialog {
   min-width: 360px;
 }

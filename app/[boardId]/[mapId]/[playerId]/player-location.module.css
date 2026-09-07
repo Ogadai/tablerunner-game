@@ -53,6 +53,7 @@
   display: grid;
   width: 160px;
   height: 160px;
+  margin-top: 6px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
   grid-template-areas:

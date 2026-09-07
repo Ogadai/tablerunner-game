@@ -19,7 +19,7 @@ import { monsters } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
-import { allItems, consumableItems } from "../games/items";
+import { allItems, ConsumableIds, consumableItems, ItemIds } from "../games/items";
 import { getMonsterStats } from './monster-stats';
 import { specialItemActions } from './special-item-actions';
 import { processAttackForDamage, genericAttackMonster } from './game-action-attack';
@@ -43,6 +43,7 @@ interface EntityActionsForLocation {
 }
 
 const MAGIC_BONUS_RATIO = 0.1;
+const AUTO_DROP_ITEMS: ItemIds = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
 
 export async function runGameActions(params: BaseParams): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
@@ -282,6 +283,15 @@ function monsterAttack(params: BaseParams, monster: MonsterState, target: Player
       playerMessageAtLocation(params, target.id, `**${monsterDef.name}** hit **{player}** for **${damage}** damage`);
       if (target.health <= 0) {
         playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
+
+        // auto drop special items if they have them
+        const drops = target.equipment.filter(i => i.type === AUTO_DROP_ITEMS);
+        target.equipment = target.equipment.filter(i => i.type !== AUTO_DROP_ITEMS);
+
+        params.items.push(...drops.map(i => ({
+          ...i,
+          location: target.location.id
+        })));
       }
     } else {
       playerMessageAtLocation(params, target.id, `**${monsterDef.name}** missed **{player}**`);
