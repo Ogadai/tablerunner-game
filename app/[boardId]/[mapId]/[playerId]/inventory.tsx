@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { PlayerState } from '@/lib/store/types';
 import { Popover } from 'radix-ui';
 import styles from './inventory.module.css';
-import { ConsumableItemDef, PlayerItem, PlayerItemType } from '@/lib/games/types';
-import { allItems } from '@/lib/games/items';
+import { BaseStats, ConsumableItemDef, PlayerItem, PlayerItemType, ScrollItemDef } from '@/lib/games/types';
+import { allItems, scrollItems } from '@/lib/games/items';
+import { LEARN_SCROLL_ACTION_COST } from '@/lib/store/playerStats';
+import { spells } from '@/lib/games/spells';
 
-export default function Inventory({ player, isSelf, actionPointsLeft, isDead, onEquipItem, onUseItem, onDropItem, usedItemIds }: {
+export default function Inventory({ player, isSelf, actionPointsLeft, isDead, onEquipItem, onUseItem, onDropItem, onLearnScroll, usedItemIds }: {
   player: PlayerState;
   isSelf: boolean,
   actionPointsLeft: number;
@@ -13,6 +15,7 @@ export default function Inventory({ player, isSelf, actionPointsLeft, isDead, on
   onEquipItem: (item: PlayerItem) => void;
   onUseItem: (item: PlayerItem) => void;
   onDropItem: (item: PlayerItem) => void;
+  onLearnScroll: (item: PlayerItem) => void;
   usedItemIds: string[];
 }) {
   const isEquipped = (item: PlayerItem) => {
@@ -33,9 +36,11 @@ export default function Inventory({ player, isSelf, actionPointsLeft, isDead, on
           isEquipped={isEquipped(item)}
           isUsed={isUsed(item)}
           actionPointsLeft={actionPointsLeft}
+          baseStats={player.baseStats!}
           onEquipped={() => onEquipItem(item)}
           onUsed={() => onUseItem(item)}
           onDropped={() => onDropItem(item)}
+          onLearnScroll={() => onLearnScroll(item)}
         />;
       })}
     </div>
@@ -49,9 +54,11 @@ function InventoryItem({
   isEquipped,
   isUsed,
   actionPointsLeft,
+  baseStats,
   onEquipped,
   onUsed,
   onDropped,
+  onLearnScroll,
 }: {
   isSelf: boolean,
   isDead: boolean,
@@ -59,9 +66,11 @@ function InventoryItem({
   isEquipped: boolean;
   isUsed: boolean;
   actionPointsLeft: number;
+  baseStats: BaseStats,
   onEquipped: () => void;
   onUsed: () => void;
   onDropped: () => void;
+  onLearnScroll: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const itemDef = allItems[item.type];
@@ -82,10 +91,13 @@ function InventoryItem({
     setIsOpen(false);
     onDropped();
   }
-  const isEquipable = itemDef.type !== PlayerItemType.consumable;
+  const isEquipable = itemDef.type !== PlayerItemType.consumable && itemDef.type !== PlayerItemType.scroll;
   const isConsumable = itemDef.type === PlayerItemType.consumable;
   const canUse = isConsumable && !isUsed && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
   const canDrop = !isUsed;
+  const canLearnSpell = itemDef.type === PlayerItemType.scroll
+    && baseStats.magic >= spells[(itemDef as ScrollItemDef).spellId].intelligence
+    && actionPointsLeft >= LEARN_SCROLL_ACTION_COST;
 
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
@@ -135,6 +147,13 @@ function InventoryItem({
                 className={`btn ${styles.equipButton}`}
                 onClick={onClickUse}
               >Use</button>
+            )}
+            {isSelf && canLearnSpell && (
+              <button
+                type="button"
+                className={`btn ${styles.equipButton}`}
+                onClick={onLearnScroll}
+              >Learn</button>
             )}
             {isSelf && !isDead && canDrop && (
               <button

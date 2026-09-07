@@ -3,6 +3,7 @@ import { SpellIds, spells } from "../games/spells";
 import { PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { genericAttackMonster } from "./game-action-attack";
+import { soloMessageAtLocation } from "./game-messages";
 
 const MAX_RECENT_SPELLS = 3;
 
@@ -46,6 +47,8 @@ export function actionReadScroll(params: BaseParams, player: PlayerState, action
         ...player.spells,
         scrollItem.spellId as SpellIds
       ];
+
+      soloMessageAtLocation(params, player.id, `{player} learned **${spell.name}**`);
     }
   }
 }

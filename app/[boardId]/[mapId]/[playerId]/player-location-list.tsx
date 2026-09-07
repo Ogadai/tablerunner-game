@@ -3,7 +3,7 @@ import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
 import { characters } from '@/lib/games/characters';
-import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
+import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
@@ -89,6 +89,16 @@ export default function PlayerLocationList({
     } as Omit<PlayerActionUseItem, 'id'>);
   }
 
+  const onLearnScroll = async (item: PlayerItem) => {
+    setCharacterOpen(null);
+
+    await addNewAction({
+      type: PlayerActionType.ReadScroll,
+      description: `Learn ${allItems[item.type].name}`,
+      itemId: item.id
+    } as Omit<PlayerActionReadScroll, 'id'>);
+  }
+
   const onTakeItem = async (itemId: string) => {
     if (player.health === 0) {
       await Swal.fire({
@@ -162,6 +172,7 @@ export default function PlayerLocationList({
                 actionPointsLeft={actionPointsLeft}
                 onUseItem={onUseItem}
                 usedItemIds={usedItemIds}
+                onLearnScroll={onLearnScroll}
               ></CharacterCard>
             }
           </div>

@@ -219,7 +219,11 @@ for(const [spellId, spell] of Object.entries(spells)) {
     name: `Scroll of ${spell.name}`,
     iconXY: { x: 5, y: 7 },
     value: spell.intelligence * 2,
-    spellId
+    spellId,
+    bonusStats: {
+      magic: spell.intelligence,
+      special: 'Learn if your magic is high enough'
+    }
   }
 }
 

@@ -16,6 +16,7 @@ export default function CharacterCard({
   isSelf,
   actionPointsLeft,
   onUseItem,
+  onLearnScroll,
   usedItemIds,
 }: {
   boardId: string;
@@ -24,6 +25,7 @@ export default function CharacterCard({
   isSelf: boolean;
   actionPointsLeft: number;
   onUseItem: (item: PlayerItem) => void;
+  onLearnScroll: (item: PlayerItem) => void;
   usedItemIds: string[];
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
@@ -98,6 +100,7 @@ export default function CharacterCard({
             actionPointsLeft={actionPointsLeft}
             onEquipItem={onEquipItem}
             onUseItem={onUseItem}
+            onLearnScroll={onLearnScroll}
             onDropItem={onDropItem}
             usedItemIds={usedItemIds}
           />}

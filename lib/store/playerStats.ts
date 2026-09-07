@@ -6,6 +6,7 @@ import { PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUse
 const BASE_ACTIONS_PER_TURN = 20;
 const BASE_MOVE_ACTION_COST = 18;
 const BASE_ATTACK_ACTION_COST = 15;
+export const LEARN_SCROLL_ACTION_COST = 10;
 
 export interface PlayerActionsPerTurn {
   total: number,
@@ -46,6 +47,8 @@ export function getPlayerActionsCosts(playerState: PlayerState, actionsState: Pl
         const castAction = action as PlayerActionCast;
         const spell = spells[castAction.spellId];
         return total + getSpellActionCost(spell, playerState.baseStats!.magic);
+      case PlayerActionType.ReadScroll:
+        return total + LEARN_SCROLL_ACTION_COST;
       default:
         return total;
     }
