@@ -37,7 +37,14 @@
 .actionButtonContainer {
   border-top: 2px solid var(--border-stone);
   height: 162px;
+  display: flex;
+  justify-content: space-between;
 }
+
+.actionButtonGroup2 {
+  margin: 0 20px;
+}
+
 
 .moveActionButtons {
   display: grid;

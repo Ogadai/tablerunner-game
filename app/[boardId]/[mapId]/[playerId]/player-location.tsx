@@ -169,7 +169,7 @@ export default function PlayerLocation(
       </div> }
     </div>
 
-    { playerAlive && <div className={styles.actionButtonContainer}>
+    { playerAlive && <div className={styles.actionButtonContainer}><div className={styles.actionButtonGroup1}>
       { (!isPlayerReady && playerCanMove) && <div className={styles.moveActionButtons}>
         {playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
           <button type="button" key={mv.direction}
@@ -193,6 +193,13 @@ export default function PlayerLocation(
           <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>
         </button>
       }
-    </div>}
+    </div><div className={styles.actionButtonGroup2}>
+      { playerState.spells.length > 0 &&
+        <button type="submit">
+          <span>Spells</span>
+          <span className={`material-symbols-outlined`}>wand_stars</span>
+        </button>
+      }
+    </div></div>}
   </>);
 }
