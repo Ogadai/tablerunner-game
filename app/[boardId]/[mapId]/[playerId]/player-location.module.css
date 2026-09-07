@@ -38,13 +38,16 @@
   border-top: 2px solid var(--border-stone);
   height: 162px;
   display: flex;
-  justify-content: space-between;
+}
+
+.actionButtonGroup1 {
+  width: 220px;
 }
 
 .actionButtonGroup2 {
-  margin: 0 20px;
+  padding: 0 20px;
+  border-left: 2px solid var(--border-stone);
 }
-
 
 .moveActionButtons {
   display: grid;

@@ -1,0 +1,64 @@
+.spellsDialog {
+  min-width: 360px;
+}
+
+.spellList {
+  display: grid;
+  grid-template-columns: repeat(4, 80px);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spellIcon {
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  border: 2px solid var(--border-stone);
+  border-radius: 3px;
+  background-color: transparent;
+  background-image: url('/spell-sheet.png');
+  background-repeat: no-repeat;
+  background-size: 560px 400px;
+}
+
+.spellIcon:hover,
+.spellIcon:active,
+.spellIcon:focus-visible {
+  background-color: transparent;
+  background-image: url('/spell-sheet.png');
+  background-repeat: no-repeat;
+  background-size: 560px 400px;
+}
+
+.spellPopover {
+  min-width: 180px;
+}
+
+.spellPopover h3 {
+  margin: 0 20px 8px 0;
+}
+
+.spellPopover ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spellPopover li {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  text-transform: capitalize;
+}
+
+.spellPopover strong {
+  color: var(--color-success);
+}
+
+.spellButtons {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}

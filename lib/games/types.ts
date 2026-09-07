@@ -120,9 +120,9 @@ export interface PlayerItem {
 }
 
 export enum SpellTargetType {
-  friendly = 'friendly',
+  friend = 'friend',
   enemy = 'enemy',
-  dead = 'dead',
+  corpse = 'corpse',
 }
 
 export interface SpellDef {
@@ -130,6 +130,7 @@ export interface SpellDef {
   name: string;
   pickTarget: boolean;
   targetType: SpellTargetType;
+  intelligence: number,
   magicCost: number,
   actionCost: number,
   iconXY: { x: number, y: number };

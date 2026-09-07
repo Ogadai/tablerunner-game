@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 import { getSwalDefaultOptions } from '@/app/swal';
 
-import { monsters } from '@/lib/games/monsters';
 import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
@@ -14,6 +13,7 @@ import PlayerLocationList from './player-location-list';
 import { getPlayerActionsPerTurn, PlayerActionsPerTurn, getPlayerActionsCosts } from "@/lib/store/playerStats";
 import LocationTopicService from "@/app/message-bus/location-topic-service";
 import { getGameTopicId } from "@/lib/message-types";
+import PlayerSpells from './player-spells';
 
 export default function PlayerLocation(
   {
@@ -195,10 +195,12 @@ export default function PlayerLocation(
       }
     </div><div className={styles.actionButtonGroup2}>
       { playerState.spells.length > 0 &&
-        <button type="submit">
-          <span>Spells</span>
-          <span className={`material-symbols-outlined`}>wand_stars</span>
-        </button>
+        <PlayerSpells
+          playerSpells={playerState.spells}
+          player={playerState}
+          actionPointsLeft={actionPointsLeft}
+          actionsState={actionsState}
+        />
       }
     </div></div>}
   </>);

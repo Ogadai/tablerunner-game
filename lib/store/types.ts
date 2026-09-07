@@ -81,6 +81,7 @@ export enum PlayerActionType {
   Move = 'move',
   Attack = 'attack',
   UseItem = 'useItem',
+  Cast = 'Cast',
 }
 
 export interface PlayerAction {
@@ -102,6 +103,12 @@ export interface PlayerActionAttack extends PlayerAction {
 export interface PlayerActionUseItem extends PlayerAction {
   type: PlayerActionType.UseItem,
   itemId: string;
+}
+
+export interface PlayerActionCast extends PlayerAction {
+  type: PlayerActionType.Cast,
+  spellId: string;
+  targetId?: string;
 }
 
 export interface PlayerActionsState {
