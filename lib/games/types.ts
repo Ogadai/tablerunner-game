@@ -79,7 +79,8 @@ export enum PlayerItemType {
   belt = 'belt',
   ring = 'ring',
   necklace = 'necklace',
-  consumable = 'consumable'
+  consumable = 'consumable',
+  miscellanous = 'miscellanous',
 }
 
 export interface ItemDef {

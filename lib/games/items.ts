@@ -202,7 +202,66 @@ export const consumableItems: Record<string, ConsumableItemDef> = {
   },
 };
 
-export type ItemIds = EquipableIds | ConsumableIds;
+export enum MiscellaneousIds {
+  fireKey = 'fireKey',
+  greenKey = 'greenKey',
+  blueKey = 'blueKey',
+  purpleKey = 'purpleKey',
+  skeletonKey = 'skeletonKey',
+  goldKey = 'goldKey',
+}
+export const miscellaneousItems: Record<string, ItemDef> = {
+  [MiscellaneousIds.fireKey]: {
+    id: MiscellaneousIds.fireKey.toString(),
+    type: PlayerItemType.miscellanous,
+    name: 'Fire Key',
+    iconXY: { x: 0, y: 8 },
+    value: 100,
+    bonusStats: {}
+  },
+  [MiscellaneousIds.greenKey]: {
+    id: MiscellaneousIds.greenKey.toString(),
+    type: PlayerItemType.miscellanous,
+    name: 'Green Key',
+    iconXY: { x: 1, y: 8 },
+    value: 30,
+    bonusStats: {}
+  },
+  [MiscellaneousIds.blueKey]: {
+    id: MiscellaneousIds.blueKey.toString(),
+    type: PlayerItemType.miscellanous,
+    name: 'Blue Key',
+    iconXY: { x: 2, y: 8 },
+    value: 50,
+    bonusStats: {}
+  },
+  [MiscellaneousIds.purpleKey]: {
+    id: MiscellaneousIds.purpleKey.toString(),
+    type: PlayerItemType.miscellanous,
+    name: 'Purple Key',
+    iconXY: { x: 3, y: 8 },
+    value: 75,
+    bonusStats: {}
+  },
+  [MiscellaneousIds.skeletonKey]: {
+    id: MiscellaneousIds.skeletonKey.toString(),
+    type: PlayerItemType.miscellanous,
+    name: 'Skeleton Key',
+    iconXY: { x: 4, y: 8 },
+    value: 55,
+    bonusStats: {}
+  },
+  [MiscellaneousIds.goldKey]: {
+    id: MiscellaneousIds.goldKey.toString(),
+    type: PlayerItemType.miscellanous,
+    name: 'Fire Key',
+    iconXY: { x: 5, y: 8 },
+    value: 85,
+    bonusStats: {}
+  },
+};
+
+export type ItemIds = EquipableIds | ConsumableIds | MiscellaneousIds;
 
 export const allItems: Record<string, ItemDef> = {
   ...equipableItems,
