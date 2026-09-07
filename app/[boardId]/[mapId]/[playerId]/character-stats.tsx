@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from 'next/image';
-import { characters } from '@/lib/games/characters';
 import { CharacterStats as CharacterStatsType, BaseStats } from '@/lib/games/types';
 
 import styles from './character-card.module.css';
@@ -103,14 +102,18 @@ export default function CharacterStats({
 
   return <>
     <div className={styles.characterHeader}>
-      <Image
-        className={styles.characterImage}
-        src={characters[player.id].icon}
-        width={53}
-        height={80}
-        loading="eager"
-        alt={player.name}
-      />
+      <div className={styles.playerCoinLabel}>
+        <span>Coins: </span>
+        <span className={ styles.playerCoins }>{ player.coins }</span>
+        <Image
+          className={styles.playerCoinImage}
+          src="/coin.png"
+          width={40}
+          height={40}
+          loading="eager"
+          alt="Coins"
+        />
+      </div>
       { player.availableStats > 0 && <div className={ styles.availablePointsPrompt }>
         Assign points: <span className={ styles.availablePoints }>{ availablePoints }</span>
       </div> }

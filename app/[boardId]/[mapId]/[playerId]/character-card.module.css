@@ -1,6 +1,7 @@
 .characterHeader {
   display: flex;
   margin-bottom: 10px;
+
 }
 
 .availablePointsPrompt {
@@ -12,6 +13,30 @@
 .availablePoints {
   font-weight: bold;
   color: var(--color-success);
+}
+
+.playerCoinLabel {
+  margin: auto 0 0 15px;
+
+  & span {
+    display: inline-block;
+    margin-right: 5px;
+    line-height: 25px;
+    vertical-align: middle;
+    padding-top: 2px;
+  }
+}
+
+.playerCoins {
+  font-weight: bold;
+  color: var(--gold-bright);
+}
+
+.playerCoinImage {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
 }
 
 .statsCard {

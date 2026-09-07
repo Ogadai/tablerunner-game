@@ -4,10 +4,12 @@ import {
 } from "../store/types";
 import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monsters";
 import { BaseParams } from './base-params';
-import { playerMessageAtLocation } from './game-messages';
+import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getMonsterStats } from './monster-stats';
 import { lootItems } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
+
+const MAXIMUM_COIN_DROP = 100;
 
 export function processAttackForDamage(attackerStats: { attack: number, damage: number }, defenderStats: { defence: number }): number {
   const attackScore = Math.random() * attackerStats.attack;
@@ -36,6 +38,7 @@ export function genericAttackMonster(params: BaseParams, player: PlayerState, at
         if (monster.health <= 0) {
           monster.health = 0;
           monsterDropLoot(params, player, monster);
+          monsterDropCoins(params, player, monster);
         }
 
         // Assign points to all living players at location
@@ -57,6 +60,49 @@ export function genericAttackMonster(params: BaseParams, player: PlayerState, at
     console.error(`Error: actionAttack for ${player.id}`);
     throw error;
   }
+}
+
+function monsterDropCoins(params: BaseParams, player: PlayerState, monster: MonsterState) {
+  const locationId = player.location.id;
+  const monsterStrength = getMonsterStrength(monsters[monster.type]);
+  const maximumCoins = Math.ceil(2 + monsterStrength * (MAXIMUM_COIN_DROP - 2));
+  const droppedCoins = Math.ceil(Math.random() * maximumCoins);
+  const locationCoins = params.coins.find(coins => coins.location === locationId);
+
+  if (locationCoins) {
+    locationCoins.coins += droppedCoins;
+  } else {
+    params.coins.push({ location: locationId, coins: droppedCoins });
+  }
+
+  const hasLivingMonster = params.monsters.some(currentMonster =>
+    currentMonster.location === locationId && currentMonster.health > 0
+  );
+
+  if (!hasLivingMonster) {
+    distributeLocationCoins(params, locationId);
+  }
+}
+
+function distributeLocationCoins(params: BaseParams, locationId: number) {
+  const locationCoins = params.coins.find(coins => coins.location === locationId);
+  const players = params.gameState.players.filter(player =>
+    player.location.id === locationId && player.health > 0
+  );
+
+  if (!locationCoins || players.length === 0) {
+    return;
+  }
+
+  const coinsPerPlayer = Math.ceil(locationCoins.coins / players.length);
+  if (coinsPerPlayer > 0) {
+    for (const player of players) {
+      soloMessageAtLocation(params, player.id, `**{player}** collected **${coinsPerPlayer}** coin${coinsPerPlayer > 1 ? 's' : ''}`);
+      player.coins += coinsPerPlayer;
+    }
+  }
+
+  params.coins.splice(params.coins.indexOf(locationCoins), 1);
 }
 
 function monsterDropLoot(params: BaseParams, player: PlayerState, monster: MonsterState) {
