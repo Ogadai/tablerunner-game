@@ -35,29 +35,39 @@ export default function PlayerSpells({
   const [targetSpell, setTargetSpell] = useState<SpellDef | null>(null);
   const [activePlayer, setActivePlayer] = useState<PlayerState>(player);
 
+
+  useEffect(() => {
+    fetchPlayerInventory();
+  }, [player]);
+
   const onSetIsOpen = (open: boolean) => {
     setIsOpen(open);
-
-    const fetchPlayerInventory = async () => {
-      const response = await getPlayerInventory(boardId, mapId, player.id);
-      useInventoryResponse(response);
+    if (open) {
+      fetchPlayerInventory();
     }
-
-    fetchPlayerInventory();
   };
 
+  const fetchPlayerInventory = async () => {
+    const response = await getPlayerInventory(boardId, mapId, player.id);
+    useInventoryResponse(response);
+  }
+
   const useInventoryResponse = (response: ApiResponse<PlayerInventoryState>) => {
-    if (response.success && response.data?.equipped) {
-      const combinedPlayer = {
-        ...player,
-        equipped: {
-          ...player.equipped,
-          ...response.data.equipped
-        },
-        equipment: response.data.equipment !== null
-            ? response.data.equipment : player.equipment,
-      };
-      setActivePlayer(combinedPlayer);
+    if (response.success) {
+      if (response.data?.equipped) {
+        const combinedPlayer = {
+          ...player,
+          equipped: {
+            ...player.equipped,
+            ...response.data.equipped
+          },
+          equipment: response.data.equipment !== null
+              ? response.data.equipment : player.equipment,
+        };
+        setActivePlayer(combinedPlayer);
+      } else {
+        setActivePlayer(player);
+      }
     }
   }
 
