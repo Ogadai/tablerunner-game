@@ -1,14 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2'
 import { Dialog, Popover } from 'radix-ui';
 import { getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
 import styles from './player-spells.module.css';
-import { PlayerAction, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
+import { PlayerAction, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerInventoryState, PlayerState } from '@/lib/store/types';
 import { SpellDef, SpellTargetType } from '@/lib/games/types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import { getSwalDefaultOptions } from '@/app/swal';
+import EntityStats from './entity-base-stats';
+import { getPlayerStats } from '@/lib/store/playerStats';
+import { getPlayerInventory } from '@/lib/store/playerInventory';
+import { ApiResponse } from '@/lib/api-response';
 
 export default function PlayerSpells({
+  boardId,
+  mapId,
   playerSpells,
   player,
   entities,
@@ -16,6 +22,8 @@ export default function PlayerSpells({
   actionsState,
   addNewAction
 }: {
+  boardId: string;
+  mapId: string;
   playerSpells: SpellIds[],
   player: PlayerState,
   entities: EntityItemDetail[],
@@ -25,13 +33,42 @@ export default function PlayerSpells({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [targetSpell, setTargetSpell] = useState<SpellDef | null>(null);
+  const [activePlayer, setActivePlayer] = useState<PlayerState>(player);
 
+  const onSetIsOpen = (open: boolean) => {
+    setIsOpen(open);
+
+    const fetchPlayerInventory = async () => {
+      const response = await getPlayerInventory(boardId, mapId, player.id);
+      useInventoryResponse(response);
+    }
+
+    fetchPlayerInventory();
+  };
+
+  const useInventoryResponse = (response: ApiResponse<PlayerInventoryState>) => {
+    if (response.success && response.data?.equipped) {
+      const combinedPlayer = {
+        ...player,
+        equipped: {
+          ...player.equipped,
+          ...response.data.equipped
+        },
+        equipment: response.data.equipment !== null
+            ? response.data.equipment : player.equipment,
+      };
+      setActivePlayer(combinedPlayer);
+    }
+  }
+
+  const baseStats = getPlayerStats(activePlayer);
+  
   const magicUsed = actionsState.actions
     .filter(action => action.type === PlayerActionType.Cast)
     .reduce((total, spellAction) =>
       total + spells[(spellAction as PlayerActionCast).spellId].magicCost,
     0);
-  const magicLeft = player.magic - magicUsed;
+  const magicLeft = activePlayer.magic - magicUsed;
 
   const castSpell = async (spell: SpellDef, targetId?: string) => {
     await addNewAction({
@@ -97,16 +134,16 @@ export default function PlayerSpells({
     : [];
 
   const recentSpells: { spell: SpellDef, canCast: boolean }[]
-      = (player.recentSpells || []).map(spellId => {
+      = (activePlayer.recentSpells || []).map(spellId => {
         const spell = spells[spellId];
-        const actionCost = getSpellActionCost(spell, player.baseStats!.magic);
+        const actionCost = getSpellActionCost(spell, activePlayer.baseStats!.magic);
         const canCast = actionCost <= actionPointsLeft && spell.magicCost <= magicLeft;
 
         return { spell, canCast }
       });
 
   return (<>
-    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog.Root open={isOpen} onOpenChange={onSetIsOpen}>
       <Dialog.Trigger asChild>
         <button type="button" className={styles.spellsButton}>
           <span>Spells</span>
@@ -118,12 +155,18 @@ export default function PlayerSpells({
         <Dialog.Content className={`DialogContent ${styles.spellsDialog}`}>
           <Dialog.Title className="DialogTitle">Spells</Dialog.Title>
           <div className="DialogContentBody">
+            <EntityStats
+              current={{magic: activePlayer.magic}}
+              baseStats={baseStats}
+              statsList={['magic']}
+            />
+
             <ul className={styles.spellList}>
               {playerSpells.map(spellId => {
                 const spell = spells[spellId];
                 return spell ? <SpellIcon key={spell.id}
                   spell={spell}
-                  player={player}
+                  player={activePlayer}
                   actionPointsLeft={actionPointsLeft}
                   magicLeft={magicLeft}
                   onCast={() => onCastSpell(spell.id)}

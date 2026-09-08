@@ -3,10 +3,12 @@ import styles from './entity-base-stats.module.css';
 
 export default function EntityBaseStats({
   current,
-  baseStats
+  baseStats,
+  statsList
 }: {
-  current: { health: number, magic?: number },
-  baseStats: BaseStats
+  current: { health?: number, magic?: number },
+  baseStats: BaseStats,
+  statsList?: string[]
 }) {
   const getStatBarClass = (statName: keyof BaseStats) => {
     const currentValue = (current as any)[statName] as number;
@@ -39,28 +41,30 @@ export default function EntityBaseStats({
     </>;
   }
 
+  const showStat = (name: string) => !statsList || statsList.includes(name);
+
   return (<>
     <table className={styles.statsTable}><tbody>
-      <tr>
+      { showStat('health') && (<tr>
         <th>Health</th>
         <td>
           {getStat('health')}
 
-          { current.health < baseStats.health &&
+          { (current.health || 0) < baseStats.health &&
             <div className={styles.statBarBorder}>
               <div
                 className={`${styles.statBar} ${getStatBarClass('health')}`}
-                style={{ width: `${100 * current.health / baseStats.health}%` }}
+                style={{ width: `${100 * (current.health || 0) / baseStats.health}%` }}
               ></div>
             </div>
           }
         </td>
-      </tr>
-      <tr><th>Attack</th><td>{getStat('attack')}</td></tr>
-      <tr><th>Defence</th><td>{getStat('defence')}</td></tr>
-      <tr><th>Speed</th><td>{getStat('speed')}</td></tr>
-      <tr><th>Damage</th><td>{getStat('damage')}</td></tr>
-      <tr><th>Magic</th><td>
+      </tr>) }
+      { showStat('attack') && (<tr><th>Attack</th><td>{getStat('attack')}</td></tr>) }
+      { showStat('defence') && (<tr><th>Defence</th><td>{getStat('defence')}</td></tr>) }
+      { showStat('speed') && (<tr><th>Speed</th><td>{getStat('speed')}</td></tr>) }
+      { showStat('damage') && (<tr><th>Damage</th><td>{getStat('damage')}</td></tr>) }
+      { showStat('magic') && (<tr><th>Magic</th><td>
         {getStat('magic')}
         
         { current.magic && current.magic < baseStats.magic &&
@@ -71,7 +75,7 @@ export default function EntityBaseStats({
             ></div>
           </div>
         }
-      </td></tr>
+      </td></tr>) }
     </tbody></table>
   </>);
 };

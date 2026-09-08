@@ -15,16 +15,6 @@ export default function PlayHeaderMessages(  { boardId, mapId, playerId, gameSta
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const onCloseDialog = () => setIsOpen(false);
-    
-    // Listen for the custom Swal signal
-    window.addEventListener('close-active-radix-dialogs', onCloseDialog);
-    return () => {
-      window.removeEventListener('close-active-radix-dialogs', onCloseDialog);
-    };
-  });
-
-  useEffect(() => {
     async function fetchPlayerMessages() {
       const messages = await getPlayerMessages(boardId, mapId, playerId);
       setPlayerMessages(messages.data!);

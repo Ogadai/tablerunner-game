@@ -46,14 +46,6 @@ export default function PlayerLocationList({
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
 
   useEffect(() => {
-    // Listen for the custom Swal signal
-    window.addEventListener('close-active-radix-dialogs', onCloseDialog);
-    return () => {
-      window.removeEventListener('close-active-radix-dialogs', onCloseDialog);
-    };
-  });
-
-  useEffect(() => {
     if (player.availableStats > 0) {
       setCharacterOpen(player);
     }
@@ -135,8 +127,6 @@ export default function PlayerLocationList({
     setMonsterOpen(null);
     setCharacterOpen(null);
   }
-
-  // TODO: Can't attack or use items if dead!
 
   const canAttack = actionPointsLeft >= actionsPerTurn.attack;
   const usedItemIds = actionsState.actions

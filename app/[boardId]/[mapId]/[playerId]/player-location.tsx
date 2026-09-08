@@ -226,6 +226,8 @@ export default function PlayerLocation(
     </div><div className={styles.actionButtonGroup2}>
       { playerState.spells.length > 0 &&
         <PlayerSpells
+          boardId={boardId}
+          mapId={mapId}
           playerSpells={playerState.spells}
           player={playerState}
           entities={entities}
