@@ -81,11 +81,11 @@ export default function PlayGame(
       </li>);
   }
 
-  return (<>
+  return (<div className={styles.characterScreen}>
     <ul className={styles.characterList}>
       {gameState.characters?.map((character) => (
         characterCard(character)
       ))}
     </ul>
-  </>);
+  </div>);
 }

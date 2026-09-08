@@ -19,8 +19,8 @@ export default function Page() {
     return <p>Loading...</p>;
   }
 
-  return (<div><main>
+  return (<>
     {gameState && <PlayGame boardId={boardId} mapId={mapId} name={gameState.name} gameState={gameState} />}
     {!gameState && <CreateGame boardId={boardId} mapId={mapId} />}
-  </main></div>);
+  </>);
 }
