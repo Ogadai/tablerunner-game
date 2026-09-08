@@ -42,9 +42,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
     equipment: [
       allItems.staffSkull,
       allItems.healingPotion,
-      allItems.healingPotion,
       allItems.manaPotion,
       allItems.resurrectionStore,
+      allItems.iceStorm,
     ],
     spells: [
       SpellIds.iceShards,
@@ -90,9 +90,9 @@ export const characters: { [id: string]: CharacterListEntry } = {
     equipment: [
       allItems.staffOrb,
       allItems.healingPotion,
-      allItems.healingPotion,
       allItems.manaPotion,
       allItems.resurrectionStore,
+      allItems.fireWall,
     ],
     spells: [
       SpellIds.spiritArrow,

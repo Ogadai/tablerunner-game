@@ -209,6 +209,16 @@ export enum ScrollIds {
   fireWall = 'fireWallScroll',
   iceShards = 'iceShardsScroll',
   iceStorm = 'iceStormScroll',
+  heal = 'healScroll',
+  healingAura = 'healingAuraScroll',
+  fear = 'fearScroll',
+  terror = 'terrorScroll',
+  shield = 'shieldScroll',
+  shieldWall = 'shieldWallScroll',
+  strength = 'strengthScroll',
+  strengthAura = 'strengthAuraScroll',
+  lightning = 'lightningScroll',
+  fireRain = 'fireRainScroll',
 }
 export const scrollItems: Record<string, ScrollItemDef> = {
 }

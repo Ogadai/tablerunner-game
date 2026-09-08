@@ -12,6 +12,12 @@ export enum SpellIds {
   healingAura = 'healingAura',
   fear = 'fear',
   terror = 'terror',
+  shield = 'shield',
+  shieldWall = 'shieldWall',
+  strength = 'strength',
+  strengthAura = 'strengthAura',
+  lightning = 'lightning',
+  fireRain = 'fireRain',
 };
 
 export const spells: Record<string, SpellDef> = {
@@ -130,6 +136,84 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 6, y: 0 },
     bonusStats: {
       special: 'Lower all enemy attack and defence for 2 turns',
+    }
+  },
+  [SpellIds.shield]: {
+    id: SpellIds.shield.toString(),
+    name: 'Shield',
+    intelligence: 15,
+    pickTarget: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 8,
+    actionCost: 8,
+    iconXY: { x: 5, y: 1 },
+    bonusStats: {
+      defence: 5,
+    }
+  },
+  [SpellIds.shieldWall]: {
+    id: SpellIds.shieldWall.toString(),
+    name: 'Shield Wall',
+    intelligence: 25,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 12,
+    actionCost: 12,
+    iconXY: { x: 6, y: 1 },
+    bonusStats: {
+      defence: 4,
+    }
+  },  
+  [SpellIds.strength]: {
+    id: SpellIds.strength.toString(),
+    name: 'Strength',
+    intelligence: 15,
+    pickTarget: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 8,
+    actionCost: 8,
+    iconXY: { x: 0, y: 2 },
+    bonusStats: {
+      attack: 5,
+    }
+  },
+  [SpellIds.strengthAura]: {
+    id: SpellIds.strengthAura.toString(),
+    name: 'Strength Aura',
+    intelligence: 25,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 12,
+    actionCost: 12,
+    iconXY: { x: 1, y: 2 },
+    bonusStats: {
+      attack: 4,
+    }
+  },  
+  [SpellIds.lightning]: {
+    id: SpellIds.lightning.toString(),
+    name: 'Lightning',
+    intelligence: 30,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 12,
+    actionCost: 13,
+    iconXY: { x: 0, y: 3 },
+    bonusStats: {
+      damage: 15,
+    }
+  },
+  [SpellIds.fireRain]: {
+    id: SpellIds.fireRain.toString(),
+    name: 'Fire Rain',
+    intelligence: 30,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 13,
+    actionCost: 13,
+    iconXY: { x: 1, y: 3 },
+    bonusStats: {
+      damage: 17,
     }
   },
 };
