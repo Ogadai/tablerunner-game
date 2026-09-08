@@ -8,6 +8,10 @@ export enum SpellIds {
   fireWall = 'fireWall',
   iceShards = 'iceShards',
   iceStorm = 'iceStorm',
+  heal = 'heal',
+  healingAura = 'healingAura',
+  fear = 'fear',
+  terror = 'terror',
 };
 
 export const spells: Record<string, SpellDef> = {
@@ -17,7 +21,7 @@ export const spells: Record<string, SpellDef> = {
     intelligence: 10,
     pickTarget: true,
     targetType: SpellTargetType.enemy,
-    magicCost: 2,
+    magicCost: 3,
     actionCost: 8,
     iconXY: { x: 0, y: 0 },
     bonusStats: {
@@ -58,7 +62,7 @@ export const spells: Record<string, SpellDef> = {
     targetType: SpellTargetType.enemy,
     magicCost: 3,
     actionCost: 8,
-    iconXY: { x: 0, y: 0 },
+    iconXY: { x: 3, y: 0 },
     bonusStats: {
       damage: 8,
     }
@@ -71,9 +75,61 @@ export const spells: Record<string, SpellDef> = {
     targetType: SpellTargetType.enemy,
     magicCost: 7,
     actionCost: 14,
-    iconXY: { x: 0, y: 0 },
+    iconXY: { x: 4, y: 0 },
     bonusStats: {
       damage: 6,
+    }
+  },
+  [SpellIds.heal]: {
+    id: SpellIds.heal.toString(),
+    name: 'Heal',
+    intelligence: 10,
+    pickTarget: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 5,
+    actionCost: 12,
+    iconXY: { x: 3, y: 1 },
+    bonusStats: {
+      health: 5,
+    }
+  },
+  [SpellIds.healingAura]: {
+    id: SpellIds.healingAura.toString(),
+    name: 'Healing Aura',
+    intelligence: 20,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 15,
+    actionCost: 18,
+    iconXY: { x: 4, y: 1 },
+    bonusStats: {
+      health: 5,
+    }
+  },
+  [SpellIds.fear]: {
+    id: SpellIds.fear.toString(),
+    name: 'Fear',
+    intelligence: 10,
+    pickTarget: true,
+    targetType: SpellTargetType.enemy,
+    magicCost: 6,
+    actionCost: 8,
+    iconXY: { x: 5, y: 0 },
+    bonusStats: {
+      special: 'Lower enemy attack and defence for 3 turns',
+    }
+  },
+  [SpellIds.terror]: {
+    id: SpellIds.terror.toString(),
+    name: 'Terror',
+    intelligence: 20,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 9,
+    actionCost: 14,
+    iconXY: { x: 6, y: 0 },
+    bonusStats: {
+      special: 'Lower all enemy attack and defence for 2 turns',
     }
   },
 };

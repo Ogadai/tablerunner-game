@@ -43,9 +43,13 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.staffSkull,
       allItems.healingPotion,
       allItems.healingPotion,
+      allItems.manaPotion,
       allItems.resurrectionStore,
     ],
-    spells: [],
+    spells: [
+      SpellIds.iceShards,
+      SpellIds.fear,
+    ],
   },
   ranger: {
     id: 'ranger',
@@ -87,10 +91,12 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.staffOrb,
       allItems.healingPotion,
       allItems.healingPotion,
+      allItems.manaPotion,
       allItems.resurrectionStore,
     ],
     spells: [
       SpellIds.spiritArrow,
+      SpellIds.heal,
     ],
   }
 };

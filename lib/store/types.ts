@@ -43,25 +43,35 @@ export interface CharacterEffect {
   turns: number;
 }
 
-export interface PlayerState {
+export interface ITarget {
   id: string;
+  health: number;
+  effects?: CharacterEffect[];
+}
+
+export interface INamedTarget {
+  id: string;
+  name: string;
+  equipment: PlayerItem[];
+  equipped: PlayerInventoryEquipSlots;
+  health: number;
+  baseStats?: BaseStats;
+  effects?: CharacterEffect[];
+}
+
+export interface PlayerState extends INamedTarget {
   name: string;
   location: PlayerStateLocation;
   retreatDirection?: string;
   rgbColour: string;
-  baseStats?: BaseStats;
   characterStats: CharacterStats;
-  health: number;
   magic: number;
   level: number;
   points: number;
   availableStats: number;
-  equipment: PlayerItem[];
-  equipped: PlayerInventoryEquipSlots;
   spells: SpellIds[];
   recentSpells?: SpellIds[];
   zombie?: boolean;
-  effects?: CharacterEffect[];
   coins: number;
 }
 
@@ -131,14 +141,9 @@ export interface PlayerMessagesState {
   messages: PlayerMessage[];
 }
 
-export interface MonsterState {
-  id: string;
+export interface MonsterState extends ITarget {
   type: string;
   location: number;
-  health: number;
-
-  // TODO: Monsters can also have effects
-  effects?: CharacterEffect[];
 }
 
 export interface ItemLocationState extends PlayerItem {

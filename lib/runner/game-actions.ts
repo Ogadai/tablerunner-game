@@ -10,6 +10,7 @@ import {
   CharacterEffect,
   PlayerActionCast,
   PlayerActionReadScroll,
+  INamedTarget,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -28,6 +29,7 @@ import { actionCastSpell, actionReadScroll } from './game-action-spell';
 
 enum EntityActionEntityTypes {
   player,
+  npc,
   monster
 }
 
@@ -50,8 +52,6 @@ export async function runGameActions(params: BaseParams): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
   const playerMoves: Record<string, PlayerActionMove[]> = {};
   const playerFought: Record<string, boolean> = {};
-
-  const getPlayerById = (id: string) => params.gameState.players.find(p => p.id === id)!;
 
   try {
     // First gather all the player actions per location
@@ -92,8 +92,8 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
       if (monstersAtLocation.length > 0) {
         const targetsAtLocation = entityActionsForLocations[locId].entities
-            .filter(e => e.entityType === EntityActionEntityTypes.player)
-            .map(e => getPlayerById(e.entityId));
+            .filter(e => e.entityType !== EntityActionEntityTypes.monster)
+            .map(e => getNamedTargetById(params, e.entityId));
 
         // Mark each player as having fought
         for(const player of targetsAtLocation) {
@@ -134,7 +134,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
         for(const entityActions of entityActionsForLocations[locId].entities) {
           if (entityActions.actions.length > 0) {
-            await processNextAction(params, entityActions);
+            await processNextAction(params, entityActions, locationId);
             moreActions = true;
           }
         }
@@ -173,7 +173,7 @@ function limitPlayerActionsToCost(playerState: PlayerState, actionsState: Player
   }
 }
 
-async function processNextAction(params: BaseParams, entityActions: EntityActions): Promise<void> {
+async function processNextAction(params: BaseParams, entityActions: EntityActions, locationId: number): Promise<void> {
   try {
     const getPlayerById = (id: string) => params.gameState.players.find(p => p.id === id)!;
     const getMonsterById = (id: string) => params.monsters.find(m => m.id === id)!;
@@ -205,9 +205,9 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
           case PlayerActionType.Attack:
           {
             const attackAction = nextAction as PlayerActionAttack
-            const player = getPlayerById(attackAction.target);
-            if (player.health > 0) {
-              monsterAttack(params, monster, player);
+            const target = getNamedTargetById(params, attackAction.target);
+            if (target.health > 0) {
+              monsterAttack(params, monster, target, locationId);
             }
             break;
           }
@@ -248,7 +248,7 @@ function actionAttack(params: BaseParams, player: PlayerState, action: PlayerAct
   genericAttackMonster(params, player, player.baseStats!, monster);
 }
 
-function monsterPickTarget(targets: PlayerState[]): PlayerState {
+function monsterPickTarget(targets: INamedTarget[]): INamedTarget {
   const targetWeights = targets.map(target => {
     const weaponId = target.equipped.weapon;
     const weapon = weaponId ? target.equipment.find(item => item.id === weaponId) as PlayerItem | undefined : undefined;
@@ -271,7 +271,11 @@ function monsterPickTarget(targets: PlayerState[]): PlayerState {
   return targets[targets.length - 1];
 }
 
-function monsterAttack(params: BaseParams, monster: MonsterState, target: PlayerState): void {
+function monsterAttack(
+  params: BaseParams,
+  monster: MonsterState,
+  target: INamedTarget,
+  locationId: number): void {
   try {
     const monsterDef = monsters[monster.type];
     const monsterStats = getMonsterStats(monster);
@@ -294,7 +298,7 @@ function monsterAttack(params: BaseParams, monster: MonsterState, target: Player
 
         params.items.push(...drops.map(i => ({
           ...i,
-          location: target.location.id
+          location: locationId
         })));
       }
     } else {
@@ -311,14 +315,26 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
   const consumableItem = item && consumableItems[item.type];
 
   if (consumableItem) {
+    const benefitDescriptions: string[] = [];
     // Apply benefit
     if (consumableItem.bonusStats?.health) {
       const addedHealth = Math.min(consumableItem.bonusStats?.health,
         player.baseStats!.health - player.health);
       player.health += addedHealth;
 
+      benefitDescriptions.push(`**${addedHealth}** health`);
+    }
+    if (consumableItem.bonusStats?.magic) {
+      const addedmagic = Math.min(consumableItem.bonusStats?.magic,
+        player.baseStats!.magic - player.magic);
+      player.magic += addedmagic;
+
+      benefitDescriptions.push(`**${addedmagic}** magic`);
+    }
+
+    if (benefitDescriptions.length > 0) {
       soloMessageAtLocation(params, player.id,
-        `**You** drank **${consumableItem.name}** for **${addedHealth}** health!`);
+        `**You** drank **${consumableItem.name}** for ${benefitDescriptions.join(' and ')}!`);
     }
     
     if (specialItemActions[consumableItem.id]) {
@@ -341,3 +357,7 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
     player.equipment = player.equipment.filter(item => item.id !== action.itemId)
   }
 }
+
+const getNamedTargetById = (params: BaseParams, id: string): INamedTarget =>
+  // TODO: Also include NPCs
+  params.gameState.players.find(p => p.id === id)!;
