@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { CharacterStats as CharacterStatsType, BaseStats } from '@/lib/games/types';
+import { CharacterStats as CharacterStatsType } from '@/lib/games/types';
 
 import styles from './character-card.module.css';
 import statsStyles from './entity-base-stats.module.css';
 
 import { PlayerState, PlayerAddStatsState } from '@/lib/store/types';
-import { getPlayerStats } from '@/lib/store/playerStats';
 import EntityBaseStats from './entity-base-stats';
 
-import { getPlayerAddStatsState, setPlayerAddStatsState } from '@/lib/store/playerStatsState';
+import { setPlayerAddStatsState } from '@/lib/store/playerStatsState';
 import CoinDisplay from './coin-display';
+import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
 
 const emptyStats: CharacterStatsType = {
   strength: 0,
@@ -23,52 +23,31 @@ export default function CharacterStats({
   boardId,
   mapId,
   player,
+  playerStats,
   isSelf,
 }: {
   boardId: string;
   mapId: string;
   player: PlayerState;
+  playerStats: PlayerStats | null;
   isSelf: boolean;
 }) {
   const [playerAddStats, setPlayerAddStats] = useState<PlayerAddStatsState>({ characterStats: emptyStats });
-  const [baseStats, setBaseStats] = useState<BaseStats>(player.baseStats!);
 
-  const refreshBaseStats = (characterStats: CharacterStatsType) => {
-    const newBaseStats = getPlayerStats({
-      ...player,
-      characterStats: {
-        strength: player.characterStats.strength + characterStats.strength,
-        skill: player.characterStats.skill + characterStats.skill,
-        intelligence: player.characterStats.intelligence + characterStats.intelligence,
-        resiliance: player.characterStats.resiliance + characterStats.resiliance,
-        reactions: player.characterStats.reactions + characterStats.reactions,
-      }
-    });
-
-    setBaseStats(newBaseStats);
-  };
+  const baseStats = playerStats?.baseStats! || player.baseStats!;
 
   useEffect(() => {
-    const fetchPlayerAddStats = async () => {
-      const response = await getPlayerAddStatsState(boardId, mapId, player.id);
-      if (response.success) {
-        const stats: PlayerAddStatsState = (response.data && response.data.characterStats)
-          ? response.data : { characterStats: emptyStats };
+    const disposeFns = [
+      playerStatsSyncService.subscribe((stats, actionsState, addStatsState) => {
+        setPlayerAddStats(addStatsState || { characterStats: emptyStats });
+      }),
+    ];
 
-        setPlayerAddStats(stats);
-        refreshBaseStats(stats.characterStats!);
-      }
-    }
+    playerStatsSyncService.getAddStateState().then(addStatsState => 
+      setPlayerAddStats(addStatsState || { characterStats: emptyStats })
+    );
 
-    if (isSelf) {
-      fetchPlayerAddStats();
-    } else {
-      setPlayerAddStats({ characterStats: emptyStats });
-    }
-  }, [boardId, mapId, player.id, isSelf]);
-
-  useEffect(() => {
-    refreshBaseStats(playerAddStats.characterStats!);
+    return () => disposeFns.forEach(f => f());
   }, [player]);
 
   const savePlayerAddStats = async (nextStats: PlayerAddStatsState = playerAddStats) =>
@@ -94,9 +73,7 @@ export default function CharacterStats({
       },
     };
 
-    setPlayerAddStats(nextStats);
-    refreshBaseStats(nextStats.characterStats);
-
+    playerStatsSyncService.updateAddStatsState(nextStats);
     await savePlayerAddStats(nextStats);
   };
 

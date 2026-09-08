@@ -3,7 +3,7 @@ import { PlayerState } from '@/lib/store/types';
 import { Popover } from 'radix-ui';
 import styles from './inventory.module.css';
 import { BaseStats, ConsumableItemDef, PlayerItem, PlayerItemType, ScrollItemDef } from '@/lib/games/types';
-import { allItems, scrollItems } from '@/lib/games/items';
+import { allItems } from '@/lib/games/items';
 import { LEARN_SCROLL_ACTION_COST } from '@/lib/store/playerStats';
 import { spells } from '@/lib/games/spells';
 

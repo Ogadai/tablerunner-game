@@ -6,17 +6,17 @@ import { getSwalDefaultOptions } from '@/app/swal';
 import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState, PlayerActionCast } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState, PlayerActionCast, PlayerState } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
-import { getPlayerActionsPerTurn, PlayerActionsPerTurn, getPlayerActionsCosts } from "@/lib/store/playerStats";
 import LocationTopicService from "@/app/message-bus/location-topic-service";
 import { getGameTopicId } from "@/lib/message-types";
 import PlayerSpells from './player-spells';
 import { characters } from '@/lib/games/characters';
 import { monsters } from '@/lib/games/monsters';
 import { EntityItemClass, EntityItemDetail } from './entity-list';
+import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-stats-sync.service";
 
 export default function PlayerLocation(
   {
@@ -34,53 +34,61 @@ export default function PlayerLocation(
     isPlayerReady: boolean,
     endTurnAction: () => void
   }) {
-  const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
   const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [] });
-  const [actionsPerTurn, setActionsPerTurn] = useState<PlayerActionsPerTurn>({ total: 0, attack: 0, move: 0 });
+  const [playerState, setPlayerState] = useState<PlayerState | null>();
+  const [playerStats, setPlayerStats] = useState<PlayerStats>(emptyPlayerStats);
+  const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
   const router = useRouter();
 
-  const playerState = gameState.players.find(p => p.id === playerId);
   const playerAlive = playerState && playerState.health > 0;
   const otherPlayers = gameState.players.filter(p => p.id !== playerId && p.location.id === playerState?.location.id);
   const topicId = getGameTopicId(boardId, mapId);
 
   useEffect(() => {
-    if (!playerState) {
+    const player = gameState.players.find(p => p.id === playerId);
+    if (!player) {
       router.push(`/${boardId}/${mapId}`);
     } else {
+      playerStatsSyncService.updatePlayer(boardId, mapId, player);
+
       async function fetchPlayerActionState() {
-        const state = await getPlayerActionsState(boardId, mapId, playerState!.id);
-        setActionsState(state.data!);
+        const state = await getPlayerActionsState(boardId, mapId, player!.id);
       }
 
       async function fetchLocationState() {
-        const state = await getLocationState(boardId, mapId, playerState!.location.id);
+        const state = await getLocationState(boardId, mapId, player!.location.id);
         setLocationState(state.data!);
       }
 
-      const disposeGameSub = LocationTopicService.subscribe(topicId, locationId => {
-        if (locationId === playerState.location.id) {
-          fetchLocationState();
-        }
-      });
+      const disposeFns = [
+        LocationTopicService.subscribe(topicId, locationId => {
+          if (locationId === player.location.id) {
+            fetchLocationState();
+          }
+        }),
+        playerStatsSyncService.subscribe((stats, actionsState, addStatsState, activePlayer) => {
+          setPlayerStats(stats);
+          setActionsState(actionsState)
+          setPlayerState(activePlayer);
+        }),
+      ];
 
       fetchPlayerActionState();
       fetchLocationState();
-      setActionsPerTurn(getPlayerActionsPerTurn(playerState));
 
-      return disposeGameSub;
+      return () => disposeFns.forEach(f => f());
     }
   }, [gameState]);
 
   const addNewAction = async (opts: Omit<PlayerAction, 'id'>) => {
-      const actionNumber = actionsState.actions.reduce((number, action) => 
-        Math.max(number, action.id + 1), 0);
+    const actionNumber = actionsState.actions.reduce((number, action) => 
+      Math.max(number, action.id + 1), 0);
 
-      const state = await addPlayerAction(boardId, mapId, playerState!.id, {
-        ...opts,
-        id: actionNumber,
-      });
-      setActionsState(state.data!);
+    const state = await addPlayerAction(boardId, mapId, playerState!.id, {
+      ...opts,
+      id: actionNumber,
+    });
+    playerStatsSyncService.updateActionsState(state.data!);
   }
 
   const bindMoveAction = (locationMove: LocationMove) =>
@@ -110,7 +118,7 @@ export default function PlayerLocation(
 
     if (moveAction) {
       const state = await removePlayerAction(boardId, mapId, playerState!.id, moveAction.id);
-      setActionsState(state.data!);
+      playerStatsSyncService.updateActionsState(state.data!);
     }
 
     endTurnAction();
@@ -119,7 +127,7 @@ export default function PlayerLocation(
   const bindRemoveAction = (action: PlayerAction) => 
     async () => {
       const state = await removePlayerAction(boardId, mapId, playerState!.id, action.id);
-      setActionsState(state.data!);
+      playerStatsSyncService.updateActionsState(state.data!);
     };
 
   if (!playerState) {
@@ -129,8 +137,6 @@ export default function PlayerLocation(
   const canMoveDirection = (direction: LocationMoveDirection): boolean =>
     !locationState.monsters.some(monster => monster.health > 0) || direction === playerState.retreatDirection;
 
-  const actionPointsUsed = getPlayerActionsCosts(playerState, actionsState);
-  const actionPointsLeft = actionsPerTurn.total - actionPointsUsed;
   const entities: EntityItemDetail[] = [
     {
       id: playerState.id,
@@ -158,9 +164,6 @@ export default function PlayerLocation(
     }))
   ];
 
-  const isAttacking = actionsState.actions.some(a => a.type === PlayerActionType.Attack);
-  const playerCanMove = playerAlive && !isAttacking &&  actionPointsLeft >= actionsPerTurn.move;
-
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
@@ -177,15 +180,14 @@ export default function PlayerLocation(
         entities={entities}
         items={locationState.items}
         actionsState={actionsState}
-        actionsPerTurn={actionsPerTurn}
-        actionPointsLeft={actionPointsLeft}
+        playerStats={playerStats}
         addNewAction={addNewAction}
       />
     
       { actionsState.actions.length > 0 && <div className={`${styles.actionsList}`}>
         <div className={styles.actionsHeader}>
           <h4>Actions</h4>
-          <span>{actionPointsUsed}/{actionsPerTurn.total}</span>
+          <span>{playerStats.actionPointsUsed}/{playerStats.actionPointsTotal}</span>
         </div>
         <ul>
           { actionsState.actions.map(action => <li key={action.id}>
@@ -200,7 +202,7 @@ export default function PlayerLocation(
     </div>
 
     { playerAlive && <div className={styles.actionButtonContainer}><div className={styles.actionButtonGroup1}>
-      { (!isPlayerReady && playerCanMove) && <div className={styles.moveActionButtons}>
+      { (!isPlayerReady && playerStats.playerCanMove) && <div className={styles.moveActionButtons}>
         {playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
           <button type="button" key={mv.direction}
             className={`${styles[`move-${mv.direction}`]} ${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
@@ -209,10 +211,10 @@ export default function PlayerLocation(
           </button>
         )}
 
-        { (!isPlayerReady && playerCanMove) && <button className={styles.stay} type="submit" onClick={endTurnAction}>Stay</button> }
+        { (!isPlayerReady && playerStats.playerCanMove) && <button className={styles.stay} type="submit" onClick={endTurnAction}>Stay</button> }
       </div> }
 
-      { (!isPlayerReady && !playerCanMove) &&
+      { (!isPlayerReady && !playerStats.playerCanMove) &&
         <button
           className={`${styles.stay} ${actionsState.actions.length > 0 ? styles.readyWithActions : ''}`} 
           type="submit" onClick={endTurnAction}>Ready</button>
@@ -224,15 +226,12 @@ export default function PlayerLocation(
         </button>
       }
     </div><div className={styles.actionButtonGroup2}>
-      { playerState.spells.length > 0 &&
+      { playerStats && playerState.spells.length > 0 &&
         <PlayerSpells
-          boardId={boardId}
-          mapId={mapId}
           playerSpells={playerState.spells}
           player={playerState}
           entities={entities}
-          actionPointsLeft={actionPointsLeft}
-          actionsState={actionsState}
+          playerStats={playerStats}
           addNewAction={addNewAction}
         />
       }

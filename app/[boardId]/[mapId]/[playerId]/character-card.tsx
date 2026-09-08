@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import styles from './character-card.module.css';
 
-import { PlayerInventoryState, PlayerState } from '@/lib/store/types';
+import { PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import Inventory from './inventory';
-import { dropItemAtLocation, getPlayerInventory, playerEquipItem } from '@/lib/store/playerInventory';
-import { ApiResponse } from "@/lib/api-response";
+import { dropItemAtLocation, playerEquipItem } from '@/lib/store/playerInventory';
 import { PlayerItem } from "@/lib/games/types";
+import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
 
 export default function CharacterCard({
   boardId,
@@ -15,6 +15,7 @@ export default function CharacterCard({
   player,
   isSelf,
   actionPointsLeft,
+  playerStats,
   onUseItem,
   onLearnScroll,
   usedItemIds,
@@ -24,47 +25,21 @@ export default function CharacterCard({
   player: PlayerState;
   isSelf: boolean;
   actionPointsLeft: number;
+  playerStats: PlayerStats | null;
   onUseItem: (item: PlayerItem) => void;
   onLearnScroll: (item: PlayerItem) => void;
   usedItemIds: string[];
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
-  const [activePlayer, setActivePlayer] = useState<PlayerState>(player);
-
-  useEffect(() => {
-    const fetchPlayerInventory = async () => {
-      const response = await getPlayerInventory(boardId, mapId, player.id);
-      useInventoryResponse(response);
-    }
-
-    if (isSelf) {
-      fetchPlayerInventory();
-    }
-  }, [player]);
-
-  const useInventoryResponse = (response: ApiResponse<PlayerInventoryState>) => {
-    if (response.success && response.data?.equipped) {
-      const combinedPlayer = {
-        ...player,
-        equipped: {
-          ...player.equipped,
-          ...response.data.equipped
-        },
-        equipment: response.data.equipment !== null
-            ? response.data.equipment : player.equipment,
-      };
-      setActivePlayer(combinedPlayer);
-    }
-  }
 
   const onEquipItem = async (item: PlayerItem) => {
     const response = await playerEquipItem(boardId, mapId, player.id, item.id);
-    useInventoryResponse(response);
+    playerStatsSyncService.updateInventory(response.data);
   }
 
   const onDropItem = async (item: PlayerItem) => {
     const response = await dropItemAtLocation(boardId, mapId, player.id, item.id);
-    useInventoryResponse(response);
+    playerStatsSyncService.updateInventory(response.data);
   }
 
   return <>
@@ -90,13 +65,14 @@ export default function CharacterCard({
         ? <CharacterStats
             boardId={boardId}
             mapId={mapId}
-            player={activePlayer}
+            player={player}
+            playerStats={playerStats}
             isSelf={isSelf}
           />
         : <Inventory
-            player={activePlayer}
+            player={player}
             isSelf={isSelf}
-            isDead={activePlayer.health === 0}
+            isDead={(playerStats ? playerStats.health : player.health) === 0}
             actionPointsLeft={actionPointsLeft}
             onEquipItem={onEquipItem}
             onUseItem={onUseItem}

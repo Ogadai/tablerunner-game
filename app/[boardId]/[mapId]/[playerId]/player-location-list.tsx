@@ -14,6 +14,7 @@ import LocationItemList from "./location-item-list";
 import { takeItemAtLocation } from "@/lib/store/playerInventory";
 import { getSwalDefaultOptions } from "@/app/swal";
 import styles from './player-location-list.module.css';
+import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-stats-sync.service";
 
 export interface PlayerLocationListProps {
   boardId: string;
@@ -23,9 +24,8 @@ export interface PlayerLocationListProps {
   monsters: MonsterState[];
   entities: EntityItemDetail[],
   items: PlayerItem[];
+  playerStats: PlayerStats;
   actionsState: PlayerActionsState;
-  actionsPerTurn: PlayerActionsPerTurn;
-  actionPointsLeft: number;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
 }
 
@@ -37,16 +37,15 @@ export default function PlayerLocationList({
   monsters: locationMonsters,
   entities,
   items: locationItems,
+  playerStats,
   actionsState,
-  actionsPerTurn,
-  actionPointsLeft,
   addNewAction
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
 
   useEffect(() => {
-    if (player.availableStats > 0) {
+    if (player.availableStats > 0 || (characterOpen && characterOpen.id === player.id)) {
       setCharacterOpen(player);
     }
   }, [player]);
@@ -113,7 +112,8 @@ export default function PlayerLocationList({
       return;
     }
 
-    await takeItemAtLocation(boardId, mapId, player.id, itemId);
+    const response = await takeItemAtLocation(boardId, mapId, player.id, itemId);
+    playerStatsSyncService.updateInventory(response.data);
   }
 
   const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
@@ -128,7 +128,8 @@ export default function PlayerLocationList({
     setCharacterOpen(null);
   }
 
-  const canAttack = actionPointsLeft >= actionsPerTurn.attack;
+  const actionPointsLeft = playerStats.actionPointsTotal - playerStats.actionPointsUsed;
+  const canAttack = actionPointsLeft >= playerStats.actionsPerTurn.attack;
   const usedItemIds = actionsState.actions
     .filter(a => a.type === PlayerActionType.UseItem)
     .map(a => (a as PlayerActionUseItem).itemId || '');
@@ -161,6 +162,7 @@ export default function PlayerLocationList({
                 player={characterOpen}
                 isSelf={characterOpen.id === player.id}
                 actionPointsLeft={actionPointsLeft}
+                playerStats={characterOpen.id === player.id ? playerStats : null}
                 onUseItem={onUseItem}
                 usedItemIds={usedItemIds}
                 onLearnScroll={onLearnScroll}

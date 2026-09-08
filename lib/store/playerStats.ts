@@ -25,7 +25,7 @@ export function getPlayerActionsPerTurn(playerState: PlayerState): PlayerActions
   };
 }
 
-export function getPlayerActionsCosts(playerState: PlayerState, actionsState: PlayerActionsState): number {
+export function getPlayerActionsCosts(playerState: PlayerState, actionsState: PlayerActionsState | null | undefined): number {
   if (!actionsState || !actionsState.actions) {
     return 0;
   }
@@ -49,6 +49,22 @@ export function getPlayerActionsCosts(playerState: PlayerState, actionsState: Pl
         return total + getSpellActionCost(spell, playerState.baseStats!.magic);
       case PlayerActionType.ReadScroll:
         return total + LEARN_SCROLL_ACTION_COST;
+      default:
+        return total;
+    }
+  }, 0);
+}
+
+export function getPlayerActionsMagic(playerState: PlayerState, actionsState: PlayerActionsState  | null | undefined): number {
+  if (!actionsState || !actionsState.actions) {
+    return 0;
+  }
+
+  return actionsState.actions.reduce((total, action) => {
+    switch(action.type) {
+      case PlayerActionType.Cast:
+        const spell = spells[(action as PlayerActionCast).spellId];
+        return total + spell.magicCost;
       default:
         return total;
     }
