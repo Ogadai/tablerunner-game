@@ -115,18 +115,18 @@ class PlayerStatsSyncService {
       this.getData(this.addStatsState, () => getPlayerAddStatsState(this.boardId, this.mapId, this.player!.id)),
     ]));
 
-    const combinedPlayer: PlayerState = inventoryState?.equipped ? {
+    const combinedPlayer: PlayerState = {
       ...this.player,
-      equipped: {
+      equipped: inventoryState?.equipped ? {
         ...this.player.equipped,
         ...inventoryState.equipped
-      },
-      equipment: inventoryState.equipment !== null
+      } : { ...this.player.equipped },
+      equipment: inventoryState?.equipment !== null && inventoryState?.equipment !== undefined
           ? inventoryState.equipment : this.player.equipment,
-    } : { ...this.player };
+    };
 
     const addedStats = addStatsState?.characterStats;
-    const newBaseStats = getPlayerStats({
+    const effectivePlayer: PlayerState = {
       ...combinedPlayer,
       characterStats: addedStats ? {
         strength: combinedPlayer.characterStats.strength + addedStats.strength,
@@ -134,25 +134,26 @@ class PlayerStatsSyncService {
         intelligence: combinedPlayer.characterStats.intelligence + addedStats.intelligence,
         resiliance: combinedPlayer.characterStats.resiliance + addedStats.resiliance,
         reactions: combinedPlayer.characterStats.reactions + addedStats.reactions,
-      } : combinedPlayer.characterStats
-    });
+      } : combinedPlayer.characterStats,
+    };
+    effectivePlayer.baseStats = getPlayerStats(effectivePlayer);
 
-    const actionPointsUsed = getPlayerActionsCosts(combinedPlayer, actionsState);
-    const actionsPerTurn = getPlayerActionsPerTurn(combinedPlayer)
+    const actionPointsUsed = getPlayerActionsCosts(effectivePlayer, actionsState);
+    const actionsPerTurn = getPlayerActionsPerTurn(effectivePlayer)
     const actionPointsTotal = actionsPerTurn.total;
 
-    const magicUsed = getPlayerActionsMagic(combinedPlayer, actionsState);
-    const magicLeft = combinedPlayer.magic - magicUsed;
+    const magicUsed = getPlayerActionsMagic(effectivePlayer, actionsState);
+    const magicLeft = effectivePlayer.magic - magicUsed;
 
     const isAttacking = actionsState?.actions.some(a => a.type === PlayerActionType.Attack) || false;
 
     const actionPointsLeft = actionPointsTotal - actionPointsUsed
-    const playerCanMove = (combinedPlayer.health > 0) && !isAttacking &&  actionPointsLeft >= actionsPerTurn.move;
+    const playerCanMove = (effectivePlayer.health > 0) && !isAttacking &&  actionPointsLeft >= actionsPerTurn.move;
 
     const playerStats: PlayerStats = {
-      health: combinedPlayer.health,
-      magic: combinedPlayer.magic,
-      baseStats: newBaseStats,
+      health: effectivePlayer.health,
+      magic: effectivePlayer.magic,
+      baseStats: effectivePlayer.baseStats,
       actionsPerTurn,
       actionPointsUsed,
       actionPointsTotal,
@@ -167,7 +168,7 @@ class PlayerStatsSyncService {
         playerStats,
         actionsState || { actions: [] },
         addStatsState || null,
-        combinedPlayer
+        effectivePlayer
       );
     }
 
