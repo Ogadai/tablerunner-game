@@ -117,6 +117,10 @@ class PlayerStatsSyncService {
       this.getData(this.addStatsState, () => getPlayerAddStatsState(this.boardId, this.mapId, this.player!.id)),
     ]));
 
+    this.inventoryState = inventoryState || null;
+    this.actionsState = actionsState || null;
+    this.addStatsState = addStatsState || null;
+
     const combinedPlayer: PlayerState = {
       ...this.player,
       equipped: inventoryState?.equipped ? {
@@ -170,12 +174,17 @@ class PlayerStatsSyncService {
       playerCanMove,
     };
 
+    const activePlayer = {
+      ...combinedPlayer,
+      baseStats: effectivePlayer.baseStats,
+    };
+
     for(const listener of this.listeners) {
       listener(
         playerStats,
         actionsState || { actions: [] },
         addStatsState || null,
-        effectivePlayer
+        activePlayer
       );
     }
 
