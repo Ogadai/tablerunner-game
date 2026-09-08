@@ -55,6 +55,8 @@
 }
 
 .tabContent {
+  flex: 1 1 auto;
+  overflow-y: auto;
   margin-top: -2px;
   height: 460px;
   border: 1px solid var(--gold-antique);

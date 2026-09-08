@@ -13,6 +13,7 @@ import { PlayerItem } from "@/lib/games/types";
 import LocationItemList from "./location-item-list";
 import { takeItemAtLocation } from "@/lib/store/playerInventory";
 import { getSwalDefaultOptions } from "@/app/swal";
+import styles from './player-location-list.module.css';
 
 export interface PlayerLocationListProps {
   boardId: string;
@@ -155,7 +156,7 @@ export default function PlayerLocationList({
             <span>{dialogTitle}</span>
             { dialogSubTitle && <span className="DialogSubTitle">{dialogSubTitle}</span> }
             </Dialog.Title>
-          <div className="DialogContentBody">
+          <div className={`${characterOpen ? styles.dialogContent : ''} DialogContentBody`}>
             { monsterOpen &&
               <MonsterCard
                 monster={monsterOpen}

@@ -44,7 +44,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.healingPotion,
       allItems.manaPotion,
       allItems.resurrectionStore,
-      allItems.iceStorm,
+      allItems.iceStormScroll,
     ],
     spells: [
       SpellIds.iceShards,
@@ -92,7 +92,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.healingPotion,
       allItems.manaPotion,
       allItems.resurrectionStore,
-      allItems.fireWall,
+      allItems.fireWallScroll,
     ],
     spells: [
       SpellIds.spiritArrow,
