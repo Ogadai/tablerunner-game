@@ -15,6 +15,7 @@ export interface PlayerStats {
   actionsPerTurn: PlayerActionsPerTurn;
   actionPointsUsed: number;
   actionPointsTotal: number;
+  availablePoints: number;
   magicUsed: number;
   magicLeft: number;
   isAttacking: boolean;
@@ -35,6 +36,7 @@ export const emptyPlayerStats: PlayerStats = {
   actionsPerTurn: { attack: 0, move: 0, total: 0 },
   actionPointsUsed: 0,
   actionPointsTotal: 0,
+  availablePoints: 0,
   magicUsed: 0,
   magicLeft: 0,
   isAttacking: false,
@@ -150,6 +152,10 @@ class PlayerStatsSyncService {
     const actionPointsLeft = actionPointsTotal - actionPointsUsed
     const playerCanMove = (effectivePlayer.health > 0) && !isAttacking &&  actionPointsLeft >= actionsPerTurn.move;
 
+    const allocatedPoints = addedStats ? Object.values(addedStats)
+      .reduce((total, points) => total + points, 0) : 0;
+    const availablePoints = Math.max(0, effectivePlayer.availableStats - allocatedPoints);
+
     const playerStats: PlayerStats = {
       health: effectivePlayer.health,
       magic: effectivePlayer.magic,
@@ -157,6 +163,7 @@ class PlayerStatsSyncService {
       actionsPerTurn,
       actionPointsUsed,
       actionPointsTotal,
+      availablePoints,
       magicUsed,
       magicLeft,
       isAttacking,

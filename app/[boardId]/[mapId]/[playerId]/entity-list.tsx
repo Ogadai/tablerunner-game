@@ -14,6 +14,7 @@ export interface EntityItemDetail {
   className: EntityItemClass;
   health: number;
   maxHealth: number;
+  levelUp?: boolean;
 }
 
 export default function EntityList({
@@ -39,7 +40,7 @@ export default function EntityList({
       {entities.map(entity => (
         <li
           key={entity.id}
-          className={`${styles.entity} ${styles[entity.className]}`}
+          className={`${styles.entity} ${styles[entity.className]} ${entity.levelUp && styles.levelUp}`}
           onClick={() => onClickEntity?.(entity)}
         >
           <Image

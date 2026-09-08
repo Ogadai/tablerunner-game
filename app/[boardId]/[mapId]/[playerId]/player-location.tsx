@@ -144,7 +144,8 @@ export default function PlayerLocation(
       icon: characters[playerState.id].icon,
       className: EntityItemClass.self,
       health: playerState.health,
-      maxHealth: playerState.baseStats?.health || playerState.health
+      maxHealth: playerState.baseStats?.health || playerState.health,
+      levelUp: playerStats.availablePoints > 0
     },
     ...otherPlayers.map(otherPlayer => ({
       id: otherPlayer.id,
