@@ -66,7 +66,7 @@ export default function InventoryItem({
     && actionPointsLeft >= LEARN_SCROLL_ACTION_COST;
 
   const cannotBuy = !!onBuy && ((availableCoins || 0) < (allItems[item.type].value || 0));
-  const coins = onSell ? (itemDef.value || 0) * SELL_COST_RATIO : itemDef.value || 0;
+  const coins = onSell ? Math.ceil((itemDef.value || 0) * SELL_COST_RATIO) : itemDef.value || 0;
 
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>

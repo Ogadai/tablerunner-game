@@ -5,8 +5,9 @@ import { Dialog } from 'radix-ui';
 import tabStyles from './tabs.module.css';
 import styles from './player-store.module.css';
 import { getStoreInventoryState } from '@/lib/store/playerInventory';
-import { PlayerState, StoreInventoryState } from '@/lib/store/types';
+import { PlayerInventoryEquipSlots, PlayerState, StoreInventoryState } from '@/lib/store/types';
 import InventoryItem from './inventory-item';
+import { allItems } from '@/lib/games/items';
 
 export default function PlayerStore({
   boardId,
@@ -34,6 +35,11 @@ export default function PlayerStore({
       getStoreState();
     }
   }
+
+  const isEquipped = (item: NonNullable<PlayerState['equipment']>[number]) => {
+    const slot = allItems[item.type].type as keyof PlayerInventoryEquipSlots;
+    return player.equipped[slot] === item.id;
+  };
 
   return (
     <Dialog.Root onOpenChange={onOpenChange}>
@@ -82,6 +88,19 @@ export default function PlayerStore({
                   />
                 );
               })}
+              {activeTab === 'sell' && (player.equipment || []).map(item => (
+                <InventoryItem
+                  key={item.id}
+                  isSelf={false}
+                  isDead={player.health === 0}
+                  item={item}
+                  isEquipped={isEquipped(item)}
+                  isUsed={usedItemIds.includes(item.id || '')}
+                  actionPointsLeft={0}
+                  baseStats={player.baseStats!}
+                  onSell={() => {}}
+                />
+              ))}
             </div>
           </div>
           <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">
