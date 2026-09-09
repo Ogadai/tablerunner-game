@@ -12,10 +12,12 @@ export default function PlayerStore({
   boardId,
   mapId,
   player,
+  usedItemIds,
 }: {
   boardId: string;
   mapId: string;
   player: PlayerState;
+  usedItemIds: string[];
 }) {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [storeInventory, setStoreInventory] = useState<StoreInventoryState>({ items: [] });

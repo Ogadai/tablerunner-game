@@ -141,7 +141,7 @@ export default function InventoryItem({
                 onClick={onBuy}
               >Buy</button>
             }
-            {!!onSell &&
+            {!!onSell && !isUsed &&
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}

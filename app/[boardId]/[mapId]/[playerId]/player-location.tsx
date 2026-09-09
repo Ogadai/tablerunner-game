@@ -6,7 +6,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState, PlayerActionCast, PlayerState } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState, PlayerActionCast, PlayerState, PlayerActionUseItem } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
@@ -44,6 +44,10 @@ export default function PlayerLocation(
   const playerAlive = playerState && playerState.health > 0;
   const otherPlayers = gameState.players.filter(p => p.id !== playerId && p.location.id === playerState?.location.id);
   const topicId = getGameTopicId(boardId, mapId);
+
+  const usedItemIds = actionsState.actions
+    .filter(a => a.type === PlayerActionType.UseItem)
+    .map(a => (a as PlayerActionUseItem).itemId || '');
 
   useEffect(() => {
     const player = gameState.players.find(p => p.id === playerId);
@@ -239,7 +243,7 @@ export default function PlayerLocation(
       }
       {
         gameState.stores.includes(playerState.location.id) &&
-        <PlayerStore boardId={boardId} mapId={mapId} player={playerState} />
+        <PlayerStore boardId={boardId} mapId={mapId} player={playerState} usedItemIds={usedItemIds} />
       }
     </div></div>}
   </>);
