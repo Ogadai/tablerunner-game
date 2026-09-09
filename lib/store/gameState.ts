@@ -46,7 +46,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     characters: gameDef.characters,
     players: [],
     visited: [gameDef.startLocation],
-    stores: [],
+    stores: Object.keys(gameDef.storeItems).map(i => parseInt(i, 10)),
     counters: {
       itemId: 0,
       monsterId: 0,

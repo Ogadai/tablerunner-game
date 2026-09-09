@@ -13,6 +13,7 @@ import PlayerLocationList from './player-location-list';
 import LocationTopicService from "@/app/message-bus/location-topic-service";
 import { getGameTopicId } from "@/lib/message-types";
 import PlayerSpells from './player-spells';
+import PlayerStore from './player-store';
 import { characters } from '@/lib/games/characters';
 import { monsters } from '@/lib/games/monsters';
 import { EntityItemClass, EntityItemDetail } from './entity-list';
@@ -235,6 +236,10 @@ export default function PlayerLocation(
           playerStats={playerStats}
           addNewAction={addNewAction}
         />
+      }
+      {
+        gameState.stores.includes(playerState.location.id) &&
+        <PlayerStore />
       }
     </div></div>}
   </>);
