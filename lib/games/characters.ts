@@ -92,7 +92,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.healingPotion,
       allItems.manaPotion,
       allItems.resurrectionStore,
-      allItems.fireWallScroll,
+      allItems.fireBallScroll,
     ],
     spells: [
       SpellIds.spiritArrow,
