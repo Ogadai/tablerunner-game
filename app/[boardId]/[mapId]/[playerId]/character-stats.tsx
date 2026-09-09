@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { CharacterStats as CharacterStatsType } from '@/lib/games/types';
 
-import styles from './character-card.module.css';
+import styles from './character-stats.module.css';
 import statsStyles from './entity-base-stats.module.css';
 
 import { PlayerState, PlayerAddStatsState } from '@/lib/store/types';

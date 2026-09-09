@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import styles from './character-card.module.css';
+import tabStyles from './tabs.module.css';
 
 import { PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
@@ -43,7 +43,7 @@ export default function CharacterCard({
   }
 
   return <>
-    <div className={styles.tabs} role="tablist" aria-label="Character details">
+    <div className={tabStyles.tabs} role="tablist" aria-label="Character details">
       {(['stats', 'inventory'] as const).map(tab => (
         <button
           key={tab}
@@ -51,7 +51,7 @@ export default function CharacterCard({
           role="tab"
           aria-selected={activeTab === tab}
           aria-controls={`${tab}-panel`}
-          className={`${styles.tab} ${activeTab === tab ? styles.activeTab : ''}`}
+          className={`${tabStyles.tab} ${activeTab === tab ? tabStyles.activeTab : ''}`}
           onClick={() => setActiveTab(tab)}
         >
           {tab === 'stats' ? 'Stats' : 'Inventory'}
@@ -59,7 +59,7 @@ export default function CharacterCard({
       ))}
     </div>
 
-    <div className={`${styles.tabContent} ${activeTab === 'stats' ? styles.tabContentFirst : ''}`}
+    <div className={`${tabStyles.tabContent} ${activeTab === 'stats' ? tabStyles.tabContentFirst : ''}`}
       id={`${activeTab}-panel`} role="tabpanel" aria-label={activeTab === 'stats' ? 'Stats' : 'Inventory'}>
       {activeTab === 'stats'
         ? <CharacterStats
