@@ -9,6 +9,12 @@ export interface GameListEntry {
   characters: CharacterListEntry[];
   locations: Location[];
   startLocation: number;
+  itemLocations: GameItemLocation[];
+}
+
+export interface GameItemLocation {
+  locations: number[];
+  itemIds: string[];
 }
 
 export interface CharacterListEntry {

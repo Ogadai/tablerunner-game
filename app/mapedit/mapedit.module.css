@@ -192,8 +192,12 @@
   max-width: 500px;
 }
 
-.copyButton {
+.copyButtons {
   position: absolute;
   left: 44px;
   top: 263mm;
+
+  & button {
+    margin-right: 20px;
+  }
 }

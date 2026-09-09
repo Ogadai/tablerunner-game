@@ -155,10 +155,16 @@ export interface LocationCoinState {
   coins: number
 }
 
+export interface LocationStoreState {
+  location: number,
+  storeId: number,
+}
+
 export interface AllLocationsState {
   monsters: MonsterState[];
   items: ItemLocationState[];
   coins: LocationCoinState[];
+  stores: LocationStoreState[];
 }
 
 export interface LocationState {

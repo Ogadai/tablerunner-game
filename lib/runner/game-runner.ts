@@ -32,9 +32,7 @@ export async function checkAllPlayersReady(boardId: string, mapId: string, ready
       mapId,
       gameState,
       messages: {},
-      monsters: locationsState.monsters,
-      items: locationsState.items,
-      coins: locationsState.coins,
+      ...locationsState
     });
   }
 }
@@ -101,6 +99,7 @@ async function runGameTurn(params: BaseParams): Promise<void> {
     monsters: params.monsters,
     items: params.items,
     coins: params.coins,
+    stores: params.stores,
   };
   setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
 }

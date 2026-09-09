@@ -10,7 +10,7 @@ import { useSearchParams } from 'next/navigation';
 import { cinzel } from '@/app/fonts';
 import Image from 'next/image';
 
-import { cauldronOfFire as mapData } from '@/lib/games/maps';
+import { cauldronOfFireLocations as mapData } from '@/lib/games/maps/cauldron-of-fire';
 import { monsters } from '@/lib/games/monsters';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
@@ -144,11 +144,12 @@ export default function MapEdit() {
   const searchParams = useSearchParams();
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
-  const [monsterList, setMonsterList] = useState<AllLocationsState>({ monsters: [], items: [], coins: [] });
+  const [monsterList, setMonsterList] = useState<AllLocationsState>({ monsters: [], items: [], coins: [], stores: [] });
   const dragStartCell = useRef<number | null>(null);
   const dragActionTaken = useRef(false);
   
   const page = searchParams.get('page');
+  const print = searchParams.get('print') === 'true';
   const singlePage = !!page;
  
   const one = (!page || page === '1');
@@ -299,11 +300,11 @@ export default function MapEdit() {
             event.stopPropagation();
             handleCellClick(cell);
           }}
-          className={`${styles.circle} ${ (!singlePage && description.length > 0) ? styles.namedCircle : ''}`}
+          className={`${styles.circle} ${ (!singlePage && description.length > 0 && !print) ? styles.namedCircle : ''}`}
         >
           <span className={styles.number}>{ cell }</span>
         </div>
-        {monsterCount > 0 &&
+        {!print && (monsterCount > 0) &&
           <button
             type="button"
             className={styles.monsterCount}
@@ -325,6 +326,19 @@ export default function MapEdit() {
     await navigator.clipboard.writeText(mapJson);
   }
 
+  const copyLocations = async () => {
+    const locationDescriptions: { [id: number]: string}
+      = mapState.reduce((descriptions, location) => (
+        {
+          ...descriptions,
+          [location.id]: location.description
+        }
+      ), {});
+
+    const locationsJson = JSON.stringify(locationDescriptions, null, 2);
+    await navigator.clipboard.writeText(locationsJson);
+  }
+
   return (<>
     <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''}`}>
       <Image
@@ -342,10 +356,15 @@ export default function MapEdit() {
         { GRID_CELLS.map(renderCell) }
       </div>
 
-      { !singlePage && <button
-          className={styles.copyButton}
-          onClick={copyToClipboard}
-        >Copy to clipboard</button> }
+      <div className={styles.copyButtons}>
+        { !singlePage && !print && <button
+            onClick={copyToClipboard}
+          >Copy to clipboard</button> }
+        
+        { !singlePage && !print && <button
+            onClick={copyLocations}
+          >Copy Locations</button> }
+      </div>
     </main>
 
     <Dialog.Root

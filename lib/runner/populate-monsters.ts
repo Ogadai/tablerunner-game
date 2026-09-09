@@ -2,22 +2,22 @@ import { google } from '@ai-sdk/google';
 import { generateText, Output } from 'ai'; // <-- Import Output here
 import { z } from 'zod';
 
-import { AllLocationsState, GameState } from "../store/types";
-import { cauldronOfFire } from '../games/maps';
+import { GameState, MonsterState } from "../store/types";
+import { cauldronOfFireLocations } from '../games/maps/cauldron-of-fire';
 import { monsters, getPointsForDamage, mostersExcludeFromAutoPopulate } from '../games/monsters';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '../games/gridCells';
 import { getMonsters } from '../games/monster-pack';
 
-export async function populateMonsters(gameState: GameState, mapId: string): Promise<AllLocationsState> {
+export async function populateMonsters(gameState: GameState, mapId: string): Promise<MonsterState[]> {
   return getMonsters(gameState);
   // const aiMonsters = await askAIForMonsters(mapId);
   // return aiMonsters;
 }
 
-async function askAIForMonsters(mapId: string): Promise<AllLocationsState> {
+async function askAIForMonsters(mapId: string): Promise<MonsterState[]> {
   const cellDescriptions = GRID_CELLS
     .map(c => {
-      const cell = cauldronOfFire.find(l => l.id === c);
+      const cell = cauldronOfFireLocations.find(l => l.id === c);
       return {
         id: cell?.id || 0,
         description: cell?.description|| ''
@@ -45,7 +45,7 @@ async function askAIForMonsters(mapId: string): Promise<AllLocationsState> {
   const googleModel = process.env.GOOGLE_GENERATIVE_AI_MODEL;
   if (!googleModel) {
     console.error('No Google Model defined');
-    return { monsters: [], items: [], coins: [] };
+    return [];
   }
 
   try {
@@ -78,16 +78,13 @@ async function askAIForMonsters(mapId: string): Promise<AllLocationsState> {
       })
     });
 
-    return {
-      monsters: result.output.monsters.map(m => ({
-        ...m,
-        health: monsters[m.type].baseStats.health
-      })),
-      items: [], coins: []
-    };
+    return result.output.monsters.map(m => ({
+      ...m,
+      health: monsters[m.type].baseStats.health
+    }));
   } catch(ex) {
     console.error(ex);
-    return { monsters: [], items: [], coins: [] };
+    return [];
   }
 
 }

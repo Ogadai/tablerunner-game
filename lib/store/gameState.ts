@@ -1,7 +1,7 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { GameState, PlayerState } from "./types";
+import { AllLocationsState, GameState, PlayerState } from "./types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
 import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis, setLocationsStateInRedis } from './redis-access';
@@ -9,6 +9,7 @@ import { getPlayerStats } from './playerStats';
 import { createItemForInventory } from "../runner/apply-inventory";
 import { pickCharacterName } from "../games/character-names";
 import { populateMonsters } from "../runner/populate-monsters";
+import { populateItemsForMap } from "../runner/populate-items";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;
@@ -50,7 +51,15 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     }
   };
 
-  const locationsState = await populateMonsters(newGameState, mapId);
+  const monsters = await populateMonsters(newGameState, mapId);
+  const items = await populateItemsForMap(newGameState, mapId);
+
+  const locationsState: AllLocationsState = {
+    monsters,
+    items,
+    coins: [],
+    stores: [],
+  };
 
   try {
     // Store data in Redis
