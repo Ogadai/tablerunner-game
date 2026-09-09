@@ -1,5 +1,5 @@
-import { allItems, EquipableIds } from '../items';
-import { GameItemLocation, Location } from '../types';
+import { lootItems, ConsumableIds, ScrollIds, scrollItems, EquipableIds, consumableItems, equipableItems, allItems } from '../items';
+import { GameItemLocation, Location, PlayerItemType } from '../types';
 
 export const cauldronOfFireLocations: Location[] = [
   {
@@ -3728,19 +3728,19 @@ const easyLocations: number[] = [1, 3, 41, 44, 37, 35, 7, 50, 13, 16, 67, 20, 60
 const mediumLocations: number[] = [80, 120, 117, 116, 87, 76, 74, 73, 113, 121, 111, 109, 106, 146, 136, 138, 141, 101, 97, 100, 152, 231, 171];
 const hardLocations: number[] = [160, 156, 198, 200, 162, 199, 240, 202, 236, 205, 206, 232, 208, 192, 227, 214, 225, 216, 224, 223, 221, 220, 218];
 
-const easyLoot = Object.entries(allItems)
+const easyLoot = Object.entries(lootItems)
     .map(([id, item]) => item)
     .filter(item => item.value && item.value < 50)
     .map(item => item.id);
     
-const mediumLoot = Object.entries(allItems)
+const mediumLoot = Object.entries(lootItems)
     .map(([id, item]) => item)
     .filter(item => item.value && item.value > 20 && item.value < 150)
     .map(item => item.id);
 
-const hardLoot = Object.entries(allItems)
+const hardLoot = Object.entries(lootItems)
     .map(([id, item]) => item)
-    .filter(item => item.value && item.value > 100)
+    .filter(item => item.value && item.value > 120)
     .map(item => item.id);
 
 const easyItems = 40;
@@ -3757,3 +3757,48 @@ for(let n = 0; n < mediumItems; n++) {
 for(let n = 0; n < hardItems; n++) {
   cauldronOfFireItems.push({ locations: hardLocations, itemIds: hardLoot });
 }
+
+const witchStoreItems: string[] = [
+  ...Object.keys(consumableItems),
+  ...Object.keys(scrollItems),
+  ...lootItems
+    .filter(l => [
+      PlayerItemType.ring, PlayerItemType.necklace,
+    ].includes(l.type))
+    .map(i => i.id)
+];
+
+const smallShopItems: string[] = [
+  ...Object.keys(consumableItems).filter(id => (allItems[id].value || 0) < 150),
+  ...Object.keys(equipableItems).filter(id => (allItems[id].value || 0) < 50),
+];
+
+const tavernItems: string[] = [
+  ...Object.keys(consumableItems).filter(id => (allItems[id].value || 0) < 50),
+  ...Object.keys(equipableItems).filter(id => (allItems[id].value || 0) < 150),
+];
+
+const blacksmithItems: string[] = lootItems
+  .filter(l => [
+    PlayerItemType.weapon, PlayerItemType.armour, PlayerItemType.helmet,
+    PlayerItemType.gloves, PlayerItemType.boots, PlayerItemType.belt,
+  ].includes(l.type))
+  .map(i => i.id);
+
+const generalItems: string[] = [
+  ...Object.keys(consumableItems),
+  ...Object.keys(equipableItems),
+];
+
+const villageSquareItems: string[] = generalItems.filter(id => (allItems[id].value || 0) < 100);
+
+export const cauldronOfFireStoreItems: { [locationId: number]: string[] } = {
+  80: witchStoreItems,
+  57: smallShopItems,
+  58: tavernItems,
+  90: blacksmithItems,
+  91: villageSquareItems,
+  110: tavernItems,
+  123: smallShopItems,
+  121: tavernItems,
+};

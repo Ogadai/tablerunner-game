@@ -16,7 +16,7 @@ import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 import { getMonsters } from '@/lib/games/monster-pack';
 import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
-import { AllLocationsState } from '@/lib/store/types';
+import { AllLocationsState, MonsterState } from '@/lib/store/types';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
@@ -144,7 +144,7 @@ export default function MapEdit() {
   const searchParams = useSearchParams();
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
-  const [monsterList, setMonsterList] = useState<AllLocationsState>({ monsters: [], items: [], coins: [], stores: [] });
+  const [monsterList, setMonsterList] = useState<MonsterState[]>([]);
   const dragStartCell = useRef<number | null>(null);
   const dragActionTaken = useRef(false);
   
@@ -244,7 +244,7 @@ export default function MapEdit() {
 
   const monsterDialogEntities: EntityItemDetail[] = monsterDialogCell === null
     ? []
-    : monsterList.monsters
+    : monsterList
       .filter(monster => monster.location === monsterDialogCell)
       .map(monster => ({
         id: monster.id,
@@ -259,7 +259,7 @@ export default function MapEdit() {
     const location = mapState.find(l => l.id === cell);
     const description = location?.description || '';
     const moves = location?.move ?? [];
-    const monsterCount = monsterList.monsters.filter(monster => monster.location === cell).length;
+    const monsterCount = monsterList.filter(monster => monster.location === cell).length;
 
     const directionAngles: Record<string, number> = {
       n: -90,

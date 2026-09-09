@@ -10,6 +10,7 @@ export interface GameListEntry {
   locations: Location[];
   startLocation: number;
   itemLocations: GameItemLocation[];
+  storeItems: { [locationId: number]: string[] };
 }
 
 export interface GameItemLocation {

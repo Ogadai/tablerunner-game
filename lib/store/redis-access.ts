@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
@@ -18,6 +18,8 @@ const getPlayerInventoryKey = (boardId: string, mapId: string, playerId: string)
 const getPlayerMessagesKey = (boardId: string, mapId: string, playerId: string) => `playerMessages:${boardId}:${mapId}:${playerId}`;
 
 const getLocationsKey = (boardId: string, mapId: string) => `monsters:${boardId}:${mapId}`;
+
+const getStoreInventoryKey = (boardId: string, mapId: string, location: number) => `store:${boardId}:${mapId}:${location}`;
 
 /* Overall Game State */
 
@@ -45,6 +47,10 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
       await deletePlayerMessagesFromRedis(boardId, mapId, player.id);
       await deletePlayerStatsFromRedis(boardId, mapId, player.id);
       await deletePlayerInventoryFromRedis(boardId, mapId, player.id);
+    }
+
+    for(const storeLocation of gameState.stores) {
+      deleteStoreStateFromRedis(boardId, mapId, storeLocation);
     }
 
     // Delete the monsters state from Redis
@@ -152,7 +158,7 @@ export async function deletePlayerMessagesFromRedis(boardId: string, mapId: stri
 
 export async function getLocationsStateFromRedis(boardId: string, mapId: string): Promise<AllLocationsState> {
   const result = await redis.get(getLocationsKey(boardId, mapId)) as AllLocationsState;
-  return result || { monsters: [], items: [], coins: [], stores: [] };
+  return result || { monsters: [], items: [], coins: [] };
 }
 
 export async function setLocationsStateInRedis(boardId: string, mapId: string, monsterState: AllLocationsState): Promise<void> {
@@ -161,4 +167,20 @@ export async function setLocationsStateInRedis(boardId: string, mapId: string, m
 
 export async function deleteLocationsStateFromRedis(boardId: string, mapId: string): Promise<void> {
   await redis.del(getLocationsKey(boardId, mapId));
+}
+
+
+/* Store inventory state */
+
+export async function getStoreStateFromRedis(boardId: string, mapId: string, location: number): Promise<StoreInventoryState> {
+  const result = await redis.get(getStoreInventoryKey(boardId, mapId, location)) as StoreInventoryState;
+  return result || { items: [] };
+}
+
+export async function setStoreStateInRedis(boardId: string, mapId: string, location: number, storeState: StoreInventoryState): Promise<void> {
+  await redis.set(getStoreInventoryKey(boardId, mapId, location), storeState, gameStateOptions);
+}
+
+export async function deleteStoreStateFromRedis(boardId: string, mapId: string, location: number): Promise<void> {
+  await redis.del(getStoreInventoryKey(boardId, mapId, location));
 }

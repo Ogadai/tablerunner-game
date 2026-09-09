@@ -129,6 +129,7 @@ class PlayerStatsSyncService {
       } : { ...this.player.equipped },
       equipment: inventoryState?.equipment !== null && inventoryState?.equipment !== undefined
           ? inventoryState.equipment : this.player.equipment,
+      coins: inventoryState?.coins !== undefined ? inventoryState.coins : this.player.coins,
     };
 
     const addedStats = addStatsState?.characterStats;

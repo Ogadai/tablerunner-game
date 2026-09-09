@@ -10,6 +10,7 @@ import { createItemForInventory } from "../runner/apply-inventory";
 import { pickCharacterName } from "../games/character-names";
 import { populateMonsters } from "../runner/populate-monsters";
 import { populateItemsForMap } from "../runner/populate-items";
+import { createStoreInventoryState } from "./playerInventory";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;
@@ -45,6 +46,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     characters: gameDef.characters,
     players: [],
     visited: [gameDef.startLocation],
+    stores: [],
     counters: {
       itemId: 0,
       monsterId: 0,
@@ -58,7 +60,6 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     monsters,
     items,
     coins: [],
-    stores: [],
   };
 
   try {
@@ -66,6 +67,13 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     await setGameStateInRedis(boardId, mapId, newGameState);
 
     await setLocationsStateInRedis(boardId, mapId, locationsState);
+
+    for(const storeLocationId of Object.keys(gameDef.storeItems)) {
+      const locationId = parseInt(storeLocationId, 10);
+      const storeItems = gameDef.storeItems[locationId];
+      await createStoreInventoryState(boardId, mapId, locationId, storeItems);
+    }
+
     return {
       success: true,
       data: newGameState

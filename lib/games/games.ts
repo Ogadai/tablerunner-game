@@ -1,8 +1,7 @@
 import { GameListEntry } from "./types";
 import { characters } from './characters';
 
-import { cauldronOfFireLocations, cauldronOfFireItems } from './maps/cauldron-of-fire';
-import { EquipableIds } from './items';
+import { cauldronOfFireLocations, cauldronOfFireItems, cauldronOfFireStoreItems } from './maps/cauldron-of-fire';
 
 export const games: GameListEntry[] = [
   {
@@ -20,5 +19,6 @@ export const games: GameListEntry[] = [
     startLocation: 10,
     locations: cauldronOfFireLocations,
     itemLocations: cauldronOfFireItems,
+    storeItems: cauldronOfFireStoreItems,
   }
 ];

@@ -13,6 +13,7 @@ export interface GameState {
   characters: CharacterListEntry[];
   players: PlayerState[];
   visited: number[];
+  stores: number[];
 
   counters: {
     monsterId: number,
@@ -155,16 +156,14 @@ export interface LocationCoinState {
   coins: number
 }
 
-export interface LocationStoreState {
-  location: number,
-  storeId: number,
+export interface StoreContentsState {
+  items: { itemId: string, count: number };
 }
 
 export interface AllLocationsState {
   monsters: MonsterState[];
   items: ItemLocationState[];
   coins: LocationCoinState[];
-  stores: LocationStoreState[];
 }
 
 export interface LocationState {
@@ -175,4 +174,19 @@ export interface LocationState {
 export interface PlayerInventoryState {
   equipped: PlayerInventoryEquipSlots | null
   equipment: PlayerItem[] | null;
+  coins?: number;
+}
+
+export interface StoreInventoryItem {
+  itemId: string;
+  count: number;
+}
+
+export interface StoreInventoryState {
+  items: StoreInventoryItem[];
+}
+
+export interface StoreTransaction {
+  buyItemTypes: string[],
+  sellItemIds: string[]
 }

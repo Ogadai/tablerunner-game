@@ -1,6 +1,8 @@
 import { ItemDef, PlayerItemType, EquipableItemDef, ConsumableItemDef, ScrollItemDef } from './types';
 import { spells } from './spells';
 
+export const SELL_COST_RATIO = 0.7;
+
 export enum EquipableIds {
   swordRusty = 'swordRusty',
   swordSteel = 'swordSteel',
@@ -48,8 +50,6 @@ export enum EquipableIds {
   beltRoyal = 'beltRoyal',
   ringRuby = 'ringRuby',
   ringSapphire = 'ringSapphire',
-  ringAmethyst = 'ringAmethyst',
-  ringTopaz = 'ringTopaz',
   necklaceRuby = 'necklaceRuby',
   necklaceGold = 'necklaceGold',
 };
