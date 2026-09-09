@@ -198,13 +198,13 @@ export async function buyAndSellInStore(
     for(const itemId of transaction.sellItemIds) {
       const item = removeItemFromPlayer(playerState, playerInventory, itemId);
 
-      playerInventory.coins += (allItems[item.type].value || 0) * SELL_COST_RATIO;
+      playerInventory.coins += Math.ceil((allItems[item.type].value || 0) * SELL_COST_RATIO);
 
       const existingStoreItem = storeState.items.find(i => i.itemId === item.type);
       if (existingStoreItem) {
         existingStoreItem.count++;
       } else {
-        storeState.items.push({ itemId, count: 1 });
+        storeState.items.push({ itemId: item.type, count: 1 });
       }
     }
 

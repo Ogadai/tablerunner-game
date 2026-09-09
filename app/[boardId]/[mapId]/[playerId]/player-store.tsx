@@ -4,10 +4,13 @@ import { useState } from 'react';
 import { Dialog } from 'radix-ui';
 import tabStyles from './tabs.module.css';
 import styles from './player-store.module.css';
-import { getStoreInventoryState } from '@/lib/store/playerInventory';
+import { buyAndSellInStore, getStoreInventoryState } from '@/lib/store/playerInventory';
 import { PlayerInventoryEquipSlots, PlayerState, StoreInventoryState } from '@/lib/store/types';
 import InventoryItem from './inventory-item';
 import { allItems } from '@/lib/games/items';
+import CoinDisplay from './coin-display';
+import { PlayerItem } from '@/lib/games/types';
+import playerStatsSyncService from './player-stats-sync.service';
 
 export default function PlayerStore({
   boardId,
@@ -41,6 +44,26 @@ export default function PlayerStore({
     return player.equipped[slot] === item.id;
   };
 
+  const onBuyItem = async (itemType: string) => {
+    const response = await buyAndSellInStore(boardId, mapId, player.id, player.location.id, {
+      buyItemTypes: [itemType],
+      sellItemIds: [],
+    })
+    if (response.success && response.data) {
+      playerStatsSyncService.updateInventory(response.data);
+    }
+  }
+
+  const onSellItem = async (item: PlayerItem) => {
+    const response = await buyAndSellInStore(boardId, mapId, player.id, player.location.id, {
+      buyItemTypes: [],
+      sellItemIds: [item.id],
+    })
+    if (response.success && response.data) {
+      playerStatsSyncService.updateInventory(response.data);
+    }
+  }
+
   return (
     <Dialog.Root onOpenChange={onOpenChange}>
       <Dialog.Trigger asChild>
@@ -49,7 +72,7 @@ export default function PlayerStore({
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className="DialogContent">
-          <Dialog.Title className="DialogTitle">Store</Dialog.Title>
+          <Dialog.Title className="DialogTitle">Shop</Dialog.Title>
           <div className={tabStyles.tabs} role="tablist" aria-label="Store options">
             {(['buy', 'sell'] as const).map(tab => (
               <button
@@ -64,6 +87,9 @@ export default function PlayerStore({
                 {tab === 'buy' ? 'Buy' : 'Sell'}
               </button>
             ))}
+            <div className={ styles.coinContent }>
+              <CoinDisplay coins={player.coins} />
+            </div>
           </div>
           <div
             className={`${tabStyles.tabContent} ${activeTab === 'buy' ? tabStyles.tabContentFirst : ''}`}
@@ -83,7 +109,7 @@ export default function PlayerStore({
                     isUsed={false}
                     actionPointsLeft={0}
                     baseStats={player.baseStats!}
-                    onBuy={() => {}}
+                    onBuy={() => onBuyItem(storeItem.itemId)}
                     availableCoins={player.coins}
                   />
                 );
@@ -98,7 +124,7 @@ export default function PlayerStore({
                   isUsed={usedItemIds.includes(item.id || '')}
                   actionPointsLeft={0}
                   baseStats={player.baseStats!}
-                  onSell={() => {}}
+                  onSell={() => onSellItem(item)}
                 />
               ))}
             </div>
