@@ -42,6 +42,11 @@ export default function PlayerLocationList({
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
+  const openCharacter = characterOpen
+    ? characterOpen.id === player.id
+      ? player
+      : otherPlayers.find(otherPlayer => otherPlayer.id === characterOpen.id) || characterOpen
+    : null;
   
   const onClickEntity = async (entity: EntityItemDetail) => {
     if (entity.className === EntityItemClass.enemy) {
@@ -109,12 +114,12 @@ export default function PlayerLocationList({
     playerStatsSyncService.updateInventory(response.data);
   }
 
-  const dialogOpen = (monsterOpen !== null) || (characterOpen !== null);
+  const dialogOpen = (monsterOpen !== null) || (openCharacter !== null);
   
   const dialogTitle =  (monsterOpen !== null)
     ? monsters[monsterOpen.type].name
-    : (characterOpen !== null) ? characterOpen.name : '';
-  const dialogSubTitle = (characterOpen !== null) ? `Level ${characterOpen.level}` : null;
+    : (openCharacter !== null) ? openCharacter.name : '';
+  const dialogSubTitle = (openCharacter !== null) ? `Level ${openCharacter.level}` : null;
 
   const onCloseDialog = () => {
     setMonsterOpen(null);
@@ -140,7 +145,7 @@ export default function PlayerLocationList({
             <span>{dialogTitle}</span>
             { dialogSubTitle && <span className="DialogSubTitle">{dialogSubTitle}</span> }
             </Dialog.Title>
-          <div className={`${characterOpen ? styles.dialogContent : ''} DialogContentBody`}>
+          <div className={`${openCharacter ? styles.dialogContent : ''} DialogContentBody`}>
             { monsterOpen &&
               <MonsterCard
                 monster={monsterOpen}
@@ -148,14 +153,14 @@ export default function PlayerLocationList({
                 onAttack={() => onAttackMonster(monsterOpen)}
               ></MonsterCard>
             }
-            { characterOpen &&
+            { openCharacter &&
               <CharacterCard
                 boardId={boardId}
                 mapId={mapId}
-                player={characterOpen}
-                isSelf={characterOpen.id === player.id}
+                player={openCharacter}
+                isSelf={openCharacter.id === player.id}
                 actionPointsLeft={actionPointsLeft}
-                playerStats={characterOpen.id === player.id ? playerStats : null}
+                playerStats={openCharacter.id === player.id ? playerStats : null}
                 onUseItem={onUseItem}
                 usedItemIds={usedItemIds}
                 onLearnScroll={onLearnScroll}
