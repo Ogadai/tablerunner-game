@@ -12,6 +12,17 @@
   }
 }
 
+.itemHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 0 0 8px 0;
+
+  h3 {
+    margin: 0 20px 0 0;
+  }
+}
+
 .itemIcon {
   width: 60px;
   height: 6ch;
@@ -24,13 +35,14 @@
   border: 2px solid var(--color-success);
 }
 
+.cannotBuy {
+  filter: grayscale(1);
+  border: 2px solid var(--bg-card);
+}
+
 .itemPopover {
   width: auto;
   min-width: 150px;
-}
-
-.itemPopover h3 {
-  margin: 0 20px 8px 0;
 }
 
 .itemPopover ul {

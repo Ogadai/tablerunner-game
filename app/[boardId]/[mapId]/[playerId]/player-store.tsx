@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog } from 'radix-ui';
 import tabStyles from './tabs.module.css';
+import styles from './player-store.module.css';
 import { getStoreInventoryState } from '@/lib/store/playerInventory';
 import { PlayerState, StoreInventoryState } from '@/lib/store/types';
+import InventoryItem from './inventory-item';
 
 export default function PlayerStore({
   boardId,
@@ -30,8 +32,6 @@ export default function PlayerStore({
       getStoreState();
     }
   }
-
-
 
   return (
     <Dialog.Root onOpenChange={onOpenChange}>
@@ -62,7 +62,26 @@ export default function PlayerStore({
             id={`${activeTab}-panel`}
             role="tabpanel"
             aria-label={activeTab === 'buy' ? 'Buy' : 'Sell'}
-          />
+          >
+            <div className={styles.storeGrid}>
+              {activeTab === 'buy' && storeInventory.items.map(storeItem => {
+                return (
+                  <InventoryItem
+                    key={storeItem.itemId}
+                    isSelf={false}
+                    isDead={player.health === 0}
+                    item={{ id: storeItem.itemId, type: storeItem.itemId }}
+                    isEquipped={false}
+                    isUsed={false}
+                    actionPointsLeft={0}
+                    baseStats={player.baseStats!}
+                    onBuy={() => {}}
+                    availableCoins={player.coins}
+                  />
+                );
+              })}
+            </div>
+          </div>
           <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">
             close
           </Dialog.Close>

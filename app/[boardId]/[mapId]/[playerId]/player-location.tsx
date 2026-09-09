@@ -239,7 +239,7 @@ export default function PlayerLocation(
       }
       {
         gameState.stores.includes(playerState.location.id) &&
-        <PlayerStore boardId="boardId" mapId="mapId" player={playerState} />
+        <PlayerStore boardId={boardId} mapId={mapId} player={playerState} />
       }
     </div></div>}
   </>);

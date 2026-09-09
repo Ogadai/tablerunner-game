@@ -178,7 +178,7 @@ export async function getStoreInventoryState(boardId: string, mapId: string, loc
 export async function buyAndSellInStore(
   boardId: string, mapId: string, playerId: string,
   locationId: number, transaction: StoreTransaction
-): Promise<ApiResponse<void>> {
+): Promise<ApiResponse<PlayerInventoryState>> {
   try {
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
     const storeState = await getStoreStateFromRedis(boardId, mapId, locationId);
@@ -227,6 +227,7 @@ export async function buyAndSellInStore(
 
     return {
       success: true,
+      data: playerInventory
     };
   } catch (error) {
     return {

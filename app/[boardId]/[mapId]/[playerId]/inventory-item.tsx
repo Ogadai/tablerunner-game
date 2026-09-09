@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Popover } from 'radix-ui';
 import styles from './inventory-item.module.css';
 import { BaseStats, ConsumableItemDef, PlayerItem, PlayerItemType, ScrollItemDef } from '@/lib/games/types';
-import { allItems } from '@/lib/games/items';
+import { allItems, SELL_COST_RATIO } from '@/lib/games/items';
 import { LEARN_SCROLL_ACTION_COST } from '@/lib/store/playerStats';
 import { spells } from '@/lib/games/spells';
+import CoinDisplay from './coin-display';
 
 export default function InventoryItem({
   isSelf,
@@ -20,6 +21,7 @@ export default function InventoryItem({
   onLearnScroll,
   onBuy,
   onSell,
+  availableCoins,
 }: {
   isSelf: boolean,
   isDead: boolean,
@@ -34,6 +36,7 @@ export default function InventoryItem({
   onLearnScroll?: () => void;
   onBuy?: () => void;
   onSell?: () => void;
+  availableCoins?: number;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const itemDef = allItems[item.type];
@@ -62,12 +65,15 @@ export default function InventoryItem({
     && baseStats.magic >= spells[(itemDef as ScrollItemDef).spellId].intelligence
     && actionPointsLeft >= LEARN_SCROLL_ACTION_COST;
 
+  const cannotBuy = !!onBuy && ((availableCoins || 0) < (allItems[item.type].value || 0));
+  const coins = onSell ? (itemDef.value || 0) * SELL_COST_RATIO : itemDef.value || 0;
+
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
         <button
           type="button"
-          className={`${styles.inventoryItem} ${isEquipped ? styles.equippedItem : ''}`}
+          className={`${styles.inventoryItem} ${isEquipped ? styles.equippedItem : ''} ${cannotBuy ? styles.cannotBuy : ''}`}
           aria-label={itemDef.name}
           title={itemDef.name}
         >
@@ -81,7 +87,10 @@ export default function InventoryItem({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={`PopoverContent ${styles.itemPopover}`}>
-          <h3>{itemDef.name}</h3>
+          <div className={styles.itemHeader}>
+            <h3>{itemDef.name}</h3>
+            <CoinDisplay coins={coins} />
+          </div>
           {bonuses.length > 0 ? (
             <ul>
               {bonuses.map(([stat, value]) => (
@@ -125,7 +134,7 @@ export default function InventoryItem({
                 onClick={onClickDrop}
               >Drop</button>
             )}
-            {!!onBuy &&
+            {!!onBuy && !cannotBuy &&
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
