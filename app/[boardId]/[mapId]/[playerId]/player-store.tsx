@@ -1,14 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog } from 'radix-ui';
 import tabStyles from './tabs.module.css';
+import { getStoreInventoryState } from '@/lib/store/playerInventory';
+import { PlayerState, StoreInventoryState } from '@/lib/store/types';
 
-export default function PlayerStore() {
+export default function PlayerStore({
+  boardId,
+  mapId,
+  player,
+}: {
+  boardId: string;
+  mapId: string;
+  player: PlayerState;
+}) {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
+  const [storeInventory, setStoreInventory] = useState<StoreInventoryState>({ items: [] });
+  
+  const getStoreState = async () => {
+    const result = await getStoreInventoryState(boardId, mapId, player.location.id);
+    if (result.success && result.data) {
+      setStoreInventory(result.data);
+    }
+  }
+
+  const onOpenChange = (open: boolean) => {
+    if (open) {
+      getStoreState();
+    }
+  }
+
+
 
   return (
-    <Dialog.Root>
+    <Dialog.Root onOpenChange={onOpenChange}>
       <Dialog.Trigger asChild>
         <button type="button">Shop</button>
       </Dialog.Trigger>
