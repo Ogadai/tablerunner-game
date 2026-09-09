@@ -248,6 +248,11 @@ function removeItemFromPlayer(playerState: PlayerState, playerInventory: PlayerI
 
   // update inventory without it
   playerInventory.equipment = sourceList.filter(i => i.id !== itemId || (itemId && i.id !== itemId));
+  if (!playerInventory.equipped) {
+    playerInventory.equipped = {
+      ...playerState.equipped,
+    };
+  }
 
   // Un-equip it
   for (const key of Object.keys(playerInventory.equipped!) as (keyof PlayerInventoryEquipSlots)[]) {
@@ -273,4 +278,10 @@ function addItemToPlayer(playerState: PlayerState, playerInventory: PlayerInvent
     ...sourceList,
     item,
   ];
+
+  if (!playerInventory.equipped) {
+    playerInventory.equipped = {
+      ...playerState.equipped,
+    };
+  }
 }

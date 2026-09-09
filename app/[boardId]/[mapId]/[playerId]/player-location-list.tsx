@@ -6,14 +6,13 @@ import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll,
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
-import { PlayerActionsPerTurn } from "@/lib/store/playerStats";
 import { allItems } from "@/lib/games/items";
 import { PlayerItem } from "@/lib/games/types";
 import LocationItemList from "./location-item-list";
 import { takeItemAtLocation } from "@/lib/store/playerInventory";
 import { getSwalDefaultOptions } from "@/app/swal";
 import styles from './player-location-list.module.css';
-import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-stats-sync.service";
+import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
 
 export interface PlayerLocationListProps {
   boardId: string;

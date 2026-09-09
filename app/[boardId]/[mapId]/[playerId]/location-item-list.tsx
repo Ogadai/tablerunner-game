@@ -1,5 +1,5 @@
 import { allItems } from '@/lib/games/items';
-import styles from './inventory.module.css';
+import styles from './inventory-item.module.css';
 import { PlayerItem } from '@/lib/games/types';
 
 export default function LocationItemList({ items, onTakeItem }: {
