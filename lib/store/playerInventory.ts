@@ -1,7 +1,7 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { getGameStateFromRedis, getPlayerInventoryFromRedis, getStoreStateFromRedis, setLocationsStateInRedis, setPlayerInventoryInRedis, setStoreStateInRedis } from './redis-access';
+import { getGameStateFromRedis, getPlayerInventoryFromRedis, getStoreStateFromRedis, setGameStateInRedis, setLocationsStateInRedis, setPlayerInventoryInRedis, setStoreStateInRedis } from './redis-access';
 import { NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState, StoreInventoryState, StoreTransaction } from './types';
 import { getLocationsStateFromRedis } from './redis-access';
 import { GameTopicMessageType, LocationUpdatedMessage } from "../message-types";
@@ -209,6 +209,7 @@ export async function buyAndSellInStore(
     }
 
     // Buy next
+    let createdItem = false;
     for(const itemType of transaction.buyItemTypes) {
       const existingStoreItem = storeState.items.find(i => i.itemId === itemType);
       if (existingStoreItem && existingStoreItem.count > 0) {
@@ -217,6 +218,7 @@ export async function buyAndSellInStore(
 
       // Create the item
       const item = createItemForInventory(gameState, allItems[itemType]);
+      createdItem = true;
       addItemToPlayer(playerState, playerInventory, item);
 
       playerInventory.coins -= (allItems[item.type].value || 0);
@@ -224,6 +226,7 @@ export async function buyAndSellInStore(
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
     await setStoreStateInRedis(boardId, mapId, locationId, storeState);
+    await setGameStateInRedis(boardId, mapId, gameState);
 
     return {
       success: true,
