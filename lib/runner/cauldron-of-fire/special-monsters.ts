@@ -13,24 +13,43 @@ export const keyProcess: ProcessRunner = {
     });
 
     // Move protection for the Lich King back entrances
+    const minotaurLocations = [212, 213, 228];
     params.monsters.push(
       {
         id: "lich-guard-1",
         type: "minotaur",
-        location: 228,
+        location: minotaurLocations[Math.floor(Math.random() * minotaurLocations.length)],
         health: 30,
       },
       {
         id: "lich-guard-2",
-        type: "ogre",
-        location: 181,
-        health: 22,
+        type: "minotaur",
+        location: minotaurLocations[Math.floor(Math.random() * minotaurLocations.length)],
+        health: 30,
       },
       {
         id: "lich-guard-3",
         type: "ogre",
         location: 181,
         health: 22,
+      },
+      {
+        id: "lich-guard-4",
+        type: "ogre",
+        location: 181,
+        health: 22,
+      },
+      {
+        id: "lich-guard-5",
+        type: "skeleton",
+        location: 224,
+        health: 16,
+      },
+      {
+        id: "lich-guard-6",
+        type: "skeleton",
+        location: 224,
+        health: 16,
       },
     );
 
