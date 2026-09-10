@@ -50,7 +50,8 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     counters: {
       itemId: 0,
       monsterId: 0,
-    }
+    },
+    leds: [],
   };
 
   const monsters = await populateMonsters(newGameState, mapId);

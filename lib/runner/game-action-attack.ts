@@ -1,15 +1,18 @@
 import {
   PlayerState,
   MonsterState,
+  PlayerActionAttack,
+  INamedTarget,
 } from "../store/types";
 import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getMonsterStats } from './monster-stats';
-import { lootItems } from "../games/items";
+import { ConsumableIds, ItemIds, lootItems } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
 
 const MAXIMUM_COIN_DROP = 100;
+const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
 
 export function processAttackForDamage(attackerStats: { attack: number, damage: number }, defenderStats: { defence: number }): number {
   const attackScore = Math.random() * attackerStats.attack;
@@ -20,6 +23,50 @@ export function processAttackForDamage(attackerStats: { attack: number, damage: 
   }
 
   return 0;
+}
+
+export function actionAttack(params: BaseParams, player: PlayerState, action: PlayerActionAttack): void {
+  const monster = params.monsters.find(m => m.id === action.target)!;
+  genericAttackMonster(params, player, player.baseStats!, monster);
+}
+
+export function monsterAttack(
+  params: BaseParams,
+  monster: MonsterState,
+  target: INamedTarget,
+  locationId: number): void {
+  try {
+    const monsterDef = monsters[monster.type];
+    const monsterStats = getMonsterStats(monster);
+
+    const damage = processAttackForDamage(monsterStats, target.baseStats!);
+
+    if (damage > 0) {
+      target.health -= damage;
+      if (target.health <= 0) {
+        target.health = 0;
+      }
+
+      playerMessageAtLocation(params, target.id, `**${monsterDef.name}** hit **{player}** for **${damage}** damage`);
+      if (target.health <= 0) {
+        playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
+
+        // auto drop special items if they have them
+        const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));
+        target.equipment = target.equipment.filter(i => !AUTO_DROP_ITEMS.includes(i.type as ItemIds));
+
+        params.items.push(...drops.map(i => ({
+          ...i,
+          location: locationId
+        })));
+      }
+    } else {
+      playerMessageAtLocation(params, target.id, `**${monsterDef.name}** missed **{player}**`);
+    }
+  } catch(error) {
+    console.error(`Error: monsterAttack for ${monster.id} against ${target.id}`);
+    throw error;
+  }
 }
 
 export function genericAttackMonster(params: BaseParams, player: PlayerState, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): void {

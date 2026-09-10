@@ -1,6 +1,7 @@
 import { ConsumableIds, keyItems } from "../games/items";
 import { PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
+import { updateLockLeds } from "./game-action-move";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
 
 export const specialItemActions: Record<string, (params: BaseParams, player: PlayerState) => boolean> = {
@@ -58,6 +59,7 @@ function useKey(params: BaseParams, player: PlayerState, keyItemType: string): b
 
       playerMessageAtLocation(params, player.id, `**{player}** used the ${itemDef.name} to **${lcFirst(itemDef.bonusStats?.special)}**!`);
 
+      updateLockLeds(params.gameState, [move.id], false);
       return true;
     }
   }

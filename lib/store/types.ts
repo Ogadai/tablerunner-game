@@ -19,6 +19,7 @@ export interface GameState {
     monsterId: number,
     itemId: number,
   }
+  leds: LedState[];
 }
 
 export const NOTHING_EQUPPED = '<none>';
@@ -203,4 +204,10 @@ export interface StoreInventoryState {
 export interface StoreTransaction {
   buyItemTypes: string[],
   sellItemIds: string[]
+}
+
+export interface LedState {
+  location: number,
+  rgb: string;
+  owner: string;
 }

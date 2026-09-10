@@ -2,12 +2,10 @@ import {
   PlayerActionMove,
   PlayerState,
   PlayerActionAttack,
-  MonsterState,
   PlayerActionType,
   PlayerAction,
   PlayerActionsState,
   PlayerActionUseItem,
-  CharacterEffect,
   PlayerActionCast,
   PlayerActionReadScroll,
   INamedTarget,
@@ -15,18 +13,16 @@ import {
 import {
   getActionsStateFromRedis,
 } from '../store/redis-access';
-import { games } from "../games/games";
-import { ConsumableItemDef, EquipableItemDef, OPPOSITE_DIRECTION, PlayerItem } from '@/lib/games/types';
+import { EquipableItemDef, PlayerItem } from '@/lib/games/types';
 import { monsters } from "../games/monsters";
 import { BaseParams } from './base-params';
-import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
-import { allItems, ConsumableIds, consumableItems, ItemIds } from "../games/items";
+import { allItems } from "../games/items";
 import { getMonsterStats } from './monster-stats';
-import { specialItemActions } from './special-item-actions';
-import { processAttackForDamage, genericAttackMonster } from './game-action-attack';
+import { actionAttack, monsterAttack } from './game-action-attack';
 import { actionCastSpell, actionReadScroll } from './game-action-spell';
-import { getPlayerLocation } from "./game-location";
+import { actionMove } from "./game-action-move";
+import { actionUseItem } from './game-action-use';
 
 enum EntityActionEntityTypes {
   player,
@@ -47,7 +43,6 @@ interface EntityActionsForLocation {
 }
 
 const MAGIC_BONUS_RATIO = 0.1;
-const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
 
 export async function runGameActions(params: BaseParams): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
@@ -221,40 +216,6 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
   }
 }
 
-function actionMove(params: BaseParams, player: PlayerState, action: PlayerActionMove): void {
-  try {
-    const gameDef = games.find(g => g.id === params.gameState.gameId)!;
-
-    const currentLocation = gameDef.locations.find(l => l.id === player.location.id)!;
-    const locationMove = currentLocation.move.find(m => m.direction === action.direction);
-
-    const locationBlock = params.blockedMoves.find(b => b.location === player.location.id);
-    if (locationBlock && locationBlock.direction === action.direction) {
-      // Cannot make this move
-      return;
-    }
-
-    if (locationMove) {
-      const newLocation = gameDef.locations.find(l => l.id === locationMove.id)!;
-      player.location = getPlayerLocation(params, newLocation)
-
-      player.retreatDirection = OPPOSITE_DIRECTION[action.direction];
-      params.gameState.visited = [
-        ...params.gameState.visited.filter(v => v !== locationMove.id),
-        locationMove.id
-      ]
-    }
-  } catch(error) {
-    console.error(`Error: actionMove for ${player.id}`, action);
-    throw error;
-  }
-}
-
-function actionAttack(params: BaseParams, player: PlayerState, action: PlayerActionAttack): void {
-  const monster = params.monsters.find(m => m.id === action.target)!;
-  genericAttackMonster(params, player, player.baseStats!, monster);
-}
-
 function monsterPickTarget(targets: INamedTarget[]): INamedTarget {
   const targetWeights = targets.map(target => {
     const weaponId = target.equipped.weapon;
@@ -276,96 +237,6 @@ function monsterPickTarget(targets: INamedTarget[]): INamedTarget {
   }
 
   return targets[targets.length - 1];
-}
-
-function monsterAttack(
-  params: BaseParams,
-  monster: MonsterState,
-  target: INamedTarget,
-  locationId: number): void {
-  try {
-    const monsterDef = monsters[monster.type];
-    const monsterStats = getMonsterStats(monster);
-
-    const damage = processAttackForDamage(monsterStats, target.baseStats!);
-
-    if (damage > 0) {
-      target.health -= damage;
-      if (target.health <= 0) {
-        target.health = 0;
-      }
-
-      playerMessageAtLocation(params, target.id, `**${monsterDef.name}** hit **{player}** for **${damage}** damage`);
-      if (target.health <= 0) {
-        playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
-
-        // auto drop special items if they have them
-        const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));
-        target.equipment = target.equipment.filter(i => !AUTO_DROP_ITEMS.includes(i.type as ItemIds));
-
-        params.items.push(...drops.map(i => ({
-          ...i,
-          location: locationId
-        })));
-      }
-    } else {
-      playerMessageAtLocation(params, target.id, `**${monsterDef.name}** missed **{player}**`);
-    }
-  } catch(error) {
-    console.error(`Error: monsterAttack for ${monster.id} against ${target.id}`);
-    throw error;
-  }
-}
-
-function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerActionUseItem): void {
-  const item = player.equipment.find(item => item.id === action.itemId);
-  const usableItem = item && allItems[item.type] as ConsumableItemDef;
-
-  if (usableItem) {
-    const benefitDescriptions: string[] = [];
-    // Apply benefit
-    if (usableItem.bonusStats?.health) {
-      const addedHealth = Math.min(usableItem.bonusStats?.health,
-        player.baseStats!.health - player.health);
-      player.health += addedHealth;
-
-      benefitDescriptions.push(`**${addedHealth}** health`);
-    }
-    if (usableItem.bonusStats?.magic) {
-      const addedmagic = Math.min(usableItem.bonusStats?.magic,
-        player.baseStats!.magic - player.magic);
-      player.magic += addedmagic;
-
-      benefitDescriptions.push(`**${addedmagic}** magic`);
-    }
-
-    if (benefitDescriptions.length > 0) {
-      soloMessageAtLocation(params, player.id,
-        `**You** drank **${usableItem.name}** for ${benefitDescriptions.join(' and ')}!`);
-    }
-    
-    let shouldRemoveItem = true;
-    if (specialItemActions[usableItem.id]) {
-      shouldRemoveItem = specialItemActions[usableItem.id](params, player);
-    } else if (usableItem.bonusStats && usableItem.turns != undefined && usableItem.turns > 0) {
-      const { health, magic, special, ...effectBonuses } = usableItem.bonusStats;
-      const newEffect: CharacterEffect = {
-        description: usableItem.name,
-        turns: usableItem.turns + 1,
-        ...effectBonuses
-      };
-
-      if (!player.effects) {
-        player.effects = [];
-      }
-      player.effects.push(newEffect);
-    }
-
-    // Remove from equipment
-    if (shouldRemoveItem) {
-      player.equipment = player.equipment.filter(item => item.id !== action.itemId)
-    }
-  }
 }
 
 const getNamedTargetById = (params: BaseParams, id: string): INamedTarget =>

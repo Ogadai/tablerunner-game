@@ -33,16 +33,23 @@ class GameStateLightingService {
   }
 
   private async applyLighting(gameState: GameState | undefined) {
-    await this.locationsVisitedLighting(gameState);
+    await this.locationsLighting(gameState);
     await this.playerLocationsAnimation(gameState);
   }
 
-  private async locationsVisitedLighting(gameState: GameState | undefined) {
+  private async locationsLighting(gameState: GameState | undefined) {
     const litLocations: number[] = [];
 
     if (gameState) {
       await bluetoothService.setColourForLeds(gameState.visited, '404040');
       litLocations.push(...gameState.visited);
+
+      if (gameState.leds.length > 0) {
+        await bluetoothService.setColourPerLed(
+          gameState.leds.map(l => ({ led: l.location, rgb: l.rgb }))
+        )
+        litLocations.push(...gameState.leds.map(l => l.location));
+      }
     }
 
     const unlitLocations: number[] = [];

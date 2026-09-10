@@ -121,6 +121,11 @@ export class BluetoothService {
     await this.sendMessage(`LED|${remainLeds}:${rgb}`);
   }
 
+  async setColourPerLed(ledColours: { led: number, rgb: string }[]) {
+    const message = `LED|${ledColours.map(lc => `${lc.led}:${lc.rgb}`).join(',')}`;
+    this.sendLEDColoursMessage(message);
+  }
+
   async sendLEDColoursMessage(ledsMessage: string) {
     let remainMessage = ledsMessage;
     while (remainMessage.length > maxCommandLength) {
