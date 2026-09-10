@@ -8,6 +8,8 @@ import { games } from "@/lib/games/games";
 
 const ZOMBIE_REPRODUCE_CHANCE = 0.3;
 const ZOMBIE_TRAVEL_CHANCE = 0.25;
+const ZOMBIE_LED_OWNER = 'zombies';
+const ZOMBIE_LED_RGB = '9ACD32';
 
 export const zombies: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
@@ -35,7 +37,7 @@ export const zombies: ProcessRunner = {
       }
     }
 
-    const originalLocationCount = countZombieLocations(params);
+    const beforeLocations = getZombieLocations(params);
     const zombieMonsters = params.monsters.filter(m => m.zombie);
     for(const zombie of zombieMonsters) {
       // Get any non-zombies at the same location and make them zombies
@@ -60,8 +62,18 @@ export const zombies: ProcessRunner = {
       }
     }
 
-    const newLocationCount = countZombieLocations(params);
-    if (newLocationCount > originalLocationCount) {
+    const afterLocations = getZombieLocations(params);
+
+    params.gameState.leds = [
+      ...params.gameState.leds.filter(l => l.owner !== ZOMBIE_LED_OWNER),
+      ...Array.from(afterLocations).map(l => ({
+        location: l,
+        rgb: ZOMBIE_LED_RGB,
+        owner: ZOMBIE_LED_OWNER,
+      }))
+    ]
+
+    if (afterLocations.size > beforeLocations.size) {
       broadcastMessage(params, 'A zombie infection is spreading');
     }
   },
@@ -78,13 +90,11 @@ function getPossibleMoveLocations(params: BaseParams, fromLocation: number): num
   return moveLocations;
 }
 
-function countZombieLocations(params: BaseParams): number {
-  const locationSet = params.monsters
+function getZombieLocations(params: BaseParams): Set<number> {
+  return params.monsters
     .filter(m => m.zombie && m.health > 0)
     .reduce((locationSet, zombie) => {
       locationSet.add(zombie.location);
       return locationSet;
     }, new Set<number>());
-
-  return locationSet.size;
 }
