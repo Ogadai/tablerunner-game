@@ -146,7 +146,7 @@ export default function PlayerLocation(
     {
       id: playerState.id,
       name: playerState.name,
-      icon: characters[playerState.id].icon,
+      iconXY: characters[playerState.id].iconXY,
       className: EntityItemClass.self,
       health: playerState.health,
       maxHealth: playerState.baseStats?.health || playerState.health,
@@ -155,7 +155,7 @@ export default function PlayerLocation(
     ...otherPlayers.map(otherPlayer => ({
       id: otherPlayer.id,
       name: otherPlayer.name,
-      icon: characters[otherPlayer.id].icon,
+      iconXY: characters[otherPlayer.id].iconXY,
       className: EntityItemClass.friendly,
       health: otherPlayer.health,
       maxHealth: otherPlayer.baseStats?.health || otherPlayer.health
@@ -163,7 +163,7 @@ export default function PlayerLocation(
     ...locationState.monsters.map(monster => ({
       id: monster.id,
       name: monsters[monster.type].name,
-      icon: monsters[monster.type].icon,
+      iconXY: monsters[monster.type].iconXY,
       className: EntityItemClass.enemy,
       health: monster.health,
       maxHealth: monsters[monster.type].baseStats.health

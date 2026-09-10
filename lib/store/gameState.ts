@@ -127,9 +127,11 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
 
     const equipment = characterDef.equipment.map(e => createItemForInventory(gameState, e));
 
+    const name = pickCharacterName(characterDef.id);
     const newPlayer: PlayerState = {
       id: playerId,
-      name: pickCharacterName(characterDef.id),
+      name,
+      originalName: name,
       rgbColour: characterDef.rgbColour,
       location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
       characterStats: { ...characterDef.characterStats },

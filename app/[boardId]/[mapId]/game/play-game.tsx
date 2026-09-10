@@ -59,13 +59,10 @@ export default function PlayGame(
         <div className={`${cardClass} card`}>
           <form action={formAction}>
             <h4>{player ? player.name : character.prompt}</h4>
-            <Image
-              className={styles.playerHero}
-              src={character.image}
-              width={256}
-              height={384}
-              loading="eager"
-              alt={character.prompt}
+            <span className={styles.playerIcon}
+              style={{
+                backgroundPosition: `-${character.iconXY.x * 100}px -${character.iconXY.y * 160}px`,
+              }}
             />
 
             <p className={ styles.characterDesc }>{character.description}</p>

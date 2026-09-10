@@ -32,10 +32,14 @@ function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZom
 
     if (zombies) {
       playerMessageAtLocation(params, deadPlayer.id, `The body of **{player}** has been **reanimated**!`);
-      deadPlayer.name = `Zombie ${deadPlayer.name.split(' ')[0]}`;
-      deadPlayer.zombie = true;
+      makePlayerZombie(deadPlayer);
     } else {
       playerMessageAtLocation(params, deadPlayer.id, `**{player}** has been **resurrected**!`);
     }
   }
+}
+
+export function makePlayerZombie(player: PlayerState) {
+  player.name = `Zombie ${player.name.split(' ')[0]}`;
+  player.zombie = true;
 }

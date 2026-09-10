@@ -14,19 +14,33 @@
   }
 }
 
+.entityIcon {
+  display: inline-block;
+  width: 50px;
+  height: 80px;
+  background-image: url('/character-sheet.png');
+  background-repeat: no-repeat;
+  background-size: 500px 400px;
+}
+
+.levelUp {
+  position: relative;
+}
 .levelUp::after {
   z-index: 10;
   content: 'Level up';
   position: absolute;
-  top: 0;
-  margin-top: 50%;
-  left: 50%;
-  margin-left: -50%;
   white-space: nowrap;
+  top: 65px;
+  margin-top: -50%;
+  left: 23px;
+  margin-left: -50%;
   transform: rotate(45deg);
   color: var(--gold-bright);
   font-weight: bold;
-  text-shadow: 2px 2px 2px var(--bg-main);
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 2px 4px;
+  border-radius: 6px;
 }
 
 .self {

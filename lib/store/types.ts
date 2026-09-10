@@ -62,6 +62,7 @@ export interface INamedTarget {
 
 export interface PlayerState extends INamedTarget {
   name: string;
+  originalName: string;
   location: PlayerStateLocation;
   retreatDirection?: string;
   rgbColour: string;

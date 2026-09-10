@@ -22,8 +22,7 @@ export interface CharacterListEntry {
   id: string;
   prompt: string;
   description: string;
-  image: string;
-  icon: string;
+  iconXY: { x: number, y: number };
   rgbColour: string;
   characterStats: CharacterStats;
   equipment: ItemDef[];
@@ -75,8 +74,7 @@ export interface BaseStats {
 export interface MonsterListEntry {
   id: string;
   name: string;
-  image: string;
-  icon: string;
+  iconXY: { x: number, y: number };
   baseStats: BaseStats;
 }
 

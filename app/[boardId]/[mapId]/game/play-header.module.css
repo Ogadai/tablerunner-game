@@ -44,8 +44,12 @@ button.playerButton {
 }
 
 .playerIcon {
-  width: auto;
-  height: 32px;
+  display: inline-block;
+  width: 25px;
+  height: 40px;
+  background-image: url('/character-sheet.png');
+  background-repeat: no-repeat;
+  background-size: 250px 200px;
 }
 
 .currentPlayerItem {

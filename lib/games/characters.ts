@@ -7,8 +7,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     id: 'barbarian',
     prompt: 'The Barbarian',
     description: 'A warrior who excels at hand-to-hand combat',
-    image: '/barbarian.png',
-    icon: '/barbarian-small.png',
+    iconXY: { x: 0, y: 0 },
     rgbColour: '403018',
     characterStats: {
       strength: 10,
@@ -29,8 +28,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     id: 'witch',
     prompt: 'The Witch',
     description: 'A powerful user of the dark magical arts',
-    image: '/witch.png',
-    icon: '/witch-small.png',
+    iconXY: { x: 1, y: 0 },
     rgbColour: '411E47',
     characterStats: {
       strength: 3,
@@ -55,8 +53,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     id: 'ranger',
     prompt: 'The Ranger',
     description: 'A skilled fighter specialising in ranged combat',
-    image: '/ranger.png',
-    icon: '/ranger-small.png',
+    iconXY: { x: 2, y: 0 },
     rgbColour: '303E15',
     characterStats: {
       strength: 6,
@@ -77,8 +74,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
     id: 'mage',
     prompt: 'The Mage',
     description: 'A learned magician of great skill',
-    image: '/mage.png',
-    icon: '/mage-small.png',
+    iconXY: { x: 3, y: 0 },
     rgbColour: '222F5B',
     characterStats: {
       strength: 4,

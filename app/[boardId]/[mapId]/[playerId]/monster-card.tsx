@@ -18,13 +18,10 @@ export default function MonsterCard({
   const monsterStats = getMonsterStats(monster);
 
   return <>
-    <Image
-      className={styles.monsterImage}
-      src={monsters[monster.type].image}
-      width={256}
-      height={384}
-      loading="eager"
-      alt={monsters[monster.type].name}
+    <span className={styles.monsterIcon}
+      style={{
+        backgroundPosition: `-${monsters[monster.type].iconXY.x * 100}px -${monsters[monster.type].iconXY.y * 160}px`,
+      }}
     />
     <div className={`card ${styles.statsCard}`}>
       <EntityBaseStats current={{health: monster.health}} baseStats={monsterStats} />

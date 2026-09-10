@@ -2,10 +2,15 @@
   margin-bottom: 10px;
 }
 
-.monsterImage {
+.monsterIcon {
+  display: inline-block;
+  width: 100px;
+  height: 160px;
+  background-image: url('/character-sheet.png');
+  background-repeat: no-repeat;
+  background-size: 1000px 800px;
+
   position: relative;
-  width: 128px;
-  height: 192px;
   left: 50%;
   margin-left: -64px;
 }

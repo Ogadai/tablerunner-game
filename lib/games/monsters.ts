@@ -33,8 +33,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'rat': {
     id: 'rat',
     name: 'Rat',
-    image: '/rat.png',
-    icon: '/rat-small.png',
+    iconXY: { x: 4, y: 2 },
     baseStats: {
       attack: 4,
       damage: 2,
@@ -47,8 +46,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'spider': {
     id: 'spider',
     name: 'Spider',
-    image: '/spider.png',
-    icon: '/spider-small.png',
+    iconXY: { x: 8, y: 2 },
     baseStats: {
       attack: 5,
       damage: 3,
@@ -61,8 +59,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'snake': {
     id: 'snake',
     name: 'Snake',
-    image: '/snake.png',
-    icon: '/snake-small.png',
+    iconXY: { x: 7, y: 2 },
     baseStats: {
       attack: 6,
       damage: 4,
@@ -75,8 +72,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'goblin': {
     id: 'goblin',
     name: 'Goblin',
-    image: '/goblin.png',
-    icon: '/goblin-small.png',
+    iconXY: { x: 6, y: 0 },
     baseStats: {
       attack: 7,
       damage: 6,
@@ -89,8 +85,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'wyvern': {
     id: 'wyvern',
     name: 'Wyvern',
-    image: '/wyvern.png',
-    icon: '/wyvern-small.png',
+    iconXY: { x: 8, y: 1 },
     baseStats: {
       attack: 8,
       damage: 7,
@@ -103,8 +98,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'orc': {
     id: 'orc',
     name: 'Orc',
-    image: '/orc.png',
-    icon: '/orc-small.png',
+    iconXY: { x: 9, y: 0 },
     baseStats: {
       attack: 9,
       damage: 7,
@@ -117,8 +111,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'scorpion': {
     id: 'scorpion',
     name: 'Scorpion',
-    image: '/scorpion.png',
-    icon: '/scorpion-small.png',
+    iconXY: { x: 5, y: 2 },
     baseStats: {
       attack: 9,
       damage: 10,
@@ -131,8 +124,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'wildcat': {
     id: 'wildcat',
     name: 'Wildcat',
-    image: '/wildcat.png',
-    icon: '/wildcat-small.png',
+    iconXY: { x: 9, y: 2 },
     baseStats: {
       attack: 11,
       damage: 9,
@@ -145,8 +137,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'zombie': {
     id: 'zombie',
     name: 'Zombie',
-    image: '/zombie.png',
-    icon: '/zombie-small.png',
+    iconXY: { x: 9, y: 1 },
     baseStats: {
       attack: 12,
       damage: 8,
@@ -159,8 +150,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'bandit': {
     id: 'bandit',
     name: 'Bandit',
-    image: '/bandit.png',
-    icon: '/bandit-small.png',
+    iconXY: { x: 7, y: 0 },
     baseStats: {
       attack: 10,
       damage: 11,
@@ -173,8 +163,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'skeleton': {
     id: 'skeleton',
     name: 'Skeleton',
-    image: '/skeleton.png',
-    icon: '/skeleton-small.png',
+    iconXY: { x: 6, y: 2 },
     baseStats: {
       attack: 12,
       damage: 8,
@@ -187,8 +176,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'ogre': {
     id: 'ogre',
     name: 'Ogre',
-    image: '/ogre.png',
-    icon: '/ogre-small.png',
+    iconXY: { x: 7, y: 1 },
     baseStats: {
       attack: 12,
       damage: 10,
@@ -201,8 +189,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'cyclops': {
     id: 'cyclops',
     name: 'Cyclops',
-    image: '/cyclops.png',
-    icon: '/cyclops-small.png',
+    iconXY: { x: 8, y: 0 },
     baseStats: {
       attack: 14,
       damage: 15,
@@ -215,8 +202,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'minotaur': {
     id: 'minotaur',
     name: 'Minotaur',
-    image: '/minotaur.png',
-    icon: '/minotaur-small.png',
+    iconXY: { x: 5, y: 1 },
     baseStats: {
       attack: 17,
       damage: 15,
@@ -229,8 +215,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'lich': {
     id: 'lich',
     name: 'Lich',
-    image: '/lich.png',
-    icon: '/lich-small.png',
+    iconXY: { x: 4, y: 1 },
     baseStats: {
       attack: 17,
       damage: 20,
@@ -243,8 +228,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'dragonbaby': {
     id: 'dragonbaby',
     name: 'Juvenile Dragon',
-    image: '/dragonbaby.png',
-    icon: '/dragonbaby-small.png',
+    iconXY: { x: 5, y: 0 },
     baseStats: {
       attack: 12,
       damage: 15,
@@ -257,8 +241,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'dragon': {
     id: 'dragon',
     name: 'Dragon',
-    image: '/dragon.png',
-    icon: '/dragon-small.png',
+    iconXY: { x: 4, y: 0 },
     baseStats: {
       attack: 40,
       damage: 32,

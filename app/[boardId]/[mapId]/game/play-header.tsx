@@ -59,8 +59,12 @@ export default function PlayHeader(
     </div>;
   }
 
-  const getPlayerIcon = (characterId: string) =>
-    gameState.characters.find(c => c.id === characterId)?.icon || '';
+  const getPlayerIconStyle = (characterId: string) => {
+    const character = gameState.characters.find(c => c.id === characterId)!;
+    return {
+      backgroundPosition: `-${character.iconXY.x * 25}px -${character.iconXY.y * 40}px`,
+    }
+  }
 
   const getPlayerClassName = (player: PlayerState) => {
     let className = styles.playerButton;
@@ -104,13 +108,8 @@ export default function PlayHeader(
               <button type="button" className={getPlayerClassName(player)}
                 onClick={bindPlayAsCharacterAction(player)}
               >
-                <Image
-                  className={`${styles.playerIcon}`}
-                  src={getPlayerIcon(player.id)}
-                  width={53}
-                  height={80}
-                  loading="eager"
-                  alt={player.name}
+                <span className={styles.playerIcon}
+                  style={getPlayerIconStyle(player.id)}
                 />
 
                 { isPlayerReady(player) &&

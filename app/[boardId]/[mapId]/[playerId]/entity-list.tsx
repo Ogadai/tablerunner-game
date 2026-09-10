@@ -10,7 +10,7 @@ export enum EntityItemClass {
 export interface EntityItemDetail {
   id: string;
   name: string;
-  icon: string;
+  iconXY: { x: number, y: number },
   className: EntityItemClass;
   health: number;
   maxHealth: number;
@@ -43,12 +43,10 @@ export default function EntityList({
           className={`${styles.entity} ${styles[entity.className]} ${entity.levelUp && styles.levelUp}`}
           onClick={() => onClickEntity?.(entity)}
         >
-          <Image
-            src={entity.icon}
-            width={53}
-            height={80}
-            loading="eager"
-            alt={entity.name}
+          <span className={styles.entityIcon}
+            style={{
+              backgroundPosition: `-${entity.iconXY.x * 50}px -${entity.iconXY.y * 80}px`,
+            }}
           />
 
           { entity.health > 0 && entity.health < entity.maxHealth &&
