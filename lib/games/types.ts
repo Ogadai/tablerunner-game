@@ -50,6 +50,7 @@ export interface Location {
   id: number;
   description: string;
   move: LocationMove[];
+  underground?: boolean;
 }
 
 export interface CharacterStats {

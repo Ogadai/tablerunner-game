@@ -10,7 +10,7 @@ import { useSearchParams } from 'next/navigation';
 import { cinzel } from '@/app/fonts';
 import Image from 'next/image';
 
-import { cauldronOfFireLocations as mapData } from '@/lib/games/maps/cauldron-of-fire';
+import { cauldronOfFireLocations } from '@/lib/games/maps/cauldron-of-fire';
 import { monsters } from '@/lib/games/monsters';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
@@ -19,6 +19,10 @@ import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[
 import { MonsterState } from '@/lib/store/types';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
+
+const mapsForGames: { [id: string]: Location[] } = {
+  'cauldron': cauldronOfFireLocations
+};
 
 export const getCellCoordinates = (cell: number) => {
   const index = GRID_CELLS.indexOf(cell);
@@ -142,6 +146,9 @@ export const removeBidirectionalMove = (mapState: Location[], startCell: number,
 
 export default function MapEdit() {
   const searchParams = useSearchParams();
+  const gameId = searchParams.get('game') || 'cauldron';
+  const mapData = mapsForGames[gameId] || mapsForGames['cauldron'];
+
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
   const [monsterList, setMonsterList] = useState<MonsterState[]>([]);
@@ -278,7 +285,7 @@ export default function MapEdit() {
       <div key={cell}
         onMouseDown={() => handleCellMouseDown(cell)}
         onMouseUp={() => handleCellMouseUp(cell)}
-        className={styles.cell} title={description}
+        className={`${styles.cell} ${location?.underground ? styles.cellUnderground : ''}`} title={description}
       >
         {moves.map(move => (
           <div
@@ -340,7 +347,7 @@ export default function MapEdit() {
   }
 
   return (<>
-    <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''}`}>
+    <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''} ${print ? styles.print : ''}`}>
       <Image
         src="/map.png"
         width={1536}

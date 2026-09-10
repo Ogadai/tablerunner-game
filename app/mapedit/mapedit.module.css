@@ -121,15 +121,21 @@
   top: 50%;
   width: 50%;
   height: 6px;
-  border-radius: 999px;
   background: var(--color-stamina);
   transform-origin: 0 50%;
   cursor: pointer;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
+.print {
+  .moveLine {
+    opacity: 0.5;
+    background: #ffffff;
+  }
+}
+
 .moveLineDiagonal {
-  width: 70%;
+  width: 71%;
 }
 
 .circle {
@@ -144,6 +150,16 @@
   cursor: pointer;
   position: relative;
   z-index: 1;
+}
+
+.cellUnderground {
+  .circle {
+    border: 3px solid rgba(0, 0, 0, 0.3);
+  }
+
+  .moveLine {
+    background: #808080;
+  }
 }
 
 .namedCircle {
