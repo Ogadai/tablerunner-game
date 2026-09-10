@@ -4,10 +4,12 @@ import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllL
 import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
+const defaultLockTTL = 5000;
 
 const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
 
 const getPlayersReadyKey = (boardId: string, mapId: string) => `playersReady:${boardId}:${mapId}`;
+const getPlayersReadyLock = (boardId: string, mapId: string) => `playersReadyLock:${boardId}:${mapId}`;
 
 const getPlayerActionsKey = (boardId: string, mapId: string, playerId: string) => `playerActions:${boardId}:${mapId}:${playerId}`;
 
@@ -68,6 +70,30 @@ async function publishGameStateUpdated(boardId: string, mapId: string): Promise<
 }
 
 /* All Players "Ready" State */
+
+export async function lockReadyStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
+  const lockKey = getPlayersReadyLock(boardId, mapId);
+  const lockValue = crypto.randomUUID(); // Unique token to identify the lock owner
+
+  // 'NX' ensures it only sets if the key doesn't exist
+  // 'PX' sets the expiration time in milliseconds
+  const acquired = await redis.set(lockKey, lockValue, {
+    nx: true,
+    px: defaultLockTTL,
+  });
+
+  if (acquired === "OK") {
+    return async () => {
+      const currentLockValue = await redis.get(lockKey);
+
+      // Only delete the lock if the value matches (prevents releasing someone else's expired lock)
+      if (currentLockValue === lockValue) {
+        await redis.del(lockKey);
+      }
+    }
+  }
+  throw new Error('Failed to lock Ready State');
+}
 
 export async function getReadyStateFromRedis(boardId: string, mapId: string): Promise<PlayerReadyState> {
   const result = await redis.get(getPlayersReadyKey(boardId, mapId)) as PlayerReadyState;

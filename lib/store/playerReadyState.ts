@@ -2,7 +2,7 @@
 
 import { ApiResponse } from "../api-response";
 import { PlayerReadyState } from "./types";
-import { getReadyStateFromRedis, setReadyStateInRedis, getGameStateFromRedis } from './redis-access';
+import { getReadyStateFromRedis, setReadyStateInRedis, getGameStateFromRedis, lockReadyStateInRedis } from './redis-access';
 import { checkAllPlayersReady } from '../runner/game-runner';
 
 export async function getPlayerReadyState(boardId: string, mapId: string): Promise<ApiResponse<PlayerReadyState>> {
@@ -22,8 +22,10 @@ export async function getPlayerReadyState(boardId: string, mapId: string): Promi
 }
 
 export async function setPlayerReady(boardId: string, mapId: string, playerId: string, ready: boolean): Promise<ApiResponse<null>> {
+  let readyLock: (() => Promise<void>) | null = null;
   try {
-    const currentState = (await getReadyStateFromRedis(boardId, mapId));
+    readyLock = await lockReadyStateInRedis(boardId, mapId);
+    const currentState = await getReadyStateFromRedis(boardId, mapId);
 
     const newState: PlayerReadyState = {
       readyPlayerIds: currentState.readyPlayerIds.filter(p => p !== playerId)
@@ -48,5 +50,10 @@ export async function setPlayerReady(boardId: string, mapId: string, playerId: s
       success: false,
       error: (error as Error).message
     };
+  }
+  finally {
+    if (readyLock) {
+      readyLock();
+    }
   }
 }
