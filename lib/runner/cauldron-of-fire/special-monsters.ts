@@ -12,6 +12,28 @@ export const keyProcess: ProcessRunner = {
       health: 30,
     });
 
+    // Move protection for the Lich King back entrances
+    params.monsters.push(
+      {
+        id: "lich-guard-1",
+        type: "minotaur",
+        location: 228,
+        health: 30,
+      },
+      {
+        id: "lich-guard-2",
+        type: "ogre",
+        location: 181,
+        health: 22,
+      },
+      {
+        id: "lich-guard-3",
+        type: "ogre",
+        location: 181,
+        health: 22,
+      },
+    );
+
     // Create the Fire Dragon
     params.monsters.push({
       id: "fire-dragon",
