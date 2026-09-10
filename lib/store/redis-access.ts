@@ -213,11 +213,15 @@ async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<(
 
   if (acquired === "OK") {
     return async () => {
-      const currentLockValue = await redis.get(lockKey);
+      try {
+        const currentLockValue = await redis.get(lockKey);
 
-      // Only delete the lock if the value matches (prevents releasing someone else's expired lock)
-      if (currentLockValue === lockValue) {
-        await redis.del(lockKey);
+        // Only delete the lock if the value matches (prevents releasing someone else's expired lock)
+        if (currentLockValue === lockValue) {
+          await redis.del(lockKey);
+        }
+      } catch (ex) {
+        console.error('Error occurred releasing redis lock', ex);
       }
     }
   }
