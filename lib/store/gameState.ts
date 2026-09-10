@@ -11,6 +11,7 @@ import { pickCharacterName } from "../games/character-names";
 import { populateMonsters } from "../runner/populate-monsters";
 import { populateItemsForMap } from "../runner/populate-items";
 import { createStoreInventoryState } from "./playerInventory";
+import { setupProcesses } from "../runner/game-processes";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;
@@ -63,6 +64,14 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     coins: [],
     blockedMoves: [],
   };
+
+  setupProcesses({
+    boardId,
+    mapId,
+    gameState: newGameState,
+    messages: {},
+    ...locationsState
+  });
 
   try {
     // Store data in Redis

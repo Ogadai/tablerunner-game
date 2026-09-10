@@ -325,6 +325,7 @@ export const allItems: Record<string, ItemDef> = {
 
 const excludeFromLoot: string[] = [
   ConsumableIds.resurrectionStone,
+  ConsumableIds.resurrectionShard,
   ...Object.keys(keyItems)
 ];
 export const lootItems: ItemDef[] =

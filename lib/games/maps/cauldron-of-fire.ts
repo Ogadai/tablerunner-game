@@ -1,4 +1,4 @@
-import { lootItems, ConsumableIds, ScrollIds, scrollItems, EquipableIds, consumableItems, equipableItems, allItems } from '../items';
+import { lootItems, ConsumableIds, scrollItems, consumableItems, equipableItems, allItems } from '../items';
 import { GameItemLocation, Location, PlayerItemType } from '../types';
 
 export const cauldronOfFireLocations: Location[] = [
@@ -3778,6 +3778,7 @@ const witchStoreItems: string[] = [
 const smallShopItems: string[] = [
   ...Object.keys(consumableItems).filter(id => (allItems[id].value || 0) < 150),
   ...Object.keys(equipableItems).filter(id => (allItems[id].value || 0) < 50),
+  ...Object.keys(scrollItems).filter(id => (allItems[id].value || 0) < 50),
 ];
 
 const tavernItems: string[] = [

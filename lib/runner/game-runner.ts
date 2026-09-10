@@ -19,6 +19,7 @@ import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
 import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
 import { applyPlayerInventory } from "./apply-inventory";
+import { executeProcessesForTurn } from "./game-processes";
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -63,6 +64,9 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       levelUpPlayer(params, player);
       processPlayerEffects(params, player);
     }
+
+    // Execute any other game processes
+    executeProcessesForTurn(params);
 
     // Update game state
     await setGameStateInRedis(params.boardId, params.mapId, params.gameState);
