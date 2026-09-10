@@ -5,7 +5,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerActionUseItem, PlayerLocationMove } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
@@ -152,7 +152,7 @@ export default function PlayerLocation(
       className: EntityItemClass.self,
       health: playerState.health,
       maxHealth: playerState.baseStats?.health || playerState.health,
-      levelUp: playerStats.availablePoints > 0
+      levelUp: playerStats.health > 0 && playerStats.availablePoints > 0
     },
     ...otherPlayers.map(otherPlayer => ({
       id: otherPlayer.id,
@@ -175,7 +175,7 @@ export default function PlayerLocation(
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
-        <h3>{playerState.name}</h3>
+        <h3>{getDisplayName(playerState)}</h3>
         <h4>Location {playerState.location.id}</h4>
       </div>
       <p>{playerState.location?.description}</p>

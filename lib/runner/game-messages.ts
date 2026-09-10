@@ -1,3 +1,4 @@
+import { getDisplayName } from '../store/types';
 import { BaseParams } from './base-params';
 
 export function playerMessageAtLocation(params: BaseParams, playerId: string, message: string) {
@@ -10,13 +11,14 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
       .replace('{possessive}', 'r')
   });
 
+  const playerName = getDisplayName(player);
   const otherPlayers = params.gameState.players.filter(p => p.id !== playerId && p.location.id === player.location.id);
   for(const otherPlayer of otherPlayers) {
     params.messages[otherPlayer.id].messages.push({
       text: message
-        .replace('{player}', player.name)
+        .replace('{player}', playerName)
         .replace('{playerNoun}', 'is')
-        .replace('{possessive}', player.name.endsWith('s') ? `'` : `'s`)
+        .replace('{possessive}', playerName.endsWith('s') ? `'` : `'s`)
     });
   };
 }

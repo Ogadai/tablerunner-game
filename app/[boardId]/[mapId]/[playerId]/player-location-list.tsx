@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
-import { MonsterState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
+import { getDisplayName, getMonsterName, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
@@ -116,8 +116,8 @@ export default function PlayerLocationList({
   const dialogOpen = (monsterOpen !== null) || (openCharacter !== null);
   
   const dialogTitle =  (monsterOpen !== null)
-    ? monsters[monsterOpen.type].name
-    : (openCharacter !== null) ? openCharacter.name : '';
+    ? getMonsterName(monsterOpen)
+    : (openCharacter !== null) ? getDisplayName(openCharacter) : '';
   const dialogSubTitle = (openCharacter !== null) ? `Level ${openCharacter.level}` : null;
 
   const onCloseDialog = () => {

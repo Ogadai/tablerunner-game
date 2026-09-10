@@ -1,7 +1,6 @@
 import { generateMonster } from "@/lib/games/monster-pack";
 import { BaseParams } from "../base-params";
 import { broadcastMessage } from "../game-messages";
-import { makeNamedTargetZombie } from "../special-item-actions";
 import { ProcessRunner } from "../types";
 import { monsters } from '../../games/monsters';
 import { games } from "@/lib/games/games";
@@ -34,7 +33,7 @@ export const zombies: ProcessRunner = {
       if (target.infected) {
         target.infected--;
         if (target.infected <= 0) {
-          makeNamedTargetZombie(target);
+          target.zombie = true;
         }
       }
     }

@@ -3,6 +3,7 @@ import {
   MonsterState,
   PlayerActionAttack,
   INamedTarget,
+  getMonsterName,
 } from "../store/types";
 import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monsters";
 import { BaseParams } from './base-params';
@@ -43,7 +44,6 @@ export function monsterAttack(
   target: INamedTarget,
   locationId: number): void {
   try {
-    const monsterDef = monsters[monster.type];
     const monsterStats = getMonsterStats(monster);
 
     const damage = processAttackForDamage(monsterStats, target.baseStats!);
@@ -58,7 +58,7 @@ export function monsterAttack(
         target.infected = ZOMBIE_TURNS;
       }
 
-      playerMessageAtLocation(params, target.id, `**${monsterDef.name}** hit **{player}** for **${damage}** damage`);
+      playerMessageAtLocation(params, target.id, `**${getMonsterName(monster)}** hit **{player}** for **${damage}** damage`);
       if (target.health <= 0) {
         playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
 
@@ -72,7 +72,7 @@ export function monsterAttack(
         })));
       }
     } else {
-      playerMessageAtLocation(params, target.id, `**${monsterDef.name}** missed **{player}**`);
+      playerMessageAtLocation(params, target.id, `**${getMonsterName(monster)}** missed **{player}**`);
     }
   } catch(error) {
     console.error(`Error: monsterAttack for ${monster.id} against ${target.id}`);
@@ -83,7 +83,6 @@ export function monsterAttack(
 export function genericAttackMonster(params: BaseParams, player: PlayerState, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): boolean {
   try {
     if (monster && monster.health > 0) {
-      const monsterDef = monsters[monster.type];
       const damage = processAttackForDamage(attackStats, getMonsterStats(monster));
 
       const attackName = attackStats.name
@@ -109,10 +108,10 @@ export function genericAttackMonster(params: BaseParams, player: PlayerState, at
           player.points += Math.ceil(totalPoints / players.length);
         }
 
-        playerMessageAtLocation(params, player.id, `${attackName} hit **${monsterDef.name}** for **${appliedDamage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
+        playerMessageAtLocation(params, player.id, `${attackName} hit **${getMonsterName(monster)}** for **${appliedDamage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
         return true;
       } else {
-        playerMessageAtLocation(params, player.id, `${attackName} missed **${monsterDef.name}**`);
+        playerMessageAtLocation(params, player.id, `${attackName} missed **${getMonsterName(monster)}**`);
       }
     }
   } catch(error) {

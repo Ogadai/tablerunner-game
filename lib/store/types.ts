@@ -1,5 +1,6 @@
 import { SetCommandOptions } from "@upstash/redis";
 import { CharacterListEntry, LocationMove, LocationMoveDirection, BaseStats, CharacterStats, PlayerItem } from "../games/types";
+import { monsters } from '../games/monsters';
 import { SpellIds } from "../games/spells";
 
 export const Expiry1Day = 60 * 60 * 24;
@@ -55,7 +56,6 @@ export interface ITarget {
 
 export interface INamedTarget extends ITarget {
   name: string;
-  originalName: string;
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
   baseStats?: BaseStats;
@@ -208,4 +208,13 @@ export interface LedState {
   location: number,
   rgb: string;
   owner: string;
+}
+
+export const getDisplayName = (target: INamedTarget): string => {
+  return target.zombie ? `Zombie ${target.name.split(' ')[0]}` : target.name;
+}
+
+export const getMonsterName = (monster: MonsterState): string => {
+  const monsterName = monsters[monster.type].name;
+  return monster.zombie ? `Zombie ${monsterName}` : monsterName;
 }

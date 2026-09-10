@@ -55,7 +55,7 @@ export default function CharacterStats({
 
   const allocatedPoints = Object.values(playerAddStats.characterStats || emptyStats)
     .reduce((total, points) => total + points, 0);
-  const availablePoints = Math.max(0, player.availableStats - allocatedPoints);
+  const availablePoints = player.health > 0 ? Math.max(0, player.availableStats - allocatedPoints) : 0;
 
   const updateStat = async (stat: keyof CharacterStatsType, change: number) => {
     const currentValue = playerAddStats.characterStats?.[stat] || 0;
