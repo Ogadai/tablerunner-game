@@ -5,11 +5,13 @@ import { makeNamedTargetZombie } from "../special-item-actions";
 import { ProcessRunner } from "../types";
 import { monsters } from '../../games/monsters';
 import { games } from "@/lib/games/games";
+import { deleteStoreStateFromRedis } from "@/lib/store/redis-access";
 
 const ZOMBIE_REPRODUCE_CHANCE = 0.3;
 const ZOMBIE_TRAVEL_CHANCE = 0.25;
 const ZOMBIE_LED_OWNER = 'zombies';
 const ZOMBIE_LED_RGB = '9ACD32';
+const MAX_ZOMBIES_AT_SHOP = 4;
 
 export const zombies: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
@@ -59,14 +61,31 @@ export const zombies: ProcessRunner = {
       if (Math.random() < ZOMBIE_TRAVEL_CHANCE) {
         const moves = getPossibleMoveLocations(params, zombie.location);
         zombie.location = moves[Math.floor(Math.random() * moves.length)];
+
+        // Destroy any shops and create extra zombies
+        if (params.gameState.stores.includes(zombie.location)) {
+          params.gameState.stores = params.gameState.stores.filter(s => s !== zombie.location);
+          await deleteStoreStateFromRedis(params.boardId, params.mapId, zombie.location);
+
+          const newZombies = Math.ceil(Math.random() * MAX_ZOMBIES_AT_SHOP);
+          for(let n = 0; n < newZombies; n++) {
+            generateMonster(params.gameState, {
+              location: zombie.location,
+              type: 'zombie',
+              zombie: true,
+              health: monsters['zombie'].baseStats.health
+            });
+          }
+        }
       }
     }
 
     const afterLocations = getZombieLocations(params);
+    const ledLocations = (afterLocations.size > 1) ? Array.from(afterLocations) : [];
 
     params.gameState.leds = [
       ...params.gameState.leds.filter(l => l.owner !== ZOMBIE_LED_OWNER),
-      ...Array.from(afterLocations).map(l => ({
+      ...ledLocations.map(l => ({
         location: l,
         rgb: ZOMBIE_LED_RGB,
         owner: ZOMBIE_LED_OWNER,
