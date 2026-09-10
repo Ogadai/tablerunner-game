@@ -217,11 +217,11 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     name: 'Lich',
     iconXY: { x: 4, y: 1 },
     baseStats: {
-      attack: 17,
+      attack: 25,
       damage: 20,
-      defence: 20,
+      defence: 30,
       magic: 18,
-      health: 20,
+      health: 30,
       speed: 5,
     },
   },
@@ -240,14 +240,14 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   },
   'dragon': {
     id: 'dragon',
-    name: 'Dragon',
+    name: 'Fire Dragon',
     iconXY: { x: 4, y: 0 },
     baseStats: {
-      attack: 40,
-      damage: 32,
-      defence: 45,
+      attack: 22, // 40
+      damage: 18, // 32
+      defence: 23, // 45
       magic: 20,
-      health: 60,
+      health: 40, // 60
       speed: 20,
     },
   },

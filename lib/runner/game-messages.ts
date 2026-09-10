@@ -22,9 +22,15 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
 }
 
 export function soloMessageAtLocation(params: BaseParams, playerId: string, message: string) {
-  const player = params.gameState.players.find(p => p.id === playerId)!;
-
   params.messages[playerId].messages.push({
     text: message.replace('{player}', 'You').replace('{playerNoun}', 'are')
   });
+}
+
+export function broadcastMessage(params: BaseParams, message: string) {
+  for(const player of params.gameState.players) {
+    params.messages[player.id].messages.push({
+      text: message
+    });
+  }
 }
