@@ -13,6 +13,8 @@ import { createItemForInventory } from "./apply-inventory";
 
 const MAXIMUM_COIN_DROP = 100;
 const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
+const PLAYER_ZOMBIE_RISK = 0.1;
+const ZOMBIE_TURNS = 3;
 
 export function processAttackForDamage(attackerStats: { attack: number, damage: number }, defenderStats: { defence: number }): number {
   const attackScore = Math.random() * attackerStats.attack;
@@ -27,7 +29,12 @@ export function processAttackForDamage(attackerStats: { attack: number, damage: 
 
 export function actionAttack(params: BaseParams, player: PlayerState, action: PlayerActionAttack): void {
   const monster = params.monsters.find(m => m.id === action.target)!;
-  genericAttackMonster(params, player, player.baseStats!, monster);
+  const success = genericAttackMonster(params, player, player.baseStats!, monster);
+
+  if (success && player.zombie && !monster.zombie) {
+    // Infected the monster
+    monster.infected = ZOMBIE_TURNS;
+  }
 }
 
 export function monsterAttack(
@@ -45,6 +52,10 @@ export function monsterAttack(
       target.health -= damage;
       if (target.health <= 0) {
         target.health = 0;
+      }
+
+      if (monster.zombie && !target.zombie && Math.random() < PLAYER_ZOMBIE_RISK) {
+        target.infected = ZOMBIE_TURNS;
       }
 
       playerMessageAtLocation(params, target.id, `**${monsterDef.name}** hit **{player}** for **${damage}** damage`);
@@ -69,7 +80,7 @@ export function monsterAttack(
   }
 }
 
-export function genericAttackMonster(params: BaseParams, player: PlayerState, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): void {
+export function genericAttackMonster(params: BaseParams, player: PlayerState, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): boolean {
   try {
     if (monster && monster.health > 0) {
       const monsterDef = monsters[monster.type];
@@ -99,6 +110,7 @@ export function genericAttackMonster(params: BaseParams, player: PlayerState, at
         }
 
         playerMessageAtLocation(params, player.id, `${attackName} hit **${monsterDef.name}** for **${appliedDamage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
+        return true;
       } else {
         playerMessageAtLocation(params, player.id, `${attackName} missed **${monsterDef.name}**`);
       }
@@ -107,6 +119,7 @@ export function genericAttackMonster(params: BaseParams, player: PlayerState, at
     console.error(`Error: actionAttack for ${player.id}`);
     throw error;
   }
+  return false;
 }
 
 function monsterDropCoins(params: BaseParams, player: PlayerState, monster: MonsterState) {

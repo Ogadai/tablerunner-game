@@ -49,21 +49,20 @@ export interface ITarget {
   id: string;
   health: number;
   effects?: CharacterEffect[];
+  zombie?: boolean;
+  infected?: number;
 }
 
-export interface INamedTarget {
-  id: string;
+export interface INamedTarget extends ITarget {
   name: string;
+  originalName: string;
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
-  health: number;
   baseStats?: BaseStats;
-  effects?: CharacterEffect[];
 }
 
 export interface PlayerState extends INamedTarget {
   name: string;
-  originalName: string;
   location: PlayerStateLocation;
   retreatDirection?: string;
   rgbColour: string;
@@ -74,7 +73,6 @@ export interface PlayerState extends INamedTarget {
   availableStats: number;
   spells: SpellIds[];
   recentSpells?: SpellIds[];
-  zombie?: boolean;
   coins: number;
 }
 

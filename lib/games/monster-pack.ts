@@ -15,9 +15,16 @@ export function getMonsters(gameState: GameState): MonsterState[] {
     const listIndex = Math.floor(Math.random() * monsterLists.length);
     const monstersAtLocation = monsterLists[listIndex].filter(m => m.location === n);
     monsters.push(
-      ...monstersAtLocation.map(m => ({...m, id: `m-${++gameState.counters.monsterId}`}))
+      ...monstersAtLocation.map(m => generateMonster(gameState, m))
     );
   }
 
   return monsters;
 };
+
+export function generateMonster(gameState: GameState, monsterDef: Omit<MonsterState, 'id'>): MonsterState {
+  return {
+    ...monsterDef,
+    id: `m-${++gameState.counters.monsterId}`
+  };
+}

@@ -1,5 +1,5 @@
 import { ConsumableIds, keyItems } from "../games/items";
-import { PlayerState } from "../store/types";
+import { INamedTarget, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { updateLockLeds } from "./game-action-move";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
@@ -37,7 +37,7 @@ function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZom
 
     if (zombies) {
       playerMessageAtLocation(params, deadPlayer.id, `The body of **{player}** has been **reanimated**!`);
-      makePlayerZombie(deadPlayer);
+      makeNamedTargetZombie(deadPlayer);
     } else {
       playerMessageAtLocation(params, deadPlayer.id, `**{player}** has been **resurrected**!`);
     }
@@ -68,7 +68,10 @@ function useKey(params: BaseParams, player: PlayerState, keyItemType: string): b
   return false;
 }
 
-export function makePlayerZombie(player: PlayerState) {
-  player.name = `Zombie ${player.name.split(' ')[0]}`;
-  player.zombie = true;
+export function makeNamedTargetZombie(target: INamedTarget) {
+  if (!target.zombie) {
+    target.originalName = target.name;
+    target.name = `Zombie ${target.name.split(' ')[0]}`;
+    target.zombie = true;
+  }
 }
