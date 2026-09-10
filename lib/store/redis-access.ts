@@ -20,8 +20,10 @@ const getPlayerInventoryKey = (boardId: string, mapId: string, playerId: string)
 const getPlayerMessagesKey = (boardId: string, mapId: string, playerId: string) => `playerMessages:${boardId}:${mapId}:${playerId}`;
 
 const getLocationsKey = (boardId: string, mapId: string) => `monsters:${boardId}:${mapId}`;
+const getLocationsLock = (boardId: string, mapId: string) => `monstersLock:${boardId}:${mapId}`;
 
 const getStoreInventoryKey = (boardId: string, mapId: string, location: number) => `store:${boardId}:${mapId}:${location}`;
+const getStoreInventoryLock = (boardId: string, mapId: string) => `storeLock:${boardId}:${mapId}`;
 
 /* Overall Game State */
 
@@ -72,27 +74,7 @@ async function publishGameStateUpdated(boardId: string, mapId: string): Promise<
 /* All Players "Ready" State */
 
 export async function lockReadyStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
-  const lockKey = getPlayersReadyLock(boardId, mapId);
-  const lockValue = crypto.randomUUID(); // Unique token to identify the lock owner
-
-  // 'NX' ensures it only sets if the key doesn't exist
-  // 'PX' sets the expiration time in milliseconds
-  const acquired = await redis.set(lockKey, lockValue, {
-    nx: true,
-    px: defaultLockTTL,
-  });
-
-  if (acquired === "OK") {
-    return async () => {
-      const currentLockValue = await redis.get(lockKey);
-
-      // Only delete the lock if the value matches (prevents releasing someone else's expired lock)
-      if (currentLockValue === lockValue) {
-        await redis.del(lockKey);
-      }
-    }
-  }
-  throw new Error('Failed to lock Ready State');
+  return getLock(getPlayersReadyLock(boardId, mapId));
 }
 
 export async function getReadyStateFromRedis(boardId: string, mapId: string): Promise<PlayerReadyState> {
@@ -182,6 +164,10 @@ export async function deletePlayerMessagesFromRedis(boardId: string, mapId: stri
 
 /* Locations State */
 
+export async function lockLocationsStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
+  return getLock(getLocationsLock(boardId, mapId));
+}
+
 export async function getLocationsStateFromRedis(boardId: string, mapId: string): Promise<AllLocationsState> {
   const result = await redis.get(getLocationsKey(boardId, mapId)) as AllLocationsState;
   return result || { monsters: [], items: [], coins: [] };
@@ -198,6 +184,10 @@ export async function deleteLocationsStateFromRedis(boardId: string, mapId: stri
 
 /* Store inventory state */
 
+export async function lockStoreStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
+  return getLock(getStoreInventoryLock(boardId, mapId));
+}
+
 export async function getStoreStateFromRedis(boardId: string, mapId: string, location: number): Promise<StoreInventoryState> {
   const result = await redis.get(getStoreInventoryKey(boardId, mapId, location)) as StoreInventoryState;
   return result || { items: [] };
@@ -209,4 +199,27 @@ export async function setStoreStateInRedis(boardId: string, mapId: string, locat
 
 export async function deleteStoreStateFromRedis(boardId: string, mapId: string, location: number): Promise<void> {
   await redis.del(getStoreInventoryKey(boardId, mapId, location));
+}
+
+async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<() => Promise<void>> {
+  const lockValue = crypto.randomUUID(); // Unique token to identify the lock owner
+
+  // 'NX' ensures it only sets if the key doesn't exist
+  // 'PX' sets the expiration time in milliseconds
+  const acquired = await redis.set(lockKey, lockValue, {
+    nx: true,
+    px: ttl,
+  });
+
+  if (acquired === "OK") {
+    return async () => {
+      const currentLockValue = await redis.get(lockKey);
+
+      // Only delete the lock if the value matches (prevents releasing someone else's expired lock)
+      if (currentLockValue === lockValue) {
+        await redis.del(lockKey);
+      }
+    }
+  }
+  throw new Error('Failed to aquire lock');
 }

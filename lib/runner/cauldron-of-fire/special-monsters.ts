@@ -2,7 +2,7 @@ import { BaseParams } from "../base-params";
 import { broadcastMessage } from "../game-messages";
 import { ProcessRunner } from "../types";
 
-export const keyProcess: ProcessRunner = {
+export const specialMonsters: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
     // Create the Lich king
     params.monsters.push({

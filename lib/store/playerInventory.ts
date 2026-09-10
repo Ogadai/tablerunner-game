@@ -1,7 +1,7 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { getGameStateFromRedis, getPlayerInventoryFromRedis, getStoreStateFromRedis, setGameStateInRedis, setLocationsStateInRedis, setPlayerInventoryInRedis, setStoreStateInRedis } from './redis-access';
+import { getGameStateFromRedis, getPlayerInventoryFromRedis, getStoreStateFromRedis, lockLocationsStateInRedis, lockStoreStateInRedis, setGameStateInRedis, setLocationsStateInRedis, setPlayerInventoryInRedis, setStoreStateInRedis } from './redis-access';
 import { NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState, StoreInventoryState, StoreTransaction } from './types';
 import { getLocationsStateFromRedis } from './redis-access';
 import { GameTopicMessageType, LocationUpdatedMessage } from "../message-types";
@@ -73,7 +73,9 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
 }
 
 export async function dropItemAtLocation(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
+  let lock: (() => Promise<void>) | null = null;
   try {
+    lock = await lockLocationsStateInRedis(boardId, mapId);
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
 
     const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -106,6 +108,10 @@ export async function dropItemAtLocation(boardId: string, mapId: string, playerI
       success: false,
       error: (error as Error).message
     };
+  } finally {
+    if (lock) {
+      lock();
+    }
   }
 }
 
@@ -179,7 +185,9 @@ export async function buyAndSellInStore(
   boardId: string, mapId: string, playerId: string,
   locationId: number, transaction: StoreTransaction
 ): Promise<ApiResponse<PlayerInventoryState>> {
+  let lock: (() => Promise<void>) | null = null;
   try {
+    lock = await lockStoreStateInRedis(boardId, mapId);
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
     const storeState = await getStoreStateFromRedis(boardId, mapId, locationId);
 
@@ -237,6 +245,10 @@ export async function buyAndSellInStore(
       success: false,
       error: (error as Error).message
     };
+  } finally {
+    if (lock) {
+      lock();
+    }
   }
 }
 
