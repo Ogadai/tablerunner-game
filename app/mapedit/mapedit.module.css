@@ -100,11 +100,6 @@
 }
 
 .doublePage {
-  @page {
-    size: A3 landscape;
-    margin: 0;
-  }
-
   width: 420mm;
   height: 297mm;
 
