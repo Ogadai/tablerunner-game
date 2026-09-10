@@ -16,7 +16,7 @@ import {
   getActionsStateFromRedis,
 } from '../store/redis-access';
 import { games } from "../games/games";
-import { EquipableItemDef, OPPOSITE_DIRECTION, PlayerItem } from '@/lib/games/types';
+import { ConsumableItemDef, EquipableItemDef, OPPOSITE_DIRECTION, PlayerItem } from '@/lib/games/types';
 import { monsters } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
@@ -319,7 +319,7 @@ function monsterAttack(
 
 function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerActionUseItem): void {
   const item = player.equipment.find(item => item.id === action.itemId);
-  const usableItem = item && allItems[item.type];
+  const usableItem = item && allItems[item.type] as ConsumableItemDef;
 
   if (usableItem) {
     const benefitDescriptions: string[] = [];
@@ -348,7 +348,7 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
     if (specialItemActions[usableItem.id]) {
       shouldRemoveItem = specialItemActions[usableItem.id](params, player);
     } else if (usableItem.bonusStats && usableItem.turns != undefined && usableItem.turns > 0) {
-      const { health, magic, special, ...effectBonuses } = consumabusableItemleItem.bonusStats;
+      const { health, magic, special, ...effectBonuses } = usableItem.bonusStats;
       const newEffect: CharacterEffect = {
         description: usableItem.name,
         turns: usableItem.turns + 1,

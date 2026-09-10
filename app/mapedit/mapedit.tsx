@@ -249,7 +249,7 @@ export default function MapEdit() {
       .map(monster => ({
         id: monster.id,
         name: monsters[monster.type].name,
-        icon: monsters[monster.type].icon,
+        iconXY: monsters[monster.type].iconXY,
         className: EntityItemClass.enemy,
         health: monster.health,
         maxHealth: monsters[monster.type].baseStats.health,
