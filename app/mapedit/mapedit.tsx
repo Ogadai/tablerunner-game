@@ -151,6 +151,9 @@ export default function MapEdit() {
 
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
+  const [locationDialogCell, setLocationDialogCell] = useState<number | null>(null);
+  const [locationDescription, setLocationDescription] = useState('');
+  const [locationUnderground, setLocationUnderground] = useState(false);
   const [monsterList, setMonsterList] = useState<MonsterState[]>([]);
   const dragStartCell = useRef<number | null>(null);
   const dragActionTaken = useRef(false);
@@ -168,35 +171,26 @@ export default function MapEdit() {
     } as any));
   }, []);
 
-  const bindClickLocation = (cell: number) =>
-    async () => {
-      const location = mapState.find(l => l.id === cell);
-      const description = location?.description || '';
+  const bindClickLocation = (cell: number) => () => {
+    const location = mapState.find(l => l.id === cell);
 
-      const { value: newDescription, isConfirmed } = await Swal.fire({
-        heightAuto: false,
-        theme: 'auto',
-        title: "Description",
-        input: "textarea",
-        inputLabel: "Enter the location description",
-        inputValue: description,
-        showCancelButton: true
-      });
+    setLocationDescription(location?.description || '');
+    setLocationUnderground(location?.underground || false);
+    setLocationDialogCell(cell);
+  };
 
-      if (location && isConfirmed) {
-        const newMapState = mapState.map(l => {
-          if (l.id === cell) {
-            return {
-              ...l,
-              description: newDescription
-            };
-          } else {
-            return l;
-          }
-        });
-        setMapState(newMapState);
-      }
+  const saveLocation = () => {
+    if (locationDialogCell === null) {
+      return;
     }
+
+    setMapState(current => current.map(location => (
+      location.id === locationDialogCell
+        ? { ...location, description: locationDescription, underground: locationUnderground }
+        : location
+    )));
+    setLocationDialogCell(null);
+  };
 
   const handleCellMouseDown = (cell: number) => {
     dragStartCell.current = cell;
@@ -267,6 +261,7 @@ export default function MapEdit() {
     const description = location?.description || '';
     const moves = location?.move ?? [];
     const monsterCount = monsterList.filter(monster => monster.location === cell).length;
+    const cellIndex = GRID_CELLS.indexOf(cell);
 
     const directionAngles: Record<string, number> = {
       n: -90,
@@ -279,9 +274,9 @@ export default function MapEdit() {
       nw: -135,
     };
 
-    const page = Math.floor((cell + MAP_ROWS - 1) / MAP_COLUMNS) %2;
+    const thisPage = Math.floor(cellIndex / (MAP_COLUMNS / 2)) %2;
     return (
-      ((one && (page === 0)) || (two && (page === 1))) &&
+      ((one && (thisPage === 0)) || (two && (thisPage === 1))) &&
       <div key={cell}
         onMouseDown={() => handleCellMouseDown(cell)}
         onMouseUp={() => handleCellMouseUp(cell)}
@@ -362,6 +357,8 @@ export default function MapEdit() {
       <div className={`${styles.gridContainer}`}>
         { GRID_CELLS.map(renderCell) }
       </div>
+      
+      <div className={styles.startLabel}><h3>Start</h3></div>
 
       <div className={styles.copyButtons}>
         { !singlePage && !print && <button
@@ -390,6 +387,48 @@ export default function MapEdit() {
           </Dialog.Title>
           <div className="DialogContentBody">
             <EntityList entities={monsterDialogEntities} />
+          </div>
+          <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">
+            close
+          </Dialog.Close>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+
+    <Dialog.Root
+      open={locationDialogCell !== null}
+      onOpenChange={open => {
+        if (!open) {
+          setLocationDialogCell(null);
+        }
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="DialogOverlay" />
+        <Dialog.Content className="DialogContent">
+          <Dialog.Title className="DialogTitle">
+            Location {locationDialogCell}
+          </Dialog.Title>
+          <label htmlFor="location-description">Description</label>
+          <textarea
+            id="location-description"
+            value={locationDescription}
+            onChange={event => setLocationDescription(event.target.value)}
+            rows={5}
+          />
+          <label className={styles.dialogLabel}>
+            <input
+              type="checkbox"
+              checked={locationUnderground}
+              onChange={event => setLocationUnderground(event.target.checked)}
+            />
+            Underground
+          </label>
+          <div className={ styles.dialogButtons }>
+            <button type="button" onClick={saveLocation}>Save</button>
+            <Dialog.Close asChild>
+              <button type="button">Cancel</button>
+            </Dialog.Close>
           </div>
           <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">
             close

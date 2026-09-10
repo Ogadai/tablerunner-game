@@ -30,6 +30,19 @@
   user-select: none;
 }
 
+.startLabel {
+  position: absolute;
+  z-index: 1000;
+  background-color: rgba(128, 128, 128, 0.7);
+  border-radius: 10px;
+
+  h3 {
+    color: #f2ebd9;
+    margin: 0px;
+    padding: 0 5px;
+  }
+}
+
 .singlePage {
   /* @page {
     size: A4 portrait;
@@ -59,6 +72,11 @@
     top: 39px;
     left: -39px;
   }
+
+  .startLabel {
+    top: 930px;
+    left: 645px;
+  }
 }
 
 .pageTwo {
@@ -74,20 +92,30 @@
     top: 39px;
     left: -666px;
   }
+
+  .startLabel {
+    top: 930px;
+    left: 18px;
+  }
 }
 
 .doublePage {
-  /* @page {
+  @page {
     size: A3 landscape;
     margin: 0;
   }
- */
+
   width: 420mm;
   height: 297mm;
 
   .title {
     top: 31px;
     left: 1276px;
+  }
+
+  .startLabel {
+    top: 930px;
+    left: 728px;
   }
 
   .mapImage {
@@ -102,6 +130,10 @@
     grid-template-rows: repeat(12, 16.6mm);
     width: calc(22 * 16.6mm);
     height: calc(14 * 16.6mm);
+  }
+
+  .startLabel {
+
   }
 }
 
@@ -124,13 +156,12 @@
   background: var(--color-stamina);
   transform-origin: 0 50%;
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .print {
   .moveLine {
+    background: linear-gradient(90deg, rgba(255, 255, 255), rgba(190, 190, 190));
     opacity: 0.5;
-    background: #ffffff;
   }
 }
 
@@ -146,7 +177,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
   cursor: pointer;
   position: relative;
   z-index: 1;
@@ -154,11 +184,14 @@
 
 .cellUnderground {
   .circle {
-    border: 3px solid rgba(0, 0, 0, 0.3);
+    background-color: #e0e0e0;
+    border: 1px solid black;
   }
 
   .moveLine {
-    background: #808080;
+    background: linear-gradient(90deg, rgba(128, 128, 128), rgba(190, 190, 190));
+    background: rgba(128, 128, 128);
+    opacity: 0.5;
   }
 }
 
@@ -216,4 +249,18 @@
   & button {
     margin-right: 20px;
   }
+}
+
+.dialogLabel {
+  margin-top: 10px;
+
+  input[type=checkbox] {
+    margin-right: 5px;
+  }
+}
+
+.dialogButtons {
+  button {
+    margin-right: 10px;
+  };
 }

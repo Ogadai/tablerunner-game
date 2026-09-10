@@ -14,7 +14,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 40
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 2,
@@ -32,7 +33,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 1
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 3,
@@ -42,7 +44,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 2
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 4,
@@ -554,7 +557,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 36
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 36,
@@ -572,7 +576,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 37
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 37,
@@ -582,7 +587,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 36
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 38,
@@ -610,7 +616,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 2
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 40,
@@ -624,7 +631,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 41
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 41,
@@ -638,7 +646,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 42
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 42,
@@ -656,7 +665,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 41
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 43,
@@ -674,7 +684,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 42
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 44,
@@ -688,7 +699,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "se",
         "id": 36
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 45,
@@ -1146,7 +1158,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 74
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 74,
@@ -1164,7 +1177,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 73
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 75,
@@ -1182,7 +1196,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 74
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 76,
@@ -1196,7 +1211,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 75
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 77,
@@ -1270,7 +1286,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 120
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 82,
@@ -1284,7 +1301,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 81
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 83,
@@ -1306,7 +1324,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 84
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 84,
@@ -1324,7 +1343,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 117
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 85,
@@ -1346,7 +1366,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 86
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 86,
@@ -1364,7 +1385,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 87
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 87,
@@ -1378,7 +1400,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 74
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 88,
@@ -1586,7 +1609,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 140
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 102,
@@ -1800,7 +1824,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 85
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 117,
@@ -1814,7 +1839,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 116
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 118,
@@ -1860,7 +1886,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 81
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 121,
@@ -2116,7 +2143,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 137
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 137,
@@ -2130,7 +2158,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 136
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 138,
@@ -2144,7 +2173,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 137
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 139,
@@ -2158,7 +2188,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 142
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 140,
@@ -2172,7 +2203,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 101
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 141,
@@ -2186,7 +2218,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 140
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 142,
@@ -2204,7 +2237,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 143
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 143,
@@ -2218,7 +2252,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 138
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 144,
@@ -2412,7 +2447,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 157
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 157,
@@ -2426,7 +2462,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 158
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 158,
@@ -2440,7 +2477,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 157
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 159,
@@ -2466,7 +2504,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 158
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 160,
@@ -2476,7 +2515,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 159
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 161,
@@ -2498,7 +2538,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 162
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 162,
@@ -2512,7 +2553,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 161
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 163,
@@ -2534,7 +2576,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 162
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 164,
@@ -2548,7 +2591,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "se",
         "id": 156
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 165,
@@ -2572,7 +2616,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 167
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 167,
@@ -2590,7 +2635,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 194
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 168,
@@ -2604,7 +2650,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 167
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 169,
@@ -2988,7 +3035,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 209
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 193,
@@ -3002,7 +3050,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 208
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 194,
@@ -3016,7 +3065,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 195
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 195,
@@ -3034,7 +3084,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 196
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 196,
@@ -3048,7 +3099,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 205
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 197,
@@ -3076,7 +3128,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "se",
         "id": 164
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 199,
@@ -3098,7 +3151,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "se",
         "id": 163
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 200,
@@ -3108,7 +3162,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 161
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 201,
@@ -3122,7 +3177,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 240
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 202,
@@ -3132,7 +3188,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 239
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 203,
@@ -3146,7 +3203,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "sw",
         "id": 199
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 204,
@@ -3168,7 +3226,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 203
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 205,
@@ -3186,7 +3245,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "ne",
         "id": 235
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 206,
@@ -3196,7 +3256,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 235
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 207,
@@ -3210,7 +3271,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 234
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 208,
@@ -3228,7 +3290,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 233
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 209,
@@ -3242,7 +3305,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 192
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 210,
@@ -3292,7 +3356,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "n",
         "id": 229
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 213,
@@ -3306,7 +3371,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 212
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 214,
@@ -3536,7 +3602,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 213
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 229,
@@ -3592,7 +3659,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 233
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 233,
@@ -3610,7 +3678,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 208
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 234,
@@ -3628,7 +3697,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 235
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 235,
@@ -3646,7 +3716,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "sw",
         "id": 205
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 236,
@@ -3656,7 +3727,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 237
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 237,
@@ -3674,7 +3746,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 238
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 238,
@@ -3688,7 +3761,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "w",
         "id": 239
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 239,
@@ -3706,7 +3780,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "s",
         "id": 202
       }
-    ]
+    ],
+    "underground": true
   },
   {
     "id": 240,
@@ -3720,7 +3795,8 @@ export const cauldronOfFireLocations: Location[] = [
         "direction": "e",
         "id": 239
       }
-    ]
+    ],
+    "underground": true
   }
 ];
 
