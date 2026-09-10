@@ -44,6 +44,8 @@ export const zombies: ProcessRunner = {
         notZombie.zombie = true;
       }
 
+      // TODO: If no players at the location, replace any NPCs at the location with zombies
+
       if (Math.random() < ZOMBIE_REPRODUCE_CHANCE) {
         // Make a new monster like this one
         generateMonster(params.gameState, {
