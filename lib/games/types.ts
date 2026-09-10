@@ -89,7 +89,6 @@ export enum PlayerItemType {
   necklace = 'necklace',
   consumable = 'consumable',
   scroll = 'scroll',
-  miscellanous = 'miscellanous',
 }
 
 export interface ItemDef {

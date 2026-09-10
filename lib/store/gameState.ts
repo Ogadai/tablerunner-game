@@ -60,6 +60,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     monsters,
     items,
     coins: [],
+    blockedMoves: [],
   };
 
   try {
@@ -128,6 +129,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
     const equipment = characterDef.equipment.map(e => createItemForInventory(gameState, e));
 
     const name = pickCharacterName(characterDef.id);
+
     const newPlayer: PlayerState = {
       id: playerId,
       name,

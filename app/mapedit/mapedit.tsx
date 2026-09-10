@@ -16,7 +16,7 @@ import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 import { getMonsters } from '@/lib/games/monster-pack';
 import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
-import { AllLocationsState, MonsterState } from '@/lib/store/types';
+import { MonsterState } from '@/lib/store/types';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 

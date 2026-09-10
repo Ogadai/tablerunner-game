@@ -26,6 +26,7 @@ import { getMonsterStats } from './monster-stats';
 import { specialItemActions } from './special-item-actions';
 import { processAttackForDamage, genericAttackMonster } from './game-action-attack';
 import { actionCastSpell, actionReadScroll } from './game-action-spell';
+import { getPlayerLocation } from "./game-location";
 
 enum EntityActionEntityTypes {
   player,
@@ -227,10 +228,16 @@ function actionMove(params: BaseParams, player: PlayerState, action: PlayerActio
     const currentLocation = gameDef.locations.find(l => l.id === player.location.id)!;
     const locationMove = currentLocation.move.find(m => m.direction === action.direction);
 
+    const locationBlock = params.blockedMoves.find(b => b.location === player.location.id);
+    if (locationBlock && locationBlock.direction === action.direction) {
+      // Cannot make this move
+      return;
+    }
+
     if (locationMove) {
       const newLocation = gameDef.locations.find(l => l.id === locationMove.id)!;
+      player.location = getPlayerLocation(params, newLocation)
 
-      player.location = newLocation;
       player.retreatDirection = OPPOSITE_DIRECTION[action.direction];
       params.gameState.visited = [
         ...params.gameState.visited.filter(v => v !== locationMove.id),
@@ -312,20 +319,20 @@ function monsterAttack(
 
 function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerActionUseItem): void {
   const item = player.equipment.find(item => item.id === action.itemId);
-  const consumableItem = item && consumableItems[item.type];
+  const usableItem = item && allItems[item.type];
 
-  if (consumableItem) {
+  if (usableItem) {
     const benefitDescriptions: string[] = [];
     // Apply benefit
-    if (consumableItem.bonusStats?.health) {
-      const addedHealth = Math.min(consumableItem.bonusStats?.health,
+    if (usableItem.bonusStats?.health) {
+      const addedHealth = Math.min(usableItem.bonusStats?.health,
         player.baseStats!.health - player.health);
       player.health += addedHealth;
 
       benefitDescriptions.push(`**${addedHealth}** health`);
     }
-    if (consumableItem.bonusStats?.magic) {
-      const addedmagic = Math.min(consumableItem.bonusStats?.magic,
+    if (usableItem.bonusStats?.magic) {
+      const addedmagic = Math.min(usableItem.bonusStats?.magic,
         player.baseStats!.magic - player.magic);
       player.magic += addedmagic;
 
@@ -334,16 +341,17 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
 
     if (benefitDescriptions.length > 0) {
       soloMessageAtLocation(params, player.id,
-        `**You** drank **${consumableItem.name}** for ${benefitDescriptions.join(' and ')}!`);
+        `**You** drank **${usableItem.name}** for ${benefitDescriptions.join(' and ')}!`);
     }
     
-    if (specialItemActions[consumableItem.id]) {
-      specialItemActions[consumableItem.id](params, player);
-    } else if (consumableItem.bonusStats && consumableItem.turns != undefined && consumableItem.turns > 0) {
-      const { health, magic, special, ...effectBonuses } = consumableItem.bonusStats;
+    let shouldRemoveItem = true;
+    if (specialItemActions[usableItem.id]) {
+      shouldRemoveItem = specialItemActions[usableItem.id](params, player);
+    } else if (usableItem.bonusStats && usableItem.turns != undefined && usableItem.turns > 0) {
+      const { health, magic, special, ...effectBonuses } = consumabusableItemleItem.bonusStats;
       const newEffect: CharacterEffect = {
-        description: consumableItem.name,
-        turns: consumableItem.turns + 1,
+        description: usableItem.name,
+        turns: usableItem.turns + 1,
         ...effectBonuses
       };
 
@@ -354,7 +362,9 @@ function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerAc
     }
 
     // Remove from equipment
-    player.equipment = player.equipment.filter(item => item.id !== action.itemId)
+    if (shouldRemoveItem) {
+      player.equipment = player.equipment.filter(item => item.id !== action.itemId)
+    }
   }
 }
 

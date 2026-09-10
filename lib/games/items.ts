@@ -237,7 +237,7 @@ for(const [spellId, spell] of Object.entries(spells)) {
   }
 }
 
-export enum MiscellaneousIds {
+export enum KeyIds {
   fireKey = 'fireKey',
   greenKey = 'greenKey',
   blueKey = 'blueKey',
@@ -245,58 +245,76 @@ export enum MiscellaneousIds {
   skeletonKey = 'skeletonKey',
   goldKey = 'goldKey',
 }
-export const keyItems: Record<string, ItemDef> = {
-  [MiscellaneousIds.fireKey]: {
-    id: MiscellaneousIds.fireKey.toString(),
-    type: PlayerItemType.miscellanous,
+export const keyItems: Record<string, ConsumableItemDef> = {
+  [KeyIds.fireKey]: {
+    id: KeyIds.fireKey.toString(),
+    type: PlayerItemType.consumable,
     name: 'Fire Key',
+    useCost: 10,
     iconXY: { x: 0, y: 8 },
     value: 100,
-    bonusStats: {}
+    bonusStats: {
+      special: 'Unlock the gate of fire'
+    }
   },
-  [MiscellaneousIds.greenKey]: {
-    id: MiscellaneousIds.greenKey.toString(),
-    type: PlayerItemType.miscellanous,
+  [KeyIds.greenKey]: {
+    id: KeyIds.greenKey.toString(),
+    type: PlayerItemType.consumable,
     name: 'Green Key',
+    useCost: 10,
     iconXY: { x: 1, y: 8 },
     value: 30,
-    bonusStats: {}
+    bonusStats: {
+      special: 'Unlock the green door'
+    }
   },
-  [MiscellaneousIds.blueKey]: {
-    id: MiscellaneousIds.blueKey.toString(),
-    type: PlayerItemType.miscellanous,
+  [KeyIds.blueKey]: {
+    id: KeyIds.blueKey.toString(),
+    type: PlayerItemType.consumable,
     name: 'Blue Key',
+    useCost: 10,
     iconXY: { x: 2, y: 8 },
     value: 50,
-    bonusStats: {}
+    bonusStats: {
+      special: 'Unlock the blue door'
+    }
   },
-  [MiscellaneousIds.purpleKey]: {
-    id: MiscellaneousIds.purpleKey.toString(),
-    type: PlayerItemType.miscellanous,
+  [KeyIds.purpleKey]: {
+    id: KeyIds.purpleKey.toString(),
+    type: PlayerItemType.consumable,
     name: 'Purple Key',
+    useCost: 10,
     iconXY: { x: 3, y: 8 },
     value: 75,
-    bonusStats: {}
+    bonusStats: {
+      special: 'Unlock the purple door'
+    }
   },
-  [MiscellaneousIds.skeletonKey]: {
-    id: MiscellaneousIds.skeletonKey.toString(),
-    type: PlayerItemType.miscellanous,
+  [KeyIds.skeletonKey]: {
+    id: KeyIds.skeletonKey.toString(),
+    type: PlayerItemType.consumable,
     name: 'Skeleton Key',
+    useCost: 10,
     iconXY: { x: 4, y: 8 },
     value: 55,
-    bonusStats: {}
+    bonusStats: {
+      special: 'Unlock the skeleton door'
+    }
   },
-  [MiscellaneousIds.goldKey]: {
-    id: MiscellaneousIds.goldKey.toString(),
-    type: PlayerItemType.miscellanous,
+  [KeyIds.goldKey]: {
+    id: KeyIds.goldKey.toString(),
+    type: PlayerItemType.consumable,
     name: 'Fire Key',
+    useCost: 10,
     iconXY: { x: 5, y: 8 },
     value: 85,
-    bonusStats: {}
+    bonusStats: {
+      special: 'Unlock the golden gates'
+    }
   },
 };
 
-export type ItemIds = EquipableIds | ConsumableIds | ScrollIds | MiscellaneousIds;
+export type ItemIds = EquipableIds | ConsumableIds | ScrollIds | KeyIds;
 
 export const allItems: Record<string, ItemDef> = {
   ...equipableItems,

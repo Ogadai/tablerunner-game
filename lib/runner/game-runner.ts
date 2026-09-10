@@ -99,6 +99,7 @@ async function runGameTurn(params: BaseParams): Promise<void> {
     monsters: params.monsters,
     items: params.items,
     coins: params.coins,
+    blockedMoves: params.blockedMoves,
   };
   setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
 }

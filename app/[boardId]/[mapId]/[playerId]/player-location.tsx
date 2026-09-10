@@ -3,10 +3,9 @@ import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 import { getSwalDefaultOptions } from '@/app/swal';
 
-import { LocationMove, LocationMoveDirection } from "@/lib/games/types";
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, MonsterState, PlayerActionCast, PlayerState, PlayerActionUseItem } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerActionUseItem, PlayerLocationMove } from "@/lib/store/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
@@ -96,14 +95,16 @@ export default function PlayerLocation(
     playerStatsSyncService.updateActionsState(state.data!);
   }
 
-  const bindMoveAction = (locationMove: LocationMove) =>
+  const bindMoveAction = (locationMove: PlayerLocationMove) =>
     async () => {
-      if (!canMoveDirection(locationMove.direction)) {
+      if (!canMoveDirection(locationMove)) {
+        const blockDesc = locationMove.blockDescription
+          || 'You cannot move through this location while there are enemies. You can only retreat.';
         await Swal.fire({
           ...getSwalDefaultOptions(),
           title: 'Movement blocked!',
           icon: 'warning',
-          text: "You cannot move through this location while there are enemies. You can only retreat.",
+          text: blockDesc,
         });
           
         return;
@@ -139,8 +140,9 @@ export default function PlayerLocation(
     return <p>Loading...</p>;
   }
 
-  const canMoveDirection = (direction: LocationMoveDirection): boolean =>
-    !locationState.monsters.some(monster => monster.health > 0) || direction === playerState.retreatDirection;
+  const canMoveDirection = (locationMove: PlayerLocationMove): boolean =>
+    !locationMove.blockDescription &&
+    (!locationState.monsters.some(monster => monster.health > 0) || locationMove.direction === playerState.retreatDirection);
 
   const entities: EntityItemDetail[] = [
     {
@@ -211,7 +213,7 @@ export default function PlayerLocation(
       { (!isPlayerReady && playerStats.playerCanMove) && <div className={styles.moveActionButtons}>
         {playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
           <button type="button" key={mv.direction}
-            className={`${styles[`move-${mv.direction}`]} ${canMoveDirection(mv.direction) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
+            className={`${styles[`move-${mv.direction}`]} ${canMoveDirection(mv) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
             onClick={bindMoveAction(mv)}
           >{moveLabels[mv.direction]}
           </button>

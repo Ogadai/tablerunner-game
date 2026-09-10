@@ -77,10 +77,15 @@ export interface PlayerState extends INamedTarget {
   coins: number;
 }
 
+export interface PlayerLocationMove extends LocationMove {
+  blockDescription?: string;
+  keyItemType?: string;
+}
+
 export interface PlayerStateLocation {
   id: number;
   description: string;
-  move: LocationMove[];
+  move: PlayerLocationMove[];
 }
 
 export interface PlayerReadyState {
@@ -157,6 +162,13 @@ export interface LocationCoinState {
   coins: number
 }
 
+export interface LocationBlockedMove {
+  location: number;
+  direction: LocationMoveDirection;
+  description: string;
+  keyItemType?: string;
+}
+
 export interface StoreContentsState {
   items: { itemId: string, count: number };
 }
@@ -165,6 +177,7 @@ export interface AllLocationsState {
   monsters: MonsterState[];
   items: ItemLocationState[];
   coins: LocationCoinState[];
+  blockedMoves: LocationBlockedMove[];
 }
 
 export interface LocationState {

@@ -59,7 +59,7 @@ export default function InventoryItem({
   }
   const isEquipable = !!onEquipped && itemDef.type !== PlayerItemType.consumable && itemDef.type !== PlayerItemType.scroll;
   const isConsumable = itemDef.type === PlayerItemType.consumable;
-  const canUse = !!onUsed && isConsumable && !isUsed && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
+  const canUse = !!onUsed && !isUsed && isConsumable && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
   const canDrop = !!onDropped && !isUsed;
   const canLearnSpell = !!onLearnScroll && itemDef.type === PlayerItemType.scroll
     && baseStats.magic >= spells[(itemDef as ScrollItemDef).spellId].intelligence
