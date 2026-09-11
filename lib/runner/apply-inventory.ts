@@ -20,6 +20,10 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
     player.equipment = result.equipment;
   }
 
+  if (result.coins !== undefined) {
+    player.coins = result.coins;
+  }
+
   await deletePlayerInventoryFromRedis(params.boardId, params.mapId, player.id);
 }
 

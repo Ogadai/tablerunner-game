@@ -217,19 +217,24 @@ export async function buyAndSellInStore(
     }
 
     // Buy next
-    let createdItem = false;
     for(const itemType of transaction.buyItemTypes) {
       const existingStoreItem = storeState.items.find(i => i.itemId === itemType);
-      if (existingStoreItem && existingStoreItem.count > 0) {
-        existingStoreItem.count++;
+      if (!existingStoreItem || existingStoreItem.count <= 0) {
+        throw new Error(`Item ${itemType} is out of stock`);
       }
+
+      const itemValue = allItems[itemType].value || 0;
+      if (playerInventory.coins < itemValue) {
+        throw new Error(`Not enough coins to buy item ${itemType}`);
+      }
+
+      existingStoreItem.count--;
 
       // Create the item
       const item = createItemForInventory(gameState, allItems[itemType]);
-      createdItem = true;
       addItemToPlayer(playerState, playerInventory, item);
 
-      playerInventory.coins -= (allItems[item.type].value || 0);
+      playerInventory.coins -= itemValue;
     }
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
