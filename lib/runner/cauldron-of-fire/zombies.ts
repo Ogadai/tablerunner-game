@@ -9,12 +9,18 @@ import { deleteStoreStateFromRedis } from "@/lib/store/redis-access";
 const ZOMBIE_REPRODUCE_CHANCE = 0.1;
 const ZOMBIE_TRAVEL_CHANCE = 0.25;
 const ZOMBIE_LED_OWNER = 'zombies';
-const ZOMBIE_LED_RGB = '9ACD32';
+const ZOMBIE_LED_RGB = '7AA825'; //'9ACD32';
 const MAX_ZOMBIES_AT_SHOP = 4;
 const MAX_ZOMBIES_ON_MAP = 30;
 
 export const zombies: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
+    // params.monsters.push(generateMonster(params.gameState, {
+    //   type: 'zombie',
+    //   location: 147,
+    //   health: 10,
+    //   infected: 3,
+    // }));
   },
 
   async executeForTurn(params: BaseParams) {
@@ -48,36 +54,41 @@ export const zombies: ProcessRunner = {
         notZombie.zombie = true;
       }
 
-      // TODO: If no players at the location, replace any NPCs at the location with zombies
-      const reproChance = ZOMBIE_REPRODUCE_CHANCE * ((MAX_ZOMBIES_ON_MAP-zombieMonsters.length) / MAX_ZOMBIES_ON_MAP);
+      const playersAtLocation = params.gameState.players.filter(p => p.location.id === zombie.location);
 
-      if (Math.random() < reproChance) {
-        // Make a new monster like this one
-        const newMonster = generateMonster(params.gameState, {
-          ...zombie,
-          health: monsters[zombie.type].baseStats.health
-        });
-        params.monsters.push(newMonster);
-      }
+      // Don't reproduce or travel if players are present
+      if (playersAtLocation.length === 0) {
+        // TODO: If no players at the location, replace any NPCs at the location with zombies
+        const reproChance = ZOMBIE_REPRODUCE_CHANCE * ((MAX_ZOMBIES_ON_MAP-zombieMonsters.length) / MAX_ZOMBIES_ON_MAP);
 
-      if (Math.random() < ZOMBIE_TRAVEL_CHANCE) {
-        const moves = getPossibleMoveLocations(params, zombie.location);
-        zombie.location = moves[Math.floor(Math.random() * moves.length)];
+        if (Math.random() < reproChance) {
+          // Make a new monster like this one
+          const newMonster = generateMonster(params.gameState, {
+            ...zombie,
+            health: monsters[zombie.type].baseStats.health
+          });
+          params.monsters.push(newMonster);
+        }
 
-        // Destroy any shops and create extra zombies
-        if (params.gameState.stores.includes(zombie.location)) {
-          params.gameState.stores = params.gameState.stores.filter(s => s !== zombie.location);
-          await deleteStoreStateFromRedis(params.boardId, params.mapId, zombie.location);
+        if (Math.random() < ZOMBIE_TRAVEL_CHANCE) {
+          const moves = getPossibleMoveLocations(params, zombie.location);
+          zombie.location = moves[Math.floor(Math.random() * moves.length)];
 
-          const newZombies = Math.ceil(Math.random() * MAX_ZOMBIES_AT_SHOP);
-          for(let n = 0; n < newZombies; n++) {
-            const newMonster = generateMonster(params.gameState, {
-              location: zombie.location,
-              type: 'zombie',
-              zombie: true,
-              health: monsters['zombie'].baseStats.health
-            });
-            params.monsters.push(newMonster);
+          // Destroy any shops and create extra zombies
+          if (params.gameState.stores.includes(zombie.location)) {
+            params.gameState.stores = params.gameState.stores.filter(s => s !== zombie.location);
+            await deleteStoreStateFromRedis(params.boardId, params.mapId, zombie.location);
+
+            const newZombies = Math.ceil(Math.random() * MAX_ZOMBIES_AT_SHOP);
+            for(let n = 0; n < newZombies; n++) {
+              const newMonster = generateMonster(params.gameState, {
+                location: zombie.location,
+                type: 'zombie',
+                zombie: true,
+                health: monsters['zombie'].baseStats.health
+              });
+              params.monsters.push(newMonster);
+            }
           }
         }
       }

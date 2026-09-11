@@ -46,14 +46,14 @@ class GameStateLightingService {
 
       if (gameState.leds.length > 0) {
         await bluetoothService.setColourPerLed(
-          gameState.leds.map(l => ({ led: l.location, rgb: l.rgb }))
+          gameState.leds.map(l => ({ led: l.location - 1, rgb: l.rgb }))
         )
         litLocations.push(...gameState.leds.map(l => l.location));
       }
     }
 
     const unlitLocations: number[] = [];
-    for(let n = 0; n < totalLocations; n++) {
+    for(let n = 1; n <= totalLocations; n++) {
       if (!litLocations.includes(n)) {
         unlitLocations.push(n);
       }

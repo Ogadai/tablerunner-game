@@ -72,7 +72,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     }
 
     // Execute any other game processes
-    executeProcessesForTurn(params);
+    await executeProcessesForTurn(params);
 
     // Update game state
     await setGameStateInRedis(params.boardId, params.mapId, params.gameState);
