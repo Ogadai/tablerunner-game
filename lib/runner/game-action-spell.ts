@@ -88,6 +88,7 @@ export function actionReadScroll(params: BaseParams, player: PlayerState, action
         ...player.spells,
         scrollItem.spellId as SpellIds
       ];
+      player.equipment = player.equipment.filter(e => e.id !== action.itemId);
 
       soloMessageAtLocation(params, player.id, `{player} learned **${spell.name}**`);
     }
