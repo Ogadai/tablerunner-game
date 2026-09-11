@@ -82,6 +82,7 @@ export interface MonsterListEntry {
 export enum PlayerItemType {
   weapon = 'weapon',
   armour = 'armour',
+  shield = 'shield',
   helmet = 'helmet',
   gloves = 'gloves',
   boots = 'boots',

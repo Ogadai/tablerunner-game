@@ -28,6 +28,7 @@ export const NOTHING_EQUPPED = '<none>';
 export interface PlayerInventoryEquipSlots {
   helmet?: string | null;
   armour?: string | null;
+  shield?: string | null;
   weapon?: string | null;
   gloves?: string | null;
   boots?: string | null;

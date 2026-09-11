@@ -97,20 +97,20 @@ export function actionReadScroll(params: BaseParams, player: PlayerState, action
 export function getSpellTargets(params: BaseParams, player: PlayerState, action: PlayerActionCast): ITarget[] {
   const spell = spells[action.spellId];
   if (spell.targetType === SpellTargetType.enemy) {
-    return params.monsters.filter(m => 
-      spell.pickTarget ? m.id === action.targetId : m.location === player.location.id
+    return params.monsters.filter(m => (m.health > 0) &&
+      (spell.pickTarget ? m.id === action.targetId : m.location === player.location.id)
     );
   } else if (spell.targetType === SpellTargetType.friend) {
-    return params.gameState.players.filter(p => 
-      spell.pickTarget ? p.id === action.targetId : p.location.id === player.location.id
+    return params.gameState.players.filter(p => (p.health > 0) &&
+      (spell.pickTarget ? p.id === action.targetId : p.location.id === player.location.id)
     );
   } else {
     return [
       ...params.monsters.filter(m => 
-        (m.health == 0) && (spell.pickTarget ? m.id === action.targetId : m.location === player.location.id)
+        (m.health === 0) && (spell.pickTarget ? m.id === action.targetId : m.location === player.location.id)
       ),
       ...params.gameState.players.filter(p => 
-        (p.health == 0) && (spell.pickTarget ? p.id === action.targetId : p.location.id === player.location.id)
+        (p.health === 0) && (spell.pickTarget ? p.id === action.targetId : p.location.id === player.location.id)
       )
     ];
   }

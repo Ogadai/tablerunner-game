@@ -72,22 +72,27 @@ export const zombies: ProcessRunner = {
 
         if (Math.random() < ZOMBIE_TRAVEL_CHANCE) {
           const moves = getPossibleMoveLocations(params, zombie.location);
-          zombie.location = moves[Math.floor(Math.random() * moves.length)];
+          const newLocation = moves[Math.floor(Math.random() * moves.length)];
 
-          // Destroy any shops and create extra zombies
-          if (params.gameState.stores.includes(zombie.location)) {
-            params.gameState.stores = params.gameState.stores.filter(s => s !== zombie.location);
-            await deleteStoreStateFromRedis(params.boardId, params.mapId, zombie.location);
+          // Only if no players at that location
+          if (params.gameState.players.filter(p => p.location.id === newLocation)) {
+            zombie.location = newLocation;
 
-            const newZombies = Math.ceil(Math.random() * MAX_ZOMBIES_AT_SHOP);
-            for(let n = 0; n < newZombies; n++) {
-              const newMonster = generateMonster(params.gameState, {
-                location: zombie.location,
-                type: 'zombie',
-                zombie: true,
-                health: monsters['zombie'].baseStats.health
-              });
-              params.monsters.push(newMonster);
+            // Destroy any shops and create extra zombies
+            if (params.gameState.stores.includes(zombie.location)) {
+              params.gameState.stores = params.gameState.stores.filter(s => s !== zombie.location);
+              await deleteStoreStateFromRedis(params.boardId, params.mapId, zombie.location);
+
+              const newZombies = Math.ceil(Math.random() * MAX_ZOMBIES_AT_SHOP);
+              for(let n = 0; n < newZombies; n++) {
+                const newMonster = generateMonster(params.gameState, {
+                  location: zombie.location,
+                  type: 'zombie',
+                  zombie: true,
+                  health: monsters['zombie'].baseStats.health
+                });
+                params.monsters.push(newMonster);
+              }
             }
           }
         }
