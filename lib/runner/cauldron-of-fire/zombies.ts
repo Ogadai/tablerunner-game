@@ -9,7 +9,7 @@ import { deleteStoreStateFromRedis } from "@/lib/store/redis-access";
 const ZOMBIE_REPRODUCE_CHANCE = 0.1;
 const ZOMBIE_TRAVEL_CHANCE = 0.25;
 const ZOMBIE_LED_OWNER = 'zombies';
-const ZOMBIE_LED_RGB = '7AA825'; //'9ACD32';
+const ZOMBIE_LED_RGB = '2D3D0E'; //'3F5613';
 const MAX_ZOMBIES_AT_SHOP = 4;
 const MAX_ZOMBIES_ON_MAP = 30;
 
