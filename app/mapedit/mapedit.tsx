@@ -13,10 +13,10 @@ import Image from 'next/image';
 import { cauldronOfFireLocations } from '@/lib/games/maps/cauldron-of-fire';
 import { monsters } from '@/lib/games/monsters';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
-import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
-import { getMonsters } from '@/lib/games/monster-pack';
+import { GRID_CELLS, MAP_COLUMNS } from '@/lib/games/gridCells';
 import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
 import { MonsterState } from '@/lib/store/types';
+import { populateMonsters } from '@/lib/runner/populate-monsters';
 
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
@@ -166,9 +166,18 @@ export default function MapEdit() {
   const two = (!page || page === '2');
 
   useEffect(() => {
-    setMonsterList(getMonsters({
-      counters: { monsterId: 0 }
-    } as any));
+    const getMonsters = async () => {
+      const generatedMonsters = await populateMonsters({
+        gameId,
+        counters: {
+          monsterId: 0,
+        }
+      } as any, gameId);
+
+      setMonsterList(generatedMonsters);
+    }
+
+    getMonsters();
   }, []);
 
   const bindClickLocation = (cell: number) => () => {

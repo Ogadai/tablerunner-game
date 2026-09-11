@@ -1,3 +1,5 @@
+'use server'
+
 import { google } from '@ai-sdk/google';
 import { generateText, Output } from 'ai'; // <-- Import Output here
 import { z } from 'zod';
