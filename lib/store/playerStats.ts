@@ -5,7 +5,7 @@ import { PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUse
 
 const BASE_ACTIONS_PER_TURN = 20;
 const BASE_MOVE_ACTION_COST = 18;
-const BASE_ATTACK_ACTION_COST = 15;
+const BASE_ATTACK_ACTION_COST = 12;
 export const LEARN_SCROLL_ACTION_COST = 10;
 
 export interface PlayerActionsPerTurn {

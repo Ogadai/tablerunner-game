@@ -57,6 +57,17 @@ export default function InventoryItem({
     setIsOpen(false);
     onDropped!();
   }
+  
+  const onClickBuy = () => {
+    setIsOpen(false);
+    onBuy!();
+  }
+  
+  const onClickSell = () => {
+    setIsOpen(false);
+    onSell!();
+  }
+
   const isEquipable = !!onEquipped && itemDef.type !== PlayerItemType.consumable && itemDef.type !== PlayerItemType.scroll;
   const isConsumable = itemDef.type === PlayerItemType.consumable;
   const canUse = !!onUsed && !isUsed && isConsumable && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
@@ -68,6 +79,8 @@ export default function InventoryItem({
   const cannotBuy = !!onBuy && ((availableCoins || 0) < (allItems[item.type].value || 0));
   const coins = onSell ? Math.ceil((itemDef.value || 0) * SELL_COST_RATIO) : itemDef.value || 0;
 
+  const formatValue = (value: number | string) =>
+    `${(typeof value === 'number' ? value : parseInt(value, 10)) > 0 ? '+' : ''}${value}`;
   return (
     <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
@@ -96,7 +109,10 @@ export default function InventoryItem({
               {bonuses.map(([stat, value]) => (
                 <li key={stat} className={styles.statEntry}>
                   { (stat !== 'special')
-                    ? <><span className={styles.statName}>{stat}</span><span className={styles.statValue}>+{value}</span></>
+                    ? <>
+                        <span className={styles.statName}>{stat}</span>
+                        <span className={styles.statValue}>{`${formatValue(value)}`}</span>
+                      </>
                     : <span className={styles.statName}>{value}</span>
                   }
                 </li>
@@ -138,14 +154,14 @@ export default function InventoryItem({
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
-                onClick={onBuy}
+                onClick={onClickBuy}
               >Buy</button>
             }
             {!!onSell && !isUsed &&
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
-                onClick={onSell}
+                onClick={onClickSell}
               >Sell</button>
             }
           </div>
