@@ -55,11 +55,10 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     leds: [],
   };
 
-  const monsters = await populateMonsters(newGameState, mapId);
   const items = await populateItemsForMap(newGameState, mapId);
 
   const locationsState: AllLocationsState = {
-    monsters,
+    monsters: [],
     items,
     coins: [],
     blockedMoves: [],

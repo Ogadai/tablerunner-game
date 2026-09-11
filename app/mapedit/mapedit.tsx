@@ -21,7 +21,7 @@ import { populateMonsters } from '@/lib/runner/populate-monsters';
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
 const mapsForGames: { [id: string]: Location[] } = {
-  'cauldron': cauldronOfFireLocations
+  'cauldronfire': cauldronOfFireLocations
 };
 
 export const getCellCoordinates = (cell: number) => {
@@ -146,8 +146,8 @@ export const removeBidirectionalMove = (mapState: Location[], startCell: number,
 
 export default function MapEdit() {
   const searchParams = useSearchParams();
-  const gameId = searchParams.get('game') || 'cauldron';
-  const mapData = mapsForGames[gameId] || mapsForGames['cauldron'];
+  const gameId = searchParams.get('game') || 'cauldronfire';
+  const mapData = mapsForGames[gameId] || mapsForGames['cauldronfire'];
 
   const [mapState, setMapState] = useState(mapData);
   const [monsterDialogCell, setMonsterDialogCell] = useState<number | null>(null);
@@ -172,7 +172,7 @@ export default function MapEdit() {
         counters: {
           monsterId: 0,
         }
-      } as any, gameId);
+      } as any, 4);
 
       setMonsterList(generatedMonsters);
     }

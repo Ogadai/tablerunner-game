@@ -10,8 +10,8 @@ import { monsters, getPointsForDamage, mostersExcludeFromAutoPopulate } from '..
 import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from '../games/gridCells';
 import { getMonsters } from '../games/monster-pack';
 
-export async function populateMonsters(gameState: GameState, mapId: string): Promise<MonsterState[]> {
-  return getMonsters(gameState);
+export async function populateMonsters(gameState: GameState, playerCount: number = 1): Promise<MonsterState[]> {
+  return getMonsters(gameState, playerCount);
   // const aiMonsters = await askAIForMonsters(mapId);
   // return aiMonsters;
 }

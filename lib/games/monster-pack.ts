@@ -5,6 +5,7 @@ import { games } from './games';
 import { Location } from './types';
 
 const MONSTER_DISTANCE_SCALE = 0.1;
+const PLAYER_COUNT_SCALE = 0.25;
 const MONSTER_COUNT_SCALE = 2;
 const MONSTER_COUNT_MAX = 8;
 
@@ -42,16 +43,16 @@ function getDistanceFromStart(cell: number): number {
   return 0.5 * Math.abs(vector.x) + 2 * Math.abs(vector.y);
 }
 
-export function getMonsters(gameState: GameState): MonsterState[] {
+export function getMonsters(gameState: GameState, playerCount: number = 1): MonsterState[] {
   const newMonsters: MonsterState[] = [];
   for(let n = 1 ; n <= GRID_CELL_COUNT; n++) {
-    newMonsters.push(...getCellMonsters(gameState, n));
+    newMonsters.push(...getCellMonsters(gameState, n, playerCount));
   }
   return newMonsters;
 }
 
-function getCellMonsters(gameState: GameState, cell: number): MonsterState[] {
-  const avgStrength = getCellStrength(gameState, cell);
+function getCellMonsters(gameState: GameState, cell: number, playerCount: number): MonsterState[] {
+  const avgStrength = getCellStrength(gameState, cell, playerCount);
   if (avgStrength < 0.02) {
     return [];
   }
@@ -97,8 +98,8 @@ function pickMonster(maxStrength: number): { id: string, strength: number } | nu
   return top4[Math.floor(Math.random() * top4.length)];
 }
 
-function getCellStrength(gameState: GameState, cell: number): number {
-  const locations = games.find(g => g.map === gameState.gameId)!.locations;
+function getCellStrength(gameState: GameState, cell: number, playerCount: number): number {
+  const locations = games.find(g => g.id === gameState.gameId)!.locations;
   const location = locations.find(l => l.id === cell)!;
 
   const chance = getMonsterChance(gameState, location);
@@ -106,9 +107,10 @@ function getCellStrength(gameState: GameState, cell: number): number {
     return 0;
   }
 
+  const playerFactor = 0.5 + playerCount * PLAYER_COUNT_SCALE;
   const typeFactor = location.underground ? 1 : 0.5;
   const distance = getDistanceFromStart(cell);
-  return distance * typeFactor * MONSTER_DISTANCE_SCALE;
+  return distance * typeFactor * playerFactor * MONSTER_DISTANCE_SCALE;
 }
 
 function getMonsterChance(gameState: GameState, location: Location): number {

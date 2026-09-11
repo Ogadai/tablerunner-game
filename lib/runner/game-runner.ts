@@ -20,6 +20,7 @@ import { runGameActions } from './game-actions';
 import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
 import { applyPlayerInventory } from "./apply-inventory";
 import { executeProcessesForTurn } from "./game-processes";
+import { populateMonsters } from "./populate-monsters";
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -40,6 +41,11 @@ export async function checkAllPlayersReady(boardId: string, mapId: string, ready
 
 export async function processGameTurn(params: BaseParams): Promise<void> {
   try {
+    if (params.monsters.length < 30) {
+        const extraMonsters = await populateMonsters(params.gameState, params.gameState.players.length);
+        params.monsters.push(...extraMonsters);
+    }
+
     // Initialise the messages for each player
     for(const player of params.gameState.players) {
       params.messages[player.id] = { messages: []};
