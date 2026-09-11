@@ -17,7 +17,11 @@ for(const keyItemType of Object.keys(keyItems)) {
 
 function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZombies: boolean): boolean {
   // Find dead players at location
-  const deadPlayers = params.gameState.players.filter(p => p.health === 0);
+  const deadPlayers = params.gameState.players.filter(p => 
+    p.health === 0 &&
+    p.location.id === player.location.id
+  );
+
   if (deadPlayers.length == 0) {
     playerMessageAtLocation(params, player.id, `**{player}** could not resurrection anyone`);
     return false;

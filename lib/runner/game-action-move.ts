@@ -9,7 +9,7 @@ import { BaseParams } from './base-params';
 import { getPlayerLocation } from "./game-location";
 
 export const LOCKED_LOCATION_OWNER = 'lock';
-const LOCKED_LOCATION_RGB = 'FF0000';
+const LOCKED_LOCATION_RGB = '500000';
 
 export function actionMove(params: BaseParams, player: PlayerState, action: PlayerActionMove): void {
   try {

@@ -9,7 +9,7 @@ import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monst
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getMonsterStats } from './monster-stats';
-import { ConsumableIds, ItemIds, lootItems } from "../games/items";
+import { ConsumableIds, consumableItems, ItemIds, lootItems } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
 
 const MAXIMUM_COIN_DROP = 100;
@@ -168,9 +168,19 @@ function monsterDropLoot(params: BaseParams, player: PlayerState, monster: Monst
   const locationId = player.location.id;
 
   const monsterStrength = getMonsterStrength(monsters[monster.type]);
+
+  const potionChance = 0.5;
+  if (Math.random() <= potionChance) {
+    const potionItemId = monsterStrength > 0.25 ? ConsumableIds.greaterHealingPotion : ConsumableIds.healingPotion;
+    params.items.push({
+      ...createItemForInventory(params.gameState, consumableItems[potionItemId]),
+      location: locationId,
+    });
+  }
+
   const lootChance = 0.3 + monsterStrength * 0.6;
 
-  if (Math.random() >= lootChance) {
+  if (Math.random() > lootChance) {
     return;
   }
 
