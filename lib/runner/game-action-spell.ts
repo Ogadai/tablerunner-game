@@ -7,7 +7,7 @@ import { genericAttackMonster } from "./game-action-attack";
 import { soloMessageAtLocation, playerMessageAtLocation } from "./game-messages";
 import { specialSpellActions } from './special-spell-actions';
 
-const MAX_RECENT_SPELLS = 3;
+const MAX_RECENT_SPELLS = 2;
 
 export function actionCastSpell(params: BaseParams, player: PlayerState, action: PlayerActionCast): void {
   if (!player.spells.includes(action.spellId as SpellIds)) {
