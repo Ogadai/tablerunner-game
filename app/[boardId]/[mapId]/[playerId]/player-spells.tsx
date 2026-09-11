@@ -3,7 +3,7 @@ import Swal from 'sweetalert2'
 import { Dialog, Popover } from 'radix-ui';
 import { getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
 import styles from './player-spells.module.css';
-import { PlayerAction, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerInventoryState, PlayerState } from '@/lib/store/types';
+import { PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionType, PlayerState } from '@/lib/store/types';
 import { SpellDef, SpellTargetType } from '@/lib/games/types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import { getSwalDefaultOptions } from '@/app/swal';
@@ -25,6 +25,7 @@ export default function PlayerSpells({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [targetSpell, setTargetSpell] = useState<SpellDef | null>(null);
+  const [isAttackTargetOpen, setIsAttackTargetOpen] = useState(false);
   
   const castSpell = async (spell: SpellDef, targetId?: string) => {
     await addNewAction({
@@ -33,6 +34,28 @@ export default function PlayerSpells({
       spellId: spell.id,
       targetId,
     } as Omit<PlayerActionCast, 'id'>);
+  };
+
+  const attackTargets = entities.filter(entity =>
+    entity.className === EntityItemClass.enemy && entity.health > 0
+  );
+
+  const attackMonster = async (target: EntityItemDetail) => {
+    setIsAttackTargetOpen(false);
+    await addNewAction({
+      type: PlayerActionType.Attack,
+      description: `Attack ${target.name}`,
+      target: target.id,
+    } as Omit<PlayerActionAttack, 'id'>);
+  };
+
+  const onAttack = async () => {
+    if (attackTargets.length === 1) {
+      await attackMonster(attackTargets[0]);
+      return;
+    }
+
+    setIsAttackTargetOpen(true);
   };
 
   const onCastSpell = async (spellId: string) => {
@@ -101,7 +124,7 @@ export default function PlayerSpells({
       });
 
   return (<>
-    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+    { playerSpells.length > 0 && <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
         <button type="button" className={styles.spellsButton}>
           <span>Spells</span>
@@ -137,7 +160,7 @@ export default function PlayerSpells({
           </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
-    </Dialog.Root>
+    </Dialog.Root> }
     <Dialog.Root open={targetSpell !== null} onOpenChange={open => { if (!open) setTargetSpell(null); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
@@ -152,8 +175,28 @@ export default function PlayerSpells({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-    
+
     <div className={styles.recentSpells}>
+      <Popover.Root modal={true} open={isAttackTargetOpen} onOpenChange={setIsAttackTargetOpen}>
+        <Popover.Trigger asChild>
+          <button
+            type="button"
+            className={`${styles.spellIcon} ${attackTargets.length === 0 || playerStats.actionsPerTurn.attack > actionPointsLeft ? styles.disabledSpellIcon : ''}`}
+            aria-label="Attack"
+            title="Attack"
+            style={{ backgroundPosition: `-${6 * 40}px -${4 * 40}px` }}
+            onClick={onAttack}
+          ></button>
+        </Popover.Trigger>
+        { attackTargets.length > 1 &&
+          <Popover.Portal>
+            <Popover.Content className="PopoverContent">
+              <EntityList entities={attackTargets} onClickEntity={attackMonster} />
+              <Popover.Arrow className="PopoverArrow" width={15} height={10} />
+            </Popover.Content>
+          </Popover.Portal>
+        }
+      </Popover.Root>
       { recentSpells.map(({spell, canCast}) =>
         <button
           key={spell.id}

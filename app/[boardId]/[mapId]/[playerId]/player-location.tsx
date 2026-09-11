@@ -234,7 +234,7 @@ export default function PlayerLocation(
         </button>
       }
     </div><div className={styles.actionButtonGroup2}>
-      { playerStats && playerState.spells.length > 0 &&
+      { playerStats &&
         <PlayerSpells
           playerSpells={playerState.spells}
           player={playerState}

@@ -1,9 +1,26 @@
 .recentSpells {
+  margin-top: 10px;
+
+  .attackIcon,
   .spellIcon {
     width: 40px;
     height: 40px;
     margin: 0 5px 0 0;
     background-size: 280px 200px;
+  }
+
+  .attackIcon {
+    padding: 0;
+    border: 0;
+    color: var(--color-text);
+    background: transparent;
+    font-size: 30px;
+  }
+
+  .attackIcon:hover,
+  .attackIcon:active,
+  .attackIcon:focus-visible {
+    background: transparent;
   }
   
   .spellIcon:hover,
