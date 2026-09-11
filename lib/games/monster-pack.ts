@@ -40,7 +40,7 @@ function getDistanceFromStart(cell: number): number {
     y: cellXY.row - startXY.row,
   };
 
-  return 0.5 * Math.abs(vector.x) + 2 * Math.abs(vector.y);
+  return 0.3 * Math.abs(vector.x) + 1.5 * Math.abs(vector.y);
 }
 
 export function getMonsters(gameState: GameState, playerCount: number = 1): MonsterState[] {

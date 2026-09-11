@@ -77,6 +77,15 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     // Update game state
     await setGameStateInRedis(params.boardId, params.mapId, params.gameState);
 
+    // Store monsters
+    const newLocationsState: AllLocationsState = {
+      monsters: params.monsters,
+      items: params.items,
+      coins: params.coins,
+      blockedMoves: params.blockedMoves,
+    };
+    setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
+
     // Reset ready state
     await setReadyStateInRedis(params.boardId, params.mapId, {
       readyPlayerIds: []
@@ -103,15 +112,6 @@ async function runGameTurn(params: BaseParams): Promise<void> {
   await runGameActions(params);
 
   processMonsterEffects(params);
-
-  // Store monsters
-  const newLocationsState: AllLocationsState = {
-    monsters: params.monsters,
-    items: params.items,
-    coins: params.coins,
-    blockedMoves: params.blockedMoves,
-  };
-  setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
 }
 
 export function processPlayerEffects(params: BaseParams, player: PlayerState) {

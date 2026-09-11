@@ -6,15 +6,15 @@ import { monsters } from '../../games/monsters';
 import { games } from "@/lib/games/games";
 import { deleteStoreStateFromRedis } from "@/lib/store/redis-access";
 
-const ZOMBIE_REPRODUCE_CHANCE = 0.3;
+const ZOMBIE_REPRODUCE_CHANCE = 0.1;
 const ZOMBIE_TRAVEL_CHANCE = 0.25;
 const ZOMBIE_LED_OWNER = 'zombies';
 const ZOMBIE_LED_RGB = '9ACD32';
 const MAX_ZOMBIES_AT_SHOP = 4;
+const MAX_ZOMBIES_ON_MAP = 30;
 
 export const zombies: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
-
   },
 
   async executeForTurn(params: BaseParams) {
@@ -40,6 +40,7 @@ export const zombies: ProcessRunner = {
 
     const beforeLocations = getZombieLocations(params);
     const zombieMonsters = params.monsters.filter(m => m.zombie);
+
     for(const zombie of zombieMonsters) {
       // Get any non-zombies at the same location and make them zombies
       const notZombies = params.monsters.filter(m => !m.zombie && m.health > 0 && m.location === zombie.location);
@@ -48,13 +49,15 @@ export const zombies: ProcessRunner = {
       }
 
       // TODO: If no players at the location, replace any NPCs at the location with zombies
+      const reproChance = ZOMBIE_REPRODUCE_CHANCE * ((MAX_ZOMBIES_ON_MAP-zombieMonsters.length) / MAX_ZOMBIES_ON_MAP);
 
-      if (Math.random() < ZOMBIE_REPRODUCE_CHANCE) {
+      if (Math.random() < reproChance) {
         // Make a new monster like this one
-        generateMonster(params.gameState, {
+        const newMonster = generateMonster(params.gameState, {
           ...zombie,
           health: monsters[zombie.type].baseStats.health
-        })
+        });
+        params.monsters.push(newMonster);
       }
 
       if (Math.random() < ZOMBIE_TRAVEL_CHANCE) {
@@ -68,12 +71,13 @@ export const zombies: ProcessRunner = {
 
           const newZombies = Math.ceil(Math.random() * MAX_ZOMBIES_AT_SHOP);
           for(let n = 0; n < newZombies; n++) {
-            generateMonster(params.gameState, {
+            const newMonster = generateMonster(params.gameState, {
               location: zombie.location,
               type: 'zombie',
               zombie: true,
               health: monsters['zombie'].baseStats.health
             });
+            params.monsters.push(newMonster);
           }
         }
       }

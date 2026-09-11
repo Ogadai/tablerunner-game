@@ -172,7 +172,7 @@ export default function MapEdit() {
         counters: {
           monsterId: 0,
         }
-      } as any, 4);
+      } as any, 2);
 
       setMonsterList(generatedMonsters);
     }
