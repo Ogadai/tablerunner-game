@@ -58,6 +58,15 @@ export default function PlayerSpells({
     setIsAttackTargetOpen(true);
   };
 
+  const canCastSpell = (spellId: string) => {
+    const spell = spells[spellId];
+    if (spell.pickTarget || spell.targetType === SpellTargetType.enemy) {
+      const targets = getTargetEntities(spell.targetType);
+      return targets.length > 0;
+    }
+    return true;
+  }
+
   const onCastSpell = async (spellId: string) => {
     const spell = spells[spellId];
     setIsOpen(false);
@@ -118,7 +127,10 @@ export default function PlayerSpells({
       = (player.recentSpells || []).map(spellId => {
         const spell = spells[spellId];
         const actionCost = getSpellActionCost(spell, playerStats?.baseStats?.magic);
-        const canCast = actionCost <= actionPointsLeft && spell.magicCost <= playerStats.magicLeft;
+        const canCast = actionCost <= actionPointsLeft && spell.magicCost <= playerStats.magicLeft
+            && canCastSpell(spellId);
+
+        canCastSpell
 
         return { spell, canCast }
       });
