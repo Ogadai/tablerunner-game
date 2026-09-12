@@ -12,6 +12,7 @@ import { populateMonsters } from "../runner/populate-monsters";
 import { populateItemsForMap } from "../runner/populate-items";
 import { createStoreInventoryState } from "./playerInventory";
 import { setupProcesses } from "../runner/game-processes";
+import { updatePortalLeds } from "../runner/game-action-portal";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;
@@ -48,12 +49,15 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     players: [],
     visited: [gameDef.startLocation],
     stores: Object.keys(gameDef.storeItems).map(i => parseInt(i, 10)),
+    portals: gameDef.portalLocations ? [...gameDef.portalLocations] : [],
     counters: {
       itemId: 0,
       monsterId: 0,
     },
     leds: [],
   };
+
+  updatePortalLeds(newGameState);
 
   const items = await populateItemsForMap(newGameState, mapId);
 
@@ -154,6 +158,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       },
       spells: [...characterDef.spells],
       coins: INITIAL_COINS,
+      visitedPortals: gameState.portals?.includes(gameDef.startLocation) ? [gameDef.startLocation] : [],
     };
 
     const baseStats = getPlayerStats(newPlayer);

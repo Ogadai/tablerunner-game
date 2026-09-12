@@ -34,6 +34,25 @@
   }
 }
 
+.portalStoneBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  background: rgba(140, 60, 220, 0.25);
+  border: 1px solid rgba(180, 100, 255, 0.45);
+  color: #d8b4fe;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+  font-weight: normal;
+
+  span:first-child {
+    font-size: 14px;
+  }
+}
+
 .actionButtonContainer {
   border-top: 2px solid var(--border-stone);
   height: 170px;

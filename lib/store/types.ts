@@ -15,6 +15,7 @@ export interface GameState {
   players: PlayerState[];
   visited: number[];
   stores: number[];
+  portals: number[];
 
   counters: {
     monsterId: number,
@@ -75,6 +76,7 @@ export interface PlayerState extends INamedTarget {
   spells: SpellIds[];
   recentSpells?: SpellIds[];
   coins: number;
+  visitedPortals?: number[];
 }
 
 export interface PlayerLocationMove extends LocationMove {
@@ -102,6 +104,7 @@ export enum PlayerActionType {
   UseItem = 'useItem',
   Cast = 'Cast',
   ReadScroll = 'ReadScroll',
+  Portal = 'portal',
 }
 
 export interface PlayerAction {
@@ -134,6 +137,11 @@ export interface PlayerActionCast extends PlayerAction {
 export interface PlayerActionReadScroll extends PlayerAction {
   type: PlayerActionType.ReadScroll,
   itemId: string;
+}
+
+export interface PlayerActionPortal extends PlayerAction {
+  type: PlayerActionType.Portal;
+  targetLocation: number;
 }
 
 export interface PlayerActionsState {

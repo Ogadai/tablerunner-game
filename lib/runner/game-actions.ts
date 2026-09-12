@@ -8,6 +8,7 @@ import {
   PlayerActionUseItem,
   PlayerActionCast,
   PlayerActionReadScroll,
+  PlayerActionPortal,
   INamedTarget,
 } from "../store/types";
 import {
@@ -22,6 +23,7 @@ import { getMonsterStats } from './monster-stats';
 import { actionAttack, monsterAttack } from './game-action-attack';
 import { actionCastSpell, actionReadScroll } from './game-action-spell';
 import { actionMove } from "./game-action-move";
+import { actionPortal } from "./game-action-portal";
 import { actionUseItem } from './game-action-use';
 
 enum EntityActionEntityTypes {
@@ -47,6 +49,7 @@ const MAGIC_BONUS_RATIO = 0.1;
 export async function runGameActions(params: BaseParams): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
   const playerMoves: Record<string, PlayerActionMove[]> = {};
+  const playerPortals: Record<string, PlayerActionPortal[]> = {};
   const playerFought: Record<string, boolean> = {};
 
   try {
@@ -64,13 +67,17 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       // Check there aren't too many actions
       limitPlayerActionsToCost(player, playerActionState);
 
-      // Filter out the moves
+      // Filter out the moves and portals
       playerMoves[player.id] = playerActionState.actions
         .filter(a => a.type === PlayerActionType.Move)
         .map(a => a as PlayerActionMove);
 
+      playerPortals[player.id] = playerActionState.actions
+        .filter(a => a.type === PlayerActionType.Portal)
+        .map(a => a as PlayerActionPortal);
+
       const playerOtheractions = playerActionState.actions
-        .filter(a => a.type !== PlayerActionType.Move);
+        .filter(a => a.type !== PlayerActionType.Move && a.type !== PlayerActionType.Portal);
 
       entityActionsForLocations[locId].entities.push({
         entityType: EntityActionEntityTypes.player,
@@ -152,6 +159,10 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
         for(const moveAction of playerMoves[player.id]) {
           actionMove(params, player, moveAction);
+        }
+
+        for(const portalAction of playerPortals[player.id]) {
+          actionPortal(params, player, portalAction);
         }
       }
     }

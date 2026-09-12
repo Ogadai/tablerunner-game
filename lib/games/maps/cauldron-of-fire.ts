@@ -3886,3 +3886,6 @@ export const cauldronOfFireStoreItems: { [locationId: number]: string[] } = {
   123: smallShopItems,
   121: tavernItems,
 };
+
+export const cauldronOfFirePortals: number[] = [10, 80, 91, 136, 184];
+

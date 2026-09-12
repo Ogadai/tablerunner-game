@@ -39,12 +39,16 @@ function createParams(monsters: MonsterState[], players: PlayerState[]): BasePar
       characters: [],
       players,
       visited: [],
+      stores: [],
+      portals: [],
+      leds: [],
       counters: { monsterId: 0, itemId: 0 },
     },
     messages: { p1: { messages: [] }, p2: { messages: [] } },
     monsters,
     items: [],
     coins: [],
+    blockedMoves: [],
   };
 }
 

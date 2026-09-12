@@ -13,6 +13,7 @@ import LocationTopicService from "@/app/message-bus/location-topic-service";
 import { getGameTopicId } from "@/lib/message-types";
 import PlayerSpells from './player-spells';
 import PlayerStore from './player-store';
+import PlayerPortal from './player-portal';
 import { characters } from '@/lib/games/characters';
 import { monsters } from '@/lib/games/monsters';
 import { EntityItemClass, EntityItemDetail } from './entity-list';
@@ -120,10 +121,12 @@ export default function PlayerLocation(
     };
   
   const notReadyAction = async () => {
-    const moveAction = actionsState.actions.find(a => a.type === PlayerActionType.Move);
+    const travelAction = actionsState.actions.find(
+      a => a.type === PlayerActionType.Move || a.type === PlayerActionType.Portal
+    );
 
-    if (moveAction) {
-      const state = await removePlayerAction(boardId, mapId, playerState!.id, moveAction.id);
+    if (travelAction) {
+      const state = await removePlayerAction(boardId, mapId, playerState!.id, travelAction.id);
       playerStatsSyncService.updateActionsState(state.data!);
     }
 
@@ -172,11 +175,22 @@ export default function PlayerLocation(
     }))
   ];
 
+  const hasPortalStone = gameState.portals?.includes(playerState.location.id);
+  const hasLivingMonsters = locationState.monsters.some(monster => monster.health > 0);
+
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
         <h3>{getDisplayName(playerState)}</h3>
-        <h4>Location {playerState.location.id}</h4>
+        <h4>
+          Location {playerState.location.id}
+          {hasPortalStone && (
+            <span className={styles.portalStoneBadge} title="An ancient Portal Stone stands here">
+              <span className="material-symbols-outlined">auto_awesome</span>
+              <span>Portal Stone</span>
+            </span>
+          )}
+        </h4>
       </div>
       <p>{playerState.location?.description}</p>
       <PlayerLocationList
@@ -246,6 +260,21 @@ export default function PlayerLocation(
       {
         gameState.stores.includes(playerState.location.id) &&
         <PlayerStore boardId={boardId} mapId={mapId} player={playerState} usedItemIds={usedItemIds} />
+      }
+      {
+        hasPortalStone &&
+        <PlayerPortal
+          boardId={boardId}
+          mapId={mapId}
+          player={playerState}
+          gameState={gameState}
+          playerCanMove={playerStats.playerCanMove}
+          hasLivingEnemies={hasLivingMonsters}
+          actionPointsLeft={playerStats.actionPointsTotal - playerStats.actionPointsUsed}
+          moveCost={playerStats.actionsPerTurn.move}
+          addNewAction={addNewAction}
+          endTurnAction={endTurnAction}
+        />
       }
     </div></div>}
   </>);

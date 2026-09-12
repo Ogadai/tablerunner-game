@@ -21,6 +21,7 @@ import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
 import { applyPlayerInventory } from "./apply-inventory";
 import { executeProcessesForTurn } from "./game-processes";
 import { populateMonsters } from "./populate-monsters";
+import { updatePortalLeds } from "./game-action-portal";
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -67,9 +68,19 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     await runGameTurn(params);
 
     for(const player of params.gameState.players) {
+      if (params.gameState.portals?.includes(player.location.id)) {
+        if (!player.visitedPortals) {
+          player.visitedPortals = [];
+        }
+        if (!player.visitedPortals.includes(player.location.id)) {
+          player.visitedPortals.push(player.location.id);
+        }
+      }
       levelUpPlayer(params, player);
       processPlayerEffects(params, player);
     }
+
+    updatePortalLeds(params.gameState);
 
     // Execute any other game processes
     await executeProcessesForTurn(params);

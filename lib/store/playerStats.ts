@@ -37,6 +37,7 @@ export function getPlayerActionsCosts(playerState: PlayerState, actionsState: Pl
       case PlayerActionType.Attack:
         return total + actionsPerTurn.attack;
       case PlayerActionType.Move:
+      case PlayerActionType.Portal:
         return total + actionsPerTurn.move;
       case PlayerActionType.UseItem:
         const useAction = action as PlayerActionUseItem;

@@ -1,0 +1,119 @@
+.portalTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.portalTriggerIcon {
+  font-size: 20px;
+}
+
+.portalDialog {
+  min-width: 320px;
+  max-width: 480px;
+  width: 90vw;
+}
+
+.portalIntro {
+  font-size: 0.9rem;
+  color: var(--color-text-dim, #a0a0a0);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.warningBanner {
+  background-color: rgba(180, 40, 40, 0.2);
+  border: 1px solid var(--color-error, #d32f2f);
+  color: #ff8080;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.destinationsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.destinationItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-stone, #444);
+  border-radius: 4px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.destinationItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-primary, #b8860b);
+}
+
+.destinationInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.destinationTitle {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: var(--color-text, #eee);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.destinationDesc {
+  font-size: 0.8rem;
+  color: var(--color-text-dim, #999);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.travelButton {
+  flex-shrink: 0;
+}
+
+.emptyNotice {
+  padding: 20px 12px;
+  text-align: center;
+  color: var(--color-text-dim, #aaa);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-stone, #444);
+  border-radius: 6px;
+}
+
+.emptyIcon {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-primary, #b8860b);
+}
+
+.portalStoneBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  background: rgba(90, 40, 140, 0.35);
+  border: 1px solid rgba(160, 90, 230, 0.5);
+  color: #d8b4fe;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+}
