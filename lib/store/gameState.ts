@@ -50,6 +50,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     visited: [gameDef.startLocation],
     stores: Object.keys(gameDef.storeItems).map(i => parseInt(i, 10)),
     portals: gameDef.portalLocations ? [...gameDef.portalLocations] : [],
+    visitedPortals: gameDef.portalLocations?.includes(gameDef.startLocation) ? [gameDef.startLocation] : [],
     counters: {
       itemId: 0,
       monsterId: 0,
@@ -158,7 +159,6 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       },
       spells: [...characterDef.spells],
       coins: INITIAL_COINS,
-      visitedPortals: gameState.portals?.includes(gameDef.startLocation) ? [gameDef.startLocation] : [],
     };
 
     const baseStats = getPlayerStats(newPlayer);

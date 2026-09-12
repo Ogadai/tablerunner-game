@@ -35,26 +35,21 @@ export function actionPortal(params: BaseParams, player: PlayerState, action: Pl
       destinationLocation.id
     ];
 
-    // Ensure portal locations are recorded in player's visitedPortals
-    if (!player.visitedPortals) {
-      player.visitedPortals = [];
+    // Ensure portal locations are recorded in gameState.visitedPortals
+    if (!params.gameState.visitedPortals) {
+      params.gameState.visitedPortals = [];
     }
-    if (!player.visitedPortals.includes(destinationLocation.id)) {
-      player.visitedPortals.push(destinationLocation.id);
+    if (!params.gameState.visitedPortals.includes(destinationLocation.id)) {
+      params.gameState.visitedPortals.push(destinationLocation.id);
     }
-    if (!player.visitedPortals.includes(fromLocationId)) {
-      player.visitedPortals.push(fromLocationId);
+    if (!params.gameState.visitedPortals.includes(fromLocationId)) {
+      params.gameState.visitedPortals.push(fromLocationId);
     }
 
-    soloMessageAtLocation(
-      params,
-      player.id,
-      `**{player}** activated the Portal Stone and materialized at **Location ${destinationLocation.id}**!`
-    );
     playerMessageAtLocation(
       params,
       player.id,
-      `**{player}** stepped through a swirling portal!`
+      `**{player}** activated the Portal Stone and materialized at **Location ${destinationLocation.id}**!`
     );
 
     updatePortalLeds(params.gameState);
@@ -69,7 +64,9 @@ export const PORTAL_LED_RGB = '003B5C';
 
 export function updatePortalLeds(gameState: GameState) {
   if (gameState.portals && gameState.portals.length > 0) {
-    const discoveredPortals = gameState.portals.filter(p => gameState.visited.includes(p));
+    const discoveredPortals = gameState.portals.filter(
+      p => gameState.visitedPortals?.includes(p) || gameState.visited.includes(p)
+    );
     const portalLeds = discoveredPortals.map(l => ({
       location: l,
       rgb: PORTAL_LED_RGB,

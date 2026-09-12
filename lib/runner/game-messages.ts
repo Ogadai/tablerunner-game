@@ -1,7 +1,7 @@
 import { getDisplayName } from '../store/types';
 import { BaseParams } from './base-params';
 
-export function playerMessageAtLocation(params: BaseParams, playerId: string, message: string) {
+export function playerMessageAtLocation(params: BaseParams, playerId: string, message: string, fromLocation?: number) {
   const player = params.gameState.players.find(p => p.id === playerId)!;
 
   params.messages[playerId].messages.push({

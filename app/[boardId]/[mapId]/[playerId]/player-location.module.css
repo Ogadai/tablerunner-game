@@ -66,11 +66,13 @@
 }
 
 .actionButtonGroup2 {
-  padding: 0 10px;
+  padding: 3px 10px;
   border-left: 2px solid var(--border-stone);
 
   button {
-    margin: 7px 0 0 0;
+    margin: 5px 0 0 0;
+    width: 130px;
+    padding: 0;
   }
 }
 

@@ -16,6 +16,7 @@ export interface GameState {
   visited: number[];
   stores: number[];
   portals: number[];
+  visitedPortals: number[];
 
   counters: {
     monsterId: number,
@@ -76,7 +77,6 @@ export interface PlayerState extends INamedTarget {
   spells: SpellIds[];
   recentSpells?: SpellIds[];
   coins: number;
-  visitedPortals?: number[];
 }
 
 export interface PlayerLocationMove extends LocationMove {

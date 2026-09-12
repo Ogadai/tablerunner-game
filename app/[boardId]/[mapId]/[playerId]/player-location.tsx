@@ -182,15 +182,7 @@ export default function PlayerLocation(
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
         <h3>{getDisplayName(playerState)}</h3>
-        <h4>
-          Location {playerState.location.id}
-          {hasPortalStone && (
-            <span className={styles.portalStoneBadge} title="An ancient Portal Stone stands here">
-              <span className="material-symbols-outlined">auto_awesome</span>
-              <span>Portal Stone</span>
-            </span>
-          )}
-        </h4>
+        <h4>Location {playerState.location.id}</h4>
       </div>
       <p>{playerState.location?.description}</p>
       <PlayerLocationList

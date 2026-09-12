@@ -3806,19 +3806,19 @@ const hardLocations: number[] = [160, 156, 198, 200, 162, 199, 240, 202, 236, 20
 const resurrectionLocations: number[] = [3, 120, 73, 116, 101, 136, 200, 156, 202, 232, 192];
 
 const easyLoot = Object.entries(lootItems)
-    .map(([id, item]) => item)
-    .filter(item => item.value && item.value < 50)
-    .map(item => item.id);
-    
+  .map(([id, item]) => item)
+  .filter(item => item.value && item.value < 50)
+  .map(item => item.id);
+
 const mediumLoot = Object.entries(lootItems)
-    .map(([id, item]) => item)
-    .filter(item => item.value && item.value > 20 && item.value < 150)
-    .map(item => item.id);
+  .map(([id, item]) => item)
+  .filter(item => item.value && item.value > 20 && item.value < 150)
+  .map(item => item.id);
 
 const hardLoot = Object.entries(lootItems)
-    .map(([id, item]) => item)
-    .filter(item => item.value && item.value > 120)
-    .map(item => item.id);
+  .map(([id, item]) => item)
+  .filter(item => item.value && item.value > 120)
+  .map(item => item.id);
 
 const easyItems = 40;
 const mediumItems = 30;
@@ -3826,17 +3826,17 @@ const hardItems = 20;
 const resurrectionItems = 4;
 
 export const cauldronOfFireItems: GameItemLocation[] = [];
-for(let n = 0; n < easyItems; n++) {
+for (let n = 0; n < easyItems; n++) {
   cauldronOfFireItems.push({ locations: easyLocations, itemIds: easyLoot });
 }
-for(let n = 0; n < mediumItems; n++) {
+for (let n = 0; n < mediumItems; n++) {
   cauldronOfFireItems.push({ locations: mediumLocations, itemIds: mediumLoot });
 }
-for(let n = 0; n < hardItems; n++) {
+for (let n = 0; n < hardItems; n++) {
   cauldronOfFireItems.push({ locations: hardLocations, itemIds: hardLoot });
 }
 
-for(let n = 0; n < resurrectionItems; n++) {
+for (let n = 0; n < resurrectionItems; n++) {
   cauldronOfFireItems.push({ locations: resurrectionLocations, itemIds: [ConsumableIds.resurrectionShard] });
 }
 
@@ -3877,9 +3877,10 @@ const generalItems: string[] = [
 const villageSquareItems: string[] = generalItems.filter(id => (allItems[id].value || 0) < 100);
 
 export const cauldronOfFireStoreItems: { [locationId: number]: string[] } = {
-  80: witchStoreItems,
+  22: villageSquareItems,
   57: smallShopItems,
   58: tavernItems,
+  80: witchStoreItems,
   90: blacksmithItems,
   91: villageSquareItems,
   110: tavernItems,
@@ -3887,5 +3888,6 @@ export const cauldronOfFireStoreItems: { [locationId: number]: string[] } = {
   121: tavernItems,
 };
 
-export const cauldronOfFirePortals: number[] = [10, 80, 91, 136, 184];
+// Can't have portals and shops in the same place
+export const cauldronOfFirePortals: number[] = [10, 23, 38, 78, 92, 102, 155, 184, 211];
 

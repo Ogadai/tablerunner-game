@@ -1,11 +1,12 @@
 .recentSpells {
-  margin-top: 10px;
+  margin-top: 5px;
+  height: 48px;
 
   .attackIcon,
   .spellIcon {
     width: 40px;
     height: 40px;
-    margin: 0 5px 0 0;
+    margin: 4px 5px 0 0;
     background-size: 280px 200px;
   }
 

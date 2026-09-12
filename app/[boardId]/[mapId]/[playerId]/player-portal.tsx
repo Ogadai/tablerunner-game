@@ -34,10 +34,7 @@ export default function PlayerPortal({
   const gameDef = games.find(g => g.id === gameState.gameId);
   const locations = gameDef?.locations || [];
 
-  // Determine which portals the player has visited
-  const visitedPortals = (player.visitedPortals && player.visitedPortals.length > 0)
-    ? player.visitedPortals
-    : (gameState.portals?.filter(p => gameState.visited.includes(p) || p === player.location.id) || []);
+  const visitedPortals = gameState.visitedPortals;
 
   const availableDestinations = visitedPortals
     .filter(locId => locId !== player.location.id && gameState.portals?.includes(locId));
@@ -76,8 +73,8 @@ export default function PlayerPortal({
           className={styles.portalTrigger}
           title="Use the Portal Stone to quick-travel"
         >
-          <span className={`${styles.portalTriggerIcon} material-symbols-outlined`}>auto_awesome</span>
           <span>Portal</span>
+          <span className={`${styles.portalTriggerIcon} material-symbols-outlined`}>auto_awesome</span>
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
