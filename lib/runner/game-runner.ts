@@ -69,11 +69,8 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 
     for(const player of params.gameState.players) {
       if (params.gameState.portals?.includes(player.location.id)) {
-        if (!player.visitedPortals) {
-          player.visitedPortals = [];
-        }
-        if (!player.visitedPortals.includes(player.location.id)) {
-          player.visitedPortals.push(player.location.id);
+        if (!params.gameState.visitedPortals.includes(player.location.id)) {
+          params.gameState.visitedPortals.push(player.location.id);
         }
       }
       levelUpPlayer(params, player);

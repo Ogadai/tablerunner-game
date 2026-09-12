@@ -44,7 +44,8 @@ interface EntityActionsForLocation {
   entities: EntityActions[];
 }
 
-const MAGIC_BONUS_RATIO = 0.1;
+const MAGIC_BONUS_RATIO = 0.2;
+const HEAL_SCALING = 0.1;
 
 export async function runGameActions(params: BaseParams): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
@@ -148,8 +149,10 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     for(const player of params.gameState.players) {
       if (player.health > 0) {
 
-        if (!player.zombie && !playerFought[player.id] && player.health < player.baseStats!.health) {
-          player.health++;
+        if (!playerFought[player.id] && player.health < player.baseStats!.health) {
+          player.health = Math.min(player.baseStats!.health,
+              player.health + Math.ceil(player.baseStats!.health * HEAL_SCALING)
+          );
         }
         if (player.magic < player.baseStats!.magic) {
           player.magic = Math.min(player.baseStats!.magic,
