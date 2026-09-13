@@ -104,6 +104,15 @@
 .move-s { grid-area: s; }
 .move-se { grid-area: se; }
 
+.barbarian, .witch, .ranger, .mage {
+  border: 2px solid currentColor;
+}
+
+.barbarian { color: #b7794c; }
+.witch { color: #b56bc4; }
+.ranger { color: #7da34a; }
+.mage { color: #7194d8; }
+
 .actionsList {
   margin-top: 20px;
   max-width: 400px;

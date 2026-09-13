@@ -27,6 +27,7 @@ export default function PlayerLocation(
     gameState,
     playerId,
     isPlayerReady,
+    readyPlayerDirection,
     endTurnAction
   }: {
     boardId: string;
@@ -34,6 +35,7 @@ export default function PlayerLocation(
     gameState: GameState,
     playerId: string,
     isPlayerReady: boolean,
+    readyPlayerDirection?: { [id: string]: LocationMoveDirection },
     endTurnAction: (direction?: LocationMoveDirection) => void
   }) {
   const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [] });
@@ -148,6 +150,12 @@ export default function PlayerLocation(
     !locationMove.blockDescription &&
     (!locationState.monsters.some(monster => monster.health > 0) || locationMove.direction === playerState.retreatDirection);
 
+  const getOtherPlayerMoveClassName = (direction: LocationMoveDirection): string =>
+    otherPlayers
+      .filter(otherPlayer => readyPlayerDirection?.[otherPlayer.id] === direction)
+      .map(otherPlayer => styles[otherPlayer.id] || '')
+      .join(' ');
+
   const entities: EntityItemDetail[] = [
     {
       id: playerState.id,
@@ -220,7 +228,7 @@ export default function PlayerLocation(
       { (!isPlayerReady && playerStats.playerCanMove) && <div className={styles.moveActionButtons}>
         {playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
           <button type="button" key={mv.direction}
-            className={`${styles[`move-${mv.direction}`]} ${canMoveDirection(mv) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
+            className={`${styles[`move-${mv.direction}`]} ${getOtherPlayerMoveClassName(mv.direction)} ${canMoveDirection(mv) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
             onClick={bindMoveAction(mv)}
           >{moveLabels[mv.direction]}
           </button>

@@ -52,6 +52,7 @@ export default function Page() {
         gameState={gameState}
         playerId={playerId}
         isPlayerReady={isPlayerReady()}
+        readyPlayerDirection={readyState.readyPlayerDirection}
         endTurnAction={endTurnAction}
       />
     </div>
