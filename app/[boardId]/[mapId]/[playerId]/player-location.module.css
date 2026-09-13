@@ -106,12 +106,25 @@
 
 .barbarian, .witch, .ranger, .mage {
   background: none;
+  animation: direction-indicator 1s ease-in-out infinite;
 }
 
-.barbarian { background-color: #b7794c; }
-.witch { background-color: #b56bc4; }
-.ranger { background-color: #7da34a; }
-.mage { background-color: #7194d8; }
+.barbarian { --direction-indicator-color: #b7794c; }
+.witch { --direction-indicator-color: #b56bc4; }
+.ranger { --direction-indicator-color: #7da34a; }
+.mage { --direction-indicator-color: #7194d8; }
+
+@keyframes direction-indicator {
+  0%, 100% { background-color: var(--gold-bright); }
+  50% { background-color: var(--direction-indicator-color); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barbarian, .witch, .ranger, .mage {
+    animation: none;
+    background-color: var(--direction-indicator-color);
+  }
+}
 
 .actionsList {
   margin-top: 20px;
