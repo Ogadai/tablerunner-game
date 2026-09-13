@@ -1,3 +1,5 @@
+import { LocationMoveDirection } from "./games/types";
+
 export enum GameTopicMessageType {
   BleConnectedStatus = 'ble_connected',
   GameStateUpdated = 'game_state_updated',
@@ -23,6 +25,7 @@ export interface GameStateUpdatedMessage extends GameTopicMessageBase {
 export interface ReadyStateUpdatedMessage extends GameTopicMessageBase {
   type: GameTopicMessageType.ReadyStateUpdated;
   readyPlayerIds: string[];
+  readyPlayerDirection?: { [id: string]: LocationMoveDirection };
 }
 
 export interface LocationUpdatedMessage extends GameTopicMessageBase {

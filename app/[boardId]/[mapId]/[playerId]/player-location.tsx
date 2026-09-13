@@ -6,6 +6,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
 import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
+import { LocationMoveDirection } from "@/lib/games/types";
 import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
@@ -33,7 +34,7 @@ export default function PlayerLocation(
     gameState: GameState,
     playerId: string,
     isPlayerReady: boolean,
-    endTurnAction: () => void
+    endTurnAction: (direction?: LocationMoveDirection) => void
   }) {
   const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [] });
   const [playerState, setPlayerState] = useState<PlayerState | null>();
@@ -117,7 +118,7 @@ export default function PlayerLocation(
         direction: locationMove.direction
       } as Omit<PlayerActionMove, 'id'>);
 
-      endTurnAction();
+      endTurnAction(locationMove.direction);
     };
   
   const notReadyAction = async () => {
@@ -225,13 +226,13 @@ export default function PlayerLocation(
           </button>
         )}
 
-        { (!isPlayerReady && playerStats.playerCanMove) && <button className={styles.stay} type="submit" onClick={endTurnAction}>Stay</button> }
+        { (!isPlayerReady && playerStats.playerCanMove) && <button className={styles.stay} type="submit" onClick={() => endTurnAction()}>Stay</button> }
       </div> }
 
       { (!isPlayerReady && !playerStats.playerCanMove) &&
         <button
           className={`${styles.stay} ${actionsState.actions.length > 0 ? styles.readyWithActions : ''}`} 
-          type="submit" onClick={endTurnAction}>Ready</button>
+          type="submit" onClick={() => endTurnAction()}>Ready</button>
       }
       { isPlayerReady &&
         <button type="submit" className={`${styles.stay} btn-delete`} onClick={notReadyAction}>

@@ -92,6 +92,7 @@ export interface PlayerStateLocation {
 
 export interface PlayerReadyState {
   readyPlayerIds: string[];
+  readyPlayerDirection? : { [id: string]: LocationMoveDirection };
 }
 
 export interface PlayerAddStatsState {

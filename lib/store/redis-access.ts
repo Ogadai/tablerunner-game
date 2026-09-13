@@ -97,7 +97,8 @@ export async function deleteReadyStateFromRedis(boardId: string, mapId: string):
 async function publishReadyStateUpdated(boardId: string, mapId: string, newReadyState: PlayerReadyState): Promise<void> {
   const msg: ReadyStateUpdatedMessage = {
     type: GameTopicMessageType.ReadyStateUpdated,
-    readyPlayerIds: newReadyState.readyPlayerIds
+    readyPlayerIds: newReadyState.readyPlayerIds,
+    readyPlayerDirection: newReadyState.readyPlayerDirection
   };
   await publishMessage(boardId, mapId, msg);
 }

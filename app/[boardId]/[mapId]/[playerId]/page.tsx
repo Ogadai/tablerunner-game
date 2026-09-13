@@ -6,6 +6,7 @@ import { setPlayerReady } from '@/lib/store/playerReadyState';
 import readyStateSyncService from "../game/ready-state-sync-service";
 
 import { PlayerReadyState, PlayerState } from "@/lib/store/types";
+import { LocationMoveDirection } from "@/lib/games/types";
 import PlayerLocation from './player-location';
 
 import gameStateSyncService from "../game/game-state-sync-service";
@@ -35,8 +36,8 @@ export default function Page() {
 
   const isPlayerReady = () => readyState.readyPlayerIds.includes(playerId);
 
-  const endTurnAction = async () => {
-    await setPlayerReady(boardId, mapId, playerId, !isPlayerReady());
+  const endTurnAction = async (direction?: LocationMoveDirection) => {
+    await setPlayerReady(boardId, mapId, playerId, !isPlayerReady(), direction);
   }
 
   if (!gameState) {

@@ -2,6 +2,7 @@
 
 import { ApiResponse } from "../api-response";
 import { PlayerReadyState } from "./types";
+import { LocationMoveDirection } from "../games/types";
 import { getReadyStateFromRedis, setReadyStateInRedis, getGameStateFromRedis, lockReadyStateInRedis } from './redis-access';
 import { checkAllPlayersReady } from '../runner/game-runner';
 
@@ -21,18 +22,24 @@ export async function getPlayerReadyState(boardId: string, mapId: string): Promi
   }
 }
 
-export async function setPlayerReady(boardId: string, mapId: string, playerId: string, ready: boolean): Promise<ApiResponse<null>> {
+export async function setPlayerReady(boardId: string, mapId: string, playerId: string, ready: boolean, direction?: LocationMoveDirection): Promise<ApiResponse<null>> {
   let readyLock: (() => Promise<void>) | null = null;
   try {
     readyLock = await lockReadyStateInRedis(boardId, mapId);
     const currentState = await getReadyStateFromRedis(boardId, mapId);
 
     const newState: PlayerReadyState = {
-      readyPlayerIds: currentState.readyPlayerIds.filter(p => p !== playerId)
+      readyPlayerIds: currentState.readyPlayerIds.filter(p => p !== playerId),
+      readyPlayerDirection: { ...currentState.readyPlayerDirection }
     };
 
     if (ready) {
       newState.readyPlayerIds.push(playerId);
+      if (direction) {
+        newState.readyPlayerDirection![playerId] = direction;
+      }
+    } else {
+      delete newState.readyPlayerDirection![playerId];
     }
 
     // Store data in Redis
