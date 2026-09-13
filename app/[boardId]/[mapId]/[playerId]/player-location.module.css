@@ -105,6 +105,7 @@
 .move-se { grid-area: se; }
 
 .barbarian, .witch, .ranger, .mage {
+  color: var(--color-text-primary);
   background: none;
   animation: direction-indicator 1s ease-in-out infinite;
 }
@@ -125,7 +126,7 @@
 }
 
 @keyframes direction-indicator {
-  0%, 100% { background-color: var(--gold-bright); }
+  0%, 100% { background-color: var(--bg-main); }
   50% { background-color: var(--direction-indicator-color); }
 }
 
