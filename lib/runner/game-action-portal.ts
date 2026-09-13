@@ -52,7 +52,7 @@ export function actionPortal(params: BaseParams, player: PlayerState, action: Pl
       `**{player}** activated the Portal Stone and materialized at **Location ${destinationLocation.id}**!`
     );
 
-    updatePortalLeds(params.gameState);
+    updatePortalAndShopLeds(params.gameState);
   } catch (error) {
     console.error(`Error: actionPortal for ${player.id}`, action);
     throw error;
@@ -60,23 +60,30 @@ export function actionPortal(params: BaseParams, player: PlayerState, action: Pl
 }
 
 export const PORTAL_LED_OWNER = 'portal';
-export const PORTAL_LED_RGB = '003B5C';
+export const PORTAL_LED_RGB = '00A6A6';
+export const SHOP_LED_OWNER = 'shop';
+export const SHOP_LED_RGB = 'D97706';
 
-export function updatePortalLeds(gameState: GameState) {
-  if (gameState.portals && gameState.portals.length > 0) {
-    const discoveredPortals = gameState.portals.filter(
-      p => gameState.visitedPortals?.includes(p) || gameState.visited.includes(p)
-    );
-    const portalLeds = discoveredPortals.map(l => ({
-      location: l,
-      rgb: PORTAL_LED_RGB,
-      owner: PORTAL_LED_OWNER,
-    }));
+export function updatePortalAndShopLeds(gameState: GameState) {
+  const discoveredPortals = (gameState.portals ?? []).filter(
+    p => gameState.visitedPortals?.includes(p) || gameState.visited.includes(p)
+  );
+  const visitedShops = (gameState.stores ?? []).filter(s => gameState.visited.includes(s));
+  const portalLeds = discoveredPortals.map(location => ({
+    location,
+    rgb: PORTAL_LED_RGB,
+    owner: PORTAL_LED_OWNER,
+  }));
+  const shopLeds = visitedShops.map(location => ({
+    location,
+    rgb: SHOP_LED_RGB,
+    owner: SHOP_LED_OWNER,
+  }));
 
-    gameState.leds = [
-      ...gameState.leds.filter(l => l.owner !== PORTAL_LED_OWNER),
-      ...portalLeds,
-    ];
-  }
+  gameState.leds = [
+    ...gameState.leds.filter(l => l.owner !== PORTAL_LED_OWNER && l.owner !== SHOP_LED_OWNER),
+    ...portalLeds,
+    ...shopLeds,
+  ];
 }
 
