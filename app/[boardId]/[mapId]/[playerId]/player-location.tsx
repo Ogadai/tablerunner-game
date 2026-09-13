@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 import { getSwalDefaultOptions } from '@/app/swal';
@@ -150,11 +150,31 @@ export default function PlayerLocation(
     !locationMove.blockDescription &&
     (!locationState.monsters.some(monster => monster.health > 0) || locationMove.direction === playerState.retreatDirection);
 
-  const getOtherPlayerMoveClassName = (direction: LocationMoveDirection): string =>
-    otherPlayers
-      .filter(otherPlayer => readyPlayerDirection?.[otherPlayer.id] === direction)
-      .map(otherPlayer => styles[otherPlayer.id] || '')
-      .join(' ');
+  const getOtherPlayerMoveIndicator = (direction: LocationMoveDirection): {
+    className: string;
+    style?: CSSProperties;
+  } => {
+    const movingPlayers = otherPlayers.filter(
+      otherPlayer => readyPlayerDirection?.[otherPlayer.id] === direction
+    );
+    const className = movingPlayers.map(otherPlayer => styles[otherPlayer.id] || '').join(' ');
+
+    if (movingPlayers.length < 2) {
+      return { className };
+    }
+
+    const colors = movingPlayers.map(otherPlayer => `#${characters[otherPlayer.id].rgbColour}`);
+    const style = {
+      '--direction-indicator-color-1': colors[0],
+      '--direction-indicator-color-2': colors[1],
+      '--direction-indicator-color-3': colors[2],
+    } as CSSProperties;
+
+    return {
+      className: `${className} ${styles[`direction-indicator-${movingPlayers.length}`]}`,
+      style,
+    };
+  };
 
   const entities: EntityItemDetail[] = [
     {
@@ -226,13 +246,15 @@ export default function PlayerLocation(
 
     { playerAlive && <div className={styles.actionButtonContainer}><div className={styles.actionButtonGroup1}>
       { (!isPlayerReady && playerStats.playerCanMove) && <div className={styles.moveActionButtons}>
-        {playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => 
-          <button type="button" key={mv.direction}
-            className={`${styles[`move-${mv.direction}`]} ${getOtherPlayerMoveClassName(mv.direction)} ${canMoveDirection(mv) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
+        {playerState.location.move.sort((a1, a2) => moveLabelOrder[a1.direction] - moveLabelOrder[a2.direction]).map(mv => {
+          const moveIndicator = getOtherPlayerMoveIndicator(mv.direction);
+          return <button type="button" key={mv.direction}
+            className={`${styles[`move-${mv.direction}`]} ${moveIndicator.className} ${canMoveDirection(mv) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
+            style={moveIndicator.style}
             onClick={bindMoveAction(mv)}
           >{moveLabels[mv.direction]}
-          </button>
-        )}
+          </button>;
+        })}
 
         { (!isPlayerReady && playerStats.playerCanMove) && <button className={styles.stay} type="submit" onClick={() => endTurnAction()}>Stay</button> }
       </div> }

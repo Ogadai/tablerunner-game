@@ -114,15 +114,36 @@
 .ranger { --direction-indicator-color: #7da34a; }
 .mage { --direction-indicator-color: #7194d8; }
 
+.direction-indicator-2 {
+  animation-name: direction-indicator-2;
+  animation-duration: 1s;
+}
+
+.direction-indicator-3 {
+  animation-name: direction-indicator-3;
+  animation-duration: 1.5s;
+}
+
 @keyframes direction-indicator {
   0%, 100% { background-color: var(--gold-bright); }
   50% { background-color: var(--direction-indicator-color); }
 }
 
+@keyframes direction-indicator-2 {
+  0%, 100% { background-color: var(--direction-indicator-color-1); }
+  50% { background-color: var(--direction-indicator-color-2); }
+}
+
+@keyframes direction-indicator-3 {
+  0%, 100% { background-color: var(--direction-indicator-color-1); }
+  33.333% { background-color: var(--direction-indicator-color-2); }
+  66.666% { background-color: var(--direction-indicator-color-3); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .barbarian, .witch, .ranger, .mage {
     animation: none;
-    background-color: var(--direction-indicator-color);
+    background-color: var(--direction-indicator-color-1, var(--direction-indicator-color));
   }
 }
 
