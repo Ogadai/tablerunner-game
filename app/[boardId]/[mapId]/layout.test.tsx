@@ -27,7 +27,7 @@ type GameTopicProps = {
 };
 
 const mockBluetoothController = jest.fn<null, [
-  { bleOtherPlayer: boolean },
+  { bleOtherPlayer: boolean; readyCountdown?: number | null },
 ]>();
 const mockGameTopic = jest.fn<null, [GameTopicProps]>();
 
@@ -124,6 +124,7 @@ describe("Route RootLayout", () => {
 
     expect(mockBluetoothController).toHaveBeenCalledWith({
       bleOtherPlayer: false,
+      readyCountdown: null,
     });
     expect(mockGameTopic).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -216,6 +217,7 @@ describe("Route RootLayout", () => {
 
     expect(mockBluetoothController).toHaveBeenLastCalledWith({
       bleOtherPlayer: true,
+      readyCountdown: null,
     });
   });
 
@@ -243,6 +245,7 @@ describe("Route RootLayout", () => {
 
     expect(mockBluetoothController).toHaveBeenLastCalledWith({
       bleOtherPlayer: false,
+      readyCountdown: null,
     });
   });
 

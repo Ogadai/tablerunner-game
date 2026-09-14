@@ -30,6 +30,23 @@
   background-color: transparent;
   position: relative;
 
+  .readyCountdown {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 3px;
+    border: 1px solid var(--bg-main);
+    border-radius: 50%;
+    background-color: var(--color-error);
+    color: var(--color-text-primary);
+    font-size: 28px;
+    line-height: 44px;
+    text-align: center;
+    z-index: 1;
+  }
+
   &.disconnected {
     color: var(--color-disconnected);
   }

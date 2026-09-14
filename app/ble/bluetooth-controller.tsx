@@ -22,8 +22,10 @@ const GLOBAL_STATE: { connectTimeout: any, isPrompting: boolean } = {
 
 export default function BluetoothController({
   bleOtherPlayer,
+  readyCountdown,
 }: {
   bleOtherPlayer: boolean;
+  readyCountdown?: number | null;
 }) {
   const params = useParams();
   const [bleState, setBleState] = useState<BleState>(bluetoothService.getState());
@@ -161,6 +163,11 @@ export default function BluetoothController({
   return (
     <button onClick={onClick} className={`${styles.bleButton} ${styles[showBleState]}`}>
       <span className="material-symbols-outlined">bluetooth</span>
+      {readyCountdown !== null && readyCountdown !== undefined &&
+        <span className={styles.readyCountdown} aria-label={`Automatically ready in ${readyCountdown} seconds`}>
+          {readyCountdown}
+        </span>
+      }
     </button>
   );
 }

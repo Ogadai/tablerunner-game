@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const mapId = params.mapId?.toString() || '';
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [blePlayerId, setBlePlayerId] = useState<string | null>(null);
+  const [readyCountdown, setReadyCountdown] = useState<number | null>(null);
   const bleStatusCallback = useRef<((message: BleConnectedStatusMessage) => void) | null>(null);
   const currentBlePlayerId = useRef<string | null>(null);
 
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div className={styles.header}>
           <BluetoothController
             bleOtherPlayer={!!blePlayerId && blePlayerId !== playerId}
+            readyCountdown={readyCountdown}
           />
           <GameTopic
             topicId={getGameTopicId(boardId, mapId)}
@@ -67,7 +69,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             }}
             onBleStatusReceived={onBleStatusReceived}
           />
-          <PlayHeader boardId={boardId} mapId={mapId} />
+          <PlayHeader
+            boardId={boardId}
+            mapId={mapId}
+            onReadyCountdownChange={setReadyCountdown}
+          />
         </div>
       )}
       <div className={`${styles.content} page-content`}>
