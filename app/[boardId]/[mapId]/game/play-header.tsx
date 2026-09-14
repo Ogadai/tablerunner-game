@@ -162,6 +162,10 @@ export default function PlayHeader(
                 { isPlayerReady(player) &&
                   <span className={ `${styles.playerReady} material-symbols-outlined` }>check</span>
                 }
+
+                { player.health <= 0 &&
+                  <div className={`${styles.playerDead} material-symbols-outlined`}>skull</div>
+                }
               </button>
             </li>
           ))}

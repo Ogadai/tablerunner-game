@@ -76,3 +76,16 @@ button.playerButton {
     background-color: var(--color-success);
     color: var(--bg-main);
 }
+
+.playerDead {
+  position: absolute;
+  z-index: 10;
+  margin: auto;
+  inset: 0;
+  text-align: center;
+  top: 50%;
+  margin-top: -15px;
+  font-size: 30px;
+  color: var(--color-error);
+  text-shadow: 0 0 5px var(--bg-main), 0 0 10px var(--bg-main), 0 0 15px var(--bg-main);
+}
