@@ -89,6 +89,21 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       });
     }
 
+    // Get the NPCs at these locations
+    for(const npc of params.gameState.npcs) {
+      const locId = `${npc.location.id}`;
+      if (entityActionsForLocations[locId]) {
+        // TODO: automatically figure out NPC's actions (if master isn't moving)
+        entityActionsForLocations[locId].entities.push({
+          entityType: EntityActionEntityTypes.npc,
+          entityId: npc.id,
+          entitySpeed: npc.baseStats!.speed * Math.random(),
+          actions: [],
+          random: Math.random(),
+        });
+      }
+    }
+
     // Now get the monsters at those locations and assign them actions
     for(const locId of Object.keys(entityActionsForLocations)) {
       const locationId = parseInt(locId);
@@ -148,7 +163,6 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     // Process player moves and healing (if still alive)
     for(const player of params.gameState.players) {
       if (player.health > 0) {
-
         if (!playerFought[player.id] && player.health < player.baseStats!.health) {
           player.health = Math.min(player.baseStats!.health,
               player.health + Math.ceil(player.baseStats!.health * HEAL_SCALING)
@@ -166,6 +180,13 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
         for(const portalAction of playerPortals[player.id]) {
           actionPortal(params, player, portalAction);
+        }
+
+        // Move any following NPCs to the same location
+        for(const npc of params.gameState.npcs.filter(npc => npc.health > 0 && npc.masterId === player.id)) {
+          npc.location = {
+            ...player.location,
+          };
         }
       }
     }
@@ -254,5 +275,6 @@ function monsterPickTarget(targets: INamedTarget[]): INamedTarget {
 }
 
 const getNamedTargetById = (params: BaseParams, id: string): INamedTarget =>
-  // TODO: Also include NPCs
-  params.gameState.players.find(p => p.id === id)!;
+  // Also include NPCs
+  params.gameState.players.find(p => p.id === id)
+    || params.gameState.npcs.find(npc => npc.id === id)!;

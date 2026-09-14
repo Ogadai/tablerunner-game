@@ -1,15 +1,18 @@
-import { getDisplayName } from '../store/types';
+import { getDisplayName, INamedTarget } from '../store/types';
 import { BaseParams } from './base-params';
 
 export function playerMessageAtLocation(params: BaseParams, playerId: string, message: string, fromLocation?: number) {
-  const player = params.gameState.players.find(p => p.id === playerId)!;
+  const player: INamedTarget = params.gameState.players.find(p => p.id === playerId)
+    || params.gameState.npcs.find(p => p.id === playerId)!;
 
-  params.messages[playerId].messages.push({
-    text: message
-      .replace('{player}', 'You')
-      .replace('{playerNoun}', 'are')
-      .replace('{possessive}', 'r')
-  });
+  if (player && params.messages[playerId]) {
+    params.messages[playerId].messages.push({
+      text: message
+        .replace('{player}', 'You')
+        .replace('{playerNoun}', 'are')
+        .replace('{possessive}', 'r')
+    });
+  }
 
   const playerName = getDisplayName(player);
   const otherPlayers = params.gameState.players.filter(p => p.id !== playerId && p.location.id === player.location.id);
