@@ -43,6 +43,7 @@ function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZom
       playerMessageAtLocation(params, deadPlayer.id, `The body of **{player}** has been **reanimated**!`);
       deadPlayer.zombie = true;
     } else {
+      deadPlayer.zombie = false;
       playerMessageAtLocation(params, deadPlayer.id, `**{player}** has been **resurrected**!`);
     }
   }
