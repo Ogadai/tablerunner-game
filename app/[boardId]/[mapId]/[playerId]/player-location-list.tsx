@@ -125,6 +125,8 @@ export default function PlayerLocationList({
     : (openCharacter !== null) ? getDisplayName(openCharacter) : '';
   const dialogSubTitle = (openCharacter !== null) ? `Level ${openCharacter.level}` : null;
 
+  const displayCharacter: INamedTarget | null = openCharacter || npcOpen;
+
   const onCloseDialog = () => {
     setNpcOpen(null);
     setMonsterOpen(null);
@@ -158,14 +160,14 @@ export default function PlayerLocationList({
                 onAttack={() => onAttackMonster(monsterOpen)}
               ></MonsterCard>
             }
-            { openCharacter &&
+            { displayCharacter &&
               <CharacterCard
                 boardId={boardId}
                 mapId={mapId}
-                player={openCharacter}
-                isSelf={openCharacter.id === player.id}
+                player={displayCharacter}
+                isSelf={displayCharacter.id === player.id}
                 actionPointsLeft={actionPointsLeft}
-                playerStats={openCharacter.id === player.id ? playerStats : null}
+                playerStats={displayCharacter.id === player.id ? playerStats : null}
                 onUseItem={onUseItem}
                 usedItemIds={usedItemIds}
                 onLearnScroll={onLearnScroll}

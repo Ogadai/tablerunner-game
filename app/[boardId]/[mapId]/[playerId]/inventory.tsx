@@ -1,11 +1,11 @@
-import { PlayerState } from '@/lib/store/types';
+import { INamedTarget, PlayerState } from '@/lib/store/types';
 import styles from './inventory.module.css';
 import { PlayerItem } from '@/lib/games/types';
 import { allItems } from '@/lib/games/items';
 import InventoryItem from './inventory-item';
 
 export default function Inventory({ player, isSelf, actionPointsLeft, isDead, onEquipItem, onUseItem, onDropItem, onLearnScroll, usedItemIds }: {
-  player: PlayerState;
+  player: INamedTarget;
   isSelf: boolean,
   actionPointsLeft: number;
   isDead: boolean;

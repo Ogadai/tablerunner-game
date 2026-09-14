@@ -2,12 +2,13 @@ import { useState } from "react";
 
 import tabStyles from './tabs.module.css';
 
-import { PlayerState } from '@/lib/store/types';
+import { INamedTarget, PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import Inventory from './inventory';
 import { dropItemAtLocation, playerEquipItem } from '@/lib/store/playerInventory';
 import { PlayerItem } from "@/lib/games/types";
 import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
+import NpcCard from './npc-card';
 
 export default function CharacterCard({
   boardId,
@@ -22,7 +23,7 @@ export default function CharacterCard({
 }: {
   boardId: string;
   mapId: string;
-  player: PlayerState;
+  player: INamedTarget | PlayerState;
   isSelf: boolean;
   actionPointsLeft: number;
   playerStats: PlayerStats | null;
@@ -41,6 +42,8 @@ export default function CharacterCard({
     const response = await dropItemAtLocation(boardId, mapId, player.id, item.id);
     playerStatsSyncService.updateInventory(response.data);
   }
+
+  const playerState = (player as PlayerState).characterStats ? (player as PlayerState) : null;
 
   return <>
     <div className={tabStyles.tabs} role="tablist" aria-label="Character details">
@@ -62,13 +65,15 @@ export default function CharacterCard({
     <div className={`${tabStyles.tabContent} ${activeTab === 'stats' ? tabStyles.tabContentFirst : ''}`}
       id={`${activeTab}-panel`} role="tabpanel" aria-label={activeTab === 'stats' ? 'Stats' : 'Inventory'}>
       {activeTab === 'stats'
-        ? <CharacterStats
+        ? (playerState ? <CharacterStats
             boardId={boardId}
             mapId={mapId}
-            player={player}
+            player={playerState}
             playerStats={playerStats}
             isSelf={isSelf}
           />
+          :
+          <NpcCard npc={player} />)
         : <Inventory
             player={player}
             isSelf={isSelf}
