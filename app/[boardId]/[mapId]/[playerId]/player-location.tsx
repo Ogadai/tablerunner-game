@@ -46,6 +46,7 @@ export default function PlayerLocation(
 
   const playerAlive = playerState && playerState.health > 0;
   const otherPlayers = gameState.players.filter(p => p.id !== playerId && p.location.id === playerState?.location.id);
+  const npcs = gameState.npcs.filter(npc => npc.location.id === playerState?.location.id);
   const topicId = getGameTopicId(boardId, mapId);
 
   const usedItemIds = actionsState.actions
@@ -175,7 +176,6 @@ export default function PlayerLocation(
       style,
     };
   };
-
   const entities: EntityItemDetail[] = [
     {
       id: playerState.id,
@@ -193,6 +193,14 @@ export default function PlayerLocation(
       className: EntityItemClass.friendly,
       health: otherPlayer.health,
       maxHealth: otherPlayer.baseStats?.health || otherPlayer.health
+    })),
+    ...npcs.map(npc => ({
+      id: npc.id,
+      name: npc.name,
+      iconXY: npc.iconXY,
+      className: EntityItemClass.npc,
+      health: npc.health,
+      maxHealth: npc.baseStats?.health || npc.health
     })),
     ...locationState.monsters.map(monster => ({
       id: monster.id,
@@ -220,6 +228,7 @@ export default function PlayerLocation(
         player={playerState}
         otherPlayers={otherPlayers}
         monsters={locationState.monsters}
+        npcs={npcs}
         entities={entities}
         items={locationState.items}
         actionsState={actionsState}

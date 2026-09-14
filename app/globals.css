@@ -48,6 +48,7 @@
   --color-self: #8c6d31;
   --color-enemy: #c01c28;
   --color-friendly: #26a269;
+  --color-npc: #1a5fb4;
 
   /* Typography */
   --font-header: 'Cinzel', 'MedievalSharp', Georgia, serif;

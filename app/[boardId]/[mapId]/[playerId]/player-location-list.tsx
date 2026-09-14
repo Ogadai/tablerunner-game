@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
-import { getDisplayName, getMonsterName, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
+import { getDisplayName, getMonsterName, INamedTarget, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
@@ -20,6 +20,7 @@ export interface PlayerLocationListProps {
   player: PlayerState;
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
+  npcs: INamedTarget[];
   entities: EntityItemDetail[],
   items: PlayerItem[];
   playerStats: PlayerStats;
@@ -32,6 +33,7 @@ export default function PlayerLocationList({
   mapId,
   player,
   otherPlayers,
+  npcs,
   monsters: locationMonsters,
   entities,
   items: locationItems,
@@ -41,6 +43,7 @@ export default function PlayerLocationList({
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
+  const [npcOpen, setNpcOpen] = useState<INamedTarget | null>(null);
   const openCharacter = characterOpen
     ? characterOpen.id === player.id
       ? player
@@ -53,8 +56,10 @@ export default function PlayerLocationList({
       setMonsterOpen(monster);
     } else if (player.id === entity.id) {
       setCharacterOpen(player);
-    } else {
+    } else if (entity.className === EntityItemClass.friendly) {
       setCharacterOpen(otherPlayers.find(p => p.id === entity.id)!);
+    } else if (entity.className === EntityItemClass.npc) {
+      setNpcOpen(npcs.find(p => p.id === entity.id)!);
     }
   }
 
@@ -113,14 +118,15 @@ export default function PlayerLocationList({
     playerStatsSyncService.updateInventory(response.data);
   }
 
-  const dialogOpen = (monsterOpen !== null) || (openCharacter !== null);
+  const dialogOpen = (monsterOpen !== null) || (openCharacter !== null) || (npcOpen !== null);
   
-  const dialogTitle =  (monsterOpen !== null)
-    ? getMonsterName(monsterOpen)
+  const dialogTitle =  (monsterOpen !== null) ? getMonsterName(monsterOpen)
+    : (npcOpen !== null) ? getDisplayName(npcOpen)
     : (openCharacter !== null) ? getDisplayName(openCharacter) : '';
   const dialogSubTitle = (openCharacter !== null) ? `Level ${openCharacter.level}` : null;
 
   const onCloseDialog = () => {
+    setNpcOpen(null);
     setMonsterOpen(null);
     setCharacterOpen(null);
   }

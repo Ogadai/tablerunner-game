@@ -51,6 +51,10 @@
   border: 2px solid var(--color-friendly);
 }
 
+.npc {
+  border: 2px solid var(--color-npc);
+}
+
 .enemy {
   border: 2px solid var(--color-enemy);
 }

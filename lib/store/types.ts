@@ -13,6 +13,7 @@ export interface GameState {
   name: string;
   characters: CharacterListEntry[];
   players: PlayerState[];
+  npcs: NPCState[];
   visited: number[];
   stores: number[];
   portals: number[];
@@ -59,24 +60,31 @@ export interface ITarget {
 
 export interface INamedTarget extends ITarget {
   name: string;
+  location: PlayerStateLocation;
+  magic: number;
+  spells: SpellIds[];
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
   baseStats?: BaseStats;
 }
 
 export interface PlayerState extends INamedTarget {
-  name: string;
-  location: PlayerStateLocation;
   retreatDirection?: string;
   rgbColour: string;
   characterStats: CharacterStats;
-  magic: number;
   level: number;
   points: number;
   availableStats: number;
   spells: SpellIds[];
   recentSpells?: SpellIds[];
   coins: number;
+}
+
+export interface NPCState extends INamedTarget {
+  masterId: string | null;
+  hireCost: number;
+  iconType: 'character' | 'monster';
+  iconXY: { x: number, y: number };
 }
 
 export interface PlayerLocationMove extends LocationMove {

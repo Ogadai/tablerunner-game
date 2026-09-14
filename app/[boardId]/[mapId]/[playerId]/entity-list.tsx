@@ -4,6 +4,7 @@ import styles from './entity-list.module.css';
 export enum EntityItemClass {
   self = 'self',
   friendly = 'friendly',
+  npc = 'npc',
   enemy = 'enemy',
 }
 
@@ -40,7 +41,7 @@ export default function EntityList({
       {entities.map(entity => (
         <li
           key={entity.id}
-          className={`${styles.entity} ${styles[entity.className]} ${entity.levelUp && styles.levelUp}`}
+          className={`${styles.entity} ${styles[entity.className]} ${entity.levelUp ? styles.levelUp : ''}`}
           onClick={() => onClickEntity?.(entity)}
         >
           <span className={styles.entityIcon}

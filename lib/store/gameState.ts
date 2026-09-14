@@ -47,6 +47,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     name: `${gameId} on board ${boardId} and map ${mapId}`,
     characters: gameDef.characters,
     players: [],
+    npcs: [],
     visited: [gameDef.startLocation],
     stores: Object.keys(gameDef.storeItems).map(i => parseInt(i, 10)),
     portals: gameDef.portalLocations ? [...gameDef.portalLocations] : [],
@@ -69,7 +70,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     blockedMoves: [],
   };
 
-  setupProcesses({
+  await setupProcesses({
     boardId,
     mapId,
     gameState: newGameState,
