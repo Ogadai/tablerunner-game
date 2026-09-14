@@ -60,9 +60,9 @@ export function actionPortal(params: BaseParams, player: PlayerState, action: Pl
 }
 
 export const PORTAL_LED_OWNER = 'portal';
-export const PORTAL_LED_RGB = '00A6A6';
+export const PORTAL_LED_RGB = '007F7F';
 export const SHOP_LED_OWNER = 'shop';
-export const SHOP_LED_RGB = 'D97706';
+export const SHOP_LED_RGB = 'A54F5F';
 
 export function updatePortalAndShopLeds(gameState: GameState) {
   const discoveredPortals = (gameState.portals ?? []).filter(

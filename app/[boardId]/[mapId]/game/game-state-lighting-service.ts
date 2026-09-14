@@ -1,9 +1,10 @@
 import { GameState } from '@/lib/store/types';
 import { bluetoothService } from '../../../ble/bluetooth-service';
 import { BleState } from '@/app/ble/ble-states';
-import { games } from '@/lib/games/games';
 
 const totalLocations = 240;
+const visitedRGB = '707070';
+
 class GameStateLightingService {
   private subscribed = false;
   private lastGameState: GameState | undefined;
@@ -41,7 +42,7 @@ class GameStateLightingService {
     const litLocations: number[] = [];
 
     if (gameState) {
-      await bluetoothService.setColourForLeds(gameState.visited, '404040');
+      await bluetoothService.setColourForLeds(gameState.visited, visitedRGB);
       litLocations.push(...gameState.visited);
 
       if (gameState.leds.length > 0) {
