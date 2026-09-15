@@ -1,6 +1,7 @@
+import { ConsumableIds, consumableItems } from "../games/items";
 import { monsters } from "../games/monsters";
 import { getPlayerActionsPerTurn, getPlayerActionsCosts, PlayerActionsPerTurn } from "../store/playerStats";
-import { MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType } from "../store/types";
+import { MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionsState, PlayerActionType, PlayerActionUseItem } from "../store/types";
 import { BaseParams } from "./base-params";
 
 interface ValueBase {
@@ -23,6 +24,9 @@ export function getNpcActions(params: BaseParams, npc: NPCState): PlayerActionsS
   let nextId = 1;
   const actionsWithCosts = getAvailableActions(params, npc, actionsPerTurn)
     .map(a => ({ ...a, action: { ...a.action, id: nextId++ } }));
+  if (actionsWithCosts.length === 0) {
+    return { actions: [] };
+  }
 
   const candidates = [
     pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic),
@@ -43,17 +47,20 @@ export function getNpcActions(params: BaseParams, npc: NPCState): PlayerActionsS
 function getAvailableActions(params: BaseParams, npc: NPCState, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
   // Pick a target monster
   const monstersAtLocation = params.monsters.filter(m => m.location === npc.location.id && m.health > 0);
-  const attackActions = monstersAtLocation.map(m => getAttackAction(params, npc, m, actionsPerTurn));
+  const actions: (ActionsWithCosts | null)[] =
+    monstersAtLocation.map(m => getAttackAction(params, npc, m, actionsPerTurn));
 
-  while (attackActions.length > 0 && attackActions.length < (actionsPerTurn.total / actionsPerTurn.attack)) {
-    attackActions.push(
+  // May want to double up on attacks if we have fast attacks
+  while (actions.length > 0 && actions.length < (actionsPerTurn.total / actionsPerTurn.attack)) {
+    actions.push(
       ...monstersAtLocation.map(m => getAttackAction(params, npc, m, actionsPerTurn))
     );
   }
 
-  return [
-    ...attackActions
-  ];
+  actions.push(getHealPotionAction(params, npc));
+  actions.push(getMagicPotionAction(params, npc));
+
+  return actions.filter(a => !!a && a.value > 0) as ActionsWithCosts[];
 }
 
 function getAttackAction(params: BaseParams, npc: NPCState, target: MonsterState, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts {
@@ -70,6 +77,66 @@ function getAttackAction(params: BaseParams, npc: NPCState, target: MonsterState
     value: npc.baseStats!.attack / npc.baseStats!.defence * target.health,
     action
   };
+}
+
+function getHealPotionAction(params: BaseParams, npc: NPCState): ActionsWithCosts | null {
+  const potions = npc.equipment.filter(e => e.type === ConsumableIds.healingPotion);
+  const greaterPotions = npc.equipment.filter(e => e.type === ConsumableIds.greaterHealingPotion);
+  const heal = consumableItems[ConsumableIds.healingPotion];
+  const greaterHeal = consumableItems[ConsumableIds.greaterHealingPotion];
+
+  if (potions.length > 0 || greaterPotions.length > 0) {
+    const greaterHealth = greaterHeal.bonusStats!.health || 12;
+    const minHealth = (potions.length > 0 ? heal.bonusStats!.health : greaterHealth) || 5;
+
+    if (npc.health <= npc.baseStats!.health - minHealth) {
+      const item = (greaterPotions.length > 0 && npc.health <= npc.baseStats!.health - greaterHealth)
+          ? greaterPotions[0] : potions[0];
+
+      const action: PlayerActionUseItem = {
+        id: -1,
+        itemId: item.id,
+        type: PlayerActionType.UseItem,
+        description: `Use ${consumableItems[item.type].name}`
+      };
+
+      return {
+        cost: consumableItems[item.type].useCost,
+        magic: 0,
+        value: 10 / (npc.health / npc.baseStats!.health),
+        action
+      };
+    }
+  }
+  return null;
+}
+
+function getMagicPotionAction(params: BaseParams, npc: NPCState): ActionsWithCosts | null {
+  const potions = npc.equipment.filter(e => e.type === ConsumableIds.manaPotion);
+  const mana = consumableItems[ConsumableIds.manaPotion];
+
+  if (potions.length > 0) {
+    const magic = mana.bonusStats!.magic || 5;
+
+    if (npc.magic <= npc.baseStats!.magic - magic) {
+      const item = potions[0];
+
+      const action: PlayerActionUseItem = {
+        id: -1,
+        itemId: item.id,
+        type: PlayerActionType.UseItem,
+        description: `Use ${consumableItems[item.type].name}`
+      };
+
+      return {
+        cost: consumableItems[item.type].useCost,
+        magic: 0,
+        value: 3 / (npc.magic / npc.baseStats!.magic),
+        action
+      };
+    }
+  }
+  return null;
 }
 
 function pickActions(actionsWithCosts: ActionsWithCosts[], maxCost: number, maxMagic: number): ActionsList {

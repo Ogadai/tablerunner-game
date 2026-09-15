@@ -170,16 +170,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     // Process player moves and healing (if still alive)
     for(const player of params.gameState.players) {
       if (player.health > 0) {
-        if (!playerFought[player.id] && player.health < player.baseStats!.health) {
-          player.health = Math.min(player.baseStats!.health,
-              player.health + Math.ceil(player.baseStats!.health * HEAL_SCALING)
-          );
-        }
-        if (player.magic < player.baseStats!.magic) {
-          player.magic = Math.min(player.baseStats!.magic,
-            player.magic + Math.ceil(player.baseStats!.magic * MAGIC_BONUS_RATIO)
-          );
-        }
+        characterRecovery(player, playerFought[player.id]);
 
         for(const moveAction of playerMoves[player.id]) {
           actionMove(params, player, moveAction);
@@ -189,8 +180,10 @@ export async function runGameActions(params: BaseParams): Promise<void> {
           actionPortal(params, player, portalAction);
         }
 
-        // Move any following NPCs to the same location
+        // Recover following NPCs and move to the same location
         for(const npc of params.gameState.npcs.filter(npc => npc.health > 0 && npc.masterId === player.id)) {
+          characterRecovery(npc, playerFought[player.id]);
+
           npc.location = {
             ...player.location,
           };
@@ -201,6 +194,20 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     console.error('Error: runGameActions');
     throw error;
   }
+}
+
+function characterRecovery(character: INamedTarget, playerFought: boolean) {
+  if (!playerFought && character.health < character.baseStats!.health) {
+    character.health = Math.min(character.baseStats!.health,
+        character.health + Math.ceil(character.baseStats!.health * HEAL_SCALING)
+    );
+  }
+  if (character.magic < character.baseStats!.magic) {
+    character.magic = Math.min(character.baseStats!.magic,
+      character.magic + Math.ceil(character.baseStats!.magic * MAGIC_BONUS_RATIO)
+    );
+  }
+
 }
 
 function limitPlayerActionsToCost(playerState: PlayerState, actionsState: PlayerActionsState) {

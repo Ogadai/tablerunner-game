@@ -1,7 +1,7 @@
 import { PlayerState, PlayerActionUseItem, CharacterEffect, INamedTarget } from "../store/types";
 import { ConsumableItemDef } from '@/lib/games/types';
 import { BaseParams } from './base-params';
-import { soloMessageAtLocation } from './game-messages';
+import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { allItems } from "../games/items";
 import { specialItemActions } from './special-item-actions';
 
@@ -28,8 +28,8 @@ export function actionUseItem(params: BaseParams, player: INamedTarget, action: 
     }
 
     if (benefitDescriptions.length > 0) {
-      soloMessageAtLocation(params, player.id,
-        `**You** drank **${usableItem.name}** for ${benefitDescriptions.join(' and ')}!`);
+      playerMessageAtLocation(params, player.id,
+        `**{player}** drank **${usableItem.name}** for ${benefitDescriptions.join(' and ')}!`);
     }
     
     let shouldRemoveItem = true;

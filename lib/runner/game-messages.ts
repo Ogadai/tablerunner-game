@@ -27,9 +27,11 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
 }
 
 export function soloMessageAtLocation(params: BaseParams, playerId: string, message: string) {
-  params.messages[playerId].messages.push({
-    text: message.replace('{player}', 'You').replace('{playerNoun}', 'are')
-  });
+  if (params.messages[playerId]) {
+    params.messages[playerId].messages.push({
+      text: message.replace('{player}', 'You').replace('{playerNoun}', 'are')
+    });
+  }
 }
 
 export function broadcastMessage(params: BaseParams, message: string) {

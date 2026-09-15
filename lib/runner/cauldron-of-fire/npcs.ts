@@ -1,4 +1,4 @@
-import { EquipableIds } from "@/lib/games/items";
+import { ConsumableIds, EquipableIds } from "@/lib/games/items";
 import { BaseParams } from "../base-params";
 import { ProcessRunner } from "../types";
 
@@ -14,22 +14,28 @@ export const npcs: ProcessRunner = {
       equipment: [{
         id: 'db-s1',
         type: EquipableIds.swordSteel,
+      }, {
+        id: 'db-h1',
+        type: ConsumableIds.healingPotion,
+      }, {
+        id: 'db-h2',
+        type: ConsumableIds.greaterHealingPotion,
       }],
       equipped: {
         weapon: 'db-s1',
       },
       baseStats: {
-        attack: 20,
-        damage: 15,
-        defence: 20,
+        attack: 12,
+        damage: 8,
+        defence: 10,
         magic: 2,
-        health: 20,
+        health: 15,
         speed: 8,
       },
       hireCost: 30,
       iconType: 'character',
       iconXY: { x: 0, y: 3 },
-      health: 20,
+      health: 15,
     });
   }
 }
