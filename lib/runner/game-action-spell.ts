@@ -1,15 +1,15 @@
 import { scrollItems } from "../games/items";
 import { SpellIds, spells } from "../games/spells";
 import { SpellDef, SpellTargetType } from "../games/types";
-import { ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
+import { INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { genericAttackMonster } from "./game-action-attack";
-import { soloMessageAtLocation, playerMessageAtLocation } from "./game-messages";
+import { soloMessageAtLocation } from "./game-messages";
 import { specialSpellActions } from './special-spell-actions';
 
 const MAX_RECENT_SPELLS = 2;
 
-export function actionCastSpell(params: BaseParams, player: PlayerState, action: PlayerActionCast): void {
+export function actionCastSpell(params: BaseParams, player: INamedTarget, action: PlayerActionCast): void {
   if (!player.spells.includes(action.spellId as SpellIds)) {
     // Doesn't have this spell
     return;
@@ -37,7 +37,7 @@ export function actionCastSpell(params: BaseParams, player: PlayerState, action:
 
 function applySpellEnemy(
   params: BaseParams,
-  player: PlayerState,
+  player: INamedTarget,
   spell: SpellDef,
   targets: ITarget[]
 ) {
@@ -52,7 +52,7 @@ function applySpellEnemy(
 
 function applySpellFriend(
   params: BaseParams,
-  player: PlayerState,
+  player: INamedTarget,
   spell: SpellDef,
   targets: ITarget[]
 ) {
@@ -95,7 +95,7 @@ export function actionReadScroll(params: BaseParams, player: PlayerState, action
   }
 }
 
-export function getSpellTargets(params: BaseParams, player: PlayerState, action: PlayerActionCast): ITarget[] {
+export function getSpellTargets(params: BaseParams, player: INamedTarget, action: PlayerActionCast): ITarget[] {
   const spell = spells[action.spellId];
   if (spell.targetType === SpellTargetType.enemy) {
     return params.monsters.filter(m => (m.health > 0) &&

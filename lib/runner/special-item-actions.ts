@@ -4,18 +4,18 @@ import { BaseParams } from "./base-params";
 import { updateLockLeds } from "./game-action-move";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
 
-export const specialItemActions: Record<string, (params: BaseParams, player: PlayerState) => boolean> = {
-  [ConsumableIds.resurrectionStone]: (params: BaseParams, player: PlayerState) =>
+export const specialItemActions: Record<string, (params: BaseParams, player: INamedTarget) => boolean> = {
+  [ConsumableIds.resurrectionStone]: (params: BaseParams, player: INamedTarget) =>
     useResurrectionStone(params, player, false),
-  [ConsumableIds.resurrectionShard]: (params: BaseParams, player: PlayerState) => 
+  [ConsumableIds.resurrectionShard]: (params: BaseParams, player: INamedTarget) => 
     useResurrectionStone(params, player, true),
 };
 
 for(const keyItemType of Object.keys(keyItems)) {
-  specialItemActions[keyItemType] = (params: BaseParams, player: PlayerState) => useKey(params, player, keyItemType);
+  specialItemActions[keyItemType] = (params: BaseParams, player: INamedTarget) => useKey(params, player, keyItemType);
 }
 
-function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZombies: boolean): boolean {
+function useResurrectionStone(params: BaseParams, player: INamedTarget, alwaysZombies: boolean): boolean {
   // Find dead players at location
   const deadPlayers = params.gameState.players.filter(p => 
     p.health === 0 &&
@@ -50,7 +50,7 @@ function useResurrectionStone(params: BaseParams, player: PlayerState, alwaysZom
   return true;
 }
 
-function useKey(params: BaseParams, player: PlayerState, keyItemType: string): boolean {
+function useKey(params: BaseParams, player: INamedTarget, keyItemType: string): boolean {
     const itemDef = keyItems[keyItemType];
   for(const move of player.location.move) {
     if (!!move.blockDescription && move.keyItemType === keyItemType) {

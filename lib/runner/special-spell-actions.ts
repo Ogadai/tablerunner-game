@@ -1,18 +1,18 @@
 import { monsters } from "../games/monsters";
 import { SpellIds } from "../games/spells";
 import { SpellDef } from "../games/types";
-import { CharacterEffect, ITarget, MonsterState, PlayerState } from "../store/types";
+import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { playerMessageAtLocation } from "./game-messages";
 
-export const specialSpellActions: Record<string, (params: BaseParams, player: PlayerState, spell: SpellDef, targets: ITarget[]) => void> = {
-  [SpellIds.fear]: (params: BaseParams, player: PlayerState, spell: SpellDef, targets: ITarget[]) =>
+export const specialSpellActions: Record<string, (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) => void> = {
+  [SpellIds.fear]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
     applyFearEffect(params, player, targets),
-  [SpellIds.terror]: (params: BaseParams, player: PlayerState, spell: SpellDef, targets: ITarget[]) =>
+  [SpellIds.terror]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
     applyTerrorEffect(params, player, targets),
 };
 
-const applyFearEffect = (params: BaseParams, player: PlayerState, targets: ITarget[]) => {
+const applyFearEffect = (params: BaseParams, player: INamedTarget, targets: ITarget[]) => {
   addEffectToTargets(targets, {
     turns: 3,
     description: 'Fear',
@@ -28,7 +28,7 @@ const applyFearEffect = (params: BaseParams, player: PlayerState, targets: ITarg
     `**{player}** cast **Fear** on **${targetNames}**`);
 }
 
-const applyTerrorEffect = (params: BaseParams, player: PlayerState, targets: ITarget[]) => {
+const applyTerrorEffect = (params: BaseParams, player: INamedTarget, targets: ITarget[]) => {
   addEffectToTargets(targets, {
     turns: 2,
     description: 'Fear',

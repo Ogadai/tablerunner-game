@@ -25,6 +25,7 @@ import { actionCastSpell, actionReadScroll } from './game-action-spell';
 import { actionMove } from "./game-action-move";
 import { actionPortal } from "./game-action-portal";
 import { actionUseItem } from './game-action-use';
+import { getNpcActions } from "./game-npc-actions";
 
 enum EntityActionEntityTypes {
   player,
@@ -93,12 +94,18 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     for(const npc of params.gameState.npcs) {
       const locId = `${npc.location.id}`;
       if (entityActionsForLocations[locId]) {
-        // TODO: automatically figure out NPC's actions (if master isn't moving)
+        // automatically figure out NPC's actions (if master isn't moving)
+        const npcActions: PlayerActionsState =
+          !params.gameState.players.find(p => p.id === npc.masterId
+              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0)
+          )
+         ? getNpcActions(params, npc) : { actions: [] };
+
         entityActionsForLocations[locId].entities.push({
           entityType: EntityActionEntityTypes.npc,
           entityId: npc.id,
           entitySpeed: npc.baseStats!.speed * Math.random(),
-          actions: [],
+          actions: npcActions.actions,
           random: Math.random(),
         });
       }
@@ -120,7 +127,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         }
 
         for(const monster of monstersAtLocation) {
-          const target = monsterPickTarget(targetsAtLocation);
+          const target = monsterPickTarget(targetsAtLocation, entityActionsForLocations[locId]);
           const monsterAction: PlayerActionAttack = {
             id: 1,
             type: PlayerActionType.Attack,
@@ -207,25 +214,33 @@ function limitPlayerActionsToCost(playerState: PlayerState, actionsState: Player
 async function processNextAction(params: BaseParams, entityActions: EntityActions, locationId: number): Promise<void> {
   try {
     const getPlayerById = (id: string) => params.gameState.players.find(p => p.id === id)!;
+    const getNpcById = (id: string) => params.gameState.npcs.find(n => n.id === id)!;
     const getMonsterById = (id: string) => params.monsters.find(m => m.id === id)!;
 
     const nextAction = entityActions.actions.splice(0, 1)[0];
 
-    if (entityActions.entityType === EntityActionEntityTypes.player) {
-      const player = getPlayerById(entityActions.entityId);
-      if (player && player.health > 0) {
+    if (entityActions.entityType === EntityActionEntityTypes.player
+        || entityActions.entityType === EntityActionEntityTypes.npc
+    ) {
+      const character: INamedTarget = (entityActions.entityType === EntityActionEntityTypes.player)
+        ? getPlayerById(entityActions.entityId)
+        : getNpcById(entityActions.entityId);
+
+      if (character && character.health > 0) {
         switch(nextAction.type) {
           case PlayerActionType.Attack:
-            actionAttack(params, player, nextAction as PlayerActionAttack);
+            actionAttack(params, character, nextAction as PlayerActionAttack);
             break;
           case PlayerActionType.UseItem:
-            actionUseItem(params, player, nextAction as PlayerActionUseItem);
+            actionUseItem(params, character, nextAction as PlayerActionUseItem);
             break;
           case PlayerActionType.Cast:
-            actionCastSpell(params, player, nextAction as PlayerActionCast);
+            actionCastSpell(params, character, nextAction as PlayerActionCast);
             break;
           case PlayerActionType.ReadScroll:
-            actionReadScroll(params, player, nextAction as PlayerActionReadScroll);
+            if (entityActions.entityType === EntityActionEntityTypes.player) {
+              actionReadScroll(params, character as PlayerState, nextAction as PlayerActionReadScroll);
+            }
             break;
         }
       }
@@ -251,16 +266,30 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
   }
 }
 
-function monsterPickTarget(targets: INamedTarget[]): INamedTarget {
+function monsterPickTarget(targets: INamedTarget[], entityActionsForLocation: EntityActionsForLocation): INamedTarget {
   const targetWeights = targets.map(target => {
-    const weaponId = target.equipped.weapon;
-    const weapon = weaponId ? target.equipment.find(item => item.id === weaponId) as PlayerItem | undefined : undefined;
-    const weaponType = weapon && allItems[weapon.type] as EquipableItemDef;
+    const targetActions = entityActionsForLocation.entities.find( e => e.entityId === target.id);
+    if (!targetActions || targetActions.actions.length === 0) {
+      // No action (or leaving)
+      return 0.3;
+    }
 
-    const hasRangedOrStaffWeapon = !!weaponType?.ranged || !!weaponType?.staff;
+    // Make the weights depending on whether they have an "attack" action without a ranged weapon
+    if (!!targetActions.actions.find(a => a.type === PlayerActionType.Attack)) {
+      const weaponId = target.equipped.weapon;
+      const weapon = weaponId ? target.equipment.find(item => item.id === weaponId) as PlayerItem | undefined : undefined;
+      const weaponType = weapon && allItems[weapon.type] as EquipableItemDef;
 
-    return hasRangedOrStaffWeapon ? 0.5 : 1;
+      if (!weaponType || !weaponType.ranged) {
+        // Melee attack
+        return 1;
+      }
+    }
+
+    // Ranged attack or other action
+    return 0.5;
   });
+
   const totalWeight = targetWeights.reduce((total, weight) => total + weight, 0);
   let selection = Math.random() * totalWeight;
 

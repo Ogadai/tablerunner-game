@@ -1,7 +1,7 @@
 import { allItems } from '../games/items';
 import { getSpellActionCost, spells } from '../games/spells';
 import { BaseStats, ConsumableItemDef, EquipableItemDef } from '../games/types';
-import { PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
+import { INamedTarget, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
 
 const BASE_ACTIONS_PER_TURN = 20;
 const BASE_MOVE_ACTION_COST = 18;
@@ -14,7 +14,7 @@ export interface PlayerActionsPerTurn {
   attack: number,
 }
 
-export function getPlayerActionsPerTurn(playerState: PlayerState): PlayerActionsPerTurn {
+export function getPlayerActionsPerTurn(playerState: INamedTarget): PlayerActionsPerTurn {
   const playerSpeed = playerState.baseStats!.speed;
   const speedBonus = Math.min(10, Math.floor(playerSpeed / 5));
 
@@ -25,7 +25,7 @@ export function getPlayerActionsPerTurn(playerState: PlayerState): PlayerActions
   };
 }
 
-export function getPlayerActionsCosts(playerState: PlayerState, actionsState: PlayerActionsState | null | undefined): number {
+export function getPlayerActionsCosts(playerState: INamedTarget, actionsState: PlayerActionsState | null | undefined): number {
   if (!actionsState || !actionsState.actions) {
     return 0;
   }

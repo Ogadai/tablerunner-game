@@ -28,7 +28,7 @@ export function processAttackForDamage(attackerStats: { attack: number, damage: 
   return 0;
 }
 
-export function actionAttack(params: BaseParams, player: PlayerState, action: PlayerActionAttack): void {
+export function actionAttack(params: BaseParams, player: INamedTarget, action: PlayerActionAttack): void {
   const monster = params.monsters.find(m => m.id === action.target)!;
   const success = genericAttackMonster(params, player, player.baseStats!, monster);
 
@@ -80,7 +80,7 @@ export function monsterAttack(
   }
 }
 
-export function genericAttackMonster(params: BaseParams, player: PlayerState, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): boolean {
+export function genericAttackMonster(params: BaseParams, player: INamedTarget, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): boolean {
   try {
     if (monster && monster.health > 0) {
       const damage = processAttackForDamage(attackStats, getMonsterStats(monster));
@@ -121,7 +121,7 @@ export function genericAttackMonster(params: BaseParams, player: PlayerState, at
   return false;
 }
 
-function monsterDropCoins(params: BaseParams, player: PlayerState, monster: MonsterState) {
+function monsterDropCoins(params: BaseParams, player: INamedTarget, monster: MonsterState) {
   const locationId = player.location.id;
   const monsterStrength = getMonsterStrength(monsters[monster.type]);
   const maximumCoins = Math.ceil(2 + monsterStrength * (MAXIMUM_COIN_DROP - 2));
@@ -164,7 +164,7 @@ function distributeLocationCoins(params: BaseParams, locationId: number) {
   params.coins.splice(params.coins.indexOf(locationCoins), 1);
 }
 
-function monsterDropLoot(params: BaseParams, player: PlayerState, monster: MonsterState) {
+function monsterDropLoot(params: BaseParams, player: INamedTarget, monster: MonsterState) {
   const locationId = player.location.id;
 
   const monsterStrength = getMonsterStrength(monsters[monster.type]);

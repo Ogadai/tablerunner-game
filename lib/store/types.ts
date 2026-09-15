@@ -66,6 +66,7 @@ export interface INamedTarget extends ITarget {
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
   baseStats?: BaseStats;
+  recentSpells?: SpellIds[];
 }
 
 export interface PlayerState extends INamedTarget {
@@ -75,8 +76,6 @@ export interface PlayerState extends INamedTarget {
   level: number;
   points: number;
   availableStats: number;
-  spells: SpellIds[];
-  recentSpells?: SpellIds[];
   coins: number;
 }
 

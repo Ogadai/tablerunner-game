@@ -1,11 +1,11 @@
-import { PlayerState, PlayerActionUseItem, CharacterEffect } from "../store/types";
+import { PlayerState, PlayerActionUseItem, CharacterEffect, INamedTarget } from "../store/types";
 import { ConsumableItemDef } from '@/lib/games/types';
 import { BaseParams } from './base-params';
 import { soloMessageAtLocation } from './game-messages';
 import { allItems } from "../games/items";
 import { specialItemActions } from './special-item-actions';
 
-export function actionUseItem(params: BaseParams, player: PlayerState, action: PlayerActionUseItem): void {
+export function actionUseItem(params: BaseParams, player: INamedTarget, action: PlayerActionUseItem): void {
   const item = player.equipment.find(item => item.id === action.itemId);
   const usableItem = item && allItems[item.type] as ConsumableItemDef;
 
