@@ -44,6 +44,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
 
   const newGameState: GameState = {
     gameId,
+    turn: 0,
     name: `${gameId} on board ${boardId} and map ${mapId}`,
     characters: gameDef.characters,
     players: [],
@@ -57,6 +58,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
       monsterId: 0,
     },
     leds: [],
+    processState: {},
   };
 
   updatePortalAndShopLeds(newGameState);

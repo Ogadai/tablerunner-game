@@ -15,12 +15,6 @@ const MAX_ZOMBIES_ON_MAP = 30;
 
 export const zombies: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
-    // params.monsters.push(generateMonster(params.gameState, {
-    //   type: 'zombie',
-    //   location: 147,
-    //   health: 10,
-    //   infected: 3,
-    // }));
   },
 
   async executeForTurn(params: BaseParams) {

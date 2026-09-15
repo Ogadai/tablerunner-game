@@ -54,6 +54,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 
     const newGameState: GameState = {
       ...params.gameState,
+      turn: params.gameState.turn + 1,
       players: params.gameState.players.map(p => ({...p}))
     };
     params.gameState = newGameState;

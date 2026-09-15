@@ -10,6 +10,7 @@ export const gameStateOptions: SetCommandOptions = { ex: Expiry1Week };
 
 export interface GameState {
   gameId: string;
+  turn: number;
   name: string;
   characters: CharacterListEntry[];
   players: PlayerState[];
@@ -24,6 +25,7 @@ export interface GameState {
     itemId: number,
   }
   leds: LedState[];
+  processState: { [owner: string]: any };
 }
 
 export const NOTHING_EQUPPED = '<none>';
@@ -237,3 +239,4 @@ export const getMonsterName = (monster: MonsterState): string => {
   const monsterName = monsters[monster.type].name;
   return monster.zombie ? `Zombie ${monsterName}` : monsterName;
 }
+
