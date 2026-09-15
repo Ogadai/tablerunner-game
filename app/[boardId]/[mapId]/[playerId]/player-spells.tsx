@@ -109,7 +109,9 @@ export default function PlayerSpells({
     entities.filter(entity => {
       if (targetType === SpellTargetType.friend) {
         return entity.health > 0 &&
-          (entity.className === EntityItemClass.self || entity.className === EntityItemClass.friendly);
+          (entity.className === EntityItemClass.self
+            || entity.className === EntityItemClass.friendly
+            || entity.className === EntityItemClass.npc);
       }
       if (targetType === SpellTargetType.enemy) {
         return entity.className === EntityItemClass.enemy && entity.health > 0;

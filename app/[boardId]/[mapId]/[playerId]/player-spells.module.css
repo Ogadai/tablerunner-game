@@ -49,6 +49,16 @@
   list-style: none;
 }
 
+@media screen and (max-width: 400px) {
+  .spellsDialog {
+    min-width: 300px;
+  }
+
+  .spellList {
+    grid-template-columns: repeat(3, 80px);
+  }
+}
+
 .spellIcon {
   width: 80px;
   height: 80px;
