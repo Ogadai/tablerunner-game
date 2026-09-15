@@ -1,10 +1,14 @@
 import { monsters } from "../games/monsters";
 import { BaseStats } from "../games/types";
-import { MonsterState } from "../store/types";
+import { ITarget, MonsterState } from "../store/types";
 
 export function getMonsterStats(monster: MonsterState): BaseStats {
-  const baseStats: BaseStats = {
-    ...monsters[monster.type].baseStats,
+  return getEnhancedStats(monsters[monster.type].baseStats, monster);
+}
+
+function getEnhancedStats(baseStats: BaseStats, target: ITarget): BaseStats {
+  const baseStatsWithBonuses: BaseStats = {
+    ...baseStats,
     bonuses: {
       attack: 0,
       damage: 0,
@@ -15,19 +19,19 @@ export function getMonsterStats(monster: MonsterState): BaseStats {
     },
   };
 
-  if (monster.effects) {
-    for (const effect of monster.effects) {
+  if (target.effects) {
+    for (const effect of target.effects) {
       const { description, special, turns, ...effectBonuses } = effect;
 
       for (const stat of Object.keys(effectBonuses)) {
         const bonusAmount = (effectBonuses as any)[stat];
         if (bonusAmount) {
-          (baseStats as any)[stat] += bonusAmount;
-          (baseStats.bonuses as any)[stat] += bonusAmount;
+          (baseStatsWithBonuses as any)[stat] += bonusAmount;
+          (baseStatsWithBonuses.bonuses as any)[stat] += bonusAmount;
         }
       }
     }
   }
 
-  return baseStats;
+  return baseStatsWithBonuses;
 }

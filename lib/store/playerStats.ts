@@ -72,6 +72,53 @@ export function getPlayerActionsMagic(playerState: PlayerState, actionsState: Pl
   }, 0);
 }
 
+export function getNamedTargetStats(baseStats: BaseStats, target: INamedTarget): BaseStats {
+  const enhancedStats: BaseStats = {
+    ...baseStats,
+    bonuses: {
+      attack: 0,
+      damage: 0,
+      defence: 0,
+      magic: 0,
+      health: 0,
+      speed: 0,
+    }
+  };
+
+  // Account for any equipment bonuses
+  for(const slot of Object.keys(target.equipped)) {
+    const itemId = (target.equipped as any)[slot] as (string | undefined | null);
+    const item = !!itemId && target.equipment.find(e => e.id == itemId);
+    const itemDef = item && allItems[item.type];
+    if (itemDef) {
+      for(const stat of Object.keys(itemDef.bonusStats!)) {
+        const bonusAmount = (itemDef.bonusStats as any)[stat];
+        if (bonusAmount) {
+          (enhancedStats as any)[stat] += bonusAmount;
+          (enhancedStats.bonuses as any)[stat] += bonusAmount;
+        }
+      }
+    }
+  }
+
+  // Account for any effects
+  if (target.effects) {
+    for(const effect of target.effects) {
+      const { description, special, turns, ...effectBonus } = effect;
+
+      for(const stat of Object.keys(effectBonus)) {
+        const bonusAmount = (effectBonus as any)[stat];
+        if (bonusAmount) {
+          (enhancedStats as any)[stat] += bonusAmount;
+          (enhancedStats.bonuses as any)[stat] += bonusAmount;
+        }
+      }
+    }
+  }
+
+  return enhancedStats;  
+}
+
 export function getPlayerStats(playerState: PlayerState): BaseStats {
   const weaponId = playerState.equipped.weapon;
   const weapon = !!weaponId && playerState.equipment.find(e => e.id == weaponId);
@@ -85,47 +132,8 @@ export function getPlayerStats(playerState: PlayerState): BaseStats {
     defence: Math.ceil((pStats.reactions + pStats.skill + pStats.strength) / 3),
     magic: pStats.intelligence,
     health: pStats.resiliance,
-    speed: pStats.reactions,
-    bonuses: {
-      attack: 0,
-      damage: 0,
-      defence: 0,
-      magic: 0,
-      health: 0,
-      speed: 0,
-    }
+    speed: pStats.reactions
   };
 
-  // Account for any equipment bonuses
-  for(const slot of Object.keys(playerState.equipped)) {
-    const itemId = (playerState.equipped as any)[slot] as (string | undefined | null);
-    const item = !!itemId && playerState.equipment.find(e => e.id == itemId);
-    const itemDef = item && allItems[item.type];
-    if (itemDef) {
-      for(const stat of Object.keys(itemDef.bonusStats!)) {
-        const bonusAmount = (itemDef.bonusStats as any)[stat];
-        if (bonusAmount) {
-          (baseStats as any)[stat] += bonusAmount;
-          (baseStats.bonuses as any)[stat] += bonusAmount;
-        }
-      }
-    }
-  }
-
-  // Account for any effects
-  if (playerState.effects) {
-    for(const effect of playerState.effects) {
-      const { description, special, turns, ...effectBonus } = effect;
-
-      for(const stat of Object.keys(effectBonus)) {
-        const bonusAmount = (effectBonus as any)[stat];
-        if (bonusAmount) {
-          (baseStats as any)[stat] += bonusAmount;
-          (baseStats.bonuses as any)[stat] += bonusAmount;
-        }
-      }
-    }
-  }
-
-  return baseStats;
+  return getNamedTargetStats(baseStats, playerState);
 }

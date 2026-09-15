@@ -146,7 +146,7 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState {
     spells: [],
     equipment: [{
       id: `${npcId}-weapon`,
-      type: (type === "barbarian") ? EquipableIds.swordSteel : EquipableIds.bowLong,
+      type: (type === "barbarian") ? EquipableIds.axeBattle : EquipableIds.bowElven,
     }, {
       id: `${npcId}-heal-1`,
       type: ConsumableIds.healingPotion,
