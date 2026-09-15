@@ -102,9 +102,14 @@ export function getSpellTargets(params: BaseParams, player: INamedTarget, action
       (spell.pickTarget ? m.id === action.targetId : m.location === player.location.id)
     );
   } else if (spell.targetType === SpellTargetType.friend) {
-    return params.gameState.players.filter(p => (p.health > 0) &&
+    const players = params.gameState.players.filter(p => (p.health > 0) &&
       (spell.pickTarget ? p.id === action.targetId : p.location.id === player.location.id)
     );
+    const npcs = params.gameState.npcs.filter(n => (n.health > 0) &&
+      (spell.pickTarget ? n.id === action.targetId : n.location.id === player.location.id)
+    );
+
+    return [...players, ...npcs];
   } else {
     return [
       ...params.monsters.filter(m => 
