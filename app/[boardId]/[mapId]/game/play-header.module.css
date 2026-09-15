@@ -41,6 +41,7 @@
 button.playerButton {
   padding: 0 0.75rem;
   margin-right: 10px;
+  position: relative;
 }
 
 .playerIcon {
