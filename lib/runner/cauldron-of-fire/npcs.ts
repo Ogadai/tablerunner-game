@@ -61,13 +61,13 @@ function pickName(
   type: 'barbarian' | 'witch' | 'ranger' | 'mage',
   race: 'human' | 'elf' | 'dwarf',
   gender: 'male' | 'female'
-): string {
+): string | undefined {
   const availableNames = NPC_NAMES.filter(n =>
     n.type === type && n.race === race && n.gender === gender
     && !params.gameState.npcs.find(npc => npc.name === n.name)
   );
 
-  return availableNames[Math.floor(Math.random() * availableNames.length)].name;
+  return availableNames && availableNames[Math.floor(Math.random() * availableNames.length)].name;
 }
 
 const generateStat = (cost: number, importance: number): number => {
@@ -120,7 +120,7 @@ const getNpcStats: { [type: string]: ((cost: number) => BaseStats) } = {
   },
 };
 
-function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState {
+function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
   const type = NPC_TYPES[Math.floor(Math.random() * NPC_TYPES.length)];
   const race = NPC_RACES[Math.floor(Math.random() * NPC_RACES.length)];
 
@@ -137,10 +137,15 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState {
   const baseStats = getNpcStats[type](cost);
 
   const npcId = `npc-${params.gameState.npcs.length + 1}`;
+  const name = pickName(params, type, race, gender);
+  if (!name) {
+    return null;
+  }
+
   return {
     id: npcId,
     masterId: null,
-    name: pickName(params, type, race, gender),
+    name: name,
     location: { id: mapNpc.location, description: '', move: [] },
     magic: 0,
     spells: [],
@@ -169,9 +174,10 @@ export const npcs: ProcessRunner = {
     for(const mapNpc of MAP_NPCS) {
       const count = mapNpc.min + Math.floor(Math.random() * (mapNpc.max - mapNpc.min + 1))
       for(let n = 0; n < count; n++) {
-        params.gameState.npcs.push(
-          generateNpc(params, mapNpc)
-        )
+        const npc = generateNpc(params, mapNpc);
+        if (npc) {
+          params.gameState.npcs.push(npc)
+        }
       }
     }
   }

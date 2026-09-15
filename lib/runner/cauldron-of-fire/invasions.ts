@@ -8,6 +8,7 @@ import { games } from "@/lib/games/games";
 
 const OWNER = 'invasions';
 const MOVE_CHANCE = 0.5;
+const INVASION_LED_RGB = '9E8209';
 
 interface InvasionDef {
   key: string;
@@ -58,17 +59,17 @@ const saveState = (params: BaseParams, invasions: InvasionDef[]) => {
 export const invasions: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
     const invasions: InvasionDef[] = [
-      randomInvasion(20, ['rat', 'spider', 'snake'], 'early1', 20),
+      randomInvasion(15, ['rat', 'spider', 'snake'], 'early1', 20),
       randomInvasion(20, ['rat', 'spider', 'snake'], 'early2', 20),
-      randomInvasion(40, ['goblin', 'wyvern'], 'early1', 30),
+      randomInvasion(30, ['goblin', 'wyvern'], 'early1', 30),
       randomInvasion(40, ['goblin', 'wyvern', 'snake'], 'early2', 30),
-      randomInvasion(50, ['scoprion', 'wildcat'], 'early1', 30),
+      randomInvasion(45, ['scoprion', 'wildcat'], 'early1', 30),
       randomInvasion(50, ['scoprion', 'wildcat'], 'early2', 30),
-      randomInvasion(60, ['orc', 'scorpion', 'wildcat'], 'mid1', 30),
+      randomInvasion(55, ['orc', 'scorpion', 'wildcat'], 'mid1', 30),
       randomInvasion(60, ['orc', 'scorpion', 'wildcat'], 'mid2', 30),
-      randomInvasion(70, ['wildcat', 'bandit'], 'late1', 30),
+      randomInvasion(65, ['wildcat', 'bandit'], 'late1', 30),
       randomInvasion(70, ['wildcat', 'bandit'], 'late2', 30),
-      randomInvasion(80, ['ogre', 'cyclops'], 'late1', 15),
+      randomInvasion(75, ['ogre', 'cyclops'], 'late1', 15),
       randomInvasion(80, ['ogre', 'cyclops'], 'late2', 15),
     ];
 
@@ -77,7 +78,6 @@ export const invasions: ProcessRunner = {
       invasions.splice(Math.floor(Math.random() * invasions.length), 1);
     }
 
-    invasions[0].startTurn = 3;
     saveState(params, invasions);
   },
 
@@ -86,7 +86,8 @@ export const invasions: ProcessRunner = {
     for(const invasion of invasions) {
       if (params.gameState.turn === invasion.startTurn) {
         startInvasion(params, invasion);
-      } else if (params.gameState.turn > invasion.startTurn && invasion.monsterIDs.length > 0) {
+      } else if (params.gameState.turn > invasion.startTurn
+          && params.gameState.turn <= invasion.endTurn && invasion.monsterIDs.length > 0) {
         processInvasion(params, invasion);
       }
     }
@@ -127,29 +128,22 @@ const processInvasion = (params: BaseParams, invasion: InvasionDef) => {
     }
   }
 
-  // Clean up the dead ones
-  invasion.monsterIDs = existingMonsters
-    .filter(m => m.health > 0)
-    .map(m => m.id);
-
   // May be room for more start monsters
   createStartMonsters(params, invasion, existingMonsters);
 }
 
 const updateLeds = (params: BaseParams, invasions: InvasionDef[]) => {
-  const ledLocations = invasions.reduce((list, invasion) => {
-    return [
-      ...list,
-      ...getInvasionLocations(params, invasion),
-    ];
-  }, []);
+  const ledLocations = invasions.reduce((locationSet, invasion) => {
+    getInvasionLocations(params, invasion).forEach(l => locationSet.add(l));
+    return locationSet;
+  }, new Set<number>());
 
   params.gameState.leds = [
-    ...params.gameState.leds.filter(l => l.owner !== ZOMBIE_LED_OWNER),
-    ...ledLocations.map(l => ({
+    ...params.gameState.leds.filter(l => l.owner !== OWNER),
+    ...[...ledLocations].map(l => ({
       location: l,
-      rgb: ZOMBIE_LED_RGB,
-      owner: ZOMBIE_LED_OWNER,
+      rgb: INVASION_LED_RGB,
+      owner: OWNER,
     }))
   ]
 }
@@ -188,9 +182,9 @@ const randomInvasion = (turn: number, types: string[], route: string, size: numb
 
 const getInvasionLocations = (params: BaseParams, invasion: InvasionDef): number[] => {
   const existingMonsters = params.monsters.filter(m =>
-    invasion.monsterIDs.includes(m.id)
+    invasion.monsterIDs.includes(m.id) && m.health > 0
   );
-  return [];
+  return existingMonsters.map(m => m.location);
 }
 
 const getPossibleMoveLocations = (params: BaseParams, fromLocation: number): number[] => {
