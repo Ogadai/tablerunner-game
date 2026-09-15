@@ -169,7 +169,7 @@ function monsterDropLoot(params: BaseParams, player: INamedTarget, monster: Mons
 
   const monsterStrength = getMonsterStrength(monsters[monster.type]);
 
-  const potionChance = 0.5;
+  const potionChance = 0.25;
   if (Math.random() <= potionChance) {
     const potionItemId = monsterStrength > 0.25 ? ConsumableIds.greaterHealingPotion : ConsumableIds.healingPotion;
     params.items.push({
