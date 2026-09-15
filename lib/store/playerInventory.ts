@@ -34,6 +34,55 @@ export async function getPlayerInventory(boardId: string, mapId: string, playerI
   }
 }
 
+export async function hireNpc(
+  boardId: string, mapId: string, playerId: string, npcId: string
+): Promise<ApiResponse<PlayerInventoryState>> {
+  let lock: (() => Promise<void>) | null = null;
+  try {
+    lock = await lockLocationsStateInRedis(boardId, mapId);
+
+    const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
+    const gameState = await getGameStateFromRedis(boardId, mapId);
+    const locationsState = await getLocationsStateFromRedis(boardId, mapId);
+    const player = gameState.players.find(p => p.id === playerId);
+    locationsState.npcs = locationsState.npcs || [];
+    const npc = locationsState.npcs.find(n => n.id === npcId);
+
+    if (!player || !npc || npc.location.id !== player.location.id) {
+      throw new Error('NPC is not available at this location');
+    }
+    if (player.health === 0) {
+      throw new Error('Cannot hire an NPC while dead');
+    }
+    if (npc.masterId !== null) {
+      throw new Error('NPC has already been hired');
+    }
+
+    if (playerInventory.coins === undefined) {
+      playerInventory.coins = player.coins;
+    }
+    if (playerInventory.coins < npc.hireCost) {
+      throw new Error('Not enough coins to hire this NPC');
+    }
+
+    playerInventory.coins -= npc.hireCost;
+    playerInventory.hiredNpcIds = [...(playerInventory.hiredNpcIds || []), npc.id];
+    npc.masterId = playerId;
+
+    await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
+    await setLocationsStateInRedis(boardId, mapId, locationsState);
+    await publishLocationUpdated(boardId, mapId, player.location.id);
+
+    return { success: true, data: playerInventory };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  } finally {
+    if (lock) {
+      await lock();
+    }
+  }
+}
+
 export async function playerEquipItem(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
   try {
     const gameState = await getGameStateFromRedis(boardId, mapId);

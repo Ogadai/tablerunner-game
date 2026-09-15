@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
-import { getDisplayName, getMonsterName, INamedTarget, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
+import { getDisplayName, getMonsterName, INamedTarget, MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
 import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
@@ -20,7 +20,7 @@ export interface PlayerLocationListProps {
   player: PlayerState;
   otherPlayers: PlayerState[];
   monsters: MonsterState[];
-  npcs: INamedTarget[];
+  npcs: NPCState[];
   entities: EntityItemDetail[],
   items: PlayerItem[];
   playerStats: PlayerStats;
@@ -43,7 +43,7 @@ export default function PlayerLocationList({
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
-  const [npcOpen, setNpcOpen] = useState<INamedTarget | null>(null);
+  const [npcOpen, setNpcOpen] = useState<NPCState | null>(null);
   const openCharacter = characterOpen
     ? characterOpen.id === player.id
       ? player
@@ -133,6 +133,10 @@ export default function PlayerLocationList({
     setCharacterOpen(null);
   }
 
+  const onHired = () => {
+    setNpcOpen(null);
+  };
+
   const actionPointsLeft = playerStats.actionPointsTotal - playerStats.actionPointsUsed;
   const canAttack = actionPointsLeft >= playerStats.actionsPerTurn.attack;
   const usedItemIds = actionsState.actions
@@ -152,7 +156,7 @@ export default function PlayerLocationList({
             <span>{dialogTitle}</span>
             { dialogSubTitle && <span className="DialogSubTitle">{dialogSubTitle}</span> }
             </Dialog.Title>
-          <div className={`${openCharacter ? styles.dialogContent : ''} DialogContentBody`}>
+          <div className={`${displayCharacter ? styles.dialogContent : ''} DialogContentBody`}>
             { monsterOpen &&
               <MonsterCard
                 monster={monsterOpen}
@@ -165,12 +169,14 @@ export default function PlayerLocationList({
                 boardId={boardId}
                 mapId={mapId}
                 player={displayCharacter}
+                viewer={player}
                 isSelf={displayCharacter.id === player.id}
                 actionPointsLeft={actionPointsLeft}
                 playerStats={displayCharacter.id === player.id ? playerStats : null}
                 onUseItem={onUseItem}
                 usedItemIds={usedItemIds}
                 onLearnScroll={onLearnScroll}
+                onHired={onHired}
               ></CharacterCard>
             }
           </div>

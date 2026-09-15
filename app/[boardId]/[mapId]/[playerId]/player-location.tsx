@@ -38,7 +38,7 @@ export default function PlayerLocation(
     readyPlayerDirection?: { [id: string]: LocationMoveDirection },
     endTurnAction: (direction?: LocationMoveDirection) => void
   }) {
-  const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [] });
+  const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [], npcs: [] });
   const [playerState, setPlayerState] = useState<PlayerState | null>();
   const [playerStats, setPlayerStats] = useState<PlayerStats>(emptyPlayerStats);
   const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
@@ -46,7 +46,7 @@ export default function PlayerLocation(
 
   const playerAlive = playerState && playerState.health > 0;
   const otherPlayers = gameState.players.filter(p => p.id !== playerId && p.location.id === playerState?.location.id);
-  const npcs = gameState.npcs.filter(npc => npc.location.id === playerState?.location.id);
+  const npcs = locationState.npcs;
   const topicId = getGameTopicId(boardId, mapId);
 
   const usedItemIds = actionsState.actions

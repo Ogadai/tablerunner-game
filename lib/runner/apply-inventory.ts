@@ -24,6 +24,13 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
     player.coins = result.coins;
   }
 
+  for (const npcId of result.hiredNpcIds || []) {
+    const npc = params.gameState.npcs.find(n => n.id === npcId);
+    if (npc) {
+      npc.masterId = player.id;
+    }
+  }
+
   await deletePlayerInventoryFromRedis(params.boardId, params.mapId, player.id);
 }
 

@@ -91,6 +91,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       items: params.items,
       coins: params.coins,
       blockedMoves: params.blockedMoves,
+      npcs: params.gameState.npcs,
     };
     setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
 

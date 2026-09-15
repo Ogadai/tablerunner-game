@@ -193,17 +193,20 @@ export interface AllLocationsState {
   items: ItemLocationState[];
   coins: LocationCoinState[];
   blockedMoves: LocationBlockedMove[];
+  npcs: NPCState[];
 }
 
 export interface LocationState {
   monsters: MonsterState[];
   items: PlayerItem[];
+  npcs: NPCState[];
 }
 
 export interface PlayerInventoryState {
   equipped: PlayerInventoryEquipSlots | null
   equipment: PlayerItem[] | null;
   coins?: number;
+  hiredNpcIds?: string[];
 }
 
 export interface StoreInventoryItem {

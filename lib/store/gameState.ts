@@ -68,6 +68,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     items,
     coins: [],
     blockedMoves: [],
+    npcs: newGameState.npcs,
   };
 
   await setupProcesses({

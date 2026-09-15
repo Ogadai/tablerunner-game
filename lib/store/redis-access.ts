@@ -137,7 +137,7 @@ export async function deletePlayerStatsFromRedis(boardId: string, mapId: string,
 
 export async function getPlayerInventoryFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerInventoryState> {
   const result = await redis.get(getPlayerInventoryKey(boardId, mapId, playerId)) as PlayerInventoryState;
-  return result || { equipped: null, equipment: null };
+  return result || { equipped: null, equipment: null, hiredNpcIds: [] };
 }
 
 export async function setPlayerInventoryInRedis(boardId: string, mapId: string, playerId: string, newInventoryState: PlayerInventoryState): Promise<void> {
@@ -171,7 +171,7 @@ export async function lockLocationsStateInRedis(boardId: string, mapId: string):
 
 export async function getLocationsStateFromRedis(boardId: string, mapId: string): Promise<AllLocationsState> {
   const result = await redis.get(getLocationsKey(boardId, mapId)) as AllLocationsState;
-  return result || { monsters: [], items: [], coins: [] };
+  return result || { monsters: [], items: [], coins: [], blockedMoves: [], npcs: [] };
 }
 
 export async function setLocationsStateInRedis(boardId: string, mapId: string, monsterState: AllLocationsState): Promise<void> {

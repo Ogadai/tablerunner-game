@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import tabStyles from './tabs.module.css';
 
-import { INamedTarget, PlayerState } from '@/lib/store/types';
+import { INamedTarget, NPCState, PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import Inventory from './inventory';
 import { dropItemAtLocation, playerEquipItem } from '@/lib/store/playerInventory';
@@ -14,22 +14,26 @@ export default function CharacterCard({
   boardId,
   mapId,
   player,
+  viewer,
   isSelf,
   actionPointsLeft,
   playerStats,
   onUseItem,
   onLearnScroll,
   usedItemIds,
+  onHired,
 }: {
   boardId: string;
   mapId: string;
   player: INamedTarget | PlayerState;
+  viewer: PlayerState;
   isSelf: boolean;
   actionPointsLeft: number;
   playerStats: PlayerStats | null;
   onUseItem: (item: PlayerItem) => void;
   onLearnScroll: (item: PlayerItem) => void;
   usedItemIds: string[];
+  onHired: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
 
@@ -73,7 +77,13 @@ export default function CharacterCard({
             isSelf={isSelf}
           />
           :
-          <NpcCard npc={player} />)
+          <NpcCard
+            boardId={boardId}
+            mapId={mapId}
+            npc={player as NPCState}
+            player={viewer}
+            onHired={onHired}
+          />)
         : <Inventory
             player={player}
             isSelf={isSelf}

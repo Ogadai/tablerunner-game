@@ -1,3 +1,15 @@
+.npcHeader {
+  display: flex;
+  margin-bottom: 10px;
+  margin-top: 5px;
+}
+
 .statsCard {
   margin: 10px 0;
+}
+
+.npcButtons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
 }

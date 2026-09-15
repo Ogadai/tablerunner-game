@@ -10,6 +10,7 @@ export async function getLocationState(boardId: string, mapId: string, location:
     const data: LocationState = {
       monsters: monsterState.monsters.filter(m => m.location === location),
       items: monsterState.items.filter(i => i.location === location),
+      npcs: (monsterState.npcs || []).filter(npc => npc.location.id === location),
     };
 
     return {
