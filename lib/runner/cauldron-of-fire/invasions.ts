@@ -90,6 +90,8 @@ export const invasions: ProcessRunner = {
         processInvasion(params, invasion);
       }
     }
+    saveState(params, invasions);
+    updateLeds(params, invasions)
   }
 }
 
@@ -134,6 +136,24 @@ const processInvasion = (params: BaseParams, invasion: InvasionDef) => {
   createStartMonsters(params, invasion, existingMonsters);
 }
 
+const updateLeds = (params: BaseParams, invasions: InvasionDef[]) => {
+  const ledLocations = invasions.reduce((list, invasion) => {
+    return [
+      ...list,
+      ...getInvasionLocations(params, invasion),
+    ];
+  }, []);
+
+  params.gameState.leds = [
+    ...params.gameState.leds.filter(l => l.owner !== ZOMBIE_LED_OWNER),
+    ...ledLocations.map(l => ({
+      location: l,
+      rgb: ZOMBIE_LED_RGB,
+      owner: ZOMBIE_LED_OWNER,
+    }))
+  ]
+}
+
 const createStartMonsters = (params: BaseParams, invasion: InvasionDef, existingMonsters: MonsterState[]) => {
   for(const startLocation of invasion.startLocations) {
     const existing = existingMonsters.filter(m => m.location === startLocation);
@@ -164,6 +184,13 @@ const randomInvasion = (turn: number, types: string[], route: string, size: numb
     locations: routes[route].locations,
     monsterIDs: [],
   };
+}
+
+const getInvasionLocations = (params: BaseParams, invasion: InvasionDef): number[] => {
+  const existingMonsters = params.monsters.filter(m =>
+    invasion.monsterIDs.includes(m.id)
+  );
+  return [];
 }
 
 const getPossibleMoveLocations = (params: BaseParams, fromLocation: number): number[] => {
