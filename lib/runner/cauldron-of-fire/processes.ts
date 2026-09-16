@@ -13,7 +13,11 @@ export const cauldronOfFireProcesses: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
     for(const process of allProcesses) {
       if (process.setup) {
-        await process.setup(params);
+        try {
+          await process.setup(params);
+        } catch (error) {
+          console.error('Error starting process', error);
+        }
       }
     }
   },
@@ -21,7 +25,11 @@ export const cauldronOfFireProcesses: ProcessRunner = {
   async executeForTurn(params: BaseParams): Promise<void> {
     for(const process of allProcesses) {
       if (process.executeForTurn) {
-        await process.executeForTurn(params);
+        try {
+          await process.executeForTurn(params);
+        } catch (error) {
+          console.error('Error executing process turn', error);
+        }
       }
     }
   }
