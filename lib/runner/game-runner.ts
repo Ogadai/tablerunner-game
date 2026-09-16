@@ -14,6 +14,7 @@ import {
   setActionsStateInRedis,
   setPlayerStatsInRedis,
   getPlayerStatsFromRedis,
+  publishGameProcessingStarted,
 } from '../store/redis-access';
 import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
@@ -42,6 +43,8 @@ export async function checkAllPlayersReady(boardId: string, mapId: string, ready
 
 export async function processGameTurn(params: BaseParams): Promise<void> {
   try {
+    publishGameProcessingStarted(params.boardId, params.mapId);
+
     if (params.monsters.length < 30) {
         const extraMonsters = await populateMonsters(params.gameState, params.gameState.players.length);
         params.monsters.push(...extraMonsters);

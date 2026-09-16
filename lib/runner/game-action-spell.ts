@@ -1,10 +1,11 @@
 import { scrollItems } from "../games/items";
+import { monsters } from "../games/monsters";
 import { SpellIds, spells } from "../games/spells";
 import { SpellDef, SpellTargetType } from "../games/types";
-import { INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
+import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { genericAttackMonster } from "./game-action-attack";
-import { soloMessageAtLocation } from "./game-messages";
+import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
 import { specialSpellActions } from './special-spell-actions';
 
 const MAX_RECENT_SPELLS = 2;
@@ -18,21 +19,25 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
   const spell = spells[action.spellId];
   const targets = getSpellTargets(params, player, action);
 
-  if (specialSpellActions[action.spellId]) {
-    specialSpellActions[action.spellId](params, player, spell, targets);
-  } else if (spell.targetType === SpellTargetType.enemy) {
-    applySpellEnemy(params, player, spell, targets);
-  } else if (spell.targetType === SpellTargetType.friend) {
-    applySpellFriend(params, player, spell, targets);
+  if (targets.length > 0) {
+    if (specialSpellActions[action.spellId]) {
+      specialSpellActions[action.spellId](params, player, spell, targets);
+    } else if (spell.bonusStats.damage! > 0) {
+      // Regular attack spell with damage
+      applySpellEnemy(params, player, spell, targets);
+    } else {
+      // Spell to apply effects to friend or foe
+      applySpellEffects(params, player, spell, targets);
+    }
+
+    const recentSpells: SpellIds[] = [
+      action.spellId as SpellIds,
+      ...(player.recentSpells || []).filter(id => id !== action.spellId)
+    ];
+
+    player.magic = Math.max(0, player.magic - spell.magicCost);
+    player.recentSpells = recentSpells.slice(0, MAX_RECENT_SPELLS);
   }
-
-  const recentSpells: SpellIds[] = [
-    action.spellId as SpellIds,
-    ...(player.recentSpells || []).filter(id => id !== action.spellId)
-  ];
-
-  player.magic = Math.max(0, player.magic - spell.magicCost);
-  player.recentSpells = recentSpells.slice(0, MAX_RECENT_SPELLS);
 }
 
 function applySpellEnemy(
@@ -50,29 +55,54 @@ function applySpellEnemy(
   }
 }
 
-function applySpellFriend(
+function applySpellEffects(
   params: BaseParams,
   player: INamedTarget,
   spell: SpellDef,
   targets: ITarget[]
 ) {
-  for(const friend of targets) {
-    const friendPlayer = friend as PlayerState;
-    if (spell.bonusStats.health) {
+  if (spell.bonusStats.health) {
+    for(const target of targets) {
+      const friendTarget = target as INamedTarget;
       const addedHealth = Math.min(spell.bonusStats.health,
-        friendPlayer.baseStats!.health - friendPlayer.health);
-      friendPlayer.health += addedHealth;
+        friendTarget.baseStats!.health - friendTarget.health);
 
-      if (player.id === friend.id) {
-        soloMessageAtLocation(params, friend.id,
-          `**You** healed **yourself** for **${addedHealth}** health!`);
-      } else {
-        soloMessageAtLocation(params, friend.id,
-          `**${player.name}** healed **{player}** for **${addedHealth}** health!`);
-        soloMessageAtLocation(params, player.id,
-          `**{player}** healed **${player.name}** for **${addedHealth}** health!`);
+      if (addedHealth > 0) {
+        friendTarget.health += addedHealth;
+
+        if (player.id === target.id) {
+          soloMessageAtLocation(params, target.id,
+            `**You** healed **yourself** for **${addedHealth}** health!`);
+        } else {
+          soloMessageAtLocation(params, target.id,
+            `**${player.name}** healed **{player}** for **${addedHealth}** health!`);
+          soloMessageAtLocation(params, player.id,
+            `**{player}** healed **${player.name}** for **${addedHealth}** health!`);
+        }
       }
     }
+  } else {
+    // Apply spell effects to all targets
+    addEffectToTargets(targets, {
+      turns: spell.bonusStats.turns || 1,
+      description: spell.name,
+      attack: spell.bonusStats.attack,
+      defence: spell.bonusStats.defence,
+      speed: spell.bonusStats.speed,
+    });
+
+    const getTargetName = (t: ITarget) =>
+      (t as INamedTarget).name
+        ? (t as INamedTarget).name
+        : monsters[(t as MonsterState).type].name;
+
+    const joinWithAnd = (names: string[]) =>
+        names.reduce( (res, v, i) => i === names.length - 2 ? res + v + ' and ' : res + v + ( i == names.length - 1? '' : ', '), '' );
+
+    const targetNames = joinWithAnd(targets.map(getTargetName));
+
+    playerMessageAtLocation(params, player.id,
+      `**{player}** cast **${spell.name}** on **${targetNames}**`);
   }
 }
 
@@ -97,27 +127,36 @@ export function actionReadScroll(params: BaseParams, player: PlayerState, action
 
 export function getSpellTargets(params: BaseParams, player: INamedTarget, action: PlayerActionCast): ITarget[] {
   const spell = spells[action.spellId];
-  if (spell.targetType === SpellTargetType.enemy) {
-    return params.monsters.filter(m => (m.health > 0) &&
+
+  const filterMonsters = (list: MonsterState[]) => list.filter(m => (m.health > 0) &&
       (spell.pickTarget ? m.id === action.targetId : m.location === player.location.id)
     );
-  } else if (spell.targetType === SpellTargetType.friend) {
-    const players = params.gameState.players.filter(p => (p.health > 0) &&
-      (spell.pickTarget ? p.id === action.targetId : p.location.id === player.location.id)
-    );
-    const npcs = params.gameState.npcs.filter(n => (n.health > 0) &&
-      (spell.pickTarget ? n.id === action.targetId : n.location.id === player.location.id)
+  const filterNamedTargets = (list: INamedTarget[]) => list.filter(t => (t.health > 0) &&
+      (spell.pickTarget ? t.id === action.targetId : t.location.id === player.location.id)
     );
 
-    return [...players, ...npcs];
+  if (spell.targetType === SpellTargetType.enemy) {
+    return filterMonsters(params.monsters);
+  } else if (spell.targetType === SpellTargetType.friend) {
+    return [
+      ...filterNamedTargets(params.gameState.players),
+      ...filterNamedTargets(params.gameState.npcs),
+    ];
   } else {
     return [
-      ...params.monsters.filter(m => 
-        (m.health === 0) && (spell.pickTarget ? m.id === action.targetId : m.location === player.location.id)
-      ),
-      ...params.gameState.players.filter(p => 
-        (p.health === 0) && (spell.pickTarget ? p.id === action.targetId : p.location.id === player.location.id)
-      )
+      ...filterMonsters(params.monsters),
+      ...filterNamedTargets(params.gameState.players),
+      ...filterNamedTargets(params.gameState.npcs),
+    ];
+  }
+}
+
+const addEffectToTargets = (targets: ITarget[], newEffect: CharacterEffect) => {
+  for(const target of targets) {
+    target.effects = [
+      ...(target.effects || [])
+        .filter(e => e.description !== newEffect.description),
+      { ...newEffect },
     ];
   }
 }

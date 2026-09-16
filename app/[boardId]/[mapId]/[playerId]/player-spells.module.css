@@ -7,7 +7,7 @@
     width: 40px;
     height: 40px;
     margin: 4px 5px 0 0;
-    background-size: 280px 200px;
+    background-size: 280px 240px;
   }
 
   .attackIcon {
@@ -27,7 +27,7 @@
   .spellIcon:hover,
   .spellIcon:active,
   .spellIcon:focus-visible {
-    background-size: 280px 200px;
+    background-size: 280px 240px;
   }
 
   .disabledSpellIcon {
@@ -68,7 +68,7 @@
   background-color: transparent;
   background-image: url('/spell-sheet.png');
   background-repeat: no-repeat;
-  background-size: 560px 400px;
+  background-size: 560px 480px;
 }
 
 .spellIcon:hover,
@@ -77,7 +77,7 @@
   background-color: transparent;
   background-image: url('/spell-sheet.png');
   background-repeat: no-repeat;
-  background-size: 560px 400px;
+  background-size: 560px 480px;
 }
 
 .spellPopover {

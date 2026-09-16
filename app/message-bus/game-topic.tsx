@@ -7,6 +7,7 @@ import GameTopicService from './game-topic-service';
 import PlayerReadyTopicService from './playerReady-topic-service';
 import styles from './game-topic.module.css';
 import LocationTopicService from './location-topic-service';
+import GameProcessingStartedService from './game-processing-service';
 
 let _ably: Ably.Realtime | null = null;
 function connectToAbly(playerId: string): Ably.Realtime {
@@ -82,16 +83,16 @@ export default function GameTopic({
     });
 
     channel.subscribe(message => {
-      if (message.name === GameTopicMessageType.GameStateUpdated) {
+      if (message.name === GameTopicMessageType.GameProcessingStarted) {
+        GameProcessingStartedService.raiseGameProcessingStarted(topicId);
+      } else if (message.name === GameTopicMessageType.GameStateUpdated) {
         GameTopicService.raiseGameStateUpdated(topicId);
-      }
-      if (message.name === GameTopicMessageType.ReadyStateUpdated) {
+      } else if (message.name === GameTopicMessageType.ReadyStateUpdated) {
         PlayerReadyTopicService.raisePlayerReadyStateUpdated(
           topicId,
           message.data
         );
-      }
-      if (message.name === GameTopicMessageType.LocationUpdated) {
+      } else if (message.name === GameTopicMessageType.LocationUpdated) {
         LocationTopicService.raiseLocationStateUpdated(
           topicId,
           message.data?.locationId

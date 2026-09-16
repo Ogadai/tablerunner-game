@@ -26,8 +26,10 @@
   background: none;
   background-color: var(--bg-main);
   color: var(--color-text-primary);
+  box-shadow: none;
 
   &:hover, &:active, &:focus-within, &:focus-visible {
+    outline: none;
     background: none;
     background-color: var(--bg-main);
     color: var(--color-text-primary);

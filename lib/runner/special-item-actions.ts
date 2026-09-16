@@ -17,17 +17,21 @@ for(const keyItemType of Object.keys(keyItems)) {
 
 function useResurrectionStone(params: BaseParams, player: INamedTarget, alwaysZombies: boolean): boolean {
   // Find dead players at location
-  const deadPlayers = params.gameState.players.filter(p => 
-    p.health === 0 &&
-    p.location.id === player.location.id
-  );
+  const deadTargets = [
+    ...params.gameState.players.filter(p => 
+      p.health === 0 && p.location.id === player.location.id
+    ),
+    ...params.gameState.npcs.filter(n => 
+      n.health === 0 && n.location.id === player.location.id
+    ),
+  ];
 
-  if (deadPlayers.length == 0) {
+  if (deadTargets.length == 0) {
     playerMessageAtLocation(params, player.id, `**{player}** could not resurrection anyone`);
     return false;
   }
 
-  const zombies = alwaysZombies || deadPlayers.length > 1;
+  const zombies = alwaysZombies || deadTargets.length > 1;
   const zombieMsg = alwaysZombies
     ? ', it sparks and crackles!'
     : (zombies ? ', but its power was divided!' : '')
@@ -36,7 +40,7 @@ function useResurrectionStone(params: BaseParams, player: INamedTarget, alwaysZo
     `**{player}** used a${alwaysZombies ? ' cracked' : ''} resurrection stone${zombieMsg}`
   );
 
-  for(const deadPlayer of deadPlayers) {
+  for(const deadPlayer of deadTargets) {
     deadPlayer.health = 1;
 
     if (zombies) {

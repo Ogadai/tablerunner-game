@@ -27,6 +27,7 @@ export default function PlayerLocation(
     gameState,
     playerId,
     isPlayerReady,
+    processing,
     readyPlayerDirection,
     endTurnAction
   }: {
@@ -35,6 +36,7 @@ export default function PlayerLocation(
     gameState: GameState,
     playerId: string,
     isPlayerReady: boolean,
+    processing: boolean,
     readyPlayerDirection?: { [id: string]: LocationMoveDirection },
     endTurnAction: (direction?: LocationMoveDirection) => void
   }) {
@@ -52,6 +54,8 @@ export default function PlayerLocation(
   const usedItemIds = actionsState.actions
     .filter(a => a.type === PlayerActionType.UseItem)
     .map(a => (a as PlayerActionUseItem).itemId || '');
+  let actionNumber = actionsState.actions.reduce((number, action) => 
+    Math.max(number, action.id + 1), 0);
 
   useEffect(() => {
     const player = gameState.players.find(p => p.id === playerId);
@@ -59,10 +63,7 @@ export default function PlayerLocation(
       router.push(`/${boardId}/${mapId}`);
     } else {
       playerStatsSyncService.updatePlayer(boardId, mapId, player);
-
-      async function fetchPlayerActionState() {
-        const state = await getPlayerActionsState(boardId, mapId, player!.id);
-      }
+      setActionsState({ actions: [] });
 
       async function fetchLocationState() {
         const state = await getLocationState(boardId, mapId, player!.location.id);
@@ -77,12 +78,11 @@ export default function PlayerLocation(
         }),
         playerStatsSyncService.subscribe((stats, actionsState, addStatsState, activePlayer) => {
           setPlayerStats(stats);
-          setActionsState(actionsState)
+          setActionsState(actionsState);
           setPlayerState(activePlayer);
         }),
       ];
 
-      fetchPlayerActionState();
       fetchLocationState();
 
       return () => disposeFns.forEach(f => f());
@@ -90,12 +90,9 @@ export default function PlayerLocation(
   }, [gameState]);
 
   const addNewAction = async (opts: Omit<PlayerAction, 'id'>) => {
-    const actionNumber = actionsState.actions.reduce((number, action) => 
-      Math.max(number, action.id + 1), 0);
-
     const state = await addPlayerAction(boardId, mapId, playerState!.id, {
       ...opts,
-      id: actionNumber,
+      id: actionNumber++,
     });
     playerStatsSyncService.updateActionsState(state.data!);
   }
@@ -247,6 +244,7 @@ export default function PlayerLocation(
             <button
               onClick={bindRemoveAction(action)}
               className={`${styles.actionDeleteIcon} btn-delete material-symbols-outlined`}
+              disabled={processing}
             >delete_forever</button>
           </li>) }
         </ul>
@@ -261,19 +259,25 @@ export default function PlayerLocation(
             className={`${styles[`move-${mv.direction}`]} ${moveIndicator.className} ${canMoveDirection(mv) ? 'btn' : 'btn-secondary'} material-symbols-outlined`}
             style={moveIndicator.style}
             onClick={bindMoveAction(mv)}
+            disabled={processing}
           >{moveLabels[mv.direction]}
           </button>;
         })}
 
-        { (!isPlayerReady && playerStats.playerCanMove) && <button className={styles.stay} type="submit" onClick={() => endTurnAction()}>Stay</button> }
+        { (!isPlayerReady && playerStats.playerCanMove) &&
+          <button className={styles.stay} type="submit" onClick={() => endTurnAction()}
+            disabled={processing}
+          >Stay</button> }
       </div> }
 
       { (!isPlayerReady && !playerStats.playerCanMove) &&
         <button
           className={`${styles.stay} ${actionsState.actions.length > 0 ? styles.readyWithActions : ''}`} 
-          type="submit" onClick={() => endTurnAction()}>Ready</button>
+          type="submit" onClick={() => endTurnAction()}
+          disabled={processing}
+        >Ready</button>
       }
-      { isPlayerReady &&
+      { isPlayerReady && !processing &&
         <button type="submit" className={`${styles.stay} btn-delete`} onClick={notReadyAction}>
           <span>Not Ready!</span>
           <span className={`${styles.notReadyCross} material-symbols-outlined`}>close</span>

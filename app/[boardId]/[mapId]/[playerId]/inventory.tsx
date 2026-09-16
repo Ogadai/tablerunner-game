@@ -1,5 +1,5 @@
-import { INamedTarget, PlayerState } from '@/lib/store/types';
-import styles from './inventory.module.css';
+import { INamedTarget } from '@/lib/store/types';
+import styles from './inventory-item.module.css';
 import { PlayerItem } from '@/lib/games/types';
 import { allItems } from '@/lib/games/items';
 import InventoryItem from './inventory-item';

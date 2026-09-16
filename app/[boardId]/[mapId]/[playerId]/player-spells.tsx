@@ -4,11 +4,12 @@ import { Dialog, Popover } from 'radix-ui';
 import { getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
 import styles from './player-spells.module.css';
 import { PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionType, PlayerState } from '@/lib/store/types';
-import { SpellDef, SpellTargetType } from '@/lib/games/types';
+import { EquipableItemDef, PlayerItemType, SpellDef, SpellTargetType } from '@/lib/games/types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import { getSwalDefaultOptions } from '@/app/swal';
 import EntityStats from './entity-base-stats';
 import { PlayerStats } from './player-stats-sync.service';
+import { allItems } from '@/lib/games/items';
 
 export default function PlayerSpells({
   playerSpells,
@@ -137,6 +138,12 @@ export default function PlayerSpells({
         return { spell, canCast }
       });
 
+  const equippedWeapon = player.equipped.weapon && player.equipment.find(e => e.id ===player.equipped.weapon);
+  const weaponItem = equippedWeapon ? allItems[equippedWeapon.type] as EquipableItemDef : null;
+  const attackIconBackground = (weaponItem?.ranged)
+    ? `0px -${5 * 40}px`
+    : `-${6 * 40}px -${4 * 40}px`;
+
   return (<>
     { playerSpells.length > 0 && <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
@@ -198,7 +205,7 @@ export default function PlayerSpells({
             className={`${styles.spellIcon} ${attackTargets.length === 0 || playerStats.actionsPerTurn.attack > actionPointsLeft ? styles.disabledSpellIcon : ''}`}
             aria-label="Attack"
             title="Attack"
-            style={{ backgroundPosition: `-${6 * 40}px -${4 * 40}px` }}
+            style={{ backgroundPosition: attackIconBackground }}
             onClick={onAttack}
           ></button>
         </Popover.Trigger>

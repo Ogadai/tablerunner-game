@@ -154,5 +154,6 @@ export interface SpellDef {
     health?: number;
     speed?: number;
     special?: string;
+    turns?: number;
   };
 }

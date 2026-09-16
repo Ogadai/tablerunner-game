@@ -10,6 +10,8 @@ import { LocationMoveDirection } from "@/lib/games/types";
 import PlayerLocation from './player-location';
 
 import gameStateSyncService from "../game/game-state-sync-service";
+import GameProcessingStartedService from '@/app/message-bus/game-processing-service';
+import { getGameTopicId } from '@/lib/message-types';
 
 export default function Page() {
   const router = useRouter();
@@ -20,24 +22,38 @@ export default function Page() {
   
   const [readyState, setReadyState] = useState<PlayerReadyState>({ readyPlayerIds: [] });
   const [gameState, setGameState] = useState(() => gameStateSyncService.get(boardId, mapId));
+  const [settingReady, setSettingReady] = useState(false);
+  const [gameProcessing, setGameProcessing] = useState(false);
 
-  useEffect(() => gameStateSyncService.subscribe(boardId, mapId, state => {
+  const topicId = getGameTopicId(boardId, mapId);
+
+  useEffect(() => {
+    gameStateSyncService.subscribe(boardId, mapId, state => {
       setGameState(state);
+      setGameProcessing(false);
       if (!state) {
         router.push(`/${boardId}/${mapId}`);
       }
-    }), [boardId, mapId]);
+    });
+
+    const disposeFn = GameProcessingStartedService.subscribe(topicId, () => {
+      setGameProcessing(true);
+    });
+    return disposeFn;
+  }, [boardId, mapId]);
 
   useEffect(() => {
     readyStateSyncService.subscribe(boardId, mapId, setReadyState);
     const state = readyStateSyncService.get(boardId, mapId);
     setReadyState(state);
-    }, [boardId, mapId, playerId]);
+  }, [boardId, mapId, playerId]);
 
   const isPlayerReady = () => readyState.readyPlayerIds.includes(playerId);
 
   const endTurnAction = async (direction?: LocationMoveDirection) => {
+    setSettingReady(true);
     await setPlayerReady(boardId, mapId, playerId, !isPlayerReady(), direction);
+    setSettingReady(false);
   }
 
   if (!gameState) {
@@ -51,6 +67,7 @@ export default function Page() {
         mapId={mapId}
         gameState={gameState}
         playerId={playerId}
+        processing={settingReady || gameProcessing}
         isPlayerReady={isPlayerReady()}
         readyPlayerDirection={readyState.readyPlayerDirection}
         endTurnAction={endTurnAction}

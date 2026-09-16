@@ -122,7 +122,9 @@ export const spells: Record<string, SpellDef> = {
     actionCost: 8,
     iconXY: { x: 5, y: 0 },
     bonusStats: {
-      special: 'Lower enemy attack and defence for 3 turns',
+      turns: 5,
+      attack: -5,
+      defence: -5,
     }
   },
   [SpellIds.terror]: {
@@ -135,7 +137,9 @@ export const spells: Record<string, SpellDef> = {
     actionCost: 14,
     iconXY: { x: 6, y: 0 },
     bonusStats: {
-      special: 'Lower all enemy attack and defence for 2 turns',
+      turns: 3,
+      attack: -5,
+      defence: -5,
     }
   },
   [SpellIds.shield]: {
@@ -148,6 +152,7 @@ export const spells: Record<string, SpellDef> = {
     actionCost: 8,
     iconXY: { x: 5, y: 1 },
     bonusStats: {
+      turns: 5,
       defence: 5,
     }
   },
@@ -161,6 +166,7 @@ export const spells: Record<string, SpellDef> = {
     actionCost: 12,
     iconXY: { x: 6, y: 1 },
     bonusStats: {
+      turns: 4,
       defence: 4,
     }
   },  
@@ -174,6 +180,7 @@ export const spells: Record<string, SpellDef> = {
     actionCost: 8,
     iconXY: { x: 0, y: 2 },
     bonusStats: {
+      turns: 5,
       attack: 5,
     }
   },
@@ -187,6 +194,7 @@ export const spells: Record<string, SpellDef> = {
     actionCost: 12,
     iconXY: { x: 1, y: 2 },
     bonusStats: {
+      turns: 5,
       attack: 4,
     }
   },  

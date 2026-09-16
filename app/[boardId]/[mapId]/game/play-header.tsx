@@ -39,8 +39,8 @@ export default function PlayHeader(
     }
 
     const startTimer = window.setTimeout(() => {
-      readyCountdownRef.current = 10;
-      setReadyCountdown(10);
+      readyCountdownRef.current = 15;
+      setReadyCountdown(15);
     }, 0);
     const countdownTimer = window.setInterval(() => {
       const countdown = readyCountdownRef.current;

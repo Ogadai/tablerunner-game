@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage } from "../message-types";
+import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage, GameTopicMessageBase } from "../message-types";
 import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 
@@ -67,6 +67,13 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
 async function publishGameStateUpdated(boardId: string, mapId: string): Promise<void> {
   const msg: GameStateUpdatedMessage = {
     type: GameTopicMessageType.GameStateUpdated
+  };
+  await publishMessage(boardId, mapId, msg);
+}
+
+export async function publishGameProcessingStarted(boardId: string, mapId: string): Promise<void> {
+  const msg: GameTopicMessageBase = {
+    type: GameTopicMessageType.GameProcessingStarted
   };
   await publishMessage(boardId, mapId, msg);
 }

@@ -88,16 +88,19 @@ export default function CharacterStats({
     <div className={`card ${styles.statsCard}`}>
       <table className={statsStyles.statsTable}><tbody>
         {([
-          ['Strength', 'strength'],
-          ['Skill', 'skill'],
-          ['Intelligence', 'intelligence'],
-          ['Resilience', 'resiliance'],
-          ['Reactions', 'reactions'],
-        ] as [string, keyof CharacterStatsType][]).map(([label, stat]) => {
+          ['Strength', 'strength', [styles.swordIcon, styles.shieldIcon]],
+          ['Skill', 'skill', [styles.bowIcon, styles.shieldIcon]],
+          ['Intelligence', 'intelligence', [styles.magicIcon]],
+          ['Resilience', 'resiliance', [styles.healthIcon]],
+          ['Reactions', 'reactions', [styles.speedIcon, styles.shieldIcon]],
+        ] as [string, keyof CharacterStatsType, string[]][]).map(([label, stat, icons]) => {
           const extraPoints = playerAddStats.characterStats?.[stat] || 0;
 
           return <tr key={stat}>
             <th>{label}</th>
+            <td className={ styles.statIconColumn }>{ icons.map(icon =>
+              <span key={icon} className={`${styles.statIcon} ${icon}`}></span>
+            )}</td>
             <td className={styles.statActions}>
               { isSelf && <button
                 type="button"

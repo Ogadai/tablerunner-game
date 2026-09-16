@@ -3,7 +3,8 @@ import { BaseParams } from "../base-params";
 import { ProcessRunner } from "../types";
 import { NPC_DATA, NPC_NAMES } from '@/lib/games/npc-details';
 import { NPCState } from "@/lib/store/types";
-import { BaseStats } from "@/lib/games/types";
+import { BaseStats, PlayerItem } from "@/lib/games/types";
+import { SpellIds } from "@/lib/games/spells";
 
 interface IMapNpc { location: number, min: number, max: number, from: number, to: number };
 
@@ -52,7 +53,7 @@ const MAP_NPCS: IMapNpc[] = [
   },
 ];
 
-const NPC_TYPES: ('barbarian' | 'witch' | 'ranger' | 'mage')[] = ['barbarian', 'ranger']; // , 'witch', 'mage'
+const NPC_TYPES: ('barbarian' | 'witch' | 'ranger' | 'mage')[] = ['barbarian', 'ranger', 'witch', 'mage'];
 const NPC_RACES: ('human' | 'elf' | 'dwarf')[] = ['human', 'elf', 'dwarf'];
 const NPC_GENDERS: ('male' | 'female')[] = ['male', 'female'];
 
@@ -121,7 +122,8 @@ const getNpcStats: { [type: string]: ((cost: number) => BaseStats) } = {
 };
 
 function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
-  const type = NPC_TYPES[Math.floor(Math.random() * NPC_TYPES.length)];
+  const magicUser = Math.random() < 0.2;
+  const type = NPC_TYPES[Math.floor(Math.random() * 2 + (magicUser ? 2 : 0))];
   const race = NPC_RACES[Math.floor(Math.random() * NPC_RACES.length)];
 
   let gender = NPC_GENDERS[Math.floor(Math.random() * NPC_GENDERS.length)];
@@ -142,31 +144,99 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
     return null;
   }
 
+  const equipment = getNpcEquipment(npcId, type);
   return {
     id: npcId,
     masterId: null,
     name: name,
     location: { id: mapNpc.location, description: '', move: [] },
     magic: 0,
-    spells: [],
-    equipment: [{
-      id: `${npcId}-weapon`,
-      type: (type === "barbarian") ? EquipableIds.axeBattle : EquipableIds.bowElven,
-    }, {
-      id: `${npcId}-heal-1`,
-      type: ConsumableIds.healingPotion,
-    }, {
-      id: `${npcId}-heal-2`,
-      type: ConsumableIds.healingPotion,
-    }],
+    spells: getNpcSpells(type, cost),
+    equipment: equipment,
     equipped: {
-      weapon: `${npcId}-weapon`,
+      weapon: equipment[0].id,
     },
     baseStats: baseStats,
     hireCost: cost,
     iconXY: iconXY,
     health: baseStats.health,
   };
+}
+
+function getNpcEquipment(npcId: string, type: string): PlayerItem[] {
+  switch(type) {
+    case 'barbarian':
+      return [{
+          id: `${npcId}-weapon`,
+          type: EquipableIds.axeBattle,
+        }, {
+          id: `${npcId}-heal-1`,
+          type: ConsumableIds.healingPotion,
+        }, {
+          id: `${npcId}-heal-2`,
+          type: ConsumableIds.healingPotion,
+        }];
+    case 'ranger':
+      return [{
+          id: `${npcId}-weapon`,
+          type: EquipableIds.bowElven,
+        }, {
+          id: `${npcId}-heal-1`,
+          type: ConsumableIds.healingPotion,
+        }, {
+          id: `${npcId}-heal-2`,
+          type: ConsumableIds.healingPotion,
+        }];
+    case 'witch':
+    case 'mage':
+      return [{
+          id: `${npcId}-weapon`,
+          type: EquipableIds.staffRuby,
+        }, {
+          id: `${npcId}-heal-1`,
+          type: ConsumableIds.healingPotion,
+        }, {
+          id: `${npcId}-mana-1`,
+          type: ConsumableIds.manaPotion,
+        }];
+  }
+  return [];
+}
+
+function getNpcSpells(type: string, cost: number): SpellIds[] {
+  const pick = (spells: SpellIds[], count: number): SpellIds[] => spells;
+
+  switch(type) {
+    case 'barbarian':
+    case 'ranger':
+      return [];
+    case 'witch':
+      return [
+        SpellIds.iceShards,
+        SpellIds.fear,
+        ...pick([
+          SpellIds.iceStorm,
+          SpellIds.terror,
+          SpellIds.lightning,
+          SpellIds.shieldWall,
+          SpellIds.strengthAura,
+        ], Math.ceil(cost / 50))
+      ];
+    case 'mage':
+      return [
+        SpellIds.spiritArrow,
+        SpellIds.heal,
+        ...pick([
+          SpellIds.fireBall,
+          SpellIds.fireWall,
+          SpellIds.healingAura,
+          SpellIds.strengthAura,
+          SpellIds.fireRain,
+          SpellIds.shield,
+        ], Math.ceil(cost / 50))
+      ];
+  }
+  return [];
 }
 
 export const npcs: ProcessRunner = {
