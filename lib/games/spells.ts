@@ -18,6 +18,11 @@ export enum SpellIds {
   strengthAura = 'strengthAura',
   lightning = 'lightning',
   fireRain = 'fireRain',
+  spiritGuide = 'spiritGuide',
+  spiritGuarian = 'spiritGuarian',
+  spiritWarrior = 'spiritWarrior',
+  raiseDead = 'raiseDead',
+  animateCorpse = 'animateCorpse',
 };
 
 export const spells: Record<string, SpellDef> = {
@@ -222,6 +227,71 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 1, y: 3 },
     bonusStats: {
       damage: 17,
+    }
+  },
+  [SpellIds.spiritGuide]: {
+    id: SpellIds.spiritGuide.toString(),
+    name: 'Spirit Guide',
+    intelligence: 12,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 12,
+    actionCost: 15,
+    iconXY: { x: 4, y: 4 },
+    bonusStats: {
+      special: 'Summon a spirit guide'
+    }
+  },
+  [SpellIds.spiritGuarian]: {
+    id: SpellIds.spiritGuarian.toString(),
+    name: 'Spirit Guardian',
+    intelligence: 21,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 18,
+    actionCost: 15,
+    iconXY: { x: 3, y: 4 },
+    bonusStats: {
+      special: 'Summon a spirit guardian'
+    }
+  },
+  [SpellIds.spiritWarrior]: {
+    id: SpellIds.spiritWarrior.toString(),
+    name: 'Spirit Warrior',
+    intelligence: 27,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 24,
+    actionCost: 15,
+    iconXY: { x: 2, y: 4 },
+    bonusStats: {
+      special: 'Summon a spirit warrior'
+    }
+  },
+  [SpellIds.raiseDead]: {
+    id: SpellIds.raiseDead.toString(),
+    name: 'Raise Dead',
+    intelligence: 15,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 15,
+    actionCost: 15,
+    iconXY: { x: 1, y: 1 },
+    bonusStats: {
+      special: 'Raise a dead warrior from the earth'
+    }
+  },
+  [SpellIds.animateCorpse]: {
+    id: SpellIds.animateCorpse.toString(),
+    name: 'Animate Corpse',
+    intelligence: 15,
+    pickTarget: true,
+    targetType: SpellTargetType.corpse,
+    magicCost: 16,
+    actionCost: 15,
+    iconXY: { x: 6, y: 2 },
+    bonusStats: {
+      special: 'Animate a fallen character or monster'
     }
   },
 };

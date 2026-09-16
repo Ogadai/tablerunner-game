@@ -85,6 +85,9 @@ export interface NPCState extends INamedTarget {
   masterId: string | null;
   hireCost: number;
   iconXY: { x: number, y: number };
+  turnsLeft?: number;
+  expiryAction?: 'remove' | 'monster' | 'dead';
+  monsterType?: string;
 }
 
 export interface PlayerLocationMove extends LocationMove {

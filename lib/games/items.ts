@@ -219,6 +219,11 @@ export enum ScrollIds {
   strengthAura = 'strengthAuraScroll',
   lightning = 'lightningScroll',
   fireRain = 'fireRainScroll',
+  spiritGuide = 'spiritGuideScroll',
+  spiritGuardian = 'spiritGuardianScroll',
+  spiritWarrior = 'spiritWarriorScroll',
+  raiseDead = 'raiseDeadScroll',
+  animateCorpse = 'animateCorpseScroll',
 }
 export const scrollItems: Record<string, ScrollItemDef> = {
 }

@@ -93,9 +93,6 @@ export const characters: { [id: string]: CharacterListEntry } = {
     spells: [
       SpellIds.spiritArrow,
       SpellIds.heal,
-      SpellIds.shield,
-      SpellIds.shieldWall,
-      SpellIds.healingAura,
     ],
   }
 };

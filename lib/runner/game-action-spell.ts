@@ -128,10 +128,10 @@ export function actionReadScroll(params: BaseParams, player: PlayerState, action
 export function getSpellTargets(params: BaseParams, player: INamedTarget, action: PlayerActionCast): ITarget[] {
   const spell = spells[action.spellId];
 
-  const filterMonsters = (list: MonsterState[]) => list.filter(m => (m.health > 0) &&
+  const filterMonsters = (list: MonsterState[], alive: boolean = true) => list.filter(m => (alive === (m.health > 0)) &&
       (spell.pickTarget ? m.id === action.targetId : m.location === player.location.id)
     );
-  const filterNamedTargets = (list: INamedTarget[]) => list.filter(t => (t.health > 0) &&
+  const filterNamedTargets = (list: INamedTarget[], alive: boolean = true) => list.filter(t => (alive === (t.health > 0)) &&
       (spell.pickTarget ? t.id === action.targetId : t.location.id === player.location.id)
     );
 
@@ -144,9 +144,9 @@ export function getSpellTargets(params: BaseParams, player: INamedTarget, action
     ];
   } else {
     return [
-      ...filterMonsters(params.monsters),
-      ...filterNamedTargets(params.gameState.players),
-      ...filterNamedTargets(params.gameState.npcs),
+      ...filterMonsters(params.monsters, false),
+      ...filterNamedTargets(params.gameState.players, false),
+      ...filterNamedTargets(params.gameState.npcs, false),
     ];
   }
 }

@@ -39,7 +39,7 @@ export const zombies: ProcessRunner = {
     }
 
     const beforeLocations = getZombieLocations(params);
-    const zombieMonsters = params.monsters.filter(m => m.zombie);
+    const zombieMonsters = params.monsters.filter(m => m.zombie && m.health > 0);
 
     for(const zombie of zombieMonsters) {
       // Get any non-zombies at the same location and make them zombies
@@ -48,7 +48,7 @@ export const zombies: ProcessRunner = {
         notZombie.zombie = true;
       }
 
-      const playersAtLocation = params.gameState.players.filter(p => p.location.id === zombie.location);
+      const playersAtLocation = params.gameState.players.filter(p => p.health > 0 && p.location.id === zombie.location);
 
       // Don't reproduce or travel if players are present
       if (playersAtLocation.length === 0) {

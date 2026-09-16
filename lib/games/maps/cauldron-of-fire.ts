@@ -3840,7 +3840,6 @@ for (let n = 0; n < resurrectionItems; n++) {
   cauldronOfFireItems.push({ locations: resurrectionLocations, itemIds: [ConsumableIds.resurrectionShard] });
 }
 
-
 const witchStoreItems: string[] = [
   ...Object.keys(consumableItems),
   ...Object.keys(scrollItems),
@@ -3860,6 +3859,7 @@ const smallShopItems: string[] = [
 const tavernItems: string[] = [
   ...Object.keys(consumableItems).filter(id => (allItems[id].value || 0) < 50),
   ...Object.keys(equipableItems).filter(id => (allItems[id].value || 0) < 150),
+  ...Object.keys(scrollItems).filter(id => (allItems[id].value || 0) < 80),
 ];
 
 const blacksmithItems: string[] = lootItems

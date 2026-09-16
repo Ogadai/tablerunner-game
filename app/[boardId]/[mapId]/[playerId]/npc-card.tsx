@@ -32,7 +32,7 @@ export default function NpcCard({
 
   return <>
     <div className={styles.npcHeader}>
-      <CoinDisplay coins={npc.hireCost} />
+      { (npc.hireCost > 0 && npc.masterId === null) && <CoinDisplay coins={npc.hireCost} /> }
     </div>
     <div className={`card ${styles.statsCard}`}>
       <EntityBaseStats current={{health: npc.health}} baseStats={npcStats} />

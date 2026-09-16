@@ -3,6 +3,9 @@ import {
   PlayerReadyState,
   AllLocationsState,
   PlayerState,
+  ITarget,
+  NPCState,
+  MonsterState,
 } from "../store/types";
 import {
   getGameStateFromRedis,
@@ -78,7 +81,6 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
         }
       }
       levelUpPlayer(params, player);
-      processPlayerEffects(params, player);
     }
 
     updatePortalAndShopLeds(params.gameState);
@@ -124,22 +126,60 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 async function runGameTurn(params: BaseParams): Promise<void> {
   await runGameActions(params);
 
-  processMonsterEffects(params);
+  processTargetEffects(params.gameState.players);
+  processTargetEffects(params.gameState.npcs);
+  processTargetEffects(params.monsters);
+
+  processNpcTimeouts(params);
 }
 
-export function processPlayerEffects(params: BaseParams, player: PlayerState) {
-  if (player.effects) {
-    player.effects = player.effects!
-      .map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
-      .filter(e => e.turns > 0);
+function processTargetEffects(targets: ITarget[]) {
+  for(const target of targets) {
+    if (target.effects) {
+      target.effects = target.effects
+        .map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
+        .filter(e => e.turns > 0);
+    }
   }
 }
 
-export function processMonsterEffects(params: BaseParams) {
-  params.monsters = params.monsters.map(monster => ({
-    ...monster,
-    effects: monster.effects
-      ?.map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
-      .filter(effect => effect.turns > 0),
-  }));
+function processNpcTimeouts(params: BaseParams) {
+  const newNPCs: NPCState[] = [];
+  for(const npc of params.gameState.npcs) {
+    if (npc.turnsLeft && npc.turnsLeft > 0) {
+      npc.turnsLeft--;
+      if (npc.masterId) {
+        const master = params.gameState.players.find(p => p.id === npc.masterId);
+        if (master && master.health === 0) {
+          npc.turnsLeft = 0;
+        }
+      }
+      
+      if (npc.turnsLeft > 0) {
+        newNPCs.push(npc);
+      } else {
+        if (npc.expiryAction !== 'remove') {
+          if (npc.monsterType) {
+            const monster: MonsterState = {
+              id: npc.id,
+              type: npc.monsterType,
+              location: npc.location.id,
+              effects: [],
+              health: (npc.expiryAction === 'dead') ? 0 : npc.health,
+              zombie: npc.zombie,
+            };
+
+            params.monsters.push(monster);
+          } else {
+            npc.health = 0;
+            newNPCs.push(npc);
+          }
+        }
+      }
+    } else {
+      newNPCs.push(npc);
+    }
+  }
+
+  params.gameState.npcs = newNPCs;
 }

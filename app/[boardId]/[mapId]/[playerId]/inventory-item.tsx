@@ -122,7 +122,7 @@ export default function InventoryItem({
             <p>No bonuses</p>
           )}
           <div className={styles.itemButtons}>
-            {!isEquipped && isSelf && isEquipable && (
+            {!isEquipped && !isDead && isSelf && isEquipable && (
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
@@ -150,14 +150,14 @@ export default function InventoryItem({
                 onClick={onClickDrop}
               >Drop</button>
             )}
-            {!!onBuy && !cannotBuy &&
+            {!!onBuy && !isDead && !cannotBuy &&
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
                 onClick={onClickBuy}
               >Buy</button>
             }
-            {!!onSell && !isUsed &&
+            {!!onSell && !isDead && !isUsed &&
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
