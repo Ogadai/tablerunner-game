@@ -251,6 +251,45 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       speed: 20,
     },
   },
+  'spiriteagle': {
+    id: 'spiriteagle',
+    name: 'Spirit Eagle',
+    iconXY: { x: 4, y: 3 },
+    baseStats: {
+      attack: 8,
+      damage: 7,
+      defence: 5,
+      magic: 0,
+      health: 10,
+      speed: 12,
+    },
+  },
+  'spiritwolf': {
+    id: 'spiritwolf',
+    name: 'Spirit Wolf',
+    iconXY: { x: 4, y: 3 },
+    baseStats: {
+      attack: 10,
+      damage: 11,
+      defence: 11,
+      magic: 0,
+      health: 15,
+      speed: 8,
+    },
+  },
+  'spiritbear': {
+    id: 'spiritbear',
+    name: 'Spirit Bear',
+    iconXY: { x: 4, y: 3 },
+    baseStats: {
+      attack: 12,
+      damage: 10,
+      defence: 9,
+      magic: 0,
+      health: 22,
+      speed: 4,
+    },
+  },
 };
 
 const monsterRelativeStrengths = getMonsterStrenghtRange();
@@ -260,5 +299,8 @@ export const mostersExcludeFromAutoPopulate: string[] = [
   'zombie',
   'dragonbaby',
   'dragon',
-  'lich'
+  'lich',
+  'spiriteagle',
+  'spiritwolf',
+  'spiritbear',
 ];
