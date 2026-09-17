@@ -267,7 +267,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'spiritwolf': {
     id: 'spiritwolf',
     name: 'Spirit Wolf',
-    iconXY: { x: 4, y: 3 },
+    iconXY: { x: 5, y: 3 },
     baseStats: {
       attack: 10,
       damage: 11,
@@ -280,7 +280,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   'spiritbear': {
     id: 'spiritbear',
     name: 'Spirit Bear',
-    iconXY: { x: 4, y: 3 },
+    iconXY: { x: 6, y: 3 },
     baseStats: {
       attack: 12,
       damage: 10,
