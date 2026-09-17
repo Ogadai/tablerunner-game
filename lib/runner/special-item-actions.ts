@@ -55,24 +55,36 @@ function useResurrectionStone(params: BaseParams, player: INamedTarget, alwaysZo
 }
 
 function useKey(params: BaseParams, player: INamedTarget, keyItemType: string): boolean {
-    const itemDef = keyItems[keyItemType];
+  const itemDef = keyItems[keyItemType];
+  const playersAtLocation = params.gameState.players.filter(p => p.location.id === player.location.id);
+  
+  let unlocked = false;
   for(const move of player.location.move) {
     if (!!move.blockDescription && move.keyItemType === keyItemType) {
-      delete move.blockDescription;
-      delete move.keyItemType;
-
       params.blockedMoves = params.blockedMoves.filter(b => b.location !== player.location.id || b.direction !== move.direction);
 
-      const lcFirst = (s: string | undefined): string => 
-          (s && s.length > 0) ? `${s[0].toLowerCase()}${s.slice(1)}` : '';
-
-      playerMessageAtLocation(params, player.id, `**{player}** used the ${itemDef.name} to **${lcFirst(itemDef.bonusStats?.special)}**!`);
+      // Unlock for all players at location
+      for(const p of playersAtLocation) {
+        for(const m of p.location.move) {
+          if (m.id === move.id) {
+            delete m.blockDescription;
+            delete m.keyItemType;
+          }
+        }
+      }
 
       updateLockLeds(params.gameState, [move.id], false);
-      return true;
+      unlocked = true;
     }
   }
 
-  soloMessageAtLocation(params, player.id, `The ${itemDef.name} cannot be used here!`);
-  return false;
+  if (unlocked) {
+    const lcFirst = (s: string | undefined): string => 
+        (s && s.length > 0) ? `${s[0].toLowerCase()}${s.slice(1)}` : '';
+
+    playerMessageAtLocation(params, player.id, `**{player}** used the ${itemDef.name} to **${lcFirst(itemDef.bonusStats?.special)}**!`);
+  } else {
+    soloMessageAtLocation(params, player.id, `The ${itemDef.name} cannot be used here!`);
+  }
+  return unlocked;
 }
