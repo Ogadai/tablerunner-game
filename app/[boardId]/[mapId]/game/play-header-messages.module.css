@@ -1,6 +1,7 @@
 .popoverContent {
   padding-top: 45px;
   width: 600px;
+  overflow-y: auto;
 
   p {
     margin-bottom: 5px;

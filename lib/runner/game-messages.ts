@@ -10,6 +10,7 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
       text: message
         .replace('{player}', 'You')
         .replace('{playerNoun}', 'are')
+        .replace('{ownership}', 'have')
         .replace('{possessive}', 'r')
     });
   }
@@ -21,6 +22,7 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
       text: message
         .replace('{player}', playerName)
         .replace('{playerNoun}', 'is')
+        .replace('{ownership}', 'has')
         .replace('{possessive}', playerName.endsWith('s') ? `'` : `'s`)
     });
   };

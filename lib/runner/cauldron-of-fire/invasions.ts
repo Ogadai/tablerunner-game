@@ -59,21 +59,21 @@ const saveState = (params: BaseParams, invasions: InvasionDef[]) => {
 export const invasions: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
     const invasions: InvasionDef[] = [
-      randomInvasion(15, ['rat', 'spider', 'snake'], 'early1', 20),
-      randomInvasion(20, ['rat', 'spider', 'snake'], 'early2', 20),
-      randomInvasion(30, ['goblin', 'wyvern'], 'early1', 30),
-      randomInvasion(40, ['goblin', 'wyvern', 'snake'], 'early2', 30),
-      randomInvasion(45, ['scorpion', 'wildcat'], 'early1', 30),
-      randomInvasion(50, ['scorpion', 'wildcat'], 'early2', 30),
-      randomInvasion(55, ['orc', 'scorpion', 'wildcat'], 'mid1', 30),
-      randomInvasion(60, ['orc', 'scorpion', 'wildcat'], 'mid2', 30),
-      randomInvasion(65, ['wildcat', 'bandit'], 'late1', 30),
-      randomInvasion(70, ['wildcat', 'bandit'], 'late2', 30),
+      randomInvasion(15, ['rat', 'spider', 'snake'], 'early1', 12),
+      randomInvasion(20, ['rat', 'spider', 'snake'], 'early2', 12),
+      randomInvasion(30, ['goblin', 'wyvern'], 'early1', 15),
+      randomInvasion(40, ['goblin', 'wyvern', 'snake'], 'early2', 15),
+      randomInvasion(45, ['scorpion', 'wildcat'], 'early1', 15),
+      randomInvasion(50, ['scorpion', 'wildcat'], 'early2', 15),
+      randomInvasion(55, ['orc', 'scorpion', 'wildcat'], 'mid1', 20),
+      randomInvasion(60, ['orc', 'scorpion', 'wildcat'], 'mid2', 20),
+      randomInvasion(65, ['wildcat', 'bandit'], 'late1', 20),
+      randomInvasion(70, ['wildcat', 'bandit'], 'late2', 20),
       randomInvasion(75, ['ogre', 'cyclops'], 'late1', 15),
       randomInvasion(80, ['ogre', 'cyclops'], 'late2', 15),
     ];
 
-    const randomCount = randomNumber(3, 5);
+    const randomCount = randomNumber(2, 4);
     while(invasions.length > randomCount) {
       invasions.splice(Math.floor(Math.random() * invasions.length), 1);
     }
