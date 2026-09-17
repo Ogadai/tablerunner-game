@@ -4,7 +4,7 @@ import styles from './inventory-item.module.css';
 import { BaseStats, ConsumableItemDef, PlayerItem, PlayerItemType, ScrollItemDef } from '@/lib/games/types';
 import { allItems, SELL_COST_RATIO } from '@/lib/games/items';
 import { LEARN_SCROLL_ACTION_COST } from '@/lib/store/playerStats';
-import { spells } from '@/lib/games/spells';
+import { SpellIds, spells } from '@/lib/games/spells';
 import CoinDisplay from './coin-display';
 
 export default function InventoryItem({
@@ -15,6 +15,7 @@ export default function InventoryItem({
   isUsed,
   actionPointsLeft,
   baseStats,
+  playerSpells,
   onEquipped,
   onUsed,
   onDropped,
@@ -30,6 +31,7 @@ export default function InventoryItem({
   isUsed: boolean;
   actionPointsLeft: number;
   baseStats: BaseStats,
+  playerSpells?: SpellIds[],
   onEquipped?: () => void;
   onUsed?: () => void;
   onDropped?: () => void;
@@ -73,6 +75,7 @@ export default function InventoryItem({
   const canUse = !!onUsed && !isUsed && isConsumable && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
   const canDrop = !!onDropped && !isUsed;
   const canLearnSpell = !!onLearnScroll && itemDef.type === PlayerItemType.scroll
+    && !!playerSpells?.includes((itemDef as ScrollItemDef).spellId as SpellIds)
     && baseStats.magic >= spells[(itemDef as ScrollItemDef).spellId].intelligence
     && actionPointsLeft >= LEARN_SCROLL_ACTION_COST;
 

@@ -113,7 +113,9 @@ export function actionReadScroll(params: BaseParams, player: PlayerState, action
   if (scrollItem) {
     const spell = spells[scrollItem.spellId];
 
-    if (player.baseStats!.magic >= spell.intelligence) {
+    if (player.baseStats!.magic >= spell.intelligence
+      && !player.spells.includes(scrollItem.spellId as SpellIds)
+    ) {
       player.spells = [
         ...player.spells,
         scrollItem.spellId as SpellIds
