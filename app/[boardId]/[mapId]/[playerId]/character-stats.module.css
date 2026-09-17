@@ -45,6 +45,7 @@ td.characterStat {
   text-align: left !important;
   width: 80px !important;
   padding: 0 10px;
+  white-space: nowrap;
 }
 
 .statIcon {
