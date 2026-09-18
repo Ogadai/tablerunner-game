@@ -3,17 +3,42 @@ import Swal from 'sweetalert2'
 import { getSwalDefaultOptions } from '@/app/swal';
 
 import { DropdownMenu } from "radix-ui";
+import { Dialog } from "radix-ui";
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import styles from "./play-header-menu.module.css";
 
-import { deleteGameState } from "@/lib/store/gameState";
+import { deleteGameState, getBoardSettings, setBoardSettings } from "@/lib/store/gameState";
+import { storeBoardDefaultSettings } from "@/lib/store/types";
+import gameStateLightingService from './game-state-lighting-service';
 
 export default function PlayHeaderMenu(  { boardId, mapId }
   : { boardId: string, mapId: string }
 ) {
   const router = useRouter();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [brightness, setBrightness] = useState(storeBoardDefaultSettings.brightness);
+
+  useEffect(() => {
+    if (settingsOpen) {
+      getBoardSettings(boardId, mapId).then(result => {
+        if (result.success && result.data) {
+          setBrightness(result.data.brightness);
+        }
+      });
+    }
+  }, [boardId, mapId, settingsOpen]);
+
+  const brightnessChangeAction = async (value: number) => {
+    setBrightness(value);
+    
+    await Promise.all([
+      await setBoardSettings(boardId, mapId, { brightness: value }),
+      await gameStateLightingService.applySettings({ brightness: value }),
+    ]);
+  };
 
   const deleteGameAction = async () => {
     const result = await Swal.fire({
@@ -37,7 +62,8 @@ export default function PlayHeaderMenu(  { boardId, mapId }
   }
 
   return (
-    <DropdownMenu.Root>
+    <Dialog.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
+      <DropdownMenu.Root>
 			<DropdownMenu.Trigger asChild>
 				<button className={`${styles.IconButton}`} aria-label="Settings">
 					<HamburgerMenuIcon />
@@ -49,12 +75,35 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 					<DropdownMenu.Item className={styles.Item} onClick={characterListAction}>
 						Player List <div className={`${styles.RightSlot} material-symbols-outlined`}>group</div>
 					</DropdownMenu.Item>
+          <DropdownMenu.Item className={styles.Item} onClick={() => setSettingsOpen(true)}>
+            Board Settings <div className={`${styles.RightSlot} material-symbols-outlined`}>settings</div>
+          </DropdownMenu.Item>
 					<DropdownMenu.Item className={styles.Item} onClick={deleteGameAction}>
 						Delete Game <div className={`${styles.RightSlot} ${styles.deleteIcon} material-symbols-outlined`}>delete_forever</div>
 					</DropdownMenu.Item>
           <DropdownMenu.Arrow className={styles.Arrow} />
-				</DropdownMenu.Content>
-			</DropdownMenu.Portal>
-		</DropdownMenu.Root>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+
+      <Dialog.Portal>
+          <Dialog.Overlay className="DialogOverlay" />
+          <Dialog.Content className={`DialogContent ${styles.settingsDialog}`}>
+            <Dialog.Title className="DialogTitle">Settings</Dialog.Title>
+            <div className={styles.brightnessRow}>
+              <label htmlFor="board-brightness">Brightness</label>
+              <output htmlFor="board-brightness">{brightness}</output>
+            </div>
+            <input
+              id="board-brightness"
+              type="range"
+              min="10"
+              max="200"
+              value={brightness}
+              onChange={event => brightnessChangeAction(Number(event.target.value))}
+            />
+          </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

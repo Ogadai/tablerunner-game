@@ -1,4 +1,4 @@
-import { GameState } from '@/lib/store/types';
+import { GameState, StoreBoardSettings } from '@/lib/store/types';
 import { bluetoothService } from '../../../ble/bluetooth-service';
 import { BleState } from '@/app/ble/ble-states';
 import { getBoardSettings } from '@/lib/store/gameState';
@@ -17,9 +17,9 @@ class GameStateLightingService {
   }
 
   async update(boardId: string, mapId: string, gameState: GameState | undefined) {
-    const boardChanged = (this.boardId !== boardId) || (this.mapId !== boardId);
+    const boardChanged = (this.boardId !== boardId) || (this.mapId !== mapId);
     this.boardId = boardId;
-    this.mapId = boardId;
+    this.mapId = mapId;
     this.lastGameState = gameState;
 
     if (bluetoothService.getState() === BleState.Connected) {
@@ -43,15 +43,23 @@ class GameStateLightingService {
     }
   }
 
-  private async applySettings() {
+  async applySettings(settings?: StoreBoardSettings) {
+    if (this.boardId && this.mapId) {
+      const useSettings = settings || await this.getSettings();
+      if (useSettings && useSettings.brightness > 0) {
+        await bluetoothService.setBrightness(useSettings.brightness);
+      }
+    }
+  }
+
+  async getSettings(): Promise<StoreBoardSettings | undefined> {
     if (this.boardId && this.mapId) {
       const result = await getBoardSettings(this.boardId, this.mapId);
       if (result.success && result.data) {
-        if (result.data && result.data.brightness > 0) {
-          await bluetoothService.setBrightness(result.data.brightness);
-        }
+        return result.data;
       }
     }
+    return undefined;
   }
 
   private async applyLighting(gameState: GameState | undefined) {

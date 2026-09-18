@@ -126,3 +126,24 @@
 .deleteIcon {
   color: var(--color-error);
 }
+
+.settingsDialog {
+	width: min(90vw, 360px);
+}
+
+.brightnessRow {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
+}
+
+.brightnessRow output {
+	color: var(--gold-bright);
+	font-weight: 700;
+}
+
+.settingsDialog input[type="range"] {
+	width: 100%;
+	accent-color: var(--gold-bright);
+}
