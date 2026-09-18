@@ -149,6 +149,12 @@ function FastTravelDialogContent({
     return undefined;
   }
 
+  const onCircleClickFn = (location: Location) => {
+    if (availableLocations.includes(location.id)) {
+      onCircleClick(location.id);
+    }
+  }
+
   return (
     <div className={styles.travelMapContainer} ref={containerRef}>
       <div className={styles.travelMap}>
@@ -156,7 +162,7 @@ function FastTravelDialogContent({
           gameId={gameState.gameId}
           className={styles.gridContainer}
           getCircleClass={getCircleClass}
-          onCircleClick={location => onCircleClick(location.id)}
+          onCircleClick={onCircleClickFn}
         />
       </div>
     </div>
