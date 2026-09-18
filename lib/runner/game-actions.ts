@@ -10,6 +10,7 @@ import {
   PlayerActionReadScroll,
   PlayerActionPortal,
   INamedTarget,
+  PlayerActionFastTravel,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -23,7 +24,7 @@ import { getMonsterStats } from './monster-stats';
 import { actionAttack, monsterAttack } from './game-action-attack';
 import { actionCastSpell, actionReadScroll } from './game-action-spell';
 import { actionMove } from "./game-action-move";
-import { actionPortal } from "./game-action-portal";
+import { actionFastTravel, actionPortal } from "./game-action-portal";
 import { actionUseItem } from './game-action-use';
 import { getNpcActions } from "./game-npc-actions";
 
@@ -53,6 +54,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
   const playerMoves: Record<string, PlayerActionMove[]> = {};
   const playerPortals: Record<string, PlayerActionPortal[]> = {};
   const playerFought: Record<string, boolean> = {};
+  const playerFastTravels: Record<string, PlayerActionFastTravel[]> = {};
 
   try {
     // First gather all the player actions per location
@@ -78,6 +80,10 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         .filter(a => a.type === PlayerActionType.Portal)
         .map(a => a as PlayerActionPortal);
 
+      playerFastTravels[player.id] = playerActionState.actions
+        .filter(a => a.type === PlayerActionType.FastTravel)
+        .map(a => a as PlayerActionFastTravel);
+
       const playerOtheractions = playerActionState.actions
         .filter(a => a.type !== PlayerActionType.Move && a.type !== PlayerActionType.Portal);
 
@@ -97,7 +103,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         // automatically figure out NPC's actions (if master isn't moving)
         const npcActions: PlayerActionsState =
           !params.gameState.players.find(p => p.id === npc.masterId
-              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0)
+              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0 || playerFastTravels[p.id].length > 0)
           )
          ? getNpcActions(params, npc) : { actions: [] };
 
@@ -178,6 +184,10 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
         for(const portalAction of playerPortals[player.id]) {
           actionPortal(params, player, portalAction);
+        }
+
+        for(const travelAction of playerFastTravels[player.id]) {
+          actionFastTravel(params, player, travelAction);
         }
 
         // Recover following NPCs and move to the same location

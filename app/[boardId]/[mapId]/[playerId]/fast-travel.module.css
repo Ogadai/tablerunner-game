@@ -31,5 +31,36 @@
 }
 
 .fastTravelDialog {
+  height: 600px;
+  max-height: 100%;
+  min-height: 360px;
+
+  width: 600px;
+  max-width: 100%;
   min-width: 360px;
+}
+@media screen and (max-width: 400px) {
+  .fastTravelDialog {
+    height: 400px;
+    max-height: 100%;
+    min-height: 300px;
+  }
+}
+  
+
+.travelMapContainer {
+  overflow: auto;
+  position: relative;
+}
+
+.travelMap {
+  width: calc(20 * 16.6mm);
+  height: calc(12 * 16.6mm);
+}
+
+.gridContainer {
+  grid-template-columns: repeat(20, 16.6mm);
+  grid-template-rows: repeat(12, 16.6mm);
+  width: calc(20 * 16.6mm);
+  height: calc(12 * 16.6mm);
 }

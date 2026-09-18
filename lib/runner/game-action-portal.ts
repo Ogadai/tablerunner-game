@@ -1,8 +1,10 @@
 import {
   GameState,
+  PlayerActionFastTravel,
   PlayerActionPortal,
   PlayerState,
 } from "../store/types";
+import { Location } from '../games/types';
 import { games } from "../games/games";
 import { BaseParams } from './base-params';
 import { getPlayerLocation } from "./game-location";
@@ -59,6 +61,22 @@ export function actionPortal(params: BaseParams, player: PlayerState, action: Pl
   }
 }
 
+export function actionFastTravel(params: BaseParams, player: PlayerState, action: PlayerActionFastTravel): void {
+  const gameDef = games.find(g => g.id === params.gameState.gameId)!;
+  const locations = gameDef.locations;
+
+  const availableLocations = getAvailableLocations(params, locations, player.location, 5);
+  if (!availableLocations.includes(action.targetLocation)) {
+    console.error(`Destination location ${action.targetLocation} is not valid for fast travel`);
+    return;
+  }
+
+  // Move player to destination
+  const destinationLocation = gameDef.locations.find(l => l.id === action.targetLocation)!;
+  player.location = getPlayerLocation(params, destinationLocation);
+  player.retreatDirection = undefined;
+}
+
 export const PORTAL_LED_OWNER = 'portal';
 export const PORTAL_LED_RGB = '007F7F';
 export const SHOP_LED_OWNER = 'shop';
@@ -87,3 +105,21 @@ export function updatePortalAndShopLeds(gameState: GameState) {
   ];
 }
 
+const getAvailableLocations = (params: BaseParams, locations: Location[], from: Location, steps: number): number[] => {
+  const available: number[] = [from.id];
+  if (steps > 0) {
+    for(const mv of from.move) {
+      if (params.gameState.visited.includes(mv.id)) {
+        const ledLit = params.gameState.leds.find(l => l.location === mv.id);
+        if (!ledLit || ledLit.owner === 'portal' || ledLit.owner === 'shop') {
+
+          const toLocation = locations.find(l => l.id === mv.id)!;
+          available.push(
+            ...getAvailableLocations(params, locations, toLocation, steps - 1)
+          );
+        }
+      }
+    }
+  }
+  return available;
+}

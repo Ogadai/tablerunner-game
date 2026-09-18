@@ -117,6 +117,7 @@ export enum PlayerActionType {
   Cast = 'Cast',
   ReadScroll = 'ReadScroll',
   Portal = 'portal',
+  FastTravel = 'fastTravel',
 }
 
 export interface PlayerAction {
@@ -153,6 +154,11 @@ export interface PlayerActionReadScroll extends PlayerAction {
 
 export interface PlayerActionPortal extends PlayerAction {
   type: PlayerActionType.Portal;
+  targetLocation: number;
+}
+
+export interface PlayerActionFastTravel extends PlayerAction {
+  type: PlayerActionType.FastTravel;
   targetLocation: number;
 }
 

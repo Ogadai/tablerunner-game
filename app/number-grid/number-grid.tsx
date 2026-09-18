@@ -28,7 +28,7 @@ export interface NumberGridProps {
   gameId: string;
   locations?: Location[];
   showNumberLabel?: boolean;
-  getCircleClass?: (location: Location) => string
+  getCircleClass?: (location: Location) => string | undefined
   showLineStatus?: boolean;
   renderCircleStatus?: (location: Location) => ReactNode;
   renderLineStatus?: (location: Location, move: LocationMove) => ReactNode;
@@ -79,6 +79,7 @@ export default function NumberGrid({
 
     return (
       <div
+        id={`grid-cell-${cell}`}
         key={cell}
         className={`${styles.cell} ${location?.underground ? styles.cellUnderground : ''}`}
         onMouseDown={() => onCellMouseDown?.(cell)}
@@ -92,7 +93,7 @@ export default function NumberGrid({
             return (
               <div
                 key={`${cell}-${move.direction}-${move.id}`}
-                className={`${styles.moveLine} ${DIAGONAL_MOVES.includes(move.direction) ? styles.moveLineDiagonal : ''}`}
+                className={`${styles.moveLine} ${DIAGONAL_MOVES.includes(move.direction) ? styles.moveLineDiagonal : ''} ${onLineClick ? styles.moveLineClickable : ''}`}
                 style={{ transform: `translateY(-50%) rotate(${directionAngles[move.direction]}deg)` }}
                 aria-hidden="true"
                 onMouseDown={event => event.stopPropagation()}
@@ -123,7 +124,7 @@ export default function NumberGrid({
   };
 
   return (
-    <>
+    <div className={styles.runberGrid}>
       <Image
         src="/map.png"
         width={1536}
@@ -133,6 +134,6 @@ export default function NumberGrid({
         alt="The map of Cauldron of Fire"
       />
       <div className={`${styles.gridContainer} ${className || ''}`}>{GRID_CELLS.map(renderCell)}</div>
-    </>
+    </div>
   );
 }

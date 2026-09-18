@@ -1,3 +1,7 @@
+.runberGrid {
+  position: relative;
+}
+
 .gridContainer {
   display: grid;
   background: transparent;
@@ -23,6 +27,9 @@
   height: 6px;
   background: var(--color-stamina);
   transform-origin: 0 50%;
+}
+
+.moveLineClickable {
   cursor: pointer;
 }
 
@@ -95,16 +102,39 @@
   z-index: -1;
   width: 1500px;
   height: 948px;
-  top: 40px;
-  left: 44px;
+  top: -83px;
+  left: -60px;
+
+  &.pageTwo {
+    top: -83px;
+    left: -685px;
+  }
 }
 
-.pageOne {
-  top: 39px;
-  left: -39px;
+.playerLocation {
+  animation: location-flash 1s ease-in-out infinite;
 }
 
-.pageTwo {
-  top: 39px;
-  left: -666px;
+.noTravel {
+  background-color: #808080 !important;
+}
+
+.shop {
+  background-color: #CE6378 !important;
+}
+
+.portal {
+  background-color: #00AFAF !important;
+}
+
+@keyframes location-flash {
+  0% {
+    background-color: #ffffff;
+  }
+  50% {
+    background-color: var(--gold-bright);
+  }
+  100% {
+    background-color: #ffffff;
+  }
 }
