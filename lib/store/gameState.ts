@@ -4,7 +4,7 @@ import { ApiResponse } from "../api-response";
 import { AllLocationsState, GameState, PlayerState, StoreBoardSettings } from "./types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
-import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis, setLocationsStateInRedis, getBoardSettingsFromRedis } from './redis-access';
+import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis, setLocationsStateInRedis, getBoardSettingsFromRedis, setBoardSettingsFromRedis } from './redis-access';
 import { getPlayerStats } from './playerStats';
 import { createItemForInventory } from "../runner/apply-inventory";
 import { pickCharacterName } from "../games/character-names";
@@ -40,6 +40,21 @@ export async function getBoardSettings(boardId: string, mapId: string): Promise<
     return {
       success: true,
       data: result
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message
+    };
+  }
+}
+
+export async function setBoardSettings(boardId: string, mapId: string, settings: StoreBoardSettings): Promise<ApiResponse<void>> {
+  try {
+    await setBoardSettingsFromRedis(boardId, mapId, settings);
+
+    return {
+      success: true
     };
   } catch (error) {
     return {
