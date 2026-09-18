@@ -1,22 +1,31 @@
 import { GameState } from '@/lib/store/types';
 import { bluetoothService } from '../../../ble/bluetooth-service';
 import { BleState } from '@/app/ble/ble-states';
+import { getBoardSettings } from '@/lib/store/gameState';
 
 const totalLocations = 240;
 const visitedRGB = '707070';
 
 class GameStateLightingService {
   private subscribed = false;
+  private boardId: string | undefined;
+  private mapId: string | undefined;
   private lastGameState: GameState | undefined;
 
   constructor() {
     this.initialiseSubscription();
   }
 
-  async update(gameState: GameState | undefined) {
+  async update(boardId: string, mapId: string, gameState: GameState | undefined) {
+    const boardChanged = (this.boardId !== boardId) || (this.mapId !== boardId);
+    this.boardId = boardId;
+    this.mapId = boardId;
     this.lastGameState = gameState;
 
     if (bluetoothService.getState() === BleState.Connected) {
+      if (boardChanged) {
+        await this.applySettings();
+      }
       await this.applyLighting(gameState);
     }
   }
@@ -25,11 +34,23 @@ class GameStateLightingService {
     if (!this.subscribed) {
       bluetoothService.subscribe(async (state) => {
         if (state === BleState.Connected) {
+          await this.applySettings();
           await this.applyLighting(this.lastGameState);
         }
       })
 
       this.subscribed = true;
+    }
+  }
+
+  private async applySettings() {
+    if (this.boardId && this.mapId) {
+      const result = await getBoardSettings(this.boardId, this.mapId);
+      if (result.success && result.data) {
+        if (result.data && result.data.brightness > 0) {
+          await bluetoothService.setBrightness(result.data.brightness);
+        }
+      }
     }
   }
 

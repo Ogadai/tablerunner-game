@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage, GameTopicMessageBase } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
@@ -24,6 +24,8 @@ const getLocationsLock = (boardId: string, mapId: string) => `monstersLock:${boa
 
 const getStoreInventoryKey = (boardId: string, mapId: string, location: number) => `store:${boardId}:${mapId}:${location}`;
 const getStoreInventoryLock = (boardId: string, mapId: string) => `storeLock:${boardId}:${mapId}`;
+
+const getBoardSettingsKey = (boardId: string, mapId: string) => `boardSettings:${boardId}:${mapId}`;
 
 /* Overall Game State */
 
@@ -209,6 +211,19 @@ export async function deleteStoreStateFromRedis(boardId: string, mapId: string, 
   await redis.del(getStoreInventoryKey(boardId, mapId, location));
 }
 
+/* Board Setting */
+
+export async function getBoardSettingsFromRedis(boardId: string, mapId: string): Promise<StoreBoardSettings> {
+  const result = await redis.get(getBoardSettingsKey(boardId, mapId)) as StoreBoardSettings;
+  return result || storeBoardDefaultSettings;
+}
+
+export async function setBoardSettingsFromRedis(boardId: string, mapId: string, storeState: StoreBoardSettings): Promise<void> {
+  await redis.set(getBoardSettingsKey(boardId, mapId), storeState, gameStateOptions);
+}
+
+/* Generic locking */
+
 async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<() => Promise<void>> {
   const lockValue = crypto.randomUUID(); // Unique token to identify the lock owner
 
@@ -235,3 +250,4 @@ async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<(
   }
   throw new Error('Failed to aquire lock');
 }
+

@@ -1,10 +1,10 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { AllLocationsState, GameState, PlayerState } from "./types";
+import { AllLocationsState, GameState, PlayerState, StoreBoardSettings } from "./types";
 import { games } from '../games/games';
 import { characters } from '../games/characters';
-import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis, setLocationsStateInRedis } from './redis-access';
+import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis, setLocationsStateInRedis, getBoardSettingsFromRedis } from './redis-access';
 import { getPlayerStats } from './playerStats';
 import { createItemForInventory } from "../runner/apply-inventory";
 import { pickCharacterName } from "../games/character-names";
@@ -20,6 +20,22 @@ const INITIAL_COINS = 20;
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
     const result = await getGameStateFromRedis(boardId, mapId);
+
+    return {
+      success: true,
+      data: result
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message
+    };
+  }
+}
+
+export async function getBoardSettings(boardId: string, mapId: string): Promise<ApiResponse<StoreBoardSettings>> {
+  try {
+    const result = await getBoardSettingsFromRedis(boardId, mapId);
 
     return {
       success: true,

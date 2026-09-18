@@ -139,6 +139,11 @@ export class BluetoothService {
     await this.sendMessage(remainMessage);
   }
 
+  async setBrightness(brightness: number) {
+    const useBrightness = Math.min(Math.max(10, brightness), 200);
+    await this.sendMessage(`BRIT|${useBrightness}`);
+  }
+
   disconnect(): void {
     this.device?.gatt?.disconnect();
     this.onDisconnected();

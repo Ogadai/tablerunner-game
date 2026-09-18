@@ -243,3 +243,10 @@ export const getMonsterName = (monster: MonsterState): string => {
   return monster.zombie ? `Zombie ${monsterName}` : monsterName;
 }
 
+export interface StoreBoardSettings {
+  brightness: number;
+}
+
+export const storeBoardDefaultSettings: StoreBoardSettings = {
+  brightness: 50,
+}

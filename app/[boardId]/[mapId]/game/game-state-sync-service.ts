@@ -26,7 +26,7 @@ class GameStateSyncService {
     this._loading = false;
     this.listeners.get(key)?.forEach(listener => listener(gameState));
 
-    gameStateLightingService.update(gameState);
+    gameStateLightingService.update(boardId, mapId, gameState);
   }
 
   subscribe(boardId: string, mapId: string, listener: GameStateListener): () => void {
