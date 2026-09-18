@@ -4,7 +4,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 
 import { DropdownMenu } from "radix-ui";
 import { Dialog } from "radix-ui";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
@@ -20,6 +20,7 @@ export default function PlayHeaderMenu(  { boardId, mapId }
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [brightness, setBrightness] = useState(storeBoardDefaultSettings.brightness);
+  const brightnessChangeTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (settingsOpen) {
@@ -31,14 +32,29 @@ export default function PlayHeaderMenu(  { boardId, mapId }
     }
   }, [boardId, mapId, settingsOpen]);
 
-  const brightnessChangeAction = async (value: number) => {
-    setBrightness(value);
-    
+  const applyBrightnessChange = async (value: number) => {
     await Promise.all([
-      await setBoardSettings(boardId, mapId, { brightness: value }),
-      await gameStateLightingService.applySettings({ brightness: value }),
+      setBoardSettings(boardId, mapId, { brightness: value }),
+      gameStateLightingService.applySettings({ brightness: value }),
     ]);
   };
+
+  const brightnessChangeAction = (value: number) => {
+    setBrightness(value);
+    if (brightnessChangeTimeout.current) {
+      clearTimeout(brightnessChangeTimeout.current);
+    }
+
+    brightnessChangeTimeout.current = setTimeout(() => {
+      void applyBrightnessChange(value);
+    }, 300);
+  };
+
+  useEffect(() => () => {
+    if (brightnessChangeTimeout.current) {
+      clearTimeout(brightnessChangeTimeout.current);
+    }
+  }, []);
 
   const deleteGameAction = async () => {
     const result = await Swal.fire({
