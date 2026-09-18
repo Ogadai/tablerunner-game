@@ -1,0 +1,35 @@
+.fastTravel {
+  margin-top: 5px;
+  height: 48px;
+}
+
+.travelIcon {
+  width: 40px;
+  height: 40px;
+  margin: 4px 5px 0 0 !important;
+  background-size: 280px 240px;
+  padding: 0;
+  border: 2px solid var(--border-stone);
+  border-radius: 3px;
+  background-color: transparent;
+  background-image: url('/spell-sheet.png');
+  background-repeat: no-repeat;
+}
+
+.travelIcon:hover,
+.travelIcon:active,
+.travelIcon:focus-visible {
+  background-color: transparent;
+  background-image: url('/spell-sheet.png');
+  background-repeat: no-repeat;
+  background-size: 280px 240px;
+}
+
+.disabledTravelIcon {
+  filter: grayscale(1);
+  pointer-events: none;
+}
+
+.fastTravelDialog {
+  min-width: 360px;
+}

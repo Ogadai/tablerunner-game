@@ -75,6 +75,11 @@
   }
 }
 
+.bottomRowButtons {
+  display: flex;
+  flex-direction: row;
+}
+
 .moveActionButtons {
   display: grid;
   width: 160px;

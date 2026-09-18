@@ -67,7 +67,7 @@ export default function PlayerStore({
   return (
     <Dialog.Root onOpenChange={onOpenChange}>
       <Dialog.Trigger asChild>
-        <button type="button">Shop</button>
+        <button className={ styles.shopButton } type="button">Shop</button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />

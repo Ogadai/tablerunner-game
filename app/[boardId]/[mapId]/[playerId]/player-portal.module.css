@@ -1,8 +1,12 @@
+.playerPortal {
+  height: 48px;
+}
+
 .portalTrigger {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  width: 130px;
+  width: 85px;
 }
 
 .portalTriggerIcon {

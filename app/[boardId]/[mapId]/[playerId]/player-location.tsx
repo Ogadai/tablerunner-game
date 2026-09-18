@@ -19,6 +19,7 @@ import { characters } from '@/lib/games/characters';
 import { monsters } from '@/lib/games/monsters';
 import { EntityItemClass, EntityItemDetail } from './entity-list';
 import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-stats-sync.service";
+import FastTravel from './fast-travel';
 
 export default function PlayerLocation(
   {
@@ -293,25 +294,41 @@ export default function PlayerLocation(
           addNewAction={addNewAction}
         />
       }
-      {
-        gameState.stores.includes(playerState.location.id) &&
-        <PlayerStore boardId={boardId} mapId={mapId} player={playerState} usedItemIds={usedItemIds} />
-      }
-      {
-        hasPortalStone &&
-        <PlayerPortal
-          boardId={boardId}
-          mapId={mapId}
-          player={playerState}
-          gameState={gameState}
-          playerCanMove={playerStats.playerCanMove}
-          hasLivingEnemies={hasLivingMonsters}
-          actionPointsLeft={playerStats.actionPointsTotal - playerStats.actionPointsUsed}
-          moveCost={playerStats.actionsPerTurn.move}
-          addNewAction={addNewAction}
-          endTurnAction={endTurnAction}
-        />
-      }
+      <div className={ styles.bottomRowButtons }>
+        {
+          <FastTravel
+            boardId={boardId}
+            mapId={mapId}
+            player={playerState}
+            gameState={gameState}
+            playerCanMove={playerStats.playerCanMove}
+            hasLivingEnemies={hasLivingMonsters}
+            actionPointsLeft={playerStats.actionPointsTotal - playerStats.actionPointsUsed}
+            moveCost={playerStats.actionsPerTurn.move}
+            addNewAction={addNewAction}
+            endTurnAction={endTurnAction}
+          />
+        }
+        {
+          gameState.stores.includes(playerState.location.id) &&
+          <PlayerStore boardId={boardId} mapId={mapId} player={playerState} usedItemIds={usedItemIds} />
+        }
+        {
+          hasPortalStone &&
+          <PlayerPortal
+            boardId={boardId}
+            mapId={mapId}
+            player={playerState}
+            gameState={gameState}
+            playerCanMove={playerStats.playerCanMove}
+            hasLivingEnemies={hasLivingMonsters}
+            actionPointsLeft={playerStats.actionPointsTotal - playerStats.actionPointsUsed}
+            moveCost={playerStats.actionsPerTurn.move}
+            addNewAction={addNewAction}
+            endTurnAction={endTurnAction}
+          />
+        }
+      </div>
     </div></div>}
   </>);
 }

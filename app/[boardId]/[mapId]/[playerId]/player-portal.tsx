@@ -65,7 +65,7 @@ export default function PlayerPortal({
     };
   };
 
-  return (
+  return (<div className={styles.playerPortal}>
     <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
         <button
@@ -74,7 +74,7 @@ export default function PlayerPortal({
           title="Use the Portal Stone to quick-travel"
         >
           <span>Portal</span>
-          <span className={`${styles.portalTriggerIcon} material-symbols-outlined`}>auto_awesome</span>
+          {/* <span className={`${styles.portalTriggerIcon} material-symbols-outlined`}>auto_awesome</span> */}
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
@@ -139,5 +139,5 @@ export default function PlayerPortal({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+  </div>);
 }
