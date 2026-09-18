@@ -8,17 +8,15 @@ import { useRef, useState, useEffect } from 'react';
 import styles from './mapedit.module.css';
 import { useSearchParams } from 'next/navigation';
 import { cinzel } from '@/app/fonts';
-import Image from 'next/image';
 
 import { cauldronOfFireLocations } from '@/lib/games/maps/cauldron-of-fire';
 import { monsters } from '@/lib/games/monsters';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS } from '@/lib/games/gridCells';
+import NumberGrid from '@/app/number-grid/number-grid';
 import EntityList, { EntityItemClass, EntityItemDetail } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
 import { MonsterState } from '@/lib/store/types';
 import { populateMonsters } from '@/lib/runner/populate-monsters';
-
-const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
 const mapsForGames: { [id: string]: Location[] } = {
   'cauldronfire': cauldronOfFireLocations
@@ -265,70 +263,25 @@ export default function MapEdit() {
         maxHealth: monsters[monster.type].baseStats.health,
       }));
 
-  const renderCell = (cell: number) => {
-    const location = mapState.find(l => l.id === cell);
-    const description = location?.description || '';
-    const moves = location?.move ?? [];
-    const monsterCount = monsterList.filter(monster => monster.location === cell).length;
-    const cellIndex = GRID_CELLS.indexOf(cell);
+  const renderCircleStatus = (location: Location) => {
+    const monsterCount = monsterList.filter(monster => monster.location === location.id).length;
 
-    const directionAngles: Record<string, number> = {
-      n: -90,
-      ne: -45,
-      e: 0,
-      se: 45,
-      s: 90,
-      sw: 135,
-      w: 180,
-      nw: -135,
-    };
+    if (print || monsterCount === 0) {
+      return null;
+    }
 
-    const thisPage = Math.floor(cellIndex / (MAP_COLUMNS / 2)) %2;
     return (
-      ((one && (thisPage === 0)) || (two && (thisPage === 1))) &&
-      <div key={cell}
-        onMouseDown={() => handleCellMouseDown(cell)}
-        onMouseUp={() => handleCellMouseUp(cell)}
-        className={`${styles.cell} ${location?.underground ? styles.cellUnderground : ''}`} title={description}
+      <button
+        type="button"
+        className={styles.monsterCount}
+        aria-label={`Show monsters at cell ${location.id}`}
+        onClick={event => {
+          event.stopPropagation();
+          setMonsterDialogCell(location.id);
+        }}
       >
-        {moves.map(move => (
-          <div
-            key={`${cell}-${move.direction}-${move.id}`}
-            className={`${styles.moveLine} ${DIAGONAL_MOVES.includes(move.direction) ? styles.moveLineDiagonal : ''}`}
-            style={{
-              transform: `translateY(-50%) rotate(${directionAngles[move.direction]}deg)`
-            }}
-            aria-hidden="true"
-            onMouseDown={event => event.stopPropagation()}
-            onClick={event => {
-              event.stopPropagation();
-              handleMoveLineClick(cell, move);
-            }}
-          />
-        ))}
-        <div
-          onClick={event => {
-            event.stopPropagation();
-            handleCellClick(cell);
-          }}
-          className={`${styles.circle} ${ (!singlePage && description.length > 0 && !print) ? styles.namedCircle : ''}`}
-        >
-          <span className={styles.number}>{ cell }</span>
-        </div>
-        {!print && (monsterCount > 0) &&
-          <button
-            type="button"
-            className={styles.monsterCount}
-            aria-label={`Show monsters at cell ${cell}`}
-            onClick={event => {
-              event.stopPropagation();
-              setMonsterDialogCell(cell);
-            }}
-          >
-            {monsterCount}
-          </button>
-        }
-      </div>
+        {monsterCount}
+      </button>
     );
   };
 
@@ -350,22 +303,27 @@ export default function MapEdit() {
     await navigator.clipboard.writeText(locationsJson);
   }
 
+  const getLocationClass = (location: Location): string => {
+    return (!print && location?.description) ? 'namedCircle' : '';
+  }
+
   return (<>
     <main className={`${styles.host} ${singlePage ? styles.singlePage : styles.doublePage} ${(page === '1') ? styles.pageOne : ''} ${(page === '2') ? styles.pageTwo : ''} ${print ? styles.print : ''}`}>
-      <Image
-        src="/map.png"
-        width={1536}
-        height={1024}
-        className={styles.mapImage}
-        loading="eager"
-        alt="The map of Couldron of Fire"
-      />
-
       <h3 className={`${cinzel.className} antialiased ${styles.title}`} >Cauldron of Fire</h3>
 
-      <div className={`${styles.gridContainer}`}>
-        { GRID_CELLS.map(renderCell) }
-      </div>
+      <NumberGrid
+        gameId={gameId}
+        locations={mapState}
+        showNumberLabel
+        getCircleClass={getLocationClass}
+        renderCircleStatus={renderCircleStatus}
+        onCircleClick={location => handleCellClick(location.id)}
+        onLineClick={(location, move) => void handleMoveLineClick(location.id, move)}
+        onCellMouseDown={handleCellMouseDown}
+        onCellMouseUp={handleCellMouseUp}
+        page={one && !two ? 1 : two && !one ? 2 : undefined}
+        className={`${styles.gridContainer}`}
+      />
       
       <div className={styles.startLabel}><h3>Start</h3></div>
 

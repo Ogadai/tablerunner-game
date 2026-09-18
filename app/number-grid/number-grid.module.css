@@ -1,0 +1,110 @@
+.gridContainer {
+  display: grid;
+  background: transparent;
+  padding: 16.6mm;
+  user-select: none;
+}
+
+.cell {
+  width: 16.6mm;
+  height: 16.6mm;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  position: relative;
+}
+
+.moveLine {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 50%;
+  height: 6px;
+  background: var(--color-stamina);
+  transform-origin: 0 50%;
+  cursor: pointer;
+}
+
+.moveLineDiagonal {
+  width: 71%;
+}
+
+.circle {
+  width: 6mm;
+  height: 6mm;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.cellUnderground .circle {
+  background-color: #e0e0e0;
+  border: 1px solid black;
+}
+
+.cellUnderground .moveLine {
+  background: rgba(128, 128, 128);
+  opacity: 0.5;
+}
+
+.namedCircle {
+  background-color: var(--color-stamina);
+}
+
+.number {
+  font-family: 'Cinzel', serif;
+  font-size: 7pt;
+  font-weight: 600;
+  color: #000000;
+  text-align: center;
+  line-height: 1;
+}
+
+.circleStatus,
+.lineStatus {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.circleStatus {
+  right: -10px;
+  bottom: -10px;
+  pointer-events: auto;
+}
+
+.lineStatus {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.moveLine {
+  background: linear-gradient(90deg, rgba(255, 255, 255), rgba(190, 190, 190));
+  opacity: 0.5;
+}
+
+.mapImage {
+  position: absolute;
+  z-index: -1;
+  width: 1500px;
+  height: 948px;
+  top: 40px;
+  left: 44px;
+}
+
+.pageOne {
+  top: 39px;
+  left: -39px;
+}
+
+.pageTwo {
+  top: 39px;
+  left: -666px;
+}
