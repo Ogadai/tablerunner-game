@@ -55,34 +55,32 @@ export default function FastTravel({
     endTurnAction();
   };
 
-  return (
-    <div className={styles.fastTravel}>
-      <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
-        <Dialog.Trigger asChild>
-          <button
-            type="button"
-            className={`${styles.travelIcon} ${canFastTravel ? '' : styles.disabledTravelIcon}`}
-            aria-label="Fast Travel"
-            title="Fast Travel"
-            style={{ backgroundPosition: `-${4 * 40}px -${5 * 40}px` }}
-          ></button>
-        </Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay className="DialogOverlay" />
-          <Dialog.Content className={`DialogContent ${styles.fastTravelDialog}`}>
-            <Dialog.Title className="DialogTitle">
-              Run for it
-            </Dialog.Title>
-            <FastTravelDialogContent
-              player={player}
-              gameState={gameState}
-              onCircleClick={handleTravel}
-            />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </div>
-  );
+  return (<div className={styles.fastTravel}>
+    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog.Trigger asChild>
+        <button
+          type="button"
+          className={`${styles.travelIcon} ${canFastTravel ? '' : styles.disabledTravelIcon}`}
+          aria-label="Fast Travel"
+          title="Fast Travel"
+          style={{ backgroundPosition: `-${4 * 40}px -${5 * 40}px` }}
+        ></button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="DialogOverlay" />
+        <Dialog.Content className={`DialogContent ${styles.fastTravelDialog}`}>
+          <Dialog.Title className="DialogTitle">
+            Run for it
+          </Dialog.Title>
+          <FastTravelDialogContent
+            player={player}
+            gameState={gameState}
+            onCircleClick={handleTravel}
+          />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  </div>);
 }
 
 function FastTravelDialogContent({
