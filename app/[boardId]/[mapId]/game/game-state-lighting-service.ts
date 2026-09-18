@@ -44,7 +44,7 @@ class GameStateLightingService {
   }
 
   async applySettings(settings?: StoreBoardSettings) {
-    if (this.boardId && this.mapId) {
+    if (this.boardId && this.mapId && bluetoothService.getState() === BleState.Connected) {
       const useSettings = settings || await this.getSettings();
       if (useSettings && useSettings.brightness > 0) {
         await bluetoothService.setBrightness(useSettings.brightness);
