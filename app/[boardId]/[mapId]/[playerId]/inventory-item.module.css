@@ -18,15 +18,14 @@
   }
 }
 
-.itemHeader {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  margin: 0 0 8px 0;
+h3.itemHeader {
+  margin: 0;
+}
 
-  h3 {
-    margin: 0 20px 0 0;
-  }
+.itemHeaderCoins {
+  margin-bottom: 8px;
+  margin-left: auto;
+  width: fit-content;
 }
 
 .itemIcon {

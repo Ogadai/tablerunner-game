@@ -103,8 +103,8 @@ export default function InventoryItem({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={`PopoverContent ${styles.itemPopover}`}>
-          <div className={styles.itemHeader}>
-            <h3>{itemDef.name}</h3>
+          <h3 className={styles.itemHeader}>{itemDef.name}</h3>
+          <div className={styles.itemHeaderCoins}>
             <CoinDisplay coins={coins} />
           </div>
           {bonuses.length > 0 ? (

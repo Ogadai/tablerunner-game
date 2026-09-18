@@ -89,6 +89,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.manaPotion,
       allItems.resurrectionStore,
       allItems.fireBallScroll,
+      allItems.animateCorpseScroll
     ],
     spells: [
       SpellIds.spiritArrow,
