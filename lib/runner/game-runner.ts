@@ -17,6 +17,7 @@ import {
   setActionsStateInRedis,
   setPlayerStatsInRedis,
   getPlayerStatsFromRedis,
+  lockGameStateInRedis,
   publishGameProcessingStarted,
 } from '../store/redis-access';
 import { BaseParams } from './base-params';
@@ -29,19 +30,27 @@ import { updatePortalAndShopLeds } from "./game-action-portal";
 import { updateMonsterLeds } from './game-action-monsters';
 
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
-  const gameState = await getGameStateFromRedis(boardId, mapId);
-  const locationsState = await getLocationsStateFromRedis(boardId, mapId);;
+  let gameStateLock: (() => Promise<void>) | null = null;
+  try {
+    gameStateLock = await lockGameStateInRedis(boardId, mapId);
+    const gameState = await getGameStateFromRedis(boardId, mapId);
+    const locationsState = await getLocationsStateFromRedis(boardId, mapId);
 
-  if (gameState.players.every(player =>
-    (player.health === 0) || readyState.readyPlayerIds.includes(player.id)
-  )) {
-    await processGameTurn({
-      boardId,
-      mapId,
-      gameState,
-      messages: {},
-      ...locationsState
-    });
+    if (gameState.players.every(player =>
+      (player.health === 0) || readyState.readyPlayerIds.includes(player.id)
+    )) {
+      await processGameTurn({
+        boardId,
+        mapId,
+        gameState,
+        messages: {},
+        ...locationsState
+      });
+    }
+  } finally {
+    if (gameStateLock) {
+      await gameStateLock();
+    }
   }
 }
 

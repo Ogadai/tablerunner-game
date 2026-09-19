@@ -7,6 +7,7 @@ const redis = Redis.fromEnv();
 const defaultLockTTL = 5000;
 
 const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
+const getGameStateLock = (boardId: string, mapId: string) => `gameStateLock:${boardId}:${mapId}`;
 
 const getPlayersReadyKey = (boardId: string, mapId: string) => `playersReady:${boardId}:${mapId}`;
 const getPlayersReadyLock = (boardId: string, mapId: string) => `playersReadyLock:${boardId}:${mapId}`;
@@ -36,6 +37,10 @@ export async function getGameStateFromRedis(boardId: string, mapId: string): Pro
 export async function setGameStateInRedis(boardId: string, mapId: string, newGameState: GameState): Promise<void> {
   await redis.set(getGameKey(boardId, mapId), newGameState, gameStateOptions);
   await publishGameStateUpdated(boardId, mapId);
+}
+
+export async function lockGameStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
+  return getLock(getGameStateLock(boardId, mapId));
 }
 
 export async function deleteGameStateFromRedis(boardId: string, mapId: string): Promise<void> {
