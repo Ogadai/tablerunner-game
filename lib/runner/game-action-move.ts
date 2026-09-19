@@ -7,7 +7,6 @@ import { games } from "../games/games";
 import { OPPOSITE_DIRECTION } from '@/lib/games/types';
 import { BaseParams } from './base-params';
 import { getPlayerLocation } from "./game-location";
-import { updateMonsterLeds } from './game-action-portal';
 
 export const LOCKED_LOCATION_OWNER = 'lock';
 const LOCKED_LOCATION_RGB = 'AD0000';

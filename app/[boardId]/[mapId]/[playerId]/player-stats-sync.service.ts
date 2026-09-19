@@ -60,6 +60,8 @@ class PlayerStatsSyncService {
   private inventoryState: PlayerInventoryState | null = null;
   private actionsState: PlayerActionsState | null = null;
   private addStatsState: PlayerAddStatsState | null = null;
+  private activePlayer: PlayerState | null = null;
+  private currentStats: PlayerStats = emptyPlayerStats;
 
   private readonly listeners = new Set<PlayerStatsListener>();
 
@@ -82,6 +84,8 @@ class PlayerStatsSyncService {
     this.inventoryState = null;
     this.actionsState = null;
     this.addStatsState = null;
+    this.activePlayer = null;
+    this.currentStats = emptyPlayerStats;
     this.statsPromise = this.getUpdatedStats();
   }
 
@@ -102,6 +106,12 @@ class PlayerStatsSyncService {
 
   subscribe(listener: PlayerStatsListener): () => void {
     this.listeners.add(listener);
+
+    this.statsPromise.then(() => {
+      if (this.listeners.has(listener)) {
+        listener(this.currentStats, this.actionsState || { actions: [] }, this.addStatsState, this.activePlayer);
+      }
+    });
 
     return () => {
       this.listeners.delete(listener);
@@ -174,11 +184,13 @@ class PlayerStatsSyncService {
       isAttacking,
       playerCanMove,
     };
+    this.currentStats = playerStats;
 
     const activePlayer = {
       ...combinedPlayer,
       baseStats: effectivePlayer.baseStats,
     };
+    this.activePlayer = activePlayer;
 
     for(const listener of this.listeners) {
       listener(
