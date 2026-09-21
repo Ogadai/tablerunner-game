@@ -52,15 +52,19 @@ export function getNpcActions(params: BaseParams, npc: NPCState): PlayerActionsS
 };
 
 function getAvailableActions(params: BaseParams, npc: NPCState, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
-  // Pick a target monster
-  const monstersAtLocation = params.monsters.filter(m => m.location === npc.location.id && m.health > 0);
+  const attackTargets = npc.alignment === 'evil'
+    ? [
+        ...params.gameState.players,
+        ...params.gameState.npcs.filter(target => target.id !== npc.id),
+      ].filter(target => target.location.id === npc.location.id && target.health > 0)
+    : params.monsters.filter(m => m.location === npc.location.id && m.health > 0);
   const actions: (ActionsWithCosts | null)[] =
-    monstersAtLocation.map(m => getAttackAction(params, npc, m, actionsPerTurn));
+    attackTargets.map(target => getAttackAction(params, npc, target, actionsPerTurn));
 
   // May want to double up on attacks if we have fast attacks
   while (actions.length > 0 && actions.length < (actionsPerTurn.total / actionsPerTurn.attack)) {
     actions.push(
-      ...monstersAtLocation.map(m => getAttackAction(params, npc, m, actionsPerTurn))
+      ...attackTargets.map(target => getAttackAction(params, npc, target, actionsPerTurn))
     );
   }
 
@@ -76,12 +80,12 @@ function getAvailableActions(params: BaseParams, npc: NPCState, actionsPerTurn: 
   return actions.filter(a => !!a && a.value > 0) as ActionsWithCosts[];
 }
 
-function getAttackAction(params: BaseParams, npc: NPCState, target: MonsterState, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts {
+function getAttackAction(params: BaseParams, npc: NPCState, target: MonsterState | INamedTarget, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts {
   const action: PlayerActionAttack = {
     id: -1,
     target: target.id,
     type: PlayerActionType.Attack,
-    description: `Attack ${monsters[target.type].name}`
+    description: `Attack ${'type' in target ? monsters[target.type].name : target.name}`
   };
 
   return {
@@ -246,7 +250,7 @@ function weightedRandomPick<T extends ValueBase>(list: T[]): T {
   return list[list.length - 1];
 }
 
-function getSpellTargets(params: BaseParams, npc: INamedTarget, spell: SpellDef): ITarget[] {
+function getSpellTargets(params: BaseParams, npc: NPCState, spell: SpellDef): ITarget[] {
   const filterMonsters = (list: MonsterState[]) => list.filter(m => (m.health > 0) &&
       (m.location === npc.location.id)
     );
@@ -255,12 +259,21 @@ function getSpellTargets(params: BaseParams, npc: INamedTarget, spell: SpellDef)
     );
 
   if (spell.targetType === SpellTargetType.enemy) {
-    return filterMonsters(params.monsters);
+    return npc.alignment === 'evil'
+      ? [
+        ...filterNamedTargets(params.gameState.players),
+        ...filterNamedTargets(params.gameState.npcs.filter(target => target.id !== npc.id))
+      ]
+      : filterMonsters(params.monsters);
   } else if (spell.targetType === SpellTargetType.friend) {
-    return [
-      ...filterNamedTargets(params.gameState.players),
-      ...filterNamedTargets(params.gameState.npcs),
-    ];
+    return npc.alignment === 'evil'
+      ? [
+          ...filterMonsters(params.monsters),
+          ...filterNamedTargets(params.gameState.npcs.filter(target => target.id === npc.id))
+      ] : [
+          ...filterNamedTargets(params.gameState.players),
+          ...filterNamedTargets(params.gameState.npcs),
+        ];
   } else {
     return [
       ...filterMonsters(params.monsters),

@@ -1,5 +1,4 @@
 import {
-  PlayerState,
   MonsterState,
   PlayerActionAttack,
   INamedTarget,
@@ -29,13 +28,48 @@ export function processAttackForDamage(attackerStats: { attack: number, damage: 
 }
 
 export function actionAttack(params: BaseParams, player: INamedTarget, action: PlayerActionAttack): void {
-  const monster = params.monsters.find(m => m.id === action.target)!;
-  const success = genericAttackMonster(params, player, player.baseStats!, monster);
+  const monster = params.monsters.find(m => m.id === action.target);
+  if (monster) {
+    const success = genericAttackMonster(params, player, player.baseStats!, monster);
 
-  if (success && player.zombie && !monster.zombie) {
-    // Infected the monster
-    monster.infected = ZOMBIE_TURNS;
+    if (success && player.zombie && !monster.zombie) {
+      // Infected the monster
+      monster.infected = ZOMBIE_TURNS;
+    }
+    return;
   }
+
+  const target = params.gameState.players.find(p => p.id === action.target)
+    || params.gameState.npcs.find(npc => npc.id === action.target);
+  if (target) {
+    genericAttackTarget(params, player, player.baseStats!, target);
+  }
+}
+
+function genericAttackTarget(
+  params: BaseParams,
+  attacker: INamedTarget,
+  attackStats: { attack: number, damage: number },
+  target: INamedTarget,
+): boolean {
+  if (target.health <= 0) {
+    return false;
+  }
+
+  const damage = processAttackForDamage(attackStats, target.baseStats!);
+  if (damage > 0) {
+    target.health = Math.max(0, target.health - damage);
+    playerMessageAtLocation(params, target.id,
+      `**${attacker.name}** hit **{player}** for **${damage}** damage`);
+
+    if (target.health <= 0) {
+      playerMessageAtLocation(params, target.id, `**{player}** is dead`);
+    }
+    return true;
+  }
+
+  playerMessageAtLocation(params, target.id, `**${attacker.name}** missed **{player}**`);
+  return false;
 }
 
 export function monsterAttack(

@@ -4,7 +4,7 @@ import { SpellIds, spells } from "../games/spells";
 import { SpellDef, SpellTargetType } from "../games/types";
 import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
-import { genericAttackMonster } from "./game-action-attack";
+import { genericAttackMonster, processAttackForDamage } from "./game-action-attack";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
 import { specialSpellActions } from './special-spell-actions';
 
@@ -47,11 +47,27 @@ function applySpellEnemy(
   targets: ITarget[]
 ) {
   for(const monster of targets) {
-    genericAttackMonster(params, player, {
+    const attackStats = {
       name: spell.name,
       attack: player.baseStats!.magic,
       damage: spell.bonusStats.damage || 0,
-    }, monster as MonsterState);
+    };
+    if ('type' in monster) {
+      genericAttackMonster(params, player, attackStats, monster as MonsterState);
+    } else {
+      const target = monster as INamedTarget;
+      const damage = processAttackForDamage(attackStats, target.baseStats!);
+      target.health = Math.max(0, target.health - damage);
+
+      playerMessageAtLocation(params, target.id,
+        damage > 0
+          ? `**${player.name}** ${spell.name} hit **{player}** for **${damage}** damage`
+          : `**${player.name}** ${spell.name} missed **{player}**`);
+
+      if (target.health <= 0) {
+        playerMessageAtLocation(params, target.id, `**{player}** is dead`);
+      }
+    }
   }
 }
 
@@ -137,13 +153,24 @@ export function getSpellTargets(params: BaseParams, player: INamedTarget, action
       (spell.pickTarget ? t.id === action.targetId : t.location.id === player.location.id)
     );
 
+  const isEvil = 'alignment' in player && player.alignment === 'evil';
+
   if (spell.targetType === SpellTargetType.enemy) {
-    return filterMonsters(params.monsters);
+    return isEvil
+      ? [
+          ...filterNamedTargets(params.gameState.players),
+          ...filterNamedTargets(params.gameState.npcs.filter(t => t.id !== player.id))
+        ]
+      : filterMonsters(params.monsters);
   } else if (spell.targetType === SpellTargetType.friend) {
-    return [
-      ...filterNamedTargets(params.gameState.players),
-      ...filterNamedTargets(params.gameState.npcs),
-    ];
+    return isEvil
+      ? [
+        ...filterMonsters(params.monsters),
+        ...filterNamedTargets(params.gameState.npcs.filter(t => t.id === player.id))
+      ] : [
+          ...filterNamedTargets(params.gameState.players),
+          ...filterNamedTargets(params.gameState.npcs),
+        ];
   } else {
     return [
       ...filterMonsters(params.monsters, false),
