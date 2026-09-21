@@ -13,6 +13,7 @@ const getPlayersReadyKey = (boardId: string, mapId: string) => `playersReady:${b
 const getPlayersReadyLock = (boardId: string, mapId: string) => `playersReadyLock:${boardId}:${mapId}`;
 
 const getPlayerActionsKey = (boardId: string, mapId: string, playerId: string) => `playerActions:${boardId}:${mapId}:${playerId}`;
+const getNpcActionsKey = (boardId: string, mapId: string, npcId: string) => `npcActions:${boardId}:${mapId}:${npcId}`;
 
 const getPlayerStatsKey = (boardId: string, mapId: string, playerId: string) => `playerStats:${boardId}:${mapId}:${playerId}`;
 
@@ -58,6 +59,10 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
       await deletePlayerMessagesFromRedis(boardId, mapId, player.id);
       await deletePlayerStatsFromRedis(boardId, mapId, player.id);
       await deletePlayerInventoryFromRedis(boardId, mapId, player.id);
+    }
+
+    for(const npc of gameState.npcs) {
+      await deleteNpcActionsStateFromRedis(boardId, mapId, npc.id);
     }
 
     for(const storeLocation of gameState.stores) {
@@ -130,6 +135,21 @@ export async function setActionsStateInRedis(boardId: string, mapId: string, pla
 
 export async function deleteActionsStateFromRedis(boardId: string, mapId: string, playerId: string): Promise<void> {
   await redis.del(getPlayerActionsKey(boardId, mapId, playerId));
+}
+
+/* Individual NPC Actions State */
+
+export async function getNpcActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<PlayerActionsState> {
+  const result = await redis.get(getNpcActionsKey(boardId, mapId, npcId)) as PlayerActionsState;
+  return result || { actions: [] };
+}
+
+export async function setNpcActionsStateInRedis(boardId: string, mapId: string, npcId: string, newActionsState: PlayerActionsState): Promise<void> {
+  await redis.set(getNpcActionsKey(boardId, mapId, npcId), newActionsState, gameStateOptions);
+}
+
+export async function deleteNpcActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<void> {
+  await redis.del(getNpcActionsKey(boardId, mapId, npcId));
 }
 
 /* Individual Player Stat additions */

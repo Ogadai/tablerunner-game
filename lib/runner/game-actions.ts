@@ -14,6 +14,7 @@ import {
 } from "../store/types";
 import {
   getActionsStateFromRedis,
+  getNpcActionsStateFromRedis,
 } from '../store/redis-access';
 import { EquipableItemDef, PlayerItem } from '@/lib/games/types';
 import { monsters } from "../games/monsters";
@@ -101,8 +102,9 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       const locId = `${npc.location.id}`;
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
-        const npcActions: PlayerActionsState =
-          !params.gameState.players.find(p => p.id === npc.masterId
+        const npcActions: PlayerActionsState = npc.alignment === 'evil'
+          ? await getNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id)
+          : !params.gameState.players.find(p => p.id === npc.masterId
               && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0 || playerFastTravels[p.id].length > 0)
           )
          ? getNpcActions(params, npc) : { actions: [] };

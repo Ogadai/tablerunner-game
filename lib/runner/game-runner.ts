@@ -15,6 +15,7 @@ import {
   setLocationsStateInRedis,
   setPlayerMessagesInRedis,
   setActionsStateInRedis,
+  deleteNpcActionsStateFromRedis,
   setPlayerStatsInRedis,
   getPlayerStatsFromRedis,
   lockGameStateInRedis,
@@ -128,6 +129,12 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       });
 
       await setPlayerMessagesInRedis(params.boardId, params.mapId, player.id, params.messages[player.id]);
+    }
+
+    for(const npc of params.gameState.npcs) {
+      if (npc.alignment === 'evil') {
+        await deleteNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id);
+      }
     }
   } catch (error) {
     console.error(error);

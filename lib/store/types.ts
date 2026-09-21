@@ -83,6 +83,7 @@ export interface PlayerState extends INamedTarget {
 }
 
 export interface NPCState extends INamedTarget {
+  alignment?: 'good' | 'evil';
   masterId: string | null;
   hireCost: number;
   iconXY: { x: number, y: number };

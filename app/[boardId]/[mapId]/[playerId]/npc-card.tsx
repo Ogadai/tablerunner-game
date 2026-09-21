@@ -20,7 +20,7 @@ export default function NpcCard({
   onHired: () => void;
 }) {
   const npcStats = getNamedTargetStats(npc.baseStats!, npc);
-  const canHire = npc.masterId === null && player.coins >= npc.hireCost && player.health > 0;
+  const canHire = npc.alignment !== 'evil' && npc.masterId === null && player.coins >= npc.hireCost && player.health > 0;
 
   const onHire = async () => {
     const response = await hireNpc(boardId, mapId, player.id, npc.id);
@@ -37,7 +37,7 @@ export default function NpcCard({
     <div className={`card ${styles.statsCard}`}>
       <EntityBaseStats current={{health: npc.health}} baseStats={npcStats} />
     </div>
-    {npc.masterId === null && <div className={styles.npcButtons}>
+    {npc.alignment !== 'evil' && npc.masterId === null && <div className={styles.npcButtons}>
       <button type="button" className="btn" disabled={!canHire} onClick={onHire}>Hire</button>
     </div>}
   </>;
