@@ -75,7 +75,7 @@ export default function InventoryItem({
   const canUse = !!onUsed && !isUsed && isConsumable && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
   const canDrop = !!onDropped && !isUsed;
   const canLearnSpell = !!onLearnScroll && itemDef.type === PlayerItemType.scroll
-    && !!playerSpells?.includes((itemDef as ScrollItemDef).spellId as SpellIds)
+    && !playerSpells?.includes((itemDef as ScrollItemDef).spellId as SpellIds)
     && baseStats.magic >= spells[(itemDef as ScrollItemDef).spellId].intelligence
     && actionPointsLeft >= LEARN_SCROLL_ACTION_COST;
 
