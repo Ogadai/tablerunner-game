@@ -18,7 +18,7 @@ export async function getNpcActionsState(boardId: string, mapId: string, npcId: 
   }
 }
 
-export async function setNpcActionsState(boardId: string, mapId: string, npcId: string, actionsState: PlayerActionsState): Promise<ApiResponse<NpcActionsState>> {
+export async function setNpcActionsState(boardId: string, mapId: string, npcId: string, actionsState: PlayerActionsState): Promise<ApiResponse<PlayerActionsState>> {
   try {
     await setNpcActionsStateInRedis(boardId, mapId, npcId, actionsState);
     return {
