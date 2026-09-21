@@ -31,6 +31,14 @@ export const getCellCoordinates = (cell: number) => {
   };
 };
 
+export const getCellAtCoordinates = (coords: { col: number, row: number }): number => {
+  const index = (MAP_ROWS - coords.row) * MAP_COLUMNS + coords.col;
+  if (index >= 0 && index < GRID_CELLS.length) {
+    return GRID_CELLS[index];
+  }
+  return 0;
+}
+
 const startXY = getCellCoordinates(10);
 function getDistanceFromStart(cell: number): number {
   const cellXY = getCellCoordinates(cell);
