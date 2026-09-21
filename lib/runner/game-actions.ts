@@ -209,10 +209,13 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
 async function retrieveActionsForNpc(params: BaseParams, npc: NPCState, masterIsMoving: boolean): Promise<PlayerActionsState> {
   if (npc.alignment === 'evil') {
-    return await getNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id);
-  } else {
-    return !masterIsMoving ? getNpcActions(params, npc) : { actions: [] };
+    const evilActions = await getNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id);
+    if (evilActions && evilActions.actions.length > 0) {
+      return evilActions;
+    }
   }
+  
+  return !masterIsMoving ? getNpcActions(params, npc) : { actions: [] };
 }
 
 function characterRecovery(character: INamedTarget, playerFought: boolean) {
