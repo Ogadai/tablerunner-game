@@ -13,6 +13,7 @@ import { populateItemsForMap } from "../runner/populate-items";
 import { createStoreInventoryState } from "./playerInventory";
 import { setupProcesses } from "../runner/game-processes";
 import { updatePortalAndShopLeds } from "../runner/game-action-portal";
+import { runGameActionsBetweenTurns } from "../runner/game-runner";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;
@@ -234,6 +235,21 @@ export async function deletePlayerFromGame(boardId: string, mapId: string, playe
 
     // Store data in Redis
     await setGameStateInRedis(boardId, mapId, newGameState);
+
+    return {
+      success: true
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message
+    };
+  }
+}
+
+export async function runGameActions(boardId: string, mapId: string): Promise<ApiResponse<null>> {
+  try {
+    await runGameActionsBetweenTurns(boardId, mapId);
 
     return {
       success: true

@@ -7,6 +7,7 @@ import { zombies } from './zombies';
 import { npcs } from './npcs';
 import { invasions } from './invasions';
 import { dragons } from './dragons';
+import { GameState } from "@/lib/store/types";
 
 const allProcesses = [keyProcess, specialMonsters, zombies, npcs, invasions, dragons];
 
@@ -28,6 +29,18 @@ export const cauldronOfFireProcesses: ProcessRunner = {
       if (process.executeForTurn) {
         try {
           await process.executeForTurn(params);
+        } catch (error) {
+          console.error('Error executing process turn', error);
+        }
+      }
+    }
+  },
+
+  async executeBetweenTurns(gameState: GameState): Promise<void> {
+    for(const process of allProcesses) {
+      if (process.executeBetweenTurns) {
+        try {
+          await process.executeBetweenTurns(gameState);
         } catch (error) {
           console.error('Error executing process turn', error);
         }

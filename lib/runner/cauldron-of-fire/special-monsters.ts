@@ -1,3 +1,4 @@
+import { GameState } from "@/lib/store/types";
 import { BaseParams } from "../base-params";
 import { broadcastMessage } from "../game-messages";
 import { ProcessRunner } from "../types";
@@ -60,4 +61,12 @@ export const specialMonsters: ProcessRunner = {
       broadcastMessage(params, 'You have defeated the Evil Lich King! Game Over!');
     }
   },
+
+  async executeBetweenTurns(gameState: GameState) {
+    console.log('Started long-running process for Lich King');
+
+    await new Promise(r => setTimeout(r, 5000));
+
+    console.log('Finished long-running process for Lich King');
+  }
 }

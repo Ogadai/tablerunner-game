@@ -7,7 +7,7 @@ import PlayHeaderMenu from './play-header-menu';
 import styles from './play-header.module.css';
 import { PlayerState } from "@/lib/store/types";
 import { getGameTopicId } from "@/lib/message-types";
-import { getGameState } from "@/lib/store/gameState";
+import { getGameState, runGameActions } from "@/lib/store/gameState";
 import { getPlayerReadyState } from "@/lib/store/playerReadyState";
 import { setPlayerReady } from "@/lib/store/playerReadyState";
 import { GameState, PlayerReadyState } from "@/lib/store/types";
@@ -78,6 +78,9 @@ export default function PlayHeader(
       const state = await getGameState(boardId, mapId);
       setGameState(state?.data || null);
       gameStateSyncService.set(boardId, mapId, state.success ? state.data : undefined);
+
+      // Async call to run any additional game actions
+      runGameActions(boardId, mapId);
     }
     fetchGameState();
 

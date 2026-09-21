@@ -29,6 +29,9 @@ const getStoreInventoryLock = (boardId: string, mapId: string) => `storeLock:${b
 
 const getBoardSettingsKey = (boardId: string, mapId: string) => `boardSettings:${boardId}:${mapId}`;
 
+
+const getProcessingLock = (boardId: string, mapId: string) => `processingLock:${boardId}:${mapId}`;
+
 /* Overall Game State */
 
 export async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
@@ -245,6 +248,11 @@ export async function getBoardSettingsFromRedis(boardId: string, mapId: string):
 
 export async function setBoardSettingsFromRedis(boardId: string, mapId: string, storeState: StoreBoardSettings): Promise<void> {
   await redis.set(getBoardSettingsKey(boardId, mapId), storeState, gameStateOptions);
+}
+
+/* Locking for processing */
+export async function lockForProcessing(boardId: string, mapId: string): Promise<() => Promise<void>> {
+  return getLock(getProcessingLock(boardId, mapId));
 }
 
 /* Generic locking */
