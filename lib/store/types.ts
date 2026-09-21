@@ -70,6 +70,7 @@ export interface INamedTarget extends ITarget {
   equipped: PlayerInventoryEquipSlots;
   baseStats?: BaseStats;
   recentSpells?: SpellIds[];
+  alignment?: 'good' | 'evil';
 }
 
 export interface PlayerState extends INamedTarget {
@@ -83,7 +84,6 @@ export interface PlayerState extends INamedTarget {
 }
 
 export interface NPCState extends INamedTarget {
-  alignment?: 'good' | 'evil';
   masterId: string | null;
   hireCost: number;
   iconXY: { x: number, y: number };

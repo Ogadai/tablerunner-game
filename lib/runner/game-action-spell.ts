@@ -153,7 +153,7 @@ export function getSpellTargets(params: BaseParams, player: INamedTarget, action
       (spell.pickTarget ? t.id === action.targetId : t.location.id === player.location.id)
     );
 
-  const isEvil = 'alignment' in player && player.alignment === 'evil';
+  const isEvil = player.alignment === 'evil';
 
   if (spell.targetType === SpellTargetType.enemy) {
     return isEvil
