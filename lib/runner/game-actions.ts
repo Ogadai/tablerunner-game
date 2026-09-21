@@ -11,6 +11,7 @@ import {
   PlayerActionPortal,
   INamedTarget,
   PlayerActionFastTravel,
+  NPCState,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
@@ -102,12 +103,10 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       const locId = `${npc.location.id}`;
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
-        const npcActions: PlayerActionsState = npc.alignment === 'evil'
-          ? await getNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id)
-          : !params.gameState.players.find(p => p.id === npc.masterId
-              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0 || playerFastTravels[p.id].length > 0)
-          )
-         ? getNpcActions(params, npc) : { actions: [] };
+        const masterIsMoving = !!npc.masterId && !!params.gameState.players.find(p => p.id === npc.masterId
+              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0 || playerFastTravels[p.id].length > 0));
+
+        const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving);
 
         entityActionsForLocations[locId].entities.push({
           entityType: EntityActionEntityTypes.npc,
@@ -205,6 +204,14 @@ export async function runGameActions(params: BaseParams): Promise<void> {
   } catch(error) {
     console.error('Error: runGameActions');
     throw error;
+  }
+}
+
+async function retrieveActionsForNpc(params: BaseParams, npc: NPCState, masterIsMoving: boolean): Promise<PlayerActionsState> {
+  if (npc.alignment === 'evil') {
+    return await getNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id);
+  } else {
+    return !masterIsMoving ? getNpcActions(params, npc) : { actions: [] };
   }
 }
 
