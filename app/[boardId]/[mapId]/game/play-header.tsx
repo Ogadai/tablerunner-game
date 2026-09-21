@@ -7,7 +7,7 @@ import PlayHeaderMenu from './play-header-menu';
 import styles from './play-header.module.css';
 import { PlayerState } from "@/lib/store/types";
 import { getGameTopicId } from "@/lib/message-types";
-import { getGameState, runGameActions } from "@/lib/store/gameState";
+import { getGameState } from "@/lib/store/gameState";
 import { getPlayerReadyState } from "@/lib/store/playerReadyState";
 import { setPlayerReady } from "@/lib/store/playerReadyState";
 import { GameState, PlayerReadyState } from "@/lib/store/types";
@@ -74,13 +74,21 @@ export default function PlayHeader(
   }, [onReadyCountdownChange, readyCountdown]);
 
   useEffect(() => {
+    async function triggerProcessing() {
+      // Send two string parameters to the Route Handler
+      await fetch('/api/processing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ boardId, mapId }),
+      });
+    }
+
     async function fetchGameState() {
       const state = await getGameState(boardId, mapId);
       setGameState(state?.data || null);
       gameStateSyncService.set(boardId, mapId, state.success ? state.data : undefined);
 
-      // Async call to run any additional game actions
-      runGameActions(boardId, mapId);
+      triggerProcessing();
     }
     fetchGameState();
 

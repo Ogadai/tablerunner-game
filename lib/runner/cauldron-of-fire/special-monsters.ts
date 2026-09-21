@@ -63,10 +63,10 @@ export const specialMonsters: ProcessRunner = {
   },
 
   async executeBetweenTurns(gameState: GameState) {
-    console.log('Started long-running process for Lich King');
+    // console.log('Started long-running process for Lich King');
 
-    await new Promise(r => setTimeout(r, 5000));
+    // await new Promise(r => setTimeout(r, 5000));
 
-    console.log('Finished long-running process for Lich King');
+    // console.log('Finished long-running process for Lich King');
   }
 }

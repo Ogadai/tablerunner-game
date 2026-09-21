@@ -246,18 +246,3 @@ export async function deletePlayerFromGame(boardId: string, mapId: string, playe
     };
   }
 }
-
-export async function runGameActions(boardId: string, mapId: string): Promise<ApiResponse<null>> {
-  try {
-    await runGameActionsBetweenTurns(boardId, mapId);
-
-    return {
-      success: true
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: (error as Error).message
-    };
-  }
-}

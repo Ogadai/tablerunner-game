@@ -270,12 +270,17 @@ async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<(
   if (acquired === "OK") {
     return async () => {
       try {
-        const currentLockValue = await redis.get(lockKey);
-
-        // Only delete the lock if the value matches (prevents releasing someone else's expired lock)
-        if (currentLockValue === lockValue) {
-          await redis.del(lockKey);
-        }
+        // Atomic release using Lua script
+        const luaReleaseScript = `
+          if redis.call("get", KEYS[1]) == ARGV[1] then
+            return redis.call("del", KEYS[1])
+          else
+            return 0
+          end
+        `;
+        
+        // Execution syntax varies slightly by client (e.g., redis.eval or redis.evalsha)
+        await redis.eval(luaReleaseScript, [lockKey], [lockValue]);
       } catch (ex) {
         console.error('Error occurred releasing redis lock', ex);
       }
