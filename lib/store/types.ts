@@ -19,6 +19,7 @@ export interface GameState {
   stores: number[];
   portals: number[];
   visitedPortals: number[];
+  locationOverrides?: { id: number, description: string }[];
 
   counters: {
     monsterId: number,

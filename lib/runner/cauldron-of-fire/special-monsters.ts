@@ -52,14 +52,6 @@ export const specialMonsters: ProcessRunner = {
         health: 16,
       },
     );
-
-    // Create the Fire Dragon
-    params.monsters.push({
-      id: "fire-dragon",
-      type: "dragon",
-      location: 202,
-      health: 60,
-    },);
   },
 
   async executeForTurn(params) {

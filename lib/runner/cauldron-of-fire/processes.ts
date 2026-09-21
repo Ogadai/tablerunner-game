@@ -6,8 +6,9 @@ import { specialMonsters } from './special-monsters';
 import { zombies } from './zombies';
 import { npcs } from './npcs';
 import { invasions } from './invasions';
+import { dragons } from './dragons';
 
-const allProcesses = [keyProcess, specialMonsters, zombies, npcs, invasions];
+const allProcesses = [keyProcess, specialMonsters, zombies, npcs, invasions, dragons];
 
 export const cauldronOfFireProcesses: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {

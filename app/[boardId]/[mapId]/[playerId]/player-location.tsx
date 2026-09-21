@@ -213,13 +213,18 @@ export default function PlayerLocation(
   const hasPortalStone = gameState.portals?.includes(playerState.location.id);
   const hasLivingMonsters = locationState.monsters.some(monster => monster.health > 0);
 
+  const locationOverride = gameState.locationOverrides
+    && gameState.locationOverrides.find(l => l.id === playerState.location.id);
+  const locationDescription = locationOverride
+    ? locationOverride.description : playerState.location?.description;
+
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
         <h3>{getDisplayName(playerState)}</h3>
         <h4>Location {playerState.location.id}</h4>
       </div>
-      <p>{playerState.location?.description}</p>
+      <p>{locationDescription}</p>
       <PlayerLocationList
         boardId={boardId}
         mapId={mapId}

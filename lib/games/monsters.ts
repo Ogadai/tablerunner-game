@@ -230,11 +230,11 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     name: 'Juvenile Dragon',
     iconXY: { x: 5, y: 0 },
     baseStats: {
-      attack: 12,
-      damage: 15,
-      defence: 14,
+      attack: 20,
+      damage: 18,
+      defence: 22,
       magic: 10,
-      health: 20,
+      health: 30,
       speed: 11,
     },
   },
@@ -243,11 +243,11 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     name: 'Fire Dragon',
     iconXY: { x: 4, y: 0 },
     baseStats: {
-      attack: 22, // 40
-      damage: 18, // 32
-      defence: 23, // 45
+      attack: 30,
+      damage: 25,
+      defence: 28,
       magic: 20,
-      health: 40, // 60
+      health: 60,
       speed: 20,
     },
   },
