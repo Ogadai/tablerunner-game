@@ -48,11 +48,11 @@ export const cauldronOfFireProcesses: ProcessRunner = {
     }
   },
 
-  async executeBetweenTurns(gameState: GameState): Promise<void> {
+  async executeBetweenTurns(params: BaseParams): Promise<void> {
     for(const process of allProcesses) {
       if (process.executeBetweenTurns) {
         try {
-          await process.executeBetweenTurns(gameState);
+          await process.executeBetweenTurns(params);
         } catch (error) {
           console.error('Error executing process turn', error);
         }
