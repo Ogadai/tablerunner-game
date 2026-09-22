@@ -220,8 +220,8 @@ export default function PlayerLocation(
     ? locationOverride.description : playerState.location?.description;
 
   return (<>
-    <PlayerVideo topicId={topicId} />
     <div className={styles.playerLocationScreen}>
+      <PlayerVideo topicId={topicId} turn={gameState.turn} />
       <div className={styles.playerHeader}>
         <h3>{getDisplayName(playerState)}</h3>
         <h4>Location {playerState.location.id}</h4>

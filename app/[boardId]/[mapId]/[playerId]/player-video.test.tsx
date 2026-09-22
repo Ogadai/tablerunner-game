@@ -5,9 +5,10 @@ import PlayerVideo from './player-video';
 
 describe('PlayerVideo', () => {
   const topicId = 'board-1-map-2';
+  const turn = 1;
 
   it('preloads video URLs from video preload messages', () => {
-    render(<PlayerVideo topicId={topicId} />);
+    render(<PlayerVideo topicId={topicId} turn={turn} />);
 
     act(() => {
       VideoTopicService.raiseVideoMessage(topicId, {
@@ -23,7 +24,7 @@ describe('PlayerVideo', () => {
   });
 
   it('keeps the video open with controls after it ends', () => {
-    render(<PlayerVideo topicId={topicId} />);
+    render(<PlayerVideo topicId={topicId} turn={turn} />);
 
     act(() => {
       VideoTopicService.raiseVideoMessage(topicId, {
@@ -43,5 +44,24 @@ describe('PlayerVideo', () => {
     fireEvent.ended(video!);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('shows a replay button after closing and removes it on the next turn', () => {
+    const { rerender } = render(<PlayerVideo topicId={topicId} turn={turn} />);
+
+    act(() => {
+      VideoTopicService.raiseVideoMessage(topicId, {
+        type: GameTopicMessageType.VideoPlay,
+        url: '/videos/intro.mp4',
+      });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close video' }));
+
+    expect(screen.getByRole('button', { name: 'Replay video' })).toBeInTheDocument();
+
+    rerender(<PlayerVideo topicId={topicId} turn={turn + 1} />);
+
+    expect(screen.queryByRole('button', { name: 'Replay video' })).not.toBeInTheDocument();
   });
 });
