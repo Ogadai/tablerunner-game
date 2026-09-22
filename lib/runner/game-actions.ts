@@ -110,6 +110,13 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     // Get the NPCs at these locations
     for(const npc of params.gameState.npcs) {
       const locId = `${npc.location.id}`;
+      if (!entityActionsForLocations[locId] && npc.alignment === 'evil') {
+        // Add this NPC even though it is at a different location
+        entityActionsForLocations[locId] = {
+          entities: []
+        };
+      }
+
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
         const masterIsMoving = !!npc.masterId && !!params.gameState.players.find(p => p.id === npc.masterId
