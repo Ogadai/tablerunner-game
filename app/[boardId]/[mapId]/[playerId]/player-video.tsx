@@ -30,7 +30,6 @@ return <>
         src={playingUrl}
         autoPlay
         controls
-        onEnded={() => setPlayingUrl(null)}
       />
       <button
         type="button"

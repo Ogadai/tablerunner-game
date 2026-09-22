@@ -22,7 +22,7 @@ describe('PlayerVideo', () => {
     );
   });
 
-  it('plays a video in a full-screen dialog and closes when it ends', () => {
+  it('keeps the video open with controls after it ends', () => {
     render(<PlayerVideo topicId={topicId} />);
 
     act(() => {
@@ -38,9 +38,10 @@ describe('PlayerVideo', () => {
     expect(video).not.toBeNull();
     expect(video).toHaveAttribute('src', '/videos/intro.mp4');
     expect(video).toHaveAttribute('autoplay');
+    expect(video).toHaveAttribute('controls');
 
     fireEvent.ended(video!);
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });
