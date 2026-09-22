@@ -53,7 +53,14 @@ export default function PlayerLocationList({
   const onClickEntity = async (entity: EntityItemDetail) => {
     if (entity.className === EntityItemClass.enemy) {
       const monster = locationMonsters.find(m => m.id === entity.id)!;
-      setMonsterOpen(monster);
+      if (monster) {
+        setMonsterOpen(monster);
+      } else {
+        const npc = npcs.find(p => p.id === entity.id);
+        if (npc) {
+          setNpcOpen(npc);
+        }
+      }
     } else if (player.id === entity.id) {
       setCharacterOpen(player);
     } else if (entity.className === EntityItemClass.friendly) {
