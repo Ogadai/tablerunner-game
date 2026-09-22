@@ -25,7 +25,7 @@ import { allItems } from "../games/items";
 import { getMonsterStats } from './monster-stats';
 import { actionAttack, monsterAttack } from './game-action-attack';
 import { actionCastSpell, actionReadScroll } from './game-action-spell';
-import { actionMove } from "./game-action-move";
+import { actionMove, actionRespawn } from "./game-action-move";
 import { actionFastTravel, actionPortal } from "./game-action-portal";
 import { actionUseItem } from './game-action-use';
 import { getNpcActions } from "./game-npc-actions";
@@ -57,6 +57,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
   const playerPortals: Record<string, PlayerActionPortal[]> = {};
   const playerFought: Record<string, boolean> = {};
   const playerFastTravels: Record<string, PlayerActionFastTravel[]> = {};
+  const playerRespawns: Record<string, PlayerAction[]> = {};
 
   try {
     // First gather all the player actions per location
@@ -86,8 +87,16 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         .filter(a => a.type === PlayerActionType.FastTravel)
         .map(a => a as PlayerActionFastTravel);
 
+      playerRespawns[player.id] = playerActionState.actions
+        .filter(a => a.type === PlayerActionType.Respawn);
+
       const playerOtheractions = playerActionState.actions
-        .filter(a => a.type !== PlayerActionType.Move && a.type !== PlayerActionType.Portal);
+        .filter(a =>
+          a.type !== PlayerActionType.Move &&
+          a.type !== PlayerActionType.Portal &&
+          a.type !== PlayerActionType.FastTravel &&
+          a.type !== PlayerActionType.Respawn
+        );
 
       entityActionsForLocations[locId].entities.push({
         entityType: EntityActionEntityTypes.player,
@@ -104,7 +113,8 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
         const masterIsMoving = !!npc.masterId && !!params.gameState.players.find(p => p.id === npc.masterId
-              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0 || playerFastTravels[p.id].length > 0));
+              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0
+                || playerFastTravels[p.id].length > 0 || playerRespawns[p.id].length > 0));
 
         const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving);
 
@@ -198,6 +208,14 @@ export async function runGameActions(params: BaseParams): Promise<void> {
           npc.location = {
             ...player.location,
           };
+        }
+      } else {
+        for(const respawnAction of playerRespawns[player.id]) {
+          actionRespawn(params, player);
+        }
+
+        if (player.respawnTurns !== undefined && player.respawnTurns > 0) {
+          player.respawnTurns--;
         }
       }
     }

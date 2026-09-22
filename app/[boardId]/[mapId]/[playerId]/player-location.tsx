@@ -31,7 +31,7 @@ export default function PlayerLocation(
     isPlayerReady,
     processing,
     readyPlayerDirection,
-    endTurnAction
+    endTurnAction,
   }: {
     boardId: string;
     mapId: string;
@@ -40,7 +40,7 @@ export default function PlayerLocation(
     isPlayerReady: boolean,
     processing: boolean,
     readyPlayerDirection?: { [id: string]: LocationMoveDirection },
-    endTurnAction: (direction?: LocationMoveDirection) => void
+    endTurnAction: (direction?: LocationMoveDirection) => void,
   }) {
   const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [], npcs: [] });
   const [playerState, setPlayerState] = useState<PlayerState | null>();
@@ -144,6 +144,15 @@ export default function PlayerLocation(
 
   if (!playerState) {
     return <p>Loading...</p>;
+  }
+
+  const respawnAction = async () => {
+    await addNewAction({
+      type: PlayerActionType.Respawn,
+      description: 'Respawn',
+    } as Omit<PlayerAction, 'id'>);
+
+    endTurnAction();
   }
 
   const canMoveDirection = (locationMove: PlayerLocationMove): boolean =>
@@ -337,5 +346,20 @@ export default function PlayerLocation(
         }
       </div>
     </div></div>}
+
+    { !playerAlive && playerState.respawnTurns !== undefined &&
+      <div className={styles.actionButtonContainer}>
+        <button
+          type="submit" onClick={() => respawnAction()}
+          disabled={playerState.respawnTurns > 0 || actionsState.actions.length > 0}
+        >Respawn</button>
+
+        { (playerState.respawnTurns > 0) &&
+          <span className={styles.respawnMessage}>
+            in {playerState.respawnTurns} turn{playerState.respawnTurns > 0 ? 's' : ''}
+          </span>
+        }
+      </div>
+    }
   </>);
 }

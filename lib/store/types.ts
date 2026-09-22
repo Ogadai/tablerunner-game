@@ -71,6 +71,7 @@ export interface INamedTarget extends ITarget {
   baseStats?: BaseStats;
   recentSpells?: SpellIds[];
   alignment?: 'good' | 'evil';
+  respawnTurns?: number;
 }
 
 export interface PlayerState extends INamedTarget {
@@ -120,6 +121,7 @@ export enum PlayerActionType {
   ReadScroll = 'ReadScroll',
   Portal = 'portal',
   FastTravel = 'fastTravel',
+  Respawn = 'respawn',
 }
 
 export interface PlayerAction {

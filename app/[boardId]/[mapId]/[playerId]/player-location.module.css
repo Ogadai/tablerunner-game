@@ -58,6 +58,7 @@
   border-top: 2px solid var(--border-stone);
   height: 170px;
   display: flex;
+  position: relative;
 }
 
 .actionButtonGroup1 {
@@ -226,4 +227,11 @@
 .readyWithActions:focus::after {
   animation: none;
   display: none;
+}
+
+.respawnMessage {
+  position: absolute;
+  top: 40px;
+  left: 50px;
+  z-index: 10;
 }

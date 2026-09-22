@@ -63,7 +63,7 @@ function genericAttackTarget(
       `**${attacker.name}** hit **{player}** for **${damage}** damage`);
 
     if (target.health <= 0) {
-      playerMessageAtLocation(params, target.id, `**{player}** is dead`);
+      handlePlayerIsDead(params, target);
     }
     return true;
   }
@@ -94,16 +94,7 @@ export function monsterAttack(
 
       playerMessageAtLocation(params, target.id, `**${getMonsterName(monster)}** hit **{player}** for **${damage}** damage`);
       if (target.health <= 0) {
-        playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
-
-        // auto drop special items if they have them
-        const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));
-        target.equipment = target.equipment.filter(i => !AUTO_DROP_ITEMS.includes(i.type as ItemIds));
-
-        params.items.push(...drops.map(i => ({
-          ...i,
-          location: locationId
-        })));
+        handlePlayerIsDead(params, target);
       }
     } else {
       playerMessageAtLocation(params, target.id, `**${getMonsterName(monster)}** missed **{player}**`);
@@ -112,6 +103,20 @@ export function monsterAttack(
     console.error(`Error: monsterAttack for ${monster.id} against ${target.id}`);
     throw error;
   }
+}
+
+export function handlePlayerIsDead(params: BaseParams, target: INamedTarget) {
+  playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
+  target.respawnTurns = 6;
+
+  // auto drop special items if they have them
+  const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));
+  target.equipment = target.equipment.filter(i => !AUTO_DROP_ITEMS.includes(i.type as ItemIds));
+
+  params.items.push(...drops.map(i => ({
+    ...i,
+    location: target.location.id
+  })));  
 }
 
 export function genericAttackMonster(params: BaseParams, player: INamedTarget, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): boolean {

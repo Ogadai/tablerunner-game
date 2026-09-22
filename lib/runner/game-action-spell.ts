@@ -4,7 +4,7 @@ import { SpellIds, spells } from "../games/spells";
 import { SpellDef, SpellTargetType } from "../games/types";
 import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
-import { genericAttackMonster, processAttackForDamage } from "./game-action-attack";
+import { genericAttackMonster, handlePlayerIsDead, processAttackForDamage } from "./game-action-attack";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
 import { specialSpellActions } from './special-spell-actions';
 
@@ -65,7 +65,7 @@ function applySpellEnemy(
           : `**${player.name}** ${spell.name} missed **{player}**`);
 
       if (target.health <= 0) {
-        playerMessageAtLocation(params, target.id, `**{player}** is dead`);
+        handlePlayerIsDead(params, target);
       }
     }
   }

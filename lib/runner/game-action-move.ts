@@ -46,6 +46,22 @@ export function actionMove(params: BaseParams, player: PlayerState, action: Play
   }
 }
 
+
+export function actionRespawn(params: BaseParams, player: PlayerState): void {
+  try {
+    const gameDef = games.find(g => g.id === params.gameState.gameId)!;
+
+    const newLocation = gameDef.locations.find(l => l.id === gameDef.startLocation)!;
+    player.location = getPlayerLocation(params, newLocation)
+    player.health = 1;
+
+    delete player.retreatDirection;
+  } catch(error) {
+    console.error(`Error: actionRespawn for ${player.id}`);
+    throw error;
+  }
+}
+
 export function updateLockLeds(gameState: GameState, locations: number[], locked: boolean) {
   if (locations.length > 0) {
     const addedLocations = locked
