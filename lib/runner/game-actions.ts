@@ -266,9 +266,11 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
 
     const nextAction = entityActions.actions.splice(0, 1)[0];
 
-    if (entityActions.entityType === EntityActionEntityTypes.player
+    const entityPlayerOrNpc = entityActions.entityType === EntityActionEntityTypes.player
         || entityActions.entityType === EntityActionEntityTypes.npc
-    ) {
+        || !!getNpcById(entityActions.entityId);
+
+    if (entityPlayerOrNpc) {
       const character: INamedTarget = (entityActions.entityType === EntityActionEntityTypes.player)
         ? getPlayerById(entityActions.entityId)
         : getNpcById(entityActions.entityId);
