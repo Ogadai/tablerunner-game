@@ -8,6 +8,7 @@ import PlayerReadyTopicService from './playerReady-topic-service';
 import styles from './game-topic.module.css';
 import LocationTopicService from './location-topic-service';
 import GameProcessingStartedService from './game-processing-service';
+import VideoTopicService from './video-topic-service';
 
 let _ably: Ably.Realtime | null = null;
 function connectToAbly(playerId: string): Ably.Realtime {
@@ -97,6 +98,14 @@ export default function GameTopic({
           topicId,
           message.data?.locationId
         );
+      } else if (
+        message.name === GameTopicMessageType.VideoPreload ||
+        message.name === GameTopicMessageType.VideoPlay
+      ) {
+        VideoTopicService.raiseVideoMessage(topicId, {
+          type: message.name,
+          url: message.data?.url,
+        });
       }
     });
 

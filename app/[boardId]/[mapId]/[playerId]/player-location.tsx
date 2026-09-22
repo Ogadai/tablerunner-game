@@ -20,6 +20,7 @@ import { monsters } from '@/lib/games/monsters';
 import { EntityItemClass, EntityItemDetail } from './entity-list';
 import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-stats-sync.service";
 import FastTravel from './fast-travel';
+import PlayerVideo from './player-video';
 
 export default function PlayerLocation(
   {
@@ -219,6 +220,7 @@ export default function PlayerLocation(
     ? locationOverride.description : playerState.location?.description;
 
   return (<>
+    <PlayerVideo topicId={topicId} />
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
         <h3>{getDisplayName(playerState)}</h3>

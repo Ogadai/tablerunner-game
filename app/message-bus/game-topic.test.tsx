@@ -3,6 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import * as Ably from 'ably';
 import GameTopic from './game-topic';
 import GameTopicService from './game-topic-service';
+import VideoTopicService from './video-topic-service';
 import { GameTopicMessageType } from '../../lib/message-types';
 
 const mockPresence = {
@@ -181,6 +182,30 @@ describe('GameTopic', () => {
     expect(raiseGameStateUpdatedSpy).toHaveBeenCalledWith(topicId);
 
     raiseGameStateUpdatedSpy.mockRestore();
+  });
+
+  it('raises video messages through VideoTopicService', () => {
+    const raiseVideoMessageSpy = jest.spyOn(
+      VideoTopicService,
+      'raiseVideoMessage',
+    );
+
+    render(<GameTopic topicId={topicId} playerId={playerId} />);
+
+    const channelMessageCallback = mockChannel.subscribe.mock.calls[0][0];
+    const message = {
+      name: GameTopicMessageType.VideoPlay,
+      data: { url: '/videos/intro.mp4' },
+    };
+
+    channelMessageCallback(message);
+
+    expect(raiseVideoMessageSpy).toHaveBeenCalledWith(topicId, {
+      type: GameTopicMessageType.VideoPlay,
+      url: '/videos/intro.mp4',
+    });
+
+    raiseVideoMessageSpy.mockRestore();
   });
 
   it('ignores unrelated channel messages', () => {
