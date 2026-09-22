@@ -2,7 +2,6 @@ import {
   GameState,
   PlayerReadyState,
   AllLocationsState,
-  PlayerState,
   ITarget,
   NPCState,
   MonsterState,

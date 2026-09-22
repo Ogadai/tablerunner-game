@@ -6,6 +6,8 @@ export enum GameTopicMessageType {
   GameStateUpdated = 'game_state_updated',
   ReadyStateUpdated = 'ready_state_updated',
   LocationUpdated = 'location_updated',
+  VideoPreload = 'video_preload',
+  VideoPlay = 'video_play',
 }
 
 export const getGameTopicId = (boardId: string, mapId: string): string => `${boardId}-${mapId}`;
@@ -32,4 +34,14 @@ export interface ReadyStateUpdatedMessage extends GameTopicMessageBase {
 export interface LocationUpdatedMessage extends GameTopicMessageBase {
   type: GameTopicMessageType.LocationUpdated;
   locationId: number;
+}
+
+export interface VideoPreloadMessage extends GameTopicMessageBase {
+  type: GameTopicMessageType.VideoPreload;
+  url: string;
+}
+
+export interface VideoPlayMessage extends GameTopicMessageBase {
+  type: GameTopicMessageType.VideoPlay;
+  url: string;
 }

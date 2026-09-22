@@ -8,12 +8,10 @@ import { getGameStateFromRedis, setGameStateInRedis, deleteGameStateFromRedis, s
 import { getPlayerStats } from './playerStats';
 import { createItemForInventory } from "../runner/apply-inventory";
 import { pickCharacterName } from "../games/character-names";
-import { populateMonsters } from "../runner/populate-monsters";
 import { populateItemsForMap } from "../runner/populate-items";
 import { createStoreInventoryState } from "./playerInventory";
 import { setupProcesses } from "../runner/game-processes";
 import { updatePortalAndShopLeds } from "../runner/game-action-portal";
-import { runGameActionsBetweenTurns } from "../runner/game-runner";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;

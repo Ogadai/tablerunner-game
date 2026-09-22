@@ -6,6 +6,7 @@ import { createItemForInventory } from "../apply-inventory";
 import { getCellAtCoordinates, getCellCoordinates } from "@/lib/games/monster-pack";
 import { MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 import { games } from "@/lib/games/games";
+import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 
 const OWNER = 'dragons';
 const DRAGON_LED_RGB = 'A00000';
@@ -117,6 +118,11 @@ export const dragons: ProcessRunner = {
     const babyDragon = params.monsters.find(m => m.type === 'dragonbaby');
     const dragon = params.monsters.find(m => m.type === 'dragon')!;
 
+    if (babyDragon && babyDragon.health > 0 &&
+      params.gameState.players.filter(p => p.location.id === babyDragon?.location).length > 0) {
+      await publishPreloadVideo(params.boardId, params.mapId, 'dragon-wakes');
+    }
+
     let dragonLed: number | undefined = undefined;
     if (!dragonsState.dragonBabyDead) {
       if (babyDragon?.health === 0) {
@@ -133,6 +139,7 @@ export const dragons: ProcessRunner = {
         dragonsState.dragonRoute = availableRoutes[Math.floor(Math.random() * availableRoutes.length)];
 
         broadcastMessage(params, '**A Mighty Roar echoes across the land**');
+        await publishPlayVideo(params.boardId, params.mapId, 'dragon-wakes');
       }
     } else {
       if (params.gameState.players.filter(p => p.location.id === dragon.location).length === 0) {
