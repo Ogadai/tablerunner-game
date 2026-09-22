@@ -2,14 +2,14 @@ import { BaseParams } from "../base-params";
 import { ProcessRunner } from "../types";
 
 import { keyProcess } from './key-processes';
-import { specialMonsters } from './special-monsters';
+import { lichKing } from './lich-king';
 import { zombies } from './zombies';
 import { npcs } from './npcs';
 import { invasions } from './invasions';
 import { dragons } from './dragons';
 import { GameState } from "@/lib/store/types";
 
-const allProcesses = [keyProcess, specialMonsters, zombies, npcs, invasions, dragons];
+const allProcesses = [keyProcess, lichKing, zombies, npcs, invasions, dragons];
 
 export const cauldronOfFireProcesses: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
@@ -19,6 +19,18 @@ export const cauldronOfFireProcesses: ProcessRunner = {
           await process.setup(params);
         } catch (error) {
           console.error('Error starting process', error);
+        }
+      }
+    }
+  },
+
+  async initialiseForTurn(params: BaseParams): Promise<void> {
+    for(const process of allProcesses) {
+      if (process.initialiseForTurn) {
+        try {
+          await process.initialiseForTurn(params);
+        } catch (error) {
+          console.error('Error initialising for turn', error);
         }
       }
     }

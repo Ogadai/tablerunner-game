@@ -16,6 +16,10 @@
   transform: translateX(-50%);
 }
 
+.replayButton:hover {
+  transform: translateX(-50%);
+}
+
 .videoOverlay {
   position: fixed;
   inset: 0;

@@ -14,6 +14,13 @@ export async function setupProcesses(params: BaseParams) {
   }
 }
 
+export async function initialiseProcessesForTurn(params: BaseParams) {
+  const processes = gameProcesses[params.gameState.gameId];
+  if (processes && processes.initialiseForTurn) {
+    await processes.initialiseForTurn(params);
+  }
+}
+
 export async function executeProcessesForTurn(params: BaseParams) {
   const processes = gameProcesses[params.gameState.gameId];
   if (processes && processes.executeForTurn) {
@@ -21,9 +28,9 @@ export async function executeProcessesForTurn(params: BaseParams) {
   }
 }
 
-export async function executeProcessesBetweenTurns(gameState: GameState) {
-  const processes = gameProcesses[gameState.gameId];
+export async function executeProcessesBetweenTurns(params: BaseParams) {
+  const processes = gameProcesses[params.gameState.gameId];
   if (processes && processes.executeBetweenTurns) {
-    await processes.executeBetweenTurns(gameState);
+    await processes.executeBetweenTurns(params);
   }
 }

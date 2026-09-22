@@ -7,6 +7,7 @@ import { getCellAtCoordinates, getCellCoordinates } from "@/lib/games/monster-pa
 import { MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 import { games } from "@/lib/games/games";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
+import { VideoNames } from "@/lib/messages/video-list";
 
 const OWNER = 'dragons';
 const DRAGON_LED_RGB = 'A00000';
@@ -120,7 +121,7 @@ export const dragons: ProcessRunner = {
 
     if (babyDragon && babyDragon.health > 0 &&
       params.gameState.players.filter(p => p.location.id === babyDragon?.location).length > 0) {
-      await publishPreloadVideo(params.boardId, params.mapId, 'dragon-wakes');
+      await publishPreloadVideo(params.boardId, params.mapId, VideoNames.dragonWakes);
     }
 
     let dragonLed: number | undefined = undefined;
@@ -139,7 +140,7 @@ export const dragons: ProcessRunner = {
         dragonsState.dragonRoute = availableRoutes[Math.floor(Math.random() * availableRoutes.length)];
 
         broadcastMessage(params, '**A Mighty Roar echoes across the land**');
-        await publishPlayVideo(params.boardId, params.mapId, 'dragon-wakes');
+        await publishPlayVideo(params.boardId, params.mapId, VideoNames.dragonWakes);
       }
     } else {
       if (params.gameState.players.filter(p => p.location.id === dragon.location).length === 0) {

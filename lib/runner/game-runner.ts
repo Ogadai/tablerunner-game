@@ -26,7 +26,7 @@ import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
 import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
 import { applyPlayerInventory } from "./apply-inventory";
-import { executeProcessesBetweenTurns, executeProcessesForTurn } from "./game-processes";
+import { executeProcessesBetweenTurns, executeProcessesForTurn, initialiseProcessesForTurn } from "./game-processes";
 import { populateMonsters } from "./populate-monsters";
 import { updatePortalAndShopLeds } from "./game-action-portal";
 import { updateMonsterLeds } from './game-action-monsters';
@@ -55,7 +55,17 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
   try {
     processingLock = await lockForProcessing(boardId, mapId);
     const gameState = await getGameStateFromRedis(boardId, mapId);
-    await executeProcessesBetweenTurns(gameState);
+    await executeProcessesBetweenTurns({
+      boardId,
+      mapId,
+      gameState,
+      messages: {},
+      blockedMoves: [],
+      coins: [],
+      items: [],
+      monsters: [],
+      npcs: [],
+    });
   } finally {
     if (processingLock) {
       await processingLock();
@@ -102,6 +112,8 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       players: params.gameState.players.map(p => ({...p}))
     };
     params.gameState = newGameState;
+
+    initialiseProcessesForTurn(params);
 
     for(const player of params.gameState.players) {
       await applyPlayerInventory(params, player);
