@@ -3,7 +3,7 @@
 import { ApiResponse } from "../api-response";
 import { PlayerReadyState } from "./types";
 import { LocationMoveDirection } from "../games/types";
-import { getReadyStateFromRedis, setReadyStateInRedis, getGameStateFromRedis, lockReadyStateInRedis } from './redis-access';
+import { getReadyStateFromRedis, setReadyStateInRedis, lockReadyStateInRedis } from './redis-access';
 import { checkAllPlayersReady } from '../runner/game-runner';
 
 export async function getPlayerReadyState(boardId: string, mapId: string): Promise<ApiResponse<PlayerReadyState>> {

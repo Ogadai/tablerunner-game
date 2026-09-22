@@ -21,6 +21,8 @@ import {
   publishGameProcessingStarted,
   getReadyStateFromRedis,
   lockForProcessing,
+  getProcessingTurnFromRedis,
+  setProcessingTurnInRedis,
 } from '../store/redis-access';
 import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
@@ -54,7 +56,15 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
   let processingLock:  (() => Promise<void>) | null = null;
   try {
     processingLock = await lockForProcessing(boardId, mapId);
+    const processingTurn = await getProcessingTurnFromRedis(boardId, mapId)
     const gameState = await getGameStateFromRedis(boardId, mapId);
+
+    if (processingTurn.turn === gameState.turn) {
+      return;
+    }
+
+    await setProcessingTurnInRedis(boardId, mapId, { turn: gameState.turn })
+
     await executeProcessesBetweenTurns({
       boardId,
       mapId,

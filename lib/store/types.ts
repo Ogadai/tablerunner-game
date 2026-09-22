@@ -260,3 +260,7 @@ export interface StoreBoardSettings {
 export const storeBoardDefaultSettings: StoreBoardSettings = {
   brightness: 50,
 }
+
+export interface ProcessingTurn {
+  turn: number;
+}

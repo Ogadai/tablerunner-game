@@ -278,7 +278,7 @@ export const spells: Record<string, SpellDef> = {
     actionCost: 15,
     iconXY: { x: 1, y: 1 },
     bonusStats: {
-      special: 'Raise a dead warrior from the earth'
+      special: 'Raise a Skeleton from the earth'
     }
   },
   [SpellIds.animateCorpse]: {

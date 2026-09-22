@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage, GameTopicMessageBase } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings, ProcessingTurn } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
@@ -29,7 +29,7 @@ const getStoreInventoryLock = (boardId: string, mapId: string) => `storeLock:${b
 
 const getBoardSettingsKey = (boardId: string, mapId: string) => `boardSettings:${boardId}:${mapId}`;
 
-
+const getProcessingKey = (boardId: string, mapId: string) => `processingTurn:${boardId}:${mapId}`;
 const getProcessingLock = (boardId: string, mapId: string) => `processingLock:${boardId}:${mapId}`;
 
 /* Overall Game State */
@@ -74,6 +74,7 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
 
     // Delete the monsters state from Redis
     await deleteLocationsStateFromRedis(boardId, mapId);
+    await deleteProcessingTurnFromRedis(boardId, mapId);
 
     await publishGameStateUpdated(boardId, mapId);
   }
@@ -251,8 +252,22 @@ export async function setBoardSettingsFromRedis(boardId: string, mapId: string, 
 }
 
 /* Locking for processing */
+
 export async function lockForProcessing(boardId: string, mapId: string): Promise<() => Promise<void>> {
   return getLock(getProcessingLock(boardId, mapId));
+}
+
+export async function getProcessingTurnFromRedis(boardId: string, mapId: string): Promise<ProcessingTurn> {
+  const result = await redis.get(getProcessingKey(boardId, mapId)) as ProcessingTurn;
+  return result || { turn: 0 };
+}
+
+export async function setProcessingTurnInRedis(boardId: string, mapId: string, monsterState: ProcessingTurn): Promise<void> {
+  await redis.set(getProcessingKey(boardId, mapId), monsterState, gameStateOptions);
+}
+
+export async function deleteProcessingTurnFromRedis(boardId: string, mapId: string): Promise<void> {
+  await redis.del(getProcessingKey(boardId, mapId));
 }
 
 /* Generic locking */

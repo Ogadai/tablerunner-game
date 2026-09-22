@@ -1,16 +1,19 @@
-import { GameState, NPCState } from "@/lib/store/types";
+import { GameState, INamedTarget, NPCState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionMove, PlayerActionType, PlayerActionUseItem } from "@/lib/store/types";
 import { BaseParams } from "../base-params";
 import { broadcastMessage } from "../game-messages";
 import { ProcessRunner } from "../types";
-import { LocationMoveDirection } from "@/lib/games/types";
+import { LocationMoveDirection, SpellDef } from "@/lib/games/types";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
 import { monsters } from "@/lib/games/monsters";
-import { allItems, EquipableIds } from "@/lib/games/items";
+import { allItems, ConsumableIds, consumableItems, EquipableIds } from "@/lib/games/items";
 import { createItemForInventory } from "../apply-inventory";
 import { SpellIds, spells } from "@/lib/games/spells";
 import { games } from "@/lib/games/games";
-import { getLocationsStateFromRedis } from "@/lib/store/redis-access";
+import { getLocationsStateFromRedis, getPlayerMessagesFromRedis, setNpcActionsStateInRedis } from "@/lib/store/redis-access";
+import { google } from '@ai-sdk/google';
+import { generateText, Output } from 'ai'; // <-- Import Output here
+import { z } from 'zod';
 
 const OWNER = 'lich-king';
 const LICH_KING_ID = 'lich-king';
@@ -22,6 +25,11 @@ interface LichKingDef {
   initiated: boolean;
   gameOver?: boolean;
   lastDirection?: LocationMoveDirection;
+}
+
+interface LichActions {
+  name: string,
+  target?: string,
 }
 
 const getState = (gameState: GameState) => 
@@ -56,9 +64,15 @@ const checkInitiate = (params: BaseParams, state: LichKingDef): boolean => {
         SpellIds.terror,
         SpellIds.lightning,
         SpellIds.raiseDead,
-        SpellIds.animateCorpse,
       ],
-      equipment: [staff, armour, helmet],
+      equipment: [
+        staff, armour, helmet,
+        createItemForInventory(params.gameState, allItems[ConsumableIds.healingPotion]),
+        createItemForInventory(params.gameState, allItems[ConsumableIds.healingPotion]),
+        createItemForInventory(params.gameState, allItems[ConsumableIds.healingPotion]),
+        createItemForInventory(params.gameState, allItems[ConsumableIds.manaPotion]),
+        createItemForInventory(params.gameState, allItems[ConsumableIds.manaPotion]),
+      ],
       equipped: { weapon: staff.id, armour: armour.id, helmet: helmet.id },
       baseStats: {  ...monsterDef.baseStats },
       hireCost: 0,
@@ -96,6 +110,72 @@ const checkEndGame = (params: BaseParams, state: LichKingDef): boolean => {
   }
 
   return state.gameOver || false;
+}
+
+const describeSpell = (spell: SpellDef): string => {
+  if (spell.bonusStats.special) {
+    return spell.bonusStats.special;
+  } else {
+    const effects = Object.keys(spell.bonusStats)
+      .filter(k => k !== 'turns')
+      .map(k => `${(spell.bonusStats as any)[k]} ${k}`)
+      .join(', ');
+
+    return `${effects}${spell.bonusStats.turns ? ` for ${spell.bonusStats.turns} turns` : ''}`;
+  }
+}
+
+const toGameAction = (action: LichActions, lich: NPCState, targets: INamedTarget[]): PlayerAction | null => {
+  const usePotion = (type: ConsumableIds): PlayerActionUseItem | null => {
+    const potion = lich.equipment.find(e => e.type === ConsumableIds.healingPotion);
+    if (potion) {
+      return {
+        type: PlayerActionType.UseItem,
+        id: 1,
+        description: '',
+        itemId: potion.id
+      };
+    }
+    return null;
+  }
+
+  if (action.name === 'drink healing potion') {
+    return usePotion(ConsumableIds.healingPotion);
+  } else if (action.name === 'drink mana potion') {
+    return usePotion(ConsumableIds.manaPotion);
+  } else if (action.name === 'attack') {
+    return {
+      type: PlayerActionType.Attack,
+      id: 1,
+      description: '',
+      target: action.target || targets[0]?.id,
+    } as PlayerActionAttack;
+  }
+
+  const spellDetails = lich.spells.map(s => spells[s]);
+  for(const spell of spellDetails) {
+    if (action.name === `cast ${spell.name}`) {
+      return {
+        type: PlayerActionType.Cast,
+        id: 1,
+        spellId: spell.id,
+        description: '',
+        targetId: spell.pickTarget ? (action.target || targets[0]?.id) : undefined,
+      } as PlayerActionCast;
+    }
+  }
+
+  if (action.name.startsWith('move ')) {
+    const direction = action.name.substring(5);
+    return {
+      type: PlayerActionType.Move,
+      id: 1,
+      description: '',
+      direction
+    } as PlayerActionMove;
+  }
+
+  return null;
 }
 
 export const lichKing: ProcessRunner = {
@@ -166,18 +246,20 @@ export const lichKing: ProcessRunner = {
       state.initiated = true;
     } else if (checkEndGame(params, state)) {
       state.gameOver = true;
-    } else {
-
     }
 
     saveState(params.gameState, state);
   },
 
-  async executeBetweenTurns(params: BaseParams) {
+  async executeBetweenTurns(params: BaseParams): Promise<void> {
     const state = getState(params.gameState);
     if (state.initiated && !state.gameOver && playersPresent(params.gameState)) {
       const gameDef = games.find(g => g.id === params.gameState.gameId)!;
-      const locationsState = await getLocationsStateFromRedis(params.boardId, params.mapId);
+
+      const [locationsState, messages] = await Promise.all([
+        getLocationsStateFromRedis(params.boardId, params.mapId),
+        getPlayerMessagesFromRedis(params.boardId, params.mapId, LICH_KING_ID)
+      ]);
 
       const lich = params.gameState.npcs.find(n => n.id === LICH_KING_ID)!;
 
@@ -189,13 +271,143 @@ export const lichKing: ProcessRunner = {
           monsters: locationsState.monsters.filter(m => m.location === l.id),
           heros: [
             ...params.gameState.players.filter(p => p.location.id === l.id),
-            ...params.gameState.npcs.filter(n => n.location.id === l.id),
+            ...params.gameState.npcs.filter(n => n.location.id === l.id && n.alignment !== 'evil'),
           ]
         }));
 
-      const spellDetails = lich.spells.map(s => spells[s]);
+      const availableActions: {
+        action: string,
+        description: string,
+        requireTarget: boolean,
+        actionCost: number,
+        magicCost: number,
+      }[] = [];
 
-      
+      if (lich.health < lich.baseStats!.health &&
+        !!lich.equipment.find(e => e.type === ConsumableIds.healingPotion)) {
+        availableActions.push({
+          action: 'drink healing potion',
+          description: `Restore ${consumableItems[ConsumableIds.healingPotion].bonusStats!.health} health`,
+          requireTarget: false,
+          actionCost: consumableItems[ConsumableIds.healingPotion].useCost,
+          magicCost: 0,
+        });
+      }
+
+      if (lich.magic < lich.baseStats!.magic &&
+        !!lich.equipment.find(e => e.type === ConsumableIds.manaPotion)) {
+        availableActions.push({
+          action: 'drink mana potion',
+          description: `Restore ${consumableItems[ConsumableIds.manaPotion].bonusStats!.magic} magic`,
+          requireTarget: false,
+          actionCost: consumableItems[ConsumableIds.manaPotion].useCost,
+          magicCost: 0,
+        });
+      }
+
+      const availableTargets: INamedTarget[] = locations.find(l => l.id === lich.location.id)!.heros;
+      if (availableTargets.length > 0) {
+        availableActions.push({
+          action: 'attack',
+          description: `Physical attack. Your "attack" vs their "defence", and if you hit up to ${lich.baseStats!.attack} damage`,
+          requireTarget: availableTargets.length > 1,
+          actionCost: 10,
+          magicCost: 0,
+        });
+      }
+
+      const spellDetails = lich.spells.map(s => spells[s]);
+      for(const spell of spellDetails) {
+        let canCast = availableTargets.length > 0;
+
+        if (spell.id === SpellIds.raiseDead) {
+          const skeletons = locations.reduce((counts, l) => {
+            const skeletonsHere = l.monsters.filter(l => l.type === 'skeleton').length;
+            counts.all += skeletonsHere;
+            if (l.id === lich.location.id) {
+              counts.here += skeletonsHere;
+            }
+            return counts;
+          }, {all: 0, here: 0});
+
+          if (skeletons.all < 20 && skeletons.here < 4) {
+            canCast = true;
+          }
+        }
+        
+        if (canCast) {
+          availableActions.push({
+            action: `cast ${spell.name}`,
+            description: describeSpell(spell),
+            requireTarget: spell.pickTarget && (availableTargets.length > 1),
+            actionCost: spell.actionCost,
+            magicCost: spell.magicCost,
+          });
+        }
+      }
+
+      const currentLocation = locations.find(l => l.id === lich.location.id)!;
+      for(const mv of currentLocation?.move) {
+        availableActions.push({
+            action: `move ${mv.direction}`,
+            description: `Move to location ${mv.id}${(availableTargets.length > 0) ? ', but the heros get a free attack' : ''}`,
+            requireTarget: false,
+            actionCost: 20,
+            magicCost: 0,
+          });
+      }
+
+      const googleModel = process.env.GOOGLE_GENERATIVE_AI_MODEL;
+      if (!googleModel) {
+        console.error('No Google Model defined');
+        return;
+      }
+
+      const gameInfo = {
+        lichKing: lich,
+        availableActions,
+        availableTargets,
+        locations,
+        lastTurn: messages,
+      };
+
+      try {
+        const startTime = performance.now();
+
+        const result = await generateText({
+          model: google(googleModel),
+          system: `You are the Evil Lich King, the final boss monster of a fantasy RPG game,
+          a necromancer magic user. Your castle is being invaded by heros trying to end your tyrany,
+          and it is your task to defeat them. You must choose a set of actions to take for this turn.
+          Each action has an "action" cost, and you cannot exceed 20 action points.
+          Spells also have a "magic" cost, and you cannot exceed the amount of magic you have left
+          (your "magic" will go up by 2 points each turn until your maximum in "baseStats").
+          You can choose to do nothing and wait for the heros to attack you.`,
+          prompt: `${JSON.stringify(gameInfo)}`,
+          
+          // Pass the output constraint here instead
+          output: Output.object({
+            schema: z.object({
+              actions: z.array(z.object({
+                name: z.string().describe('The name of the action'),
+                target: z.string().optional().describe('The id of the target for this action, if "requireTarget" is true'),
+              })),
+            })
+          })
+        });
+
+        const endTime = performance.now();
+        const actionResponse: { actions: LichActions[] } = result.output;
+        console.log(`Lich King actions in ${Math.floor(endTime - startTime)}ms: ${actionResponse.actions.map(a => a.name).join(', ')}`);
+
+        const npcActions = actionResponse.actions.map(a => toGameAction(a, lich, availableTargets));
+        await setNpcActionsStateInRedis(params.boardId, params.mapId, LICH_KING_ID, {
+          actions: npcActions.filter(a => !!a)
+        });
+
+      } catch(ex) {
+        console.error('Error getting Lich King AI actions', ex);
+      }
     }
   }
 }

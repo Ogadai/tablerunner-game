@@ -206,7 +206,7 @@ export default function PlayerLocation(
       id: npc.id,
       name: npc.name,
       iconXY: npc.iconXY,
-      className: EntityItemClass.npc,
+      className: npc.alignment === 'evil' ? EntityItemClass.enemy : EntityItemClass.npc,
       health: npc.health,
       maxHealth: npc.baseStats?.health || npc.health
     })),

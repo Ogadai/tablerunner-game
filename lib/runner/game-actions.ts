@@ -119,7 +119,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving);
 
         entityActionsForLocations[locId].entities.push({
-          entityType: EntityActionEntityTypes.npc,
+          entityType: npc.alignment === 'evil' ? EntityActionEntityTypes.monster : EntityActionEntityTypes.npc,
           entityId: npc.id,
           entitySpeed: npc.baseStats!.speed * Math.random(),
           actions: npcActions.actions,
