@@ -1,8 +1,8 @@
-import { GameState, INamedTarget, NPCState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionMove, PlayerActionType, PlayerActionUseItem } from "@/lib/store/types";
+import { GameState, INamedTarget, ITarget, MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionMove, PlayerActionType, PlayerActionUseItem } from "@/lib/store/types";
 import { BaseParams } from "../base-params";
 import { broadcastMessage } from "../game-messages";
 import { ProcessRunner } from "../types";
-import { LocationMoveDirection, SpellDef } from "@/lib/games/types";
+import { LocationMoveDirection, SpellDef, SpellTargetType } from "@/lib/games/types";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
 import { monsters } from "@/lib/games/monsters";
@@ -64,6 +64,7 @@ const checkInitiate = (params: BaseParams, state: LichKingDef): boolean => {
         SpellIds.terror,
         SpellIds.lightning,
         SpellIds.raiseDead,
+        SpellIds.animateCorpse,
       ],
       equipment: [
         staff, armour, helmet,
@@ -125,7 +126,7 @@ const describeSpell = (spell: SpellDef): string => {
   }
 }
 
-const toGameAction = (action: LichActions, lich: NPCState, targets: INamedTarget[]): PlayerAction | null => {
+const toGameAction = (action: LichActions, lich: NPCState, targets: INamedTarget[], deadMonsters: ITarget[]): PlayerAction | null => {
   const usePotion = (type: ConsumableIds): PlayerActionUseItem | null => {
     const potion = lich.equipment.find(e => e.type === ConsumableIds.healingPotion);
     if (potion) {
@@ -152,6 +153,19 @@ const toGameAction = (action: LichActions, lich: NPCState, targets: INamedTarget
     } as PlayerActionAttack;
   }
 
+  const getBestDeadMonster = () => deadMonsters.reduce(
+    (best: { score: number, target: ITarget | null }, next: ITarget) => {
+      const monster = monsters[(next as MonsterState).type];
+      const score = monster.baseStats.attack + monster.baseStats.defence + monster.baseStats.damage;
+      if (score > best.score) {
+        return { score, target: next };
+      }
+      return best;
+    }, { score: 0, target: null }).target;
+
+  const getTarget = (type: SpellTargetType) => ((type === SpellTargetType.corpse)
+      ? getBestDeadMonster() : (action.target || targets[0]?.id))
+
   const spellDetails = lich.spells.map(s => spells[s]);
   for(const spell of spellDetails) {
     if (action.name === `cast ${spell.name}`) {
@@ -160,7 +174,7 @@ const toGameAction = (action: LichActions, lich: NPCState, targets: INamedTarget
         id: 1,
         spellId: spell.id,
         description: '',
-        targetId: spell.pickTarget ? (action.target || targets[0]?.id) : undefined,
+        targetId: spell.pickTarget ? getTarget(spell.targetType) : undefined,
       } as PlayerActionCast;
     }
   }
@@ -306,6 +320,7 @@ export const lichKing: ProcessRunner = {
       }
 
       const availableTargets: INamedTarget[] = locations.find(l => l.id === lich.location.id)!.heros;
+      const deadMonsters: ITarget[] = locations.find(l => l.id === lich.location.id)!.monsters.filter(m => m.health === 0);
       if (availableTargets.length > 0) {
         availableActions.push({
           action: 'attack',
@@ -319,19 +334,26 @@ export const lichKing: ProcessRunner = {
       const spellDetails = lich.spells.map(s => spells[s]);
       for(const spell of spellDetails) {
         let canCast = availableTargets.length > 0;
+        let requireTarget = spell.pickTarget && (availableTargets.length > 1);
 
-        if (spell.id === SpellIds.raiseDead) {
-          const skeletons = locations.reduce((counts, l) => {
-            const skeletonsHere = l.monsters.filter(l => l.type === 'skeleton').length;
-            counts.all += skeletonsHere;
+        if (spell.id === SpellIds.raiseDead || spell.id === SpellIds.animateCorpse) {
+          const undead = locations.reduce((counts, l) => {
+            const undeadHere = l.monsters.filter(l => l.type === 'skeleton' || l.zombie).length;
+            counts.all += undeadHere;
             if (l.id === lich.location.id) {
-              counts.here += skeletonsHere;
+              counts.here += undeadHere;
             }
             return counts;
           }, {all: 0, here: 0});
 
-          if (skeletons.all < 20 && skeletons.here < 4) {
-            canCast = true;
+          if (undead.all < 20 && undead.here < 4) {
+            if (spell.id === SpellIds.animateCorpse) {
+              // Must be dead monsters to cast on
+              canCast = deadMonsters.length > 0;
+              requireTarget = false;
+            } else {
+              canCast = true;
+            }
           }
         }
         
@@ -339,7 +361,7 @@ export const lichKing: ProcessRunner = {
           availableActions.push({
             action: `cast ${spell.name}`,
             description: describeSpell(spell),
-            requireTarget: spell.pickTarget && (availableTargets.length > 1),
+            requireTarget: requireTarget,
             actionCost: spell.actionCost,
             magicCost: spell.magicCost,
           });
@@ -367,6 +389,7 @@ export const lichKing: ProcessRunner = {
         lichKing: lich,
         availableActions,
         availableTargets,
+        deadMonsters,
         locations,
         lastTurn: messages,
       };
@@ -382,7 +405,9 @@ export const lichKing: ProcessRunner = {
           Each action has an "action" cost, and you cannot exceed 20 action points.
           Spells also have a "magic" cost, and you cannot exceed the amount of magic you have left
           (your "magic" will go up by 2 points each turn until your maximum in "baseStats").
-          You can choose to do nothing and wait for the heros to attack you.`,
+          As a necromancer, you favour Raise Dead and Animate Corpse spells to build an army of minions.
+          If there are no heros at your location, you can choose to do nothing and wait for the heros to come to you,
+          or you can move around the castle looking for them.`,
           prompt: `${JSON.stringify(gameInfo)}`,
           
           // Pass the output constraint here instead
@@ -400,7 +425,7 @@ export const lichKing: ProcessRunner = {
         const actionResponse: { actions: LichActions[] } = result.output;
         console.log(`Lich King actions in ${Math.floor(endTime - startTime)}ms: ${actionResponse.actions.map(a => a.name).join(', ')}`);
 
-        const npcActions = actionResponse.actions.map(a => toGameAction(a, lich, availableTargets));
+        const npcActions = actionResponse.actions.map(a => toGameAction(a, lich, availableTargets, deadMonsters));
         await setNpcActionsStateInRedis(params.boardId, params.mapId, LICH_KING_ID, {
           actions: npcActions.filter(a => !!a)
         });

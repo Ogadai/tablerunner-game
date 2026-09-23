@@ -11,3 +11,25 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # General rules
 
 - Don't automatically run unit tests unless I ask you to
+
+## Project Overview
+This is a web application built with Next.js and React,
+TypeScript. It is designed for deployment to Vercel.
+
+## Architecture
+- Frontend components live in app.
+- Backend services live in lib.
+- Shared types live in lib.
+
+## Coding Standards
+- Use TypeScript with strict type checking.
+- Prefer functional React components.
+- Use async/await rather than promise chains.
+- Follow existing naming conventions.
+- Avoid introducing unnecessary dependencies.
+
+## Development Rules
+- Read existing code before modifying it.
+- Make the smallest changes necessary.
+- Preserve existing functionality unless
+  explicitly instructed otherwise.

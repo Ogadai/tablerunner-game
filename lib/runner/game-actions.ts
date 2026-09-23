@@ -150,22 +150,24 @@ export async function runGameActions(params: BaseParams): Promise<void> {
           playerFought[player.id] = true;
         }
 
-        for(const monster of monstersAtLocation) {
-          const target = monsterPickTarget(targetsAtLocation, entityActionsForLocations[locId]);
-          const monsterAction: PlayerActionAttack = {
-            id: 1,
-            type: PlayerActionType.Attack,
-            description: `${monsters[monster.type].name} attacks ${target.name}!`,
-            target: target.id,
-          };
+        if (targetsAtLocation.length > 0) {
+          for(const monster of monstersAtLocation) {
+            const target = monsterPickTarget(targetsAtLocation, entityActionsForLocations[locId]);
+            const monsterAction: PlayerActionAttack = {
+              id: 1,
+              type: PlayerActionType.Attack,
+              description: `${monsters[monster.type].name} attacks ${target.name}!`,
+              target: target.id,
+            };
 
-          entityActionsForLocations[locId].entities.push({
-            entityType: EntityActionEntityTypes.monster,
-            entityId: monster.id,
-            entitySpeed: getMonsterStats(monster).speed * Math.random(),
-            actions: [monsterAction],
-            random: Math.random(),
-          });
+            entityActionsForLocations[locId].entities.push({
+              entityType: EntityActionEntityTypes.monster,
+              entityId: monster.id,
+              entitySpeed: getMonsterStats(monster).speed * Math.random(),
+              actions: [monsterAction],
+              random: Math.random(),
+            });
+          }
         }
       }
 

@@ -21,10 +21,13 @@ function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterL
     expiryAction: 'remove' | 'dead' | 'monster' = 'remove') {
   removeOtherSupportedNPCs(params, player);
 
+  const masterId = player.alignment === 'evil' ? null : player.id;
+  const expiryTurns = player.alignment === 'evil' ? undefined : turns;
+
   const npcId = `npc-${params.gameState.npcs.length + 1}`;
   const newNPC: NPCState = {
     id: npcId,
-    masterId: player.id,
+    masterId: masterId,
     name: spirit.name,
     location: { id: player.location.id, description: '', move: [] },
     magic: 0,
@@ -35,7 +38,7 @@ function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterL
     hireCost: 0,
     iconXY: spirit.iconXY,
     health: spirit.baseStats.health,
-    turnsLeft: turns,
+    turnsLeft: expiryTurns,
     expiryAction: expiryAction,
   };
 
@@ -44,6 +47,9 @@ function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterL
 
 function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarget[], turns: number, health: number = 10) {
   removeOtherSupportedNPCs(params, player);
+
+  const masterId = player.alignment === 'evil' ? null : player.id;
+  const expiryTurns = player.alignment === 'evil' ? undefined : turns;
 
   for(const target of targets) {
     if ((target as INamedTarget).name) {
@@ -54,8 +60,8 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
       if (!(target as PlayerState).characterStats) {
         // This is an NPC
         const npc = (target as NPCState);
-        npc.masterId = player.id;
-        npc.turnsLeft = turns;
+        npc.masterId = masterId;
+        npc.turnsLeft = expiryTurns;
         npc.expiryAction = 'monster';
         npc.monsterType = 'zombie';
       }
@@ -65,7 +71,7 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
 
       const newNPC: NPCState = {
         id: target.id,
-        masterId: player.id,
+        masterId: masterId,
         name: monsterDef.name,
         location: { id: player.location.id, description: '', move: [] },
         magic: 0,
@@ -76,7 +82,7 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
         hireCost: 0,
         iconXY: monsterDef.iconXY,
         health: Math.min(health, monsterDef.baseStats.health),
-        turnsLeft: turns,
+        turnsLeft: expiryTurns,
         expiryAction: 'monster',
         monsterType: monsterDef.id,
         zombie: true,
