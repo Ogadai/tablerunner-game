@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { monsters } from '@/lib/games/monsters';
 
 import styles from './monster-card.module.css';
@@ -24,7 +23,7 @@ export default function MonsterCard({
       }}
     />
     <div className={`card ${styles.statsCard}`}>
-      <EntityBaseStats current={{health: monster.health}} baseStats={monsterStats} />
+      <EntityBaseStats current={{health: monster.health, magic: monster.magic}} baseStats={monsterStats} />
     </div>
     <div>
       { canAttack && monster.health > 0 && (

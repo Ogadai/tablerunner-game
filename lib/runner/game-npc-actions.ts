@@ -1,10 +1,13 @@
 import { ConsumableIds, consumableItems } from "../games/items";
 import { monsters } from "../games/monsters";
-import { spells } from "../games/spells";
-import { SpellDef, SpellTargetType } from "../games/types";
-import { getPlayerActionsPerTurn, getPlayerActionsCosts, PlayerActionsPerTurn } from "../store/playerStats";
-import { INamedTarget, ITarget, MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem } from "../store/types";
+import { getSpellActionCost, SpellIds, spells } from "../games/spells";
+import { SpellDef } from "../games/types";
+import { getPlayerActionsPerTurn, PlayerActionsPerTurn } from "../store/playerStats";
+import { INamedTarget, ITarget, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem } from "../store/types";
 import { BaseParams } from "./base-params";
+
+import { getAvailableSpellTargets, isMonsterCaster } from './spell-targets';
+import { getMonsterStats } from './monster-stats';
 
 interface ValueBase {
   value: number;
@@ -20,8 +23,9 @@ interface ActionsList extends ValueBase {
   actions: PlayerAction[];
 }
 
-export function getNpcActions(params: BaseParams, npc: NPCState): PlayerActionsState {
+export function getCombatActions(params: BaseParams, npc: INamedTarget): PlayerActionsState {
   try {
+    if (npc.health <= 0) return { actions: [] };
     const actionsPerTurn = getPlayerActionsPerTurn(npc);
 
     let nextId = 1;
@@ -46,13 +50,13 @@ export function getNpcActions(params: BaseParams, npc: NPCState): PlayerActionsS
       actions: weightedRandomPick(candidates).actions
     };
   } catch(error) {
-    console.error('Error getting NPC actions', error);
+    console.error('Error getting combat actions', error);
     return { actions: [] };
   }
 };
 
-function getAvailableActions(params: BaseParams, npc: NPCState, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
-  const attackTargets = npc.alignment === 'evil'
+function getAvailableActions(params: BaseParams, npc: INamedTarget, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
+  const attackTargets = isMonsterCaster(params, npc)
     ? [
         ...params.gameState.players,
         ...params.gameState.npcs.filter(target => target.id !== npc.id),
@@ -80,7 +84,7 @@ function getAvailableActions(params: BaseParams, npc: NPCState, actionsPerTurn: 
   return actions.filter(a => !!a && a.value > 0) as ActionsWithCosts[];
 }
 
-function getAttackAction(params: BaseParams, npc: NPCState, target: MonsterState | INamedTarget, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts {
+function getAttackAction(params: BaseParams, npc: INamedTarget, target: MonsterState | INamedTarget, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts {
   const action: PlayerActionAttack = {
     id: -1,
     target: target.id,
@@ -96,7 +100,7 @@ function getAttackAction(params: BaseParams, npc: NPCState, target: MonsterState
   };
 }
 
-function getHealPotionAction(params: BaseParams, npc: NPCState): ActionsWithCosts | null {
+function getHealPotionAction(params: BaseParams, npc: INamedTarget): ActionsWithCosts | null {
   const potions = npc.equipment.filter(e => e.type === ConsumableIds.healingPotion);
   const greaterPotions = npc.equipment.filter(e => e.type === ConsumableIds.greaterHealingPotion);
   const heal = consumableItems[ConsumableIds.healingPotion];
@@ -128,7 +132,7 @@ function getHealPotionAction(params: BaseParams, npc: NPCState): ActionsWithCost
   return null;
 }
 
-function getMagicPotionAction(params: BaseParams, npc: NPCState): ActionsWithCosts | null {
+function getMagicPotionAction(params: BaseParams, npc: INamedTarget): ActionsWithCosts | null {
   const potions = npc.equipment.filter(e => e.type === ConsumableIds.manaPotion);
   const manaPotion = consumableItems[ConsumableIds.manaPotion];
 
@@ -148,7 +152,7 @@ function getMagicPotionAction(params: BaseParams, npc: NPCState): ActionsWithCos
       return {
         cost: consumableItems[item.type].useCost,
         magic: 0,
-        value: 3 / (npc.magic / npc.baseStats!.magic) - 3,
+        value: 3 / (Math.max(1, npc.magic) / npc.baseStats!.magic) - 3,
         action
       };
     }
@@ -156,19 +160,14 @@ function getMagicPotionAction(params: BaseParams, npc: NPCState): ActionsWithCos
   return null;
 }
 
-function getCastSpellActions(params: BaseParams, npc: NPCState, spellId: string, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
+function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: string, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
   const spell = spells[spellId];
-  const targets = getSpellTargets(params, npc, spell);
+  const targets = getAvailableSpellTargets(params, npc, spell);
   if (targets.length === 0) {
     return [];
   }
-  const monstersAtLocation = params.monsters.filter(m => (m.health > 0) && (m.location === npc.location.id))
-  if (monstersAtLocation.length == 0 && !spell.bonusStats.health  && !spell.bonusStats.magic) {
-    return [];
-  }
-
   const castCount = Math.min(
-    Math.floor(actionsPerTurn.total / spell.actionCost),
+    Math.floor(actionsPerTurn.total / getSpellActionCost(spell, npc.baseStats!.magic)),
     Math.floor(npc.magic / spell.magicCost),
   );
   const actionsWithCosts: ActionsWithCosts[] = [];
@@ -186,9 +185,9 @@ function getCastSpellActions(params: BaseParams, npc: NPCState, spellId: string,
     };
 
     actionsWithCosts.push({
-      cost: spell.actionCost,
+      cost: getSpellActionCost(spell, npc.baseStats!.magic),
       magic: spell.magicCost,
-      value: getSpellValue(npc, spell, target ? [target] : targets),
+      value: getSpellValue(npc, spell, target ? [target] : targets) / (npc.recentSpells?.includes(spellId as SpellIds) ? 1.3 : 1),
       action
     });
   }
@@ -196,14 +195,16 @@ function getCastSpellActions(params: BaseParams, npc: NPCState, spellId: string,
   return actionsWithCosts;
 }
 
-function getSpellValue(npc: NPCState, spell: SpellDef, targets: ITarget[]): number {
+function getSpellValue(npc: INamedTarget, spell: SpellDef, targets: ITarget[]): number {
   const sumValue = (valueFn: (target: ITarget) => number) =>
         targets.reduce((total, t) => total + valueFn(t), 0);
 
   if (spell.bonusStats.damage) {
     return sumValue(t => (spell.bonusStats.damage! / 10) * (npc.baseStats!.magic / 10) * t.health);
   } else if (spell.bonusStats.health) {
-    return sumValue(t => 10 / (t.health / (t as INamedTarget).baseStats!.health) - 10);
+    return sumValue(t => 10 / (t.health / ('type' in t ? getMonsterStats(t as MonsterState).health : (t as INamedTarget).baseStats!.health)) - 10);
+  } else if (spell.bonusStats.special) {
+    return 10;
   } else {
     const sumBonuses = ['attack', 'damage', 'defence', 'speed']
       .reduce((total, bonus) => total + Math.abs((spell.bonusStats as any)[bonus] || 0), 0)
@@ -225,6 +226,7 @@ function pickActions(actionsWithCosts: ActionsWithCosts[], maxCost: number, maxM
       const nextAction = weightedRandomPick(affordable);
       value += nextAction.value;
       cost += nextAction.cost;
+      magic += nextAction.magic;
       actions.push(nextAction.action)
 
       remainActions = remainActions.filter(a => a.action.id !== nextAction.action.id);
@@ -250,35 +252,5 @@ function weightedRandomPick<T extends ValueBase>(list: T[]): T {
   return list[list.length - 1];
 }
 
-function getSpellTargets(params: BaseParams, npc: NPCState, spell: SpellDef): ITarget[] {
-  const filterMonsters = (list: MonsterState[]) => list.filter(m => (m.health > 0) &&
-      (m.location === npc.location.id)
-    );
-  const filterNamedTargets = (list: INamedTarget[]) => list.filter(t => (t.health > 0) &&
-      (t.location.id === npc.location.id)
-    );
-
-  if (spell.targetType === SpellTargetType.enemy) {
-    return npc.alignment === 'evil'
-      ? [
-        ...filterNamedTargets(params.gameState.players),
-        ...filterNamedTargets(params.gameState.npcs.filter(target => target.id !== npc.id))
-      ]
-      : filterMonsters(params.monsters);
-  } else if (spell.targetType === SpellTargetType.friend) {
-    return npc.alignment === 'evil'
-      ? [
-          ...filterMonsters(params.monsters),
-          ...filterNamedTargets(params.gameState.npcs.filter(target => target.id === npc.id))
-      ] : [
-          ...filterNamedTargets(params.gameState.players),
-          ...filterNamedTargets(params.gameState.npcs),
-        ];
-  } else {
-    return [
-      ...filterMonsters(params.monsters),
-      ...filterNamedTargets(params.gameState.players),
-      ...filterNamedTargets(params.gameState.npcs),
-    ];
-  }
-}
+// Preserve the NPC entry point for callers.
+export const getNpcActions = getCombatActions;

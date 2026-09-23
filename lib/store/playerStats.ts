@@ -72,7 +72,7 @@ export function getPlayerActionsMagic(playerState: PlayerState, actionsState: Pl
   }, 0);
 }
 
-export function getNamedTargetStats(baseStats: BaseStats, target: INamedTarget): BaseStats {
+export function getNamedTargetStats(baseStats: BaseStats, target: Pick<INamedTarget, 'equipment' | 'equipped' | 'effects'>): BaseStats {
   const enhancedStats: BaseStats = {
     ...baseStats,
     bonuses: {

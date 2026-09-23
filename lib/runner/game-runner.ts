@@ -14,7 +14,7 @@ import {
   setLocationsStateInRedis,
   setPlayerMessagesInRedis,
   setActionsStateInRedis,
-  deleteNpcActionsStateFromRedis,
+  deleteMonsterActionsStateFromRedis,
   setPlayerStatsInRedis,
   getPlayerStatsFromRedis,
   lockGameStateInRedis,
@@ -123,7 +123,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     };
     params.gameState = newGameState;
 
-    initialiseProcessesForTurn(params);
+    await initialiseProcessesForTurn(params);
 
     for(const player of params.gameState.players) {
       await applyPlayerInventory(params, player);
@@ -160,7 +160,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       blockedMoves: params.blockedMoves,
       npcs: params.gameState.npcs,
     };
-    setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
+    await setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
 
     // Reset ready state
     await setReadyStateInRedis(params.boardId, params.mapId, {
@@ -180,11 +180,10 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       await setPlayerMessagesInRedis(params.boardId, params.mapId, player.id, params.messages[player.id]);
     }
 
-    for(const npc of params.gameState.npcs) {
-      if (npc.alignment === 'evil') {
-        await deleteNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id);
-      }
+    for (const monster of params.monsters.filter(m => m.scriptedActions)) {
+      await deleteMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
     }
+
   } catch (error) {
     console.error(error);
   }

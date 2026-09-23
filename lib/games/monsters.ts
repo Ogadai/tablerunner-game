@@ -1,3 +1,4 @@
+import { SpellIds } from './spells';
 import { MonsterListEntry } from './types';
 
 const DAMAGE_AWARD_RATIO = 20;
@@ -214,6 +215,15 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   },
   'lich': {
     id: 'lich',
+    spells: [
+      SpellIds.iceShards,
+      SpellIds.iceStorm,
+      SpellIds.terror,
+      SpellIds.lightning,
+      SpellIds.raiseDead,
+      SpellIds.animateCorpse,
+    ],
+
     name: 'Lich',
     iconXY: { x: 4, y: 1 },
     baseStats: {

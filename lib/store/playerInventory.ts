@@ -54,9 +54,6 @@ export async function hireNpc(
     if (player.health === 0) {
       throw new Error('Cannot hire an NPC while dead');
     }
-    if (npc.alignment === 'evil') {
-      throw new Error('Cannot hire an evil NPC');
-    }
     if (npc.masterId !== null) {
       throw new Error('NPC has already been hired');
     }

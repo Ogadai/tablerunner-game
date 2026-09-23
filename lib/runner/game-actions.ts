@@ -12,13 +12,13 @@ import {
   INamedTarget,
   PlayerActionFastTravel,
   NPCState,
+  MonsterState,
 } from "../store/types";
 import {
   getActionsStateFromRedis,
-  getNpcActionsStateFromRedis,
+  getMonsterActionsStateFromRedis,
 } from '../store/redis-access';
 import { EquipableItemDef, PlayerItem } from '@/lib/games/types';
-import { monsters } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
 import { allItems } from "../games/items";
@@ -28,7 +28,11 @@ import { actionCastSpell, actionReadScroll } from './game-action-spell';
 import { actionMove, actionRespawn } from "./game-action-move";
 import { actionFastTravel, actionPortal } from "./game-action-portal";
 import { actionUseItem } from './game-action-use';
-import { getNpcActions } from "./game-npc-actions";
+import { getCombatActions, getNpcActions } from "./game-npc-actions";
+
+import { getMonsterCombatant } from './monster-combatant';
+import { games } from '../games/games';
+import { playerMessageAtLocation } from './game-messages';
 
 enum EntityActionEntityTypes {
   player,
@@ -53,6 +57,7 @@ const HEAL_SCALING = 0.1;
 
 export async function runGameActions(params: BaseParams): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
+  const monsterMoves: { monster: MonsterState; action: PlayerActionMove }[] = [];
   const playerMoves: Record<string, PlayerActionMove[]> = {};
   const playerPortals: Record<string, PlayerActionPortal[]> = {};
   const playerFought: Record<string, boolean> = {};
@@ -107,16 +112,13 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       });
     }
 
+    for (const monster of params.monsters.filter(m => m.scriptedActions && m.health > 0)) {
+      entityActionsForLocations[monster.location] ??= { entities: [] };
+    }
+
     // Get the NPCs at these locations
     for(const npc of params.gameState.npcs) {
       const locId = `${npc.location.id}`;
-      if (!entityActionsForLocations[locId] && npc.alignment === 'evil') {
-        // Add this NPC even though it is at a different location
-        entityActionsForLocations[locId] = {
-          entities: []
-        };
-      }
-
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
         const masterIsMoving = !!npc.masterId && !!params.gameState.players.find(p => p.id === npc.masterId
@@ -126,7 +128,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving);
 
         entityActionsForLocations[locId].entities.push({
-          entityType: npc.alignment === 'evil' ? EntityActionEntityTypes.monster : EntityActionEntityTypes.npc,
+          entityType: EntityActionEntityTypes.npc,
           entityId: npc.id,
           entitySpeed: npc.baseStats!.speed * Math.random(),
           actions: npcActions.actions,
@@ -143,31 +145,42 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       if (monstersAtLocation.length > 0) {
         const targetsAtLocation = entityActionsForLocations[locId].entities
             .filter(e => e.entityType !== EntityActionEntityTypes.monster)
-            .map(e => getNamedTargetById(params, e.entityId));
+            .map(e => getNamedTargetById(params, e.entityId))
+            .filter(target => target && target.health > 0);
 
         // Mark each player as having fought
         for(const player of targetsAtLocation) {
           playerFought[player.id] = true;
         }
 
-        if (targetsAtLocation.length > 0) {
-          for(const monster of monstersAtLocation) {
+        for (const monster of monstersAtLocation) {
+          const combatant = getMonsterCombatant(monster);
+          let actions: PlayerAction[];
+          if (monster.scriptedActions) {
+            const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
+            actions = queued?.actions ?? (targetsAtLocation.length > 0 ? getCombatActions(params, combatant).actions : []);
+          } else if (combatant.spells.length > 0) {
+            actions = getCombatActions(params, combatant).actions;
+          } else if (targetsAtLocation.length > 0) {
             const target = monsterPickTarget(targetsAtLocation, entityActionsForLocations[locId]);
-            const monsterAction: PlayerActionAttack = {
-              id: 1,
-              type: PlayerActionType.Attack,
-              description: `${monsters[monster.type].name} attacks ${target.name}!`,
-              target: target.id,
-            };
-
-            entityActionsForLocations[locId].entities.push({
-              entityType: EntityActionEntityTypes.monster,
-              entityId: monster.id,
-              entitySpeed: getMonsterStats(monster).speed * Math.random(),
-              actions: [monsterAction],
-              random: Math.random(),
-            });
+            actions = [{ id: 1, type: PlayerActionType.Attack,
+              description: `${combatant.name} attacks ${target.name}!`, target: target.id } as PlayerActionAttack];
+          } else {
+            actions = [];
           }
+          if (monster.scriptedActions || combatant.spells.length > 0) {
+            limitPlayerActionsToCost(combatant, { actions });
+          }
+          for (const action of actions.filter(a => a.type === PlayerActionType.Move)) {
+            monsterMoves.push({ monster, action: action as PlayerActionMove });
+          }
+          entityActionsForLocations[locId].entities.push({
+            entityType: EntityActionEntityTypes.monster,
+            entityId: monster.id,
+            entitySpeed: getMonsterStats(monster).speed * Math.random(),
+            actions: actions.filter(a => a.type !== PlayerActionType.Move),
+            random: Math.random(),
+          });
         }
       }
 
@@ -190,6 +203,24 @@ export async function runGameActions(params: BaseParams): Promise<void> {
             moreActions = true;
           }
         }
+      }
+    }
+
+    // Retreats happen after combat, so opponents complete their actions first.
+    for (const { monster, action } of monsterMoves) {
+      if (monster.health <= 0) continue;
+      const location = games.find(g => g.id === params.gameState.gameId)?.locations.find(l => l.id === monster.location);
+      const move = location?.move.find(m => m.direction === action.direction);
+      const blocked = params.blockedMoves.some(b => b.location === monster.location && b.direction === action.direction);
+      if (move && !blocked) {
+        playerMessageAtLocation(params, monster.id, `**{player}** moved ${action.direction}`);
+        monster.location = move.id;
+      }
+    }
+    for (const monster of params.monsters.filter(m => m.health > 0)) {
+      const caster = getMonsterCombatant(monster);
+      if (caster.spells.length > 0) {
+        caster.magic = Math.min(caster.baseStats!.magic, caster.magic + Math.ceil(caster.baseStats!.magic * MAGIC_BONUS_RATIO));
       }
     }
 
@@ -235,13 +266,6 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 }
 
 async function retrieveActionsForNpc(params: BaseParams, npc: NPCState, masterIsMoving: boolean): Promise<PlayerActionsState> {
-  if (npc.alignment === 'evil') {
-    const evilActions = await getNpcActionsStateFromRedis(params.boardId, params.mapId, npc.id);
-    if (evilActions && evilActions.actions.length > 0) {
-      return evilActions;
-    }
-  }
-  
   return !masterIsMoving ? getNpcActions(params, npc) : { actions: [] };
 }
 
@@ -259,7 +283,7 @@ function characterRecovery(character: INamedTarget, playerFought: boolean) {
 
 }
 
-function limitPlayerActionsToCost(playerState: PlayerState, actionsState: PlayerActionsState) {
+function limitPlayerActionsToCost(playerState: INamedTarget, actionsState: PlayerActionsState) {
   const actionsPerTurn = getPlayerActionsPerTurn(playerState);
   while (getPlayerActionsCosts(playerState, actionsState) > actionsPerTurn.total) {
     // Remove the last action
@@ -276,8 +300,7 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
     const nextAction = entityActions.actions.splice(0, 1)[0];
 
     const entityPlayerOrNpc = entityActions.entityType === EntityActionEntityTypes.player
-        || entityActions.entityType === EntityActionEntityTypes.npc
-        || !!getNpcById(entityActions.entityId);
+        || entityActions.entityType === EntityActionEntityTypes.npc;
 
     if (entityPlayerOrNpc) {
       const character: INamedTarget = (entityActions.entityType === EntityActionEntityTypes.player)
@@ -310,11 +333,17 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
           {
             const attackAction = nextAction as PlayerActionAttack
             const target = getNamedTargetById(params, attackAction.target);
-            if (target.health > 0) {
+            if (target && target.health > 0 && target.location.id === monster.location) {
               monsterAttack(params, monster, target, locationId);
             }
             break;
           }
+          case PlayerActionType.Cast:
+            actionCastSpell(params, getMonsterCombatant(monster), nextAction as PlayerActionCast);
+            break;
+          case PlayerActionType.UseItem:
+            actionUseItem(params, getMonsterCombatant(monster), nextAction as PlayerActionUseItem);
+            break;
         }
       }
     }

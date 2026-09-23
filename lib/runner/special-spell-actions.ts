@@ -1,8 +1,11 @@
 import { monsters } from "../games/monsters";
 import { SpellIds } from "../games/spells";
-import { BaseStats, MonsterListEntry, SpellDef } from "../games/types";
+import { MonsterListEntry, SpellDef } from "../games/types";
 import { INamedTarget, ITarget, MonsterState, NPCState, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
+
+import { isMonsterCaster } from './spell-targets';
+import { playerMessageAtLocation } from './game-messages';
 
 export const specialSpellActions: Record<string, (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) => void> = {
   [SpellIds.spiritGuide]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
@@ -19,12 +22,22 @@ export const specialSpellActions: Record<string, (params: BaseParams, player: IN
 
 function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterListEntry, turns: number,
     expiryAction: 'remove' | 'dead' | 'monster' = 'remove') {
+  if (isMonsterCaster(params, player)) {
+    params.monsters.push({
+      id: `monster-${++params.gameState.counters.monsterId}`,
+      type: spirit.id,
+      location: player.location.id,
+      health: spirit.baseStats.health,
+    });
+    playerMessageAtLocation(params, player.id, `**{player}** summoned **${spirit.name}**`);
+    return;
+  }
   removeOtherSupportedNPCs(params, player);
 
-  const masterId = player.alignment === 'evil' ? null : player.id;
-  const expiryTurns = player.alignment === 'evil' ? undefined : turns;
+  const masterId = player.id;
+  const expiryTurns = turns;
 
-  const npcId = `npc-${params.gameState.npcs.length + 1}`;
+  const npcId = `summon-${++params.gameState.counters.monsterId}`;
   const newNPC: NPCState = {
     id: npcId,
     masterId: masterId,
@@ -46,10 +59,30 @@ function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterL
 }
 
 function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarget[], turns: number, health: number = 10) {
+  if (isMonsterCaster(params, player)) {
+    for (const target of targets) {
+      if ('type' in target) {
+        const monster = target as MonsterState;
+        monster.zombie = true;
+        monster.health = Math.min(health, monsters[monster.type].baseStats.health);
+      } else if (params.gameState.npcs.some(npc => npc.id === target.id)) {
+        const npc = target as NPCState;
+        params.gameState.npcs = params.gameState.npcs.filter(n => n.id !== npc.id);
+        params.monsters.push({ id: npc.id, type: npc.monsterType ?? 'zombie',
+          location: npc.location.id, health, zombie: true });
+      } else {
+        // Players retain control of their character when raised as a zombie.
+        target.zombie = true;
+        target.health = Math.max(health, (target as PlayerState).baseStats!.health);
+      }
+      playerMessageAtLocation(params, player.id, '**{player}** animated a corpse');
+    }
+    return;
+  }
   removeOtherSupportedNPCs(params, player);
 
-  const masterId = player.alignment === 'evil' ? null : player.id;
-  const expiryTurns = player.alignment === 'evil' ? undefined : turns;
+  const masterId = player.id;
+  const expiryTurns = turns;
 
   for(const target of targets) {
     if ((target as INamedTarget).name) {

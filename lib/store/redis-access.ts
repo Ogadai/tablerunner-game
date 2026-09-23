@@ -13,7 +13,8 @@ const getPlayersReadyKey = (boardId: string, mapId: string) => `playersReady:${b
 const getPlayersReadyLock = (boardId: string, mapId: string) => `playersReadyLock:${boardId}:${mapId}`;
 
 const getPlayerActionsKey = (boardId: string, mapId: string, playerId: string) => `playerActions:${boardId}:${mapId}:${playerId}`;
-const getNpcActionsKey = (boardId: string, mapId: string, npcId: string) => `npcActions:${boardId}:${mapId}:${npcId}`;
+// Retain the legacy key so already queued boss actions survive the refactor.
+const getMonsterActionsKey = (boardId: string, mapId: string, npcId: string) => `npcActions:${boardId}:${mapId}:${npcId}`;
 
 const getPlayerStatsKey = (boardId: string, mapId: string, playerId: string) => `playerStats:${boardId}:${mapId}:${playerId}`;
 
@@ -64,12 +65,14 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
       await deletePlayerInventoryFromRedis(boardId, mapId, player.id);
     }
 
-    for(const npc of gameState.npcs) {
-      await deleteNpcActionsStateFromRedis(boardId, mapId, npc.id);
-    }
-
     for(const storeLocation of gameState.stores) {
       deleteStoreStateFromRedis(boardId, mapId, storeLocation);
+    }
+
+    const locations = await getLocationsStateFromRedis(boardId, mapId);
+    for (const monster of locations.monsters.filter(m => m.scriptedActions)) {
+      await deleteMonsterActionsStateFromRedis(boardId, mapId, monster.id);
+      await deletePlayerMessagesFromRedis(boardId, mapId, monster.id);
     }
 
     // Delete the monsters state from Redis
@@ -141,19 +144,19 @@ export async function deleteActionsStateFromRedis(boardId: string, mapId: string
   await redis.del(getPlayerActionsKey(boardId, mapId, playerId));
 }
 
-/* Individual NPC Actions State */
+/* Scripted Monster Actions State */
 
-export async function getNpcActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<PlayerActionsState> {
-  const result = await redis.get(getNpcActionsKey(boardId, mapId, npcId)) as PlayerActionsState;
-  return result || { actions: [] };
+export async function getMonsterActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<PlayerActionsState | null> {
+  const result = await redis.get(getMonsterActionsKey(boardId, mapId, npcId)) as PlayerActionsState;
+  return result || null;
 }
 
-export async function setNpcActionsStateInRedis(boardId: string, mapId: string, npcId: string, newActionsState: PlayerActionsState): Promise<void> {
-  await redis.set(getNpcActionsKey(boardId, mapId, npcId), newActionsState, gameStateOptions);
+export async function setMonsterActionsStateInRedis(boardId: string, mapId: string, npcId: string, newActionsState: PlayerActionsState): Promise<void> {
+  await redis.set(getMonsterActionsKey(boardId, mapId, npcId), newActionsState, gameStateOptions);
 }
 
-export async function deleteNpcActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<void> {
-  await redis.del(getNpcActionsKey(boardId, mapId, npcId));
+export async function deleteMonsterActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<void> {
+  await redis.del(getMonsterActionsKey(boardId, mapId, npcId));
 }
 
 /* Individual Player Stat additions */

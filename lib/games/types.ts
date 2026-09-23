@@ -78,6 +78,7 @@ export interface MonsterListEntry {
   name: string;
   iconXY: { x: number, y: number };
   baseStats: BaseStats;
+  spells?: SpellIds[];
 }
 
 export enum PlayerItemType {

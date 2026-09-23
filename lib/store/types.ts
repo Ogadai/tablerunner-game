@@ -70,7 +70,6 @@ export interface INamedTarget extends ITarget {
   equipped: PlayerInventoryEquipSlots;
   baseStats?: BaseStats;
   recentSpells?: SpellIds[];
-  alignment?: 'good' | 'evil';
   respawnTurns?: number;
 }
 
@@ -181,6 +180,13 @@ export interface PlayerMessagesState {
 export interface MonsterState extends ITarget {
   type: string;
   location: number;
+  magic?: number;
+  spells?: SpellIds[];
+  recentSpells?: SpellIds[];
+  equipment?: PlayerItem[];
+  equipped?: PlayerInventoryEquipSlots;
+  /** Scripted bosses can supply actions even when no players are nearby. */
+  scriptedActions?: boolean;
 }
 
 export interface ItemLocationState extends PlayerItem {
