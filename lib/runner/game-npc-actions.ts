@@ -16,6 +16,9 @@ interface ValueBase {
 interface ActionsWithCosts extends ValueBase {
   cost: number;
   magic: number;
+  restoreMagic?: number;
+  priority?: number;
+  exclusiveGroup?: string;
   action: PlayerAction;
 }
 
@@ -36,14 +39,14 @@ export function getCombatActions(params: BaseParams, npc: INamedTarget): PlayerA
     }
 
     const candidates = [
-      pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic),
+      pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic, npc.baseStats!.magic),
     ];
 
     if (actionsWithCosts.length > 1) {
-      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic));
+      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic, npc.baseStats!.magic));
     }
     if (actionsWithCosts.length > 2) {
-      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic));
+      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic, npc.baseStats!.magic));
     }
 
     return {
@@ -95,7 +98,7 @@ function getAttackAction(params: BaseParams, npc: INamedTarget, target: MonsterS
   return {
     cost: actionsPerTurn.attack,
     magic: 0,
-    value: (npc.baseStats!.damage / 10) * (npc.baseStats!.attack / 10) * target.health,
+    value: expectedDamage(npc.baseStats!.damage, npc.baseStats!.attack, target),
     action
   };
 }
@@ -124,7 +127,9 @@ function getHealPotionAction(params: BaseParams, npc: INamedTarget): ActionsWith
       return {
         cost: consumableItems[item.type].useCost,
         magic: 0,
-        value: 10 / (npc.health / npc.baseStats!.health) - 10,
+        value: Math.min(consumableItems[item.type].bonusStats!.health ?? 0, npc.baseStats!.health - npc.health)
+          * (npc.baseStats!.health / npc.health),
+        priority: npc.health <= npc.baseStats!.health / 2 ? 2 : 0,
         action
       };
     }
@@ -152,7 +157,9 @@ function getMagicPotionAction(params: BaseParams, npc: INamedTarget): ActionsWit
       return {
         cost: consumableItems[item.type].useCost,
         magic: 0,
-        value: 3 / (Math.max(1, npc.magic) / npc.baseStats!.magic) - 3,
+        value: magic * (1 + (npc.baseStats!.magic - npc.magic) / npc.baseStats!.magic),
+        restoreMagic: magic,
+        priority: npc.spells.length > 0 && npc.spells.every(id => spells[id].magicCost > npc.magic) ? 1 : 0,
         action
       };
     }
@@ -166,9 +173,18 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
   if (targets.length === 0) {
     return [];
   }
+  const necromancy = spellId === SpellIds.raiseDead || spellId === SpellIds.animateCorpse;
+  if (necromancy && isMonsterCaster(params, npc)) {
+    const undead = params.monsters.filter(m => m.id !== npc.id && m.location === npc.location.id
+      && m.health > 0 && (m.type === 'skeleton' || m.zombie));
+    if (undead.length >= 4) return [];
+  }
+  // Include spells that become affordable after the available mana potion.
+  const manaPotion = getMagicPotionAction(params, npc);
+  const availableMagic = Math.min(npc.baseStats!.magic, npc.magic + (manaPotion?.restoreMagic ?? 0));
   const castCount = Math.min(
     Math.floor(actionsPerTurn.total / getSpellActionCost(spell, npc.baseStats!.magic)),
-    Math.floor(npc.magic / spell.magicCost),
+    Math.floor(availableMagic / spell.magicCost),
   );
   const actionsWithCosts: ActionsWithCosts[] = [];
   for(let n = 0; n < castCount; n++) {
@@ -187,6 +203,7 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
     actionsWithCosts.push({
       cost: getSpellActionCost(spell, npc.baseStats!.magic),
       magic: spell.magicCost,
+      exclusiveGroup: necromancy ? 'necromancy' : undefined,
       value: getSpellValue(npc, spell, target ? [target] : targets) / (npc.recentSpells?.includes(spellId as SpellIds) ? 1.3 : 1),
       action
     });
@@ -195,16 +212,25 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
   return actionsWithCosts;
 }
 
+/** Estimate useful damage from the combat hit probability, capped by remaining health. */
+function expectedDamage(damage: number, attack: number, target: ITarget): number {
+  const defence = 'type' in target ? getMonsterStats(target as MonsterState).defence : (target as INamedTarget).baseStats!.defence;
+  const hitChance = defence <= 0 ? 1 : attack <= 0 ? 0
+    : attack >= defence ? 1 - defence / (2 * attack) : attack / (2 * defence);
+  return Math.min(target.health, (damage + 1) / 2) * hitChance;
+}
+
 function getSpellValue(npc: INamedTarget, spell: SpellDef, targets: ITarget[]): number {
   const sumValue = (valueFn: (target: ITarget) => number) =>
         targets.reduce((total, t) => total + valueFn(t), 0);
 
   if (spell.bonusStats.damage) {
-    return sumValue(t => (spell.bonusStats.damage! / 10) * (npc.baseStats!.magic / 10) * t.health);
+    return sumValue(t => expectedDamage(spell.bonusStats.damage!, npc.baseStats!.magic, t));
   } else if (spell.bonusStats.health) {
     return sumValue(t => 10 / (t.health / ('type' in t ? getMonsterStats(t as MonsterState).health : (t as INamedTarget).baseStats!.health)) - 10);
   } else if (spell.bonusStats.special) {
-    return 10;
+    // Summons contribute over several turns, comparable to a strong attack.
+    return 15;
   } else {
     const sumBonuses = ['attack', 'damage', 'defence', 'speed']
       .reduce((total, bonus) => total + Math.abs((spell.bonusStats as any)[bonus] || 0), 0)
@@ -212,24 +238,26 @@ function getSpellValue(npc: INamedTarget, spell: SpellDef, targets: ITarget[]): 
   }
 }
 
-function pickActions(actionsWithCosts: ActionsWithCosts[], maxCost: number, maxMagic: number): ActionsList {
+function pickActions(actionsWithCosts: ActionsWithCosts[], maxCost: number, initialMagic: number, maxMagic: number): ActionsList {
   let remainActions = [...actionsWithCosts];
   const actions: PlayerAction[] = [];
   let value = 0;
   let cost = 0;
-  let magic = 0;
+  let magic = initialMagic;
 
   let canAddMore = true;
   while(canAddMore) {
-    const affordable = remainActions.filter(a => a.cost <= maxCost - cost && a.magic <= maxMagic - magic);
+    const affordable = remainActions.filter(a => a.cost <= maxCost - cost && a.magic <= magic);
     if (affordable.length > 0) {
-      const nextAction = weightedRandomPick(affordable);
+      const priority = Math.max(...affordable.map(a => a.priority ?? 0));
+      const nextAction = weightedRandomPick(affordable.filter(a => (a.priority ?? 0) === priority));
       value += nextAction.value;
       cost += nextAction.cost;
-      magic += nextAction.magic;
+      magic = Math.min(maxMagic, magic - nextAction.magic + (nextAction.restoreMagic ?? 0));
       actions.push(nextAction.action)
 
-      remainActions = remainActions.filter(a => a.action.id !== nextAction.action.id);
+      remainActions = remainActions.filter(a => a.action.id !== nextAction.action.id
+        && (!nextAction.exclusiveGroup || a.exclusiveGroup !== nextAction.exclusiveGroup));
     } else {
       canAddMore = false;
     }

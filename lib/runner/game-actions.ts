@@ -158,7 +158,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
           let actions: PlayerAction[];
           if (monster.scriptedActions) {
             const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
-            actions = queued?.actions ?? (targetsAtLocation.length > 0 ? getCombatActions(params, combatant).actions : []);
+            actions = queued?.actions ?? getCombatActions(params, combatant).actions;
           } else if (combatant.spells.length > 0) {
             actions = getCombatActions(params, combatant).actions;
           } else if (targetsAtLocation.length > 0) {
