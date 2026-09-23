@@ -374,11 +374,7 @@ export const lichKing: ProcessRunner = {
           });
       }
 
-      const googleModel = process.env.GOOGLE_GENERATIVE_AI_MODEL;
-      if (!googleModel) {
-        console.error('No Google Model defined');
-        return;
-      }
+      const googleModel = process.env.GOOGLE_GENERATIVE_AI_MODEL || 'gemini-3.1-flash-lite';
 
       const gameInfo = {
         lichKing: lich,
@@ -394,15 +390,23 @@ export const lichKing: ProcessRunner = {
 
         const result = await generateText({
           model: google(googleModel),
+          maxRetries: 0,
+          abortSignal: AbortSignal.timeout(5000),
+          providerOptions: {
+            google: {
+              serviceTier: 'priority',
+              thinkingLevel: 'minimal',
+            },
+          },
           system: `You are the Evil Lich King, the final boss monster of a fantasy RPG game,
-          a necromancer magic user. Your castle is being invaded by heros trying to end your tyrany,
-          and it is your task to defeat them. You must choose a set of actions to take for this turn.
-          Each action has an "action" cost, and you cannot exceed 20 action points.
-          Spells also have a "magic" cost, and you cannot exceed the amount of magic you have left
-          (your "magic" will go up by ${Math.ceil(lich.baseStats!.magic * 0.2)} points each turn until your maximum in "baseStats").
-          As a necromancer, you favour Raise Dead and Animate Corpse spells to build an army of minions.
-          If there are no heros at your location, you can choose to do nothing and wait for the heros to come to you,
-          or you can move around the castle looking for them.`,
+            a necromancer magic user. Your castle is being invaded by heros trying to end your tyrany,
+            and it is your task to defeat them. You must choose a set of actions to take for this turn.
+            Each action has an "action" cost, and you cannot exceed 20 action points.
+            Spells also have a "magic" cost, and you cannot exceed the amount of magic you have left
+            (your "magic" will go up by ${Math.ceil(lich.baseStats!.magic * 0.2)} points each turn until your maximum in "baseStats").
+            As a necromancer, you favour Raise Dead and Animate Corpse spells to build an army of minions.
+            If there are no heros at your location, you can choose to do nothing and wait for the heros to come to you,
+            or you can move around the castle looking for them.`,
           prompt: `${JSON.stringify(gameInfo)}`,
           
           // Pass the output constraint here instead
