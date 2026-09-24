@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { listSavedGames } from '@/lib/store/saveGameBlobs';
 import type { ApiResponse } from '@/lib/api-response';
@@ -51,32 +50,37 @@ export default function SavedGames({ boardId, mapId, initialResult }: {
   }
 
   return (
-    <section className={styles.page} aria-labelledby="saved-games-title">
+    <section className={styles.page} aria-label="Saved games">
       {error && <p role="alert">{error}</p>}
-      <div aria-busy={loading}>
+      <div className={styles.tableContainer} tabIndex={0} role="region" aria-label="Saved games" aria-busy={loading}>
         {data && data.games.length > 0 && (
-          <div className={styles.tableContainer} tabIndex={0} role="region" aria-label="Saved games">
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">Save name</th>
-                  <th scope="col">Players</th>
-                  <th scope="col">Turn</th>
-                  <th scope="col">Saved</th>
+          <table className={styles.table} role="table">
+            <thead>
+              <tr>
+                <th scope="col">Save name</th>
+                <th scope="col">Players</th>
+                <th scope="col">Turn</th>
+                <th scope="col">Saved</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody role="rowgroup">
+              {data.games.map(game => (
+                <tr key={game.pathname} role="row">
+                  <th scope="row" role="rowheader" className={styles.saveName}>{game.saveName}</th>
+                  <td role="cell"><span className={styles.mobileLabel} aria-hidden="true">Players</span>{game.playerCount}</td>
+                  <td role="cell"><span className={styles.mobileLabel} aria-hidden="true">Turn</span>{game.turn}</td>
+                  <td role="cell" className={styles.savedTime}>
+                    <span className={styles.mobileLabel} aria-hidden="true">Saved</span>
+                    <time dateTime={game.savedAt}>{isClient ? dateFormat.format(new Date(game.savedAt)) : '—'}</time>
+                  </td>
+                  <td role="cell" className={styles.loadButton}><button type="button" className="btn-secondary">
+                    <span className="material-symbols-outlined">cloud_download</span></button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.games.map(game => (
-                  <tr key={game.pathname}>
-                    <th scope="row" className={styles.saveName}>{game.saveName}</th>
-                    <td>{game.playerCount}</td>
-                    <td>{game.turn}</td>
-                    <td><time dateTime={game.savedAt}>{isClient ? dateFormat.format(new Date(game.savedAt)) : '—'}</time></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
         {data && data.games.length === 0 && (
           <p>{pageIndex === 0 ? 'No saved games for this board and map yet.' : 'No saved games on this page.'}</p>
