@@ -1,5 +1,6 @@
 .Content,
 .SubContent {
+	z-index: 1000;
 	min-width: 220px;
 	background-color: var(--bg-menu);
 	border-radius: 3px;
