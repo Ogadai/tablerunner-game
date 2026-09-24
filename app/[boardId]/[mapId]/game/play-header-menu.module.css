@@ -80,6 +80,12 @@
 	}
 }
 
+.Separator {
+	height: 1px;
+	background-color: var(--border-stone);
+	margin: 5px;
+}
+
 @keyframes slideUpAndFade {
 	from {
 		opacity: 0;

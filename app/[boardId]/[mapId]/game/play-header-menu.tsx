@@ -114,6 +114,10 @@ export default function PlayHeaderMenu(  { boardId, mapId }
     router.push(`/${boardId}/${mapId}`);
   }
 
+  const loadGameAction = async () => {
+    router.push(`/${boardId}/${mapId}/load`);
+  }
+
   return (
     <Dialog.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
       <DropdownMenu.Root>
@@ -131,12 +135,21 @@ export default function PlayHeaderMenu(  { boardId, mapId }
           <DropdownMenu.Item className={styles.Item} onClick={() => setSettingsOpen(true)}>
             Board Settings <div className={`${styles.RightSlot} material-symbols-outlined`}>settings</div>
           </DropdownMenu.Item>
+
+          <DropdownMenu.Separator className={styles.Separator} />
+
           <DropdownMenu.Item className={styles.Item} onSelect={() => {
             // Let the menu close and restore focus before opening the prompt.
             setTimeout(() => { void saveGameAction(); }, 0);
           }}>
-            Save Game <div className={`${styles.RightSlot} material-symbols-outlined`}>save</div>
+            Save Game <div className={`${styles.RightSlot} material-symbols-outlined`}>backup</div>
           </DropdownMenu.Item>
+					<DropdownMenu.Item className={styles.Item} onClick={loadGameAction}>
+						Load Game <div className={`${styles.RightSlot} material-symbols-outlined`}>cloud_download</div>
+					</DropdownMenu.Item>
+
+          <DropdownMenu.Separator className={styles.Separator} />
+
 					<DropdownMenu.Item className={styles.Item} onClick={deleteGameAction}>
 						Delete Game <div className={`${styles.RightSlot} ${styles.deleteIcon} material-symbols-outlined`}>delete_forever</div>
 					</DropdownMenu.Item>
