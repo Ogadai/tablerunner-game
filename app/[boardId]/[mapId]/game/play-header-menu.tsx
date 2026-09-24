@@ -11,6 +11,7 @@ import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import styles from "./play-header-menu.module.css";
 
 import { deleteGameState, getBoardSettings, setBoardSettings } from "@/lib/store/gameState";
+import { saveGameToBlob } from '@/lib/store/saveGameBlobs';
 import { storeBoardDefaultSettings } from "@/lib/store/types";
 import gameStateLightingService from './game-state-lighting-service';
 
@@ -56,6 +57,42 @@ export default function PlayHeaderMenu(  { boardId, mapId }
     }
   }, []);
 
+  const saveGameAction = async () => {
+    const result = await Swal.fire({
+      ...getSwalDefaultOptions(),
+      title: 'Save Game',
+      input: 'text',
+      inputPlaceholder: 'Enter a name for this save',
+      showCancelButton: true,
+      confirmButtonText: 'Save',
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      allowEscapeKey: () => !Swal.isLoading(),
+      inputValidator: value => value.trim() ? undefined : 'Please enter a save name.',
+      preConfirm: async (saveName: string) => {
+        try {
+          const response = await saveGameToBlob(boardId, mapId, saveName.trim());
+          if (!response.success) {
+            Swal.showValidationMessage('Unable to save the game. Please try again.');
+            return false;
+          }
+          return true;
+        } catch {
+          Swal.showValidationMessage('Unable to save the game. Please try again.');
+          return false;
+        }
+      },
+    });
+
+    if (result.isConfirmed) {
+      await Swal.fire({
+        ...getSwalDefaultOptions(),
+        title: 'Game saved',
+        icon: 'success',
+      });
+    }
+  };
+
   const deleteGameAction = async () => {
     const result = await Swal.fire({
       ...getSwalDefaultOptions(),
@@ -93,6 +130,12 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 					</DropdownMenu.Item>
           <DropdownMenu.Item className={styles.Item} onClick={() => setSettingsOpen(true)}>
             Board Settings <div className={`${styles.RightSlot} material-symbols-outlined`}>settings</div>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item className={styles.Item} onSelect={() => {
+            // Let the menu close and restore focus before opening the prompt.
+            setTimeout(() => { void saveGameAction(); }, 0);
+          }}>
+            Save Game <div className={`${styles.RightSlot} material-symbols-outlined`}>save</div>
           </DropdownMenu.Item>
 					<DropdownMenu.Item className={styles.Item} onClick={deleteGameAction}>
 						Delete Game <div className={`${styles.RightSlot} ${styles.deleteIcon} material-symbols-outlined`}>delete_forever</div>

@@ -2,7 +2,7 @@
 
 import { ApiResponse } from "../api-response";
 import { get, list, put } from '@vercel/blob';
-import { getGameSnapshotFromRedis, restoreGameSnapshotInRedis } from './redis-access';
+import { getGameSnapshotFromRedis, restoreGameSnapshotInRedis } from './redis-blob-saves';
 import { savedGameSchema, SavedGameList, validateGameScope } from './savedGameTypes';
 
 function getSavePrefix(boardId: string, mapId: string): string {
@@ -77,7 +77,7 @@ export async function saveGameToBlob(boardId: string, mapId: string, saveName: s
     };
     const pathname = getSavePathname(boardId, mapId, metadata);
     await put(pathname, JSON.stringify({ schemaVersion: 1, metadata, redisState }), {
-      access: 'private',
+      access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
       allowOverwrite: false,
@@ -87,6 +87,7 @@ export async function saveGameToBlob(boardId: string, mapId: string, saveName: s
       success: true
     };
   } catch (error) {
+    console.log('Failed to save game', error);
     return {
       success: false,
       error: (error as Error).message
