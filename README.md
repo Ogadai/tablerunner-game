@@ -20,6 +20,47 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Saved games
+
+`saveGameToBlob(boardId, mapId, saveName)` writes a new JSON snapshot to a
+**private** Vercel Blob store. Configure `BLOB_READ_WRITE_TOKEN` for that store
+alongside the existing Upstash Redis environment variables.
+
+Saves use the prefix
+`saved-games/${encodeURIComponent(boardId)}/${encodeURIComponent(mapId)}/`.
+`listSavedGames(boardId, mapId, cursor?)` returns an `ApiResponse` whose `data`
+contains `{ games, cursor, hasMore }`. Each page contains up to 20 saves in Blob
+pathname order. Pass the returned cursor while `hasMore` is true. Each entry
+includes `pathname`, save UUID, board/map IDs, name, player count and turn parsed
+from the pathname, plus `savedAt` from Blob upload time. Listing does not download
+snapshots. `gameId` remains in the snapshot and is not returned by listings.
+An invalid pathname returns an error for the page.
+
+New filenames contain the save UUID, player count, turn and URL-encoded name:
+`<uuid>_players-<count>_turn-<turn>_name-<encoded-name>.json`.
+Older filenames without `_name-...` can still be listed and loaded; their listing
+name is `Saved game <uuid>` because the original name is only inside the snapshot.
+The JSON contains `schemaVersion: 1`, `metadata` (including the save name and
+timestamp), and `redisState`, a mapping from original Redis keys to their values.
+Repeated save names create separate snapshots.
+
+Snapshots include all current game-state key families, including queued actions,
+messages, inventory/stat changes, shop stock, board settings and processing turn.
+Temporary lock keys and expired values are excluded. Keys are discovered with
+SCAN and their values read together with MGET; this is not a transaction spanning
+key discovery or an entire turn update, so save while the game is idle for a
+consistent turn checkpoint.
+
+`loadGameFromBlob(boardId, mapId, pathname)` accepts a pathname returned by the
+listing and returns `ApiResponse<void>`. It validates the snapshot version,
+metadata, basic game structure and Redis key scope before changing Redis. Saves
+can only be loaded into their original board/map. Loading replaces the current
+state in a Redis transaction, removes existing state keys absent from the save,
+applies the normal one-week expiry, and publishes game/ready-state updates.
+Load while the game is idle: key discovery and other game writers are not covered
+by the restore transaction. A notification failure is reported even if the Redis
+restore already committed. Listing and loading UI are not implemented.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
