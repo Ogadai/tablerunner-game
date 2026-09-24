@@ -34,7 +34,10 @@ function parseSavePathname(boardId: string, mapId: string, pathname: string) {
 
 async function readSavedGame(boardId: string, mapId: string, pathname: string) {
   const pathMetadata = parseSavePathname(boardId, mapId, pathname);
-  const blob = await get(pathname, { access: 'private' });
+  // get() inserts the pathname directly into a URL. Encode each stored segment
+  // so literal escapes in blob names (e.g. %20) are requested as %2520.
+  const requestPathname = pathname.split('/').map(segment => encodeURIComponent(segment)).join('/');
+  const blob = await get(requestPathname, { access: 'public' });
   if (!blob || blob.statusCode !== 200) {
     throw new Error('Saved game could not be found or read');
   }
