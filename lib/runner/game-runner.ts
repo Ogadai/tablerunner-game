@@ -13,6 +13,7 @@ import {
   getLocationsStateFromRedis,
   getPlayerStatsFromRedis,
   lockGameStateInRedis,
+  lockReadyStateInRedis,
   publishGameProcessingStarted,
   publishGameProcessingFailed,
   publishGameStateUpdated,
@@ -21,6 +22,8 @@ import {
   lockForProcessing,
   getProcessingTurnFromRedis,
   setProcessingTurnInRedis,
+  processingLockTTL,
+  RedisLockError,
 } from '../store/redis-access';
 import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
@@ -31,22 +34,44 @@ import { populateMonsters } from "./populate-monsters";
 import { updatePortalAndShopLeds } from "./game-action-portal";
 import { updateMonsterLeds } from './game-action-monsters';
 
-export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
+export async function checkAllPlayersReady(boardId: string, mapId: string): Promise<void> {
   let gameStateLock: (() => Promise<void>) | null = null;
   let processingLock:  (() => Promise<void>) | null = null;
+  let readyLock: (() => Promise<void>) | null = null;
   let turnCompleted = false;
   try {
-    processingLock = await lockForProcessing(boardId, mapId);
-    gameStateLock = await lockGameStateInRedis(boardId, mapId);
+    try {
+      processingLock = await lockForProcessing(boardId, mapId);
+    } catch (error) {
+      if (error instanceof RedisLockError) {
+        // Between-turn processing checks readiness again when its NPC actions are saved.
+        return;
+      }
+      throw error;
+    }
+    // Inventory writes must also stay excluded for the full turn-processing window.
+    gameStateLock = await lockGameStateInRedis(boardId, mapId, processingLockTTL);
     const gameState = await getGameStateFromRedis(boardId, mapId);
+    readyLock = await lockReadyStateInRedis(boardId, mapId);
+    const readyState = await getReadyStateFromRedis(boardId, mapId);
 
-    turnCompleted = await processTurnIfReady(boardId, mapId, gameState, readyState);
+    if (gameState.players.every(player => player.health === 0 || readyState.readyPlayerIds.includes(player.id))) {
+      // Do not hold the short readiness lock during turn execution.
+      await readyLock();
+      readyLock = null;
+      turnCompleted = await processTurnIfReady(boardId, mapId, gameState, readyState);
+    }
   } finally {
     if (gameStateLock) {
       await gameStateLock();
     }
     if (processingLock) {
       await processingLock();
+    }
+    if (readyLock) {
+      // On a not-ready snapshot, release processing first so a new ready update
+      // cannot be accepted and then deferred to a check that has already finished.
+      await readyLock();
     }
   }
 
@@ -72,31 +97,29 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
     const processingTurn = await getProcessingTurnFromRedis(boardId, mapId)
     const gameState = await getGameStateFromRedis(boardId, mapId);
 
-    if (processingTurn.turn === gameState.turn) {
-      return;
+    if (processingTurn.turn !== gameState.turn) {
+      await setProcessingTurnInRedis(boardId, mapId, { turn: gameState.turn });
+
+      await executeProcessesBetweenTurns({
+        boardId,
+        mapId,
+        gameState,
+        messages: {},
+        blockedMoves: [],
+        coins: [],
+        items: [],
+        monsters: [],
+        npcs: [],
+      });
     }
-
-    await setProcessingTurnInRedis(boardId, mapId, { turn: gameState.turn })
-
-    await executeProcessesBetweenTurns({
-      boardId,
-      mapId,
-      gameState,
-      messages: {},
-      blockedMoves: [],
-      coins: [],
-      items: [],
-      monsters: [],
-      npcs: [],
-    });
   } finally {
     if (processingLock) {
       await processingLock();
     }
   }
 
-  const readyState = await getReadyStateFromRedis(boardId, mapId);
-  await checkAllPlayersReady(boardId, mapId, readyState);
+  // Also check after duplicate requests: readiness may have changed while this lock was held.
+  await checkAllPlayersReady(boardId, mapId);
 }
 
 async function processTurnIfReady(boardId: string, mapId: string, gameState: GameState, readyState: PlayerReadyState): Promise<boolean> {

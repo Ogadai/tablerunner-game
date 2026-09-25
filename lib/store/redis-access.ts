@@ -5,6 +5,7 @@ import { publishMessage } from '../messages/message-publisher';
 
 const redis = Redis.fromEnv();
 const defaultLockTTL = 5000;
+export const processingLockTTL = 30000;
 
 export const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
 const getGameStateLock = (boardId: string, mapId: string) => `gameStateLock:${boardId}:${mapId}`;
@@ -75,8 +76,8 @@ export async function commitGameTurnInRedis(
   await transaction.exec();
 }
 
-export async function lockGameStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
-  return getLock(getGameStateLock(boardId, mapId));
+export async function lockGameStateInRedis(boardId: string, mapId: string, ttl = defaultLockTTL): Promise<() => Promise<void>> {
+  return getLock(getGameStateLock(boardId, mapId), ttl);
 }
 
 export async function deleteGameStateFromRedis(boardId: string, mapId: string): Promise<void> {
@@ -292,7 +293,7 @@ export async function setBoardSettingsFromRedis(boardId: string, mapId: string, 
 /* Locking for processing */
 
 export async function lockForProcessing(boardId: string, mapId: string): Promise<() => Promise<void>> {
-  return getLock(getProcessingLock(boardId, mapId));
+  return getLock(getProcessingLock(boardId, mapId), processingLockTTL);
 }
 
 export async function getProcessingTurnFromRedis(boardId: string, mapId: string): Promise<ProcessingTurn> {

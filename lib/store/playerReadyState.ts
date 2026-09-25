@@ -45,8 +45,12 @@ export async function setPlayerReady(boardId: string, mapId: string, playerId: s
     // Store data in Redis
     await setReadyStateInRedis(boardId, mapId, newState);
 
+    // The five-second readiness lock only protects the readiness update, not turn execution.
+    await readyLock();
+    readyLock = null;
+
     if (ready) {
-      await checkAllPlayersReady(boardId, mapId, newState);
+      await checkAllPlayersReady(boardId, mapId);
     }
 
     return {
@@ -60,7 +64,7 @@ export async function setPlayerReady(boardId: string, mapId: string, playerId: s
   }
   finally {
     if (readyLock) {
-      readyLock();
+      await readyLock();
     }
   }
 }
