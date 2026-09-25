@@ -1,7 +1,7 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { get, list, put } from '@vercel/blob';
+import { get, list, put, type ListBlobResultBlob } from '@vercel/blob';
 import { getGameSnapshotFromRedis, restoreGameSnapshotInRedis } from './redis-blob-saves';
 import { savedGameSchema, SavedGameList, validateGameScope } from './savedGameTypes';
 
@@ -98,14 +98,28 @@ export async function saveGameToBlob(boardId: string, mapId: string, saveName: s
   }
 }
 
-/** Returns a page in Blob pathname order. Pass the returned cursor for the next page. */
+/** Returns a page with the newest saves first. The cursor is an offset into the sorted list. */
 export async function listSavedGames(boardId: string, mapId: string, cursor?: string): Promise<ApiResponse<SavedGameList>> {
   try {
-    if (cursor !== undefined && typeof cursor !== 'string') {
+    if (cursor !== undefined && (typeof cursor !== 'string' || !/^\d+$/.test(cursor))) {
       throw new Error('Invalid saved game cursor');
     }
-    const result = await list({ prefix: getSavePrefix(boardId, mapId), cursor, limit: 20 });
-    const games = result.blobs.map(blob => {
+    const offset = cursor === undefined ? 0 : Number(cursor);
+    if (!Number.isSafeInteger(offset)) {
+      throw new Error('Invalid saved game cursor');
+    }
+    const prefix = getSavePrefix(boardId, mapId);
+    const blobs: ListBlobResultBlob[] = [];
+    let blobCursor: string | undefined;
+    // Blob pages are in pathname order, so collect them before sorting and paginating.
+    do {
+      const result = await list({ prefix, cursor: blobCursor, limit: 1000 });
+      blobs.push(...result.blobs);
+      blobCursor = result.hasMore ? result.cursor : undefined;
+    } while (blobCursor);
+    blobs.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime() || a.pathname.localeCompare(b.pathname));
+    const nextOffset = offset + 20;
+    const games = blobs.slice(offset, nextOffset).map(blob => {
       const metadata = parseSavePathname(boardId, mapId, blob.pathname);
       return {
         ...metadata,
@@ -116,7 +130,8 @@ export async function listSavedGames(boardId: string, mapId: string, cursor?: st
         pathname: blob.pathname,
       };
     });
-    return { success: true, data: { games, cursor: result.cursor, hasMore: result.hasMore } };
+    const hasMore = nextOffset < blobs.length;
+    return { success: true, data: { games, cursor: hasMore ? String(nextOffset) : undefined, hasMore } };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
