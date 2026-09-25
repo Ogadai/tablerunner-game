@@ -1,6 +1,11 @@
 import { ensureBidirectionalMove, getDirectionBetweenCells, removeBidirectionalMove } from './mapedit';
 import { Location } from '@/lib/games/types';
 
+// Movement helpers do not call the monster-population server action.
+jest.mock('@/lib/runner/populate-monsters', () => ({
+  populateMonsters: jest.fn(),
+}));
+
 describe('MapEdit movement helpers', () => {
   it('calculates the correct direction between adjacent cells on the map grid', () => {
     expect(getDirectionBetweenCells(10, 31)).toBe('n');

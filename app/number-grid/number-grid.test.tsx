@@ -15,7 +15,6 @@ describe('NumberGrid', () => {
       <NumberGrid
         gameId="cauldronfire"
         locations={locations}
-        showCircleStatus
         showLineStatus
         renderCircleStatus={() => 'circle-status'}
         renderLineStatus={() => 'line-status'}

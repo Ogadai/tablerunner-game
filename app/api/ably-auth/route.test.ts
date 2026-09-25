@@ -11,21 +11,27 @@ const mockCreateTokenRequest = jest.fn();
 const MockRest = Ably.Rest as unknown as jest.Mock;
 
 function createRequest(body: unknown): Request {
-  return {
-    json: async () => body,
-  } as Request;
+  return new Request('http://localhost/api/ably-auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 describe('POST /api/ably-auth', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    process.env.ABLY_API_KEY = 'test-ably-api-key';
+    jest.resetAllMocks();
+    jest.replaceProperty(process, 'env', { ...process.env, ABLY_API_KEY: 'test-ably-api-key' });
 
     MockRest.mockImplementation(() => ({
       auth: {
         createTokenRequest: mockCreateTokenRequest,
       },
     }));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('returns 400 when playerId is missing', async () => {
@@ -37,8 +43,8 @@ describe('POST /api/ably-auth', () => {
     expect(MockRest).not.toHaveBeenCalled();
   });
 
-  it('returns 400 when playerId is empty', async () => {
-    const response = await POST(createRequest({ playerId: '' }));
+  it.each(['', null, false, 0])('returns 400 when playerId is %s', async playerId => {
+    const response = await POST(createRequest({ playerId }));
     const body = await response.json();
 
     expect(response.status).toBe(400);
@@ -96,5 +102,21 @@ describe('POST /api/ably-auth', () => {
 
     expect(response.status).toBe(500);
     expect(body).toEqual({ error: 'Failed to generate token' });
+    expect(MockRest).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 when the Ably client cannot be initialized', async () => {
+    MockRest.mockImplementation(() => { throw new Error('Invalid API key'); });
+    const response = await POST(createRequest({ playerId: 'player-123' }));
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: 'Failed to generate token' });
+    expect(mockCreateTokenRequest).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 for a null JSON body without contacting Ably', async () => {
+    const response = await POST(createRequest(null));
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: 'Failed to generate token' });
+    expect(MockRest).not.toHaveBeenCalled();
   });
 });

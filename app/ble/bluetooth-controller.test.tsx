@@ -42,7 +42,7 @@ describe('BluetoothController', () => {
   const mockBoardId = 'test-board-123';
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     localStorage.clear();
     (useParams as jest.Mock).mockReturnValue({ boardId: mockBoardId });
     (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.Disconnected);
@@ -57,6 +57,7 @@ describe('BluetoothController', () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     // Restore original userAgent if it exists
     if (originalUserAgent) {
       Object.defineProperty(navigator, 'userAgent', originalUserAgent);
@@ -372,16 +373,13 @@ describe('BluetoothController', () => {
   });
 
   describe('LocalStorage interactions', () => {
-    it('should prompt to connect when initially disconnected', async () => {
+    it('should wait for a button click when initially disconnected', () => {
       render(<BluetoothController bleOtherPlayer={false} />);
 
-      await waitFor(() => {
-        expect(Swal.fire).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: 'Connect to board?',
-          })
-        );
-      });
+      expect(Swal.fire).not.toHaveBeenCalled();
+      expect(bluetoothService.connect).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button'));
+      expect(bluetoothService.connect).toHaveBeenCalledWith(mockBoardId);
     });
 
     it('should not prompt to connect when another player is connected', async () => {
@@ -441,19 +439,16 @@ describe('BluetoothController', () => {
       });
     });
 
-    it('should prompt for connection if ble_connected is false', async () => {
+    it('should wait for a button click if ble_connected is false', () => {
       localStorage.setItem('ble_connected', 'false');
       (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: false });
 
       render(<BluetoothController bleOtherPlayer={false} />);
 
-      await waitFor(() => {
-        expect(Swal.fire).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: 'Connect to board?',
-          })
-        );
-      });
+      expect(Swal.fire).not.toHaveBeenCalled();
+      expect(bluetoothService.connect).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button'));
+      expect(bluetoothService.connect).toHaveBeenCalledWith(mockBoardId);
     });
   });
 

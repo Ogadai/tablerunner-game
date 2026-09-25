@@ -9,6 +9,8 @@ describe('BluetoothService', () => {
   let mockBluetooth: any;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.spyOn(console, 'log').mockImplementation(() => {});
     service = new BluetoothService();
 
     mockCharacteristic = {
@@ -44,7 +46,11 @@ describe('BluetoothService', () => {
     localStorage.clear();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Drain the queued welcome animation before replacing this test's BLE mocks.
+    await jest.runAllTimersAsync();
+    jest.useRealTimers();
+    jest.restoreAllMocks();
     delete (navigator as any).bluetooth;
     localStorage.clear();
   });
@@ -140,19 +146,20 @@ describe('BluetoothService', () => {
     expect(service.getState()).toBe(BleState.Disconnected);
   });
 
-  it('should return false when no characteristic is available for sending', async () => {
-    const result = await service.sendMessage('PING');
+  it('should skip sending when no characteristic is available', async () => {
+    await service.sendMessage('PING');
+    await jest.runAllTimersAsync();
 
-    expect(result).toBe(false);
+    expect(mockCharacteristic.writeValue).not.toHaveBeenCalled();
   });
 
   it('should send a message using the BLE characteristic when connected', async () => {
     (service as any).device = mockDevice;
     (service as any).characteristic = mockCharacteristic;
 
-    const result = await service.sendMessage('PING');
+    await service.sendMessage('PING');
+    await jest.runAllTimersAsync();
 
-    expect(result).toBe(true);
     expect(mockCharacteristic.writeValue).toHaveBeenCalledTimes(1);
 
     const payload = mockCharacteristic.writeValue.mock.calls[0][0];

@@ -73,6 +73,7 @@ describe('GameTopicService', () => {
     const listener = jest.fn();
 
     const unsubscribe = GameTopicService.subscribe(topicId, listener);
+    unsubscribers.push(unsubscribe);
 
     GameTopicService.raiseGameStateUpdated(topicId);
     unsubscribe();
@@ -95,6 +96,47 @@ describe('GameTopicService', () => {
 
     GameTopicService.raiseGameStateUpdated(topicId);
 
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes one listener while keeping the others subscribed', () => {
+    const first = jest.fn();
+    const second = jest.fn();
+    const unsubscribe = GameTopicService.subscribe(topicId, first);
+    unsubscribers.push(unsubscribe);
+    subscribe(topicId, second);
+
+    unsubscribe();
+    unsubscribe();
+    GameTopicService.raiseGameStateUpdated(topicId);
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows new subscriptions after the last listener leaves', () => {
+    const first = jest.fn();
+    const second = jest.fn();
+    const unsubscribe = GameTopicService.subscribe(topicId, first);
+    unsubscribe();
+    subscribe(topicId, second);
+
+    GameTopicService.raiseGameStateUpdated(topicId);
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the same callback subscribed independently to another topic', () => {
+    const listener = jest.fn();
+    const unsubscribe = GameTopicService.subscribe(topicId, listener);
+    unsubscribers.push(unsubscribe);
+    subscribe(otherTopicId, listener);
+    unsubscribe();
+
+    GameTopicService.raiseGameStateUpdated(topicId);
+    expect(listener).not.toHaveBeenCalled();
+    GameTopicService.raiseGameStateUpdated(otherTopicId);
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
