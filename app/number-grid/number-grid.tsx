@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Image from 'next/image';
-import { cauldronOfFireLocations } from '@/lib/games/maps/cauldron-of-fire';
+import { cauldronOfFire } from '@/lib/games/maps/cauldron-of-fire/index';
 import { GRID_CELLS, MAP_COLUMNS } from '@/lib/games/gridCells';
 import type { Location, LocationMove } from '@/lib/games/types';
 import styles from './number-grid.module.css';
@@ -10,7 +10,7 @@ import styles from './number-grid.module.css';
 const DIAGONAL_MOVES = ['nw', 'ne', 'se', 'sw'];
 
 const locationsForGames: Record<string, Location[]> = {
-  cauldronfire: cauldronOfFireLocations,
+  cauldronfire: cauldronOfFire.locations,
 };
 
 const directionAngles: Record<LocationMove['direction'], number> = {

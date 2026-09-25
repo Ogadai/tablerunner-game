@@ -9,7 +9,7 @@ import styles from './mapedit.module.css';
 import { useSearchParams } from 'next/navigation';
 import { cinzel } from '@/app/fonts';
 
-import { cauldronOfFireLocations } from '@/lib/games/maps/cauldron-of-fire';
+import { cauldronOfFire } from '@/lib/games/maps/cauldron-of-fire/index';
 import { monsters } from '@/lib/games/monsters';
 import { Location, LocationMoveDirection } from '@/lib/games/types';
 import { GRID_CELLS, MAP_COLUMNS } from '@/lib/games/gridCells';
@@ -19,7 +19,7 @@ import { MonsterState } from '@/lib/store/types';
 import { populateMonsters } from '@/lib/runner/populate-monsters';
 
 const mapsForGames: { [id: string]: Location[] } = {
-  'cauldronfire': cauldronOfFireLocations
+  'cauldronfire': cauldronOfFire.locations
 };
 
 export const getCellCoordinates = (cell: number) => {

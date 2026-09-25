@@ -103,7 +103,7 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
     const processingTurn = await getProcessingTurnFromRedis(boardId, mapId)
     const gameState = await getGameStateFromRedis(boardId, mapId);
 
-    if (gameState.players.some(player => player.health > 0) && processingTurn.turn !== gameState.turn) {
+    if (gameState.players && gameState.players.some(player => player.health > 0) && processingTurn.turn !== gameState.turn) {
       await setProcessingTurnInRedis(boardId, mapId, { turn: gameState.turn });
 
       await executeProcessesBetweenTurns({
