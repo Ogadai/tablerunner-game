@@ -5,10 +5,13 @@ import {
   ITarget,
   NPCState,
   MonsterState,
+  PlayerActionType,
 } from "../store/types";
 import {
   getGameStateFromRedis,
   commitGameTurnInRedis,
+  commitPausedGameInRedis,
+  getActionsStateFromRedis,
   setReadyStateInRedis,
   getLocationsStateFromRedis,
   getPlayerStatsFromRedis,
@@ -33,12 +36,13 @@ import { executeProcessesBetweenTurns, executeProcessesForTurn, initialiseProces
 import { populateMonsters } from "./populate-monsters";
 import { updatePortalAndShopLeds } from "./game-action-portal";
 import { updateMonsterLeds } from './game-action-monsters';
+import { actionRespawn } from './game-action-move';
 
 export async function checkAllPlayersReady(boardId: string, mapId: string): Promise<void> {
   let gameStateLock: (() => Promise<void>) | null = null;
   let processingLock:  (() => Promise<void>) | null = null;
   let readyLock: (() => Promise<void>) | null = null;
-  let turnCompleted = false;
+  let gameStateUpdated = false;
   try {
     try {
       processingLock = await lockForProcessing(boardId, mapId);
@@ -55,11 +59,13 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
     readyLock = await lockReadyStateInRedis(boardId, mapId);
     const readyState = await getReadyStateFromRedis(boardId, mapId);
 
-    if (gameState.players.every(player => player.health === 0 || readyState.readyPlayerIds.includes(player.id))) {
+    if (gameState.players.every(player => player.health <= 0)) {
+      gameStateUpdated = await processPausedGame(boardId, mapId, gameState, readyState);
+    } else if (gameState.players.every(player => player.health === 0 || readyState.readyPlayerIds.includes(player.id))) {
       // Do not hold the short readiness lock during turn execution.
       await readyLock();
       readyLock = null;
-      turnCompleted = await processTurnIfReady(boardId, mapId, gameState, readyState);
+      gameStateUpdated = await processTurnIfReady(boardId, mapId, gameState, readyState);
     }
   } finally {
     if (gameStateLock) {
@@ -75,16 +81,16 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
     }
   }
 
-  if (turnCompleted) {
+  if (gameStateUpdated) {
     // Clients can start between-turn processing as soon as they receive this update.
-    // Release both locks first, and do not report a committed turn as failed if publishing fails.
+    // Release locks first, and do not report a committed update as failed if publishing fails.
     const notificationResults = await Promise.allSettled([
       publishReadyStateUpdated(boardId, mapId, { readyPlayerIds: [] }),
       publishGameStateUpdated(boardId, mapId),
     ]);
     for (const result of notificationResults) {
       if (result.status === 'rejected') {
-        console.error('Failed to publish completed turn', result.reason);
+        console.error('Failed to publish game update', result.reason);
       }
     }
   }
@@ -97,7 +103,7 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
     const processingTurn = await getProcessingTurnFromRedis(boardId, mapId)
     const gameState = await getGameStateFromRedis(boardId, mapId);
 
-    if (processingTurn.turn !== gameState.turn) {
+    if (gameState.players.some(player => player.health > 0) && processingTurn.turn !== gameState.turn) {
       await setProcessingTurnInRedis(boardId, mapId, { turn: gameState.turn });
 
       await executeProcessesBetweenTurns({
@@ -138,6 +144,27 @@ async function processTurnIfReady(boardId: string, mapId: string, gameState: Gam
     return true;
   }
   return false;
+}
+
+async function processPausedGame(boardId: string, mapId: string, gameState: GameState, readyState: PlayerReadyState): Promise<boolean> {
+  let changed = readyState.readyPlayerIds.length > 0;
+  const respawnedPlayerIds: string[] = [];
+  for (const player of gameState.players) {
+    changed ||= player.respawnTurns !== 0;
+    player.respawnTurns = 0;
+    if (!readyState.readyPlayerIds.includes(player.id)) continue;
+
+    const actionsState = await getActionsStateFromRedis(boardId, mapId, player.id);
+    if (actionsState.actions.some(action => action.type === PlayerActionType.Respawn)) {
+      const locationsState = await getLocationsStateFromRedis(boardId, mapId);
+      actionRespawn({ boardId, mapId, gameState, messages: {}, ...locationsState }, player);
+      respawnedPlayerIds.push(player.id);
+    }
+  }
+  if (changed) {
+    await commitPausedGameInRedis(boardId, mapId, gameState, respawnedPlayerIds);
+  }
+  return changed;
 }
 
 export async function processGameTurn(params: BaseParams): Promise<void> {
@@ -187,6 +214,12 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     // Execute any other game processes
     await executeProcessesForTurn(params);
     updateMonsterLeds(params.gameState, params.monsters);
+
+    if (params.gameState.players.every(player => player.health <= 0)) {
+      for (const player of params.gameState.players) {
+        player.respawnTurns = 0;
+      }
+    }
 
     const newLocationsState: AllLocationsState = {
       monsters: params.monsters,

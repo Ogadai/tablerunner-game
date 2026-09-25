@@ -45,6 +45,22 @@ export async function setGameStateInRedis(boardId: string, mapId: string, newGam
   await publishGameStateUpdated(boardId, mapId);
 }
 
+// Save cooldown resets and respawns without consuming other pending turn inputs.
+export async function commitPausedGameInRedis(
+  boardId: string,
+  mapId: string,
+  gameState: GameState,
+  respawnedPlayerIds: string[],
+): Promise<void> {
+  const transaction = redis.multi();
+  transaction.set(getGameKey(boardId, mapId), gameState, gameStateOptions);
+  transaction.set(getPlayersReadyKey(boardId, mapId), { readyPlayerIds: [] }, gameStateOptions);
+  for (const playerId of respawnedPlayerIds) {
+    transaction.set(getPlayerActionsKey(boardId, mapId, playerId), { actions: [] }, gameStateOptions);
+  }
+  await transaction.exec();
+}
+
 // Save the entire turn before consuming any of its pending inputs or notifying clients.
 export async function commitGameTurnInRedis(
   boardId: string,
