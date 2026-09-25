@@ -9,7 +9,6 @@ import { games } from "@/lib/games/games";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
 import { MonsterState } from "@/lib/store/types";
-import { SP } from "next/dist/shared/lib/utils";
 import { SpellIds } from "@/lib/games/spells";
 
 const OWNER = 'dragons';
@@ -44,6 +43,7 @@ const AVAILABLE_ROUTES: { [id: string]: number[][] } = {
 interface DragonsDef {
   lastLava: number;
   nextLava?: number;
+  metBabyDragon?: boolean;
   dragonBabyDead?: boolean;
   dragonFlightTurn?: number;
   dragonRoute?: number[];
@@ -133,6 +133,11 @@ export const dragons: ProcessRunner = {
     if (babyDragon && babyDragon.health > 0 &&
       params.gameState.players.filter(p => p.location.id === babyDragon?.location).length > 0) {
       await publishPreloadVideo(params.boardId, params.mapId, VideoNames.dragonWakes);
+
+      if (!dragonsState.metBabyDragon) {
+        await publishPlayVideo(params.boardId, params.mapId, VideoNames.juvenileDragon);
+        dragonsState.metBabyDragon = true;
+      }
     }
 
     let dragonLed: number | undefined = undefined;
