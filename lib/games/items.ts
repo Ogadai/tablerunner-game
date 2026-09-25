@@ -1,5 +1,5 @@
 import { ItemDef, PlayerItemType, EquipableItemDef, ConsumableItemDef, ScrollItemDef } from './types';
-import { spells } from './spells';
+import { SpellIds, spells } from './spells';
 
 export const SELL_COST_RATIO = 0.7;
 
@@ -233,19 +233,27 @@ export enum ScrollIds {
   raiseDead = 'raiseDeadScroll',
   animateCorpse = 'animateCorpseScroll',
 }
+const excludedSpells: SpellIds[] = [
+  SpellIds.fireBreathSmall,
+  SpellIds.fireBreathLarge,
+  SpellIds.familiar,
+];
+
 export const scrollItems: Record<string, ScrollItemDef> = {
 }
 for(const [spellId, spell] of Object.entries(spells)) {
-  scrollItems[`${spell.id}Scroll`] = {
-    id: `${spell.id}Scroll`,
-    type: PlayerItemType.scroll,
-    name: `Scroll of ${spell.name}`,
-    iconXY: { x: 5, y: 7 },
-    value: spell.intelligence * 2,
-    spellId,
-    bonusStats: {
-      magic: spell.intelligence,
-      special: 'Learn if your magic is high enough'
+  if (!excludedSpells.includes(spellId as SpellIds)) {
+    scrollItems[`${spell.id}Scroll`] = {
+      id: `${spell.id}Scroll`,
+      type: PlayerItemType.scroll,
+      name: `Scroll of ${spell.name}`,
+      iconXY: { x: 5, y: 7 },
+      value: spell.intelligence * 2,
+      spellId,
+      bonusStats: {
+        magic: spell.intelligence,
+        special: 'Learn if your magic is high enough'
+      }
     }
   }
 }
