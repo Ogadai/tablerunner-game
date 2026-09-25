@@ -345,21 +345,16 @@ function removeItemFromPlayer(playerState: PlayerState, playerInventory: PlayerI
 
   // update inventory without it
   playerInventory.equipment = sourceList.filter(i => i.id !== itemId || (itemId && i.id !== itemId));
-  if (!playerInventory.equipped) {
-    playerInventory.equipped = {
-      ...playerState.equipped,
-    };
-  }
+  // Pending selections override persisted equipment for each slot.
+  playerInventory.equipped = {
+    ...playerState.equipped,
+    ...playerInventory.equipped,
+  };
 
-  // Un-equip it
-  for (const key of Object.keys(playerInventory.equipped!) as (keyof PlayerInventoryEquipSlots)[]) {
-    if (playerInventory.equipped![key] === itemId) {
-      playerInventory.equipped![key] = NOTHING_EQUPPED;
-    }
-  }
-  for (const key of Object.keys(playerState.equipped!) as (keyof PlayerInventoryEquipSlots)[]) {
-    if (playerState.equipped![key] === itemId) {
-      playerInventory.equipped![key] = NOTHING_EQUPPED;
+  // Un-equip it only if it is still selected.
+  for (const key of Object.keys(playerInventory.equipped) as (keyof PlayerInventoryEquipSlots)[]) {
+    if (playerInventory.equipped[key] === itemId) {
+      playerInventory.equipped[key] = NOTHING_EQUPPED;
     }
   }
 
