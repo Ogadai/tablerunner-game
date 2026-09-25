@@ -171,7 +171,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       defence: 14,
       magic: 0,
       health: 20,
-      speed: 15,
+      speed: 30,
     },
   },
   'troll': {

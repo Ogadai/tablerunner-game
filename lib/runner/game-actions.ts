@@ -162,9 +162,17 @@ export async function runGameActions(params: BaseParams): Promise<void> {
           } else if (combatant.spells.length > 0) {
             actions = getCombatActions(params, combatant).actions;
           } else if (targetsAtLocation.length > 0) {
-            const target = monsterPickTarget(targetsAtLocation, entityActionsForLocations[locId]);
-            actions = [{ id: 1, type: PlayerActionType.Attack,
-              description: `${combatant.name} attacks ${target.name}!`, target: target.id } as PlayerActionAttack];
+            const actionsPerTurn = getPlayerActionsPerTurn(combatant);
+            const attackCount = Math.floor(actionsPerTurn.total / actionsPerTurn.attack);
+            actions = Array.from({ length: attackCount }, (_, index): PlayerActionAttack => {
+              const target = monsterPickTarget(targetsAtLocation, entityActionsForLocations[locId]);
+              return {
+                id: index + 1,
+                type: PlayerActionType.Attack,
+                description: `${combatant.name} attacks ${target.name}!`,
+                target: target.id,
+              };
+            });
           } else {
             actions = [];
           }
