@@ -3,6 +3,7 @@ import { LocationMoveDirection } from "./games/types";
 export enum GameTopicMessageType {
   BleConnectedStatus = 'ble_connected',
   GameProcessingStarted = 'game_processing_started',
+  GameProcessingFailed = 'game_processing_failed',
   GameStateUpdated = 'game_state_updated',
   ReadyStateUpdated = 'ready_state_updated',
   LocationUpdated = 'location_updated',

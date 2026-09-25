@@ -5,7 +5,7 @@ import styles from './page.module.css';
 import { setPlayerReady } from '@/lib/store/playerReadyState';
 import readyStateSyncService from "../game/ready-state-sync-service";
 
-import { PlayerReadyState, PlayerState } from "@/lib/store/types";
+import { PlayerReadyState } from "@/lib/store/types";
 import { LocationMoveDirection } from "@/lib/games/types";
 import PlayerLocation from './player-location';
 
@@ -24,11 +24,12 @@ export default function Page() {
   const [gameState, setGameState] = useState(() => gameStateSyncService.get(boardId, mapId));
   const [settingReady, setSettingReady] = useState(false);
   const [gameProcessing, setGameProcessing] = useState(false);
+  const [turnError, setTurnError] = useState<string | null>(null);
 
   const topicId = getGameTopicId(boardId, mapId);
 
   useEffect(() => {
-    gameStateSyncService.subscribe(boardId, mapId, state => {
+    const disposeGameState = gameStateSyncService.subscribe(boardId, mapId, state => {
       setGameState(state);
       setGameProcessing(false);
       if (!state) {
@@ -36,11 +37,15 @@ export default function Page() {
       }
     });
 
-    const disposeFn = GameProcessingStartedService.subscribe(topicId, () => {
-      setGameProcessing(true);
+    const disposeFn = GameProcessingStartedService.subscribe(topicId, processing => {
+      setGameProcessing(processing);
+      setTurnError(processing ? null : 'The turn failed. Please try again.');
     });
-    return disposeFn;
-  }, [boardId, mapId]);
+    return () => {
+      disposeGameState();
+      disposeFn();
+    };
+  }, [boardId, mapId, router, topicId]);
 
   useEffect(() => {
     readyStateSyncService.subscribe(boardId, mapId, setReadyState);
@@ -52,8 +57,19 @@ export default function Page() {
 
   const endTurnAction = async (direction?: LocationMoveDirection) => {
     setSettingReady(true);
-    await setPlayerReady(boardId, mapId, playerId, !isPlayerReady(), direction);
-    setSettingReady(false);
+    setTurnError(null);
+    try {
+      const result = await setPlayerReady(boardId, mapId, playerId, !isPlayerReady(), direction);
+      if (!result.success) {
+        setGameProcessing(false);
+        setTurnError(result.error || 'The turn failed. Please try again.');
+      }
+    } catch {
+      setGameProcessing(false);
+      setTurnError('Unable to submit the turn. Please try again.');
+    } finally {
+      setSettingReady(false);
+    }
   }
 
   if (!gameState) {
@@ -62,6 +78,7 @@ export default function Page() {
 
   return (<div className={styles.playerScreen}>
     <div className={styles.playerScreenContent}>
+      {turnError && <p role="alert">{turnError}</p>}
       <PlayerLocation
         boardId={boardId}
         mapId={mapId}

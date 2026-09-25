@@ -44,6 +44,37 @@ export async function setGameStateInRedis(boardId: string, mapId: string, newGam
   await publishGameStateUpdated(boardId, mapId);
 }
 
+// Save the entire turn before consuming any of its pending inputs or notifying clients.
+export async function commitGameTurnInRedis(
+  boardId: string,
+  mapId: string,
+  gameState: GameState,
+  locationsState: AllLocationsState,
+  messages: Record<string, PlayerMessagesState>,
+  removedStoreLocations: number[],
+): Promise<void> {
+  const transaction = redis.multi();
+  transaction.set(getGameKey(boardId, mapId), gameState, gameStateOptions);
+  transaction.set(getLocationsKey(boardId, mapId), locationsState, gameStateOptions);
+  transaction.set(getPlayersReadyKey(boardId, mapId), { readyPlayerIds: [] }, gameStateOptions);
+
+  for (const player of gameState.players) {
+    transaction.del(getPlayerInventoryKey(boardId, mapId, player.id));
+    transaction.set(getPlayerActionsKey(boardId, mapId, player.id), { actions: [] }, gameStateOptions);
+    transaction.set(getPlayerStatsKey(boardId, mapId, player.id), { characterStats: null }, gameStateOptions);
+    transaction.set(getPlayerMessagesKey(boardId, mapId, player.id), messages[player.id], gameStateOptions);
+  }
+
+  for (const monster of locationsState.monsters.filter(m => m.scriptedActions)) {
+    transaction.del(getMonsterActionsKey(boardId, mapId, monster.id));
+  }
+  for (const location of removedStoreLocations) {
+    transaction.del(getStoreInventoryKey(boardId, mapId, location));
+  }
+
+  await transaction.exec();
+}
+
 export async function lockGameStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
   return getLock(getGameStateLock(boardId, mapId));
 }
@@ -95,6 +126,10 @@ export async function publishGameProcessingStarted(boardId: string, mapId: strin
     type: GameTopicMessageType.GameProcessingStarted
   };
   await publishMessage(boardId, mapId, msg);
+}
+
+export async function publishGameProcessingFailed(boardId: string, mapId: string): Promise<void> {
+  await publishMessage(boardId, mapId, { type: GameTopicMessageType.GameProcessingFailed });
 }
 
 /* All Players "Ready" State */

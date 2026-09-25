@@ -37,8 +37,10 @@ export async function getPlayerInventory(boardId: string, mapId: string, playerI
 export async function hireNpc(
   boardId: string, mapId: string, playerId: string, npcId: string
 ): Promise<ApiResponse<PlayerInventoryState>> {
+  let gameStateLock: (() => Promise<void>) | null = null;
   let lock: (() => Promise<void>) | null = null;
   try {
+    gameStateLock = await lockGameStateInRedis(boardId, mapId);
     lock = await lockLocationsStateInRedis(boardId, mapId);
 
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
@@ -80,11 +82,16 @@ export async function hireNpc(
     if (lock) {
       await lock();
     }
+    if (gameStateLock) {
+      await gameStateLock();
+    }
   }
 }
 
 export async function playerEquipItem(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
+  let gameStateLock: (() => Promise<void>) | null = null;
   try {
+    gameStateLock = await lockGameStateInRedis(boardId, mapId);
     const gameState = await getGameStateFromRedis(boardId, mapId);
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
 
@@ -118,12 +125,18 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
       success: false,
       error: (error as Error).message
     };
+  } finally {
+    if (gameStateLock) {
+      await gameStateLock();
+    }
   }
 }
 
 export async function dropItemAtLocation(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
+  let gameStateLock: (() => Promise<void>) | null = null;
   let lock: (() => Promise<void>) | null = null;
   try {
+    gameStateLock = await lockGameStateInRedis(boardId, mapId);
     lock = await lockLocationsStateInRedis(boardId, mapId);
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
 
@@ -159,13 +172,18 @@ export async function dropItemAtLocation(boardId: string, mapId: string, playerI
     };
   } finally {
     if (lock) {
-      lock();
+      await lock();
+    }
+    if (gameStateLock) {
+      await gameStateLock();
     }
   }
 }
 
 export async function takeItemAtLocation(boardId: string, mapId: string, playerId: string, itemId: string): Promise<ApiResponse<PlayerInventoryState>> {
+  let gameStateLock: (() => Promise<void>) | null = null;
   try {
+    gameStateLock = await lockGameStateInRedis(boardId, mapId);
     const playerInventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
 
     const gameState = await getGameStateFromRedis(boardId, mapId);
@@ -204,6 +222,10 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
       success: false,
       error: (error as Error).message
     };
+  } finally {
+    if (gameStateLock) {
+      await gameStateLock();
+    }
   }
 }
 

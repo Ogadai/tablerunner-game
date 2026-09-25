@@ -1,6 +1,6 @@
 import { GameState, NOTHING_EQUPPED, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
-import { getPlayerInventoryFromRedis, deletePlayerInventoryFromRedis } from '../store/redis-access';
+import { getPlayerInventoryFromRedis } from '../store/redis-access';
 import { ItemDef, PlayerItem } from "../games/types";
 
 export async function applyPlayerInventory(params: BaseParams, player: PlayerState): Promise<void> {
@@ -31,7 +31,7 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
     }
   }
 
-  await deletePlayerInventoryFromRedis(params.boardId, params.mapId, player.id);
+  // Pending changes are consumed atomically when the completed turn is saved.
 }
 
 // TODO: Use a better id allocation system

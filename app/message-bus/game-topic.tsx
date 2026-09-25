@@ -86,6 +86,9 @@ export default function GameTopic({
     channel.subscribe(message => {
       if (message.name === GameTopicMessageType.GameProcessingStarted) {
         GameProcessingStartedService.raiseGameProcessingStarted(topicId);
+      } else if (message.name === GameTopicMessageType.GameProcessingFailed) {
+        GameProcessingStartedService.raiseGameProcessingFailed(topicId);
+        PlayerReadyTopicService.raisePlayerReadyStateUpdated(topicId, { readyPlayerIds: [] });
       } else if (message.name === GameTopicMessageType.GameStateUpdated) {
         GameTopicService.raiseGameStateUpdated(topicId);
       } else if (message.name === GameTopicMessageType.ReadyStateUpdated) {

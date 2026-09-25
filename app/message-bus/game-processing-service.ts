@@ -1,4 +1,4 @@
-type GameProcessingStartedListener = () => void;
+type GameProcessingStartedListener = (processing: boolean) => void;
 
 class GameProcessingStartedService {
   private static readonly listeners = new Map<string, Set<GameProcessingStartedListener>>();
@@ -17,7 +17,11 @@ class GameProcessingStartedService {
   }
 
   static raiseGameProcessingStarted(topicId: string): void {
-    this.listeners.get(topicId)?.forEach(listener => listener());
+    this.listeners.get(topicId)?.forEach(listener => listener(true));
+  }
+
+  static raiseGameProcessingFailed(topicId: string): void {
+    this.listeners.get(topicId)?.forEach(listener => listener(false));
   }
 }
 

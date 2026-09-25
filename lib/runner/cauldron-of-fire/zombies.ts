@@ -4,7 +4,6 @@ import { broadcastMessage } from "../game-messages";
 import { ProcessRunner } from "../types";
 import { monsters } from '../../games/monsters';
 import { games } from "@/lib/games/games";
-import { deleteStoreStateFromRedis } from "@/lib/store/redis-access";
 
 const ZOMBIE_REPRODUCE_CHANCE = 0.1;
 const ZOMBIE_TRAVEL_CHANCE = 0.25;
@@ -75,7 +74,7 @@ export const zombies: ProcessRunner = {
             // Destroy any shops and create extra zombies
             if (params.gameState.stores.includes(zombie.location)) {
               params.gameState.stores = params.gameState.stores.filter(s => s !== zombie.location);
-              await deleteStoreStateFromRedis(params.boardId, params.mapId, zombie.location);
+              // Store inventory is deleted with the completed turn.
 
               const newZombies = Math.ceil(Math.random() * MAX_ZOMBIES_AT_SHOP);
               for(let n = 0; n < newZombies; n++) {

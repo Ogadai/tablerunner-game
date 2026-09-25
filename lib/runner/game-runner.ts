@@ -8,17 +8,15 @@ import {
 } from "../store/types";
 import {
   getGameStateFromRedis,
-  setGameStateInRedis,
+  commitGameTurnInRedis,
   setReadyStateInRedis,
   getLocationsStateFromRedis,
-  setLocationsStateInRedis,
-  setPlayerMessagesInRedis,
-  setActionsStateInRedis,
-  deleteMonsterActionsStateFromRedis,
-  setPlayerStatsInRedis,
   getPlayerStatsFromRedis,
   lockGameStateInRedis,
   publishGameProcessingStarted,
+  publishGameProcessingFailed,
+  publishGameStateUpdated,
+  publishReadyStateUpdated,
   getReadyStateFromRedis,
   lockForProcessing,
   getProcessingTurnFromRedis,
@@ -104,7 +102,8 @@ async function processTurnIfReady(boardId: string, mapId: string, gameState: Gam
 
 export async function processGameTurn(params: BaseParams): Promise<void> {
   try {
-    publishGameProcessingStarted(params.boardId, params.mapId);
+    await publishGameProcessingStarted(params.boardId, params.mapId);
+    const originalStores = [...params.gameState.stores];
 
     if (params.monsters.length < 30) {
         const extraMonsters = await populateMonsters(params.gameState, params.gameState.players.length);
@@ -149,10 +148,6 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     await executeProcessesForTurn(params);
     updateMonsterLeds(params.gameState, params.monsters);
 
-    // Update game state
-    await setGameStateInRedis(params.boardId, params.mapId, params.gameState);
-
-    // Store monsters
     const newLocationsState: AllLocationsState = {
       monsters: params.monsters,
       items: params.items,
@@ -160,32 +155,33 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       blockedMoves: params.blockedMoves,
       npcs: params.gameState.npcs,
     };
-    await setLocationsStateInRedis(params.boardId, params.mapId, newLocationsState);
-
-    // Reset ready state
-    await setReadyStateInRedis(params.boardId, params.mapId, {
-      readyPlayerIds: []
-    });
-
-    // Reset actions and set messages
-    for(const player of params.gameState.players) {
-      setActionsStateInRedis(params.boardId, params.mapId, player.id, {
-        actions: []
-      });
-
-      setPlayerStatsInRedis(params.boardId, params.mapId, player.id, {
-        characterStats: null
-      });
-
-      await setPlayerMessagesInRedis(params.boardId, params.mapId, player.id, params.messages[player.id]);
-    }
-
-    for (const monster of params.monsters.filter(m => m.scriptedActions)) {
-      await deleteMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
-    }
-
+    await commitGameTurnInRedis(
+      params.boardId, params.mapId, params.gameState, newLocationsState, params.messages,
+      originalStores.filter(location => !params.gameState.stores.includes(location)),
+    );
   } catch (error) {
-    console.error(error);
+    // Notify clients even if Redis is still unavailable during recovery.
+    const recoveryResults = await Promise.allSettled([
+      setReadyStateInRedis(params.boardId, params.mapId, { readyPlayerIds: [] }),
+      publishGameProcessingFailed(params.boardId, params.mapId),
+    ]);
+    for (const result of recoveryResults) {
+      if (result.status === 'rejected') {
+        console.error('Failed to recover from turn processing error', result.reason);
+      }
+    }
+    throw error;
+  }
+
+  // Notification failures must not turn an already committed turn into a failed turn.
+  const notificationResults = await Promise.allSettled([
+    publishReadyStateUpdated(params.boardId, params.mapId, { readyPlayerIds: [] }),
+    publishGameStateUpdated(params.boardId, params.mapId),
+  ]);
+  for (const result of notificationResults) {
+    if (result.status === 'rejected') {
+      console.error('Failed to publish completed turn', result.reason);
+    }
   }
 }
 
