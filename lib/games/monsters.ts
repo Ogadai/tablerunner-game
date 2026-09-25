@@ -19,7 +19,7 @@ export function getMonsterStrength(monster: MonsterListEntry): number {
   ));
 }
 
-function getMonsterStrenghtRange(): { weakest: number, strongest: number } {
+function getMonsterStrengthRange(): { weakest: number, strongest: number } {
   const strengths = Object.values(monsters).map(monsterDef => {
     const monsterStats = monsterDef.baseStats;
     return monsterStats.attack + monsterStats.damage + monsterStats.defence + monsterStats.health;
@@ -415,7 +415,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
   },
 };
 
-const monsterRelativeStrengths = getMonsterStrenghtRange();
+const monsterRelativeStrengths = getMonsterStrengthRange();
 
 export const mostersExcludeFromAutoPopulate: string[] = [
   'bandit',

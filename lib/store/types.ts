@@ -256,7 +256,7 @@ export const getDisplayName = (target: INamedTarget): string => {
 
 export const getMonsterName = (monster: MonsterState): string => {
   const monsterName = monsters[monster.type].name;
-  return monster.zombie ? `Zombie ${monsterName}` : monsterName;
+  return (monster.zombie && monster.type !== 'zombie') ? `Zombie ${monsterName}` : monsterName;
 }
 
 export interface StoreBoardSettings {
