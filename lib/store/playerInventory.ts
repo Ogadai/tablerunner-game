@@ -56,6 +56,9 @@ export async function hireNpc(
     if (player.health === 0) {
       throw new Error('Cannot hire an NPC while dead');
     }
+    if (npc.health === 0) {
+      throw new Error('Cannot hire a dead NPC');
+    }
     if (npc.masterId !== null) {
       throw new Error('NPC has already been hired');
     }

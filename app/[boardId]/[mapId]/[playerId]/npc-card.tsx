@@ -20,7 +20,7 @@ export default function NpcCard({
   onHired: () => void;
 }) {
   const npcStats = getNamedTargetStats(npc.baseStats!, npc);
-  const canHire = npc.masterId === null && player.coins >= npc.hireCost && player.health > 0;
+  const canHire = npc.masterId === null && player.coins >= npc.hireCost && npc.health > 0 && player.health > 0;
 
   const onHire = async () => {
     const response = await hireNpc(boardId, mapId, player.id, npc.id);
