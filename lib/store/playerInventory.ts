@@ -201,7 +201,7 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
       throw new Error('Cannot take item while there are enemies here');
     }
 
-    const item = locationsState.items.find(i => i.id === itemId && (!itemId || i.id === itemId));
+    const item = locationsState.items.find(i => i.id === itemId && i.location === playerState.location.id);
     if (!item) {
       throw new Error(`Item ${itemId} not found in location`);
     }
@@ -209,7 +209,7 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
     addItemToPlayer(playerState, playerInventory, item);
 
     // Remove for the location
-    locationsState.items = locationsState.items.filter(i => i.id !== itemId || (itemId && i.id !== itemId));
+    locationsState.items = locationsState.items.filter(i => i !== item);
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
     await setLocationsStateInRedis(boardId, mapId, locationsState);
@@ -272,6 +272,13 @@ export async function buyAndSellInStore(
     const playerState = gameState.players.find(p => p.id === playerId)!;
     if (playerState.health === 0) {
       throw new Error('Cannot buy or sell item while dead');
+    }
+
+    if (playerState.location.id !== locationId) {
+      throw new Error('Cannot buy or sell items at another location');
+    }
+    if (!gameState.stores.includes(locationId)) {
+      throw new Error('Store is not available at this location');
     }
 
     if (playerInventory.coins === undefined) {
