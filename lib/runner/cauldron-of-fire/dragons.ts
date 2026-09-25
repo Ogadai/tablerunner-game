@@ -15,6 +15,12 @@ import { handlePlayerIsDead } from "../game-action-attack";
 const OWNER = 'dragons';
 const DRAGON_LED_RGB = 'A00000';
 const babyLocations = [136, 101, 120, 73];
+const babyPreloadLocations: {[loc: string]: number} = {
+  '136': 137,
+  '101': 140,
+  '120': 81,
+  '73': 74
+};
 
 const LAVA_MIN_TURNS = 20;
 const LAVA_TURN_RANGE = 30;
@@ -138,6 +144,13 @@ export const dragons: ProcessRunner = {
       if (!dragonsState.metBabyDragon) {
         await publishPlayVideo(params.boardId, params.mapId, VideoNames.juvenileDragon);
         dragonsState.metBabyDragon = true;
+      }
+    }
+
+    if (babyDragon && !dragonsState.metBabyDragon) {
+      const preloadLocation = babyPreloadLocations[`${babyDragon.location}`] || 0;
+      if (params.gameState.players.filter(p => p.location.id === preloadLocation).length > 0) {
+        await publishPreloadVideo(params.boardId, params.mapId, VideoNames.juvenileDragon);
       }
     }
 
