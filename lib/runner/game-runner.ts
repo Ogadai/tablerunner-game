@@ -34,18 +34,33 @@ import { updateMonsterLeds } from './game-action-monsters';
 export async function checkAllPlayersReady(boardId: string, mapId: string, readyState: PlayerReadyState): Promise<void> {
   let gameStateLock: (() => Promise<void>) | null = null;
   let processingLock:  (() => Promise<void>) | null = null;
+  let turnCompleted = false;
   try {
     processingLock = await lockForProcessing(boardId, mapId);
     gameStateLock = await lockGameStateInRedis(boardId, mapId);
     const gameState = await getGameStateFromRedis(boardId, mapId);
 
-    await processTurnIfReady(boardId, mapId, gameState, readyState);
+    turnCompleted = await processTurnIfReady(boardId, mapId, gameState, readyState);
   } finally {
     if (gameStateLock) {
       await gameStateLock();
     }
     if (processingLock) {
       await processingLock();
+    }
+  }
+
+  if (turnCompleted) {
+    // Clients can start between-turn processing as soon as they receive this update.
+    // Release both locks first, and do not report a committed turn as failed if publishing fails.
+    const notificationResults = await Promise.allSettled([
+      publishReadyStateUpdated(boardId, mapId, { readyPlayerIds: [] }),
+      publishGameStateUpdated(boardId, mapId),
+    ]);
+    for (const result of notificationResults) {
+      if (result.status === 'rejected') {
+        console.error('Failed to publish completed turn', result.reason);
+      }
     }
   }
 }
@@ -84,7 +99,7 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
   await checkAllPlayersReady(boardId, mapId, readyState);
 }
 
-async function processTurnIfReady(boardId: string, mapId: string, gameState: GameState, readyState: PlayerReadyState): Promise<void> {
+async function processTurnIfReady(boardId: string, mapId: string, gameState: GameState, readyState: PlayerReadyState): Promise<boolean> {
   if (gameState.players.every(player =>
     (player.health === 0) || readyState.readyPlayerIds.includes(player.id)
   )) {
@@ -97,7 +112,9 @@ async function processTurnIfReady(boardId: string, mapId: string, gameState: Gam
       messages: {},
       ...locationsState
     });
+    return true;
   }
+  return false;
 }
 
 export async function processGameTurn(params: BaseParams): Promise<void> {
@@ -171,17 +188,6 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       }
     }
     throw error;
-  }
-
-  // Notification failures must not turn an already committed turn into a failed turn.
-  const notificationResults = await Promise.allSettled([
-    publishReadyStateUpdated(params.boardId, params.mapId, { readyPlayerIds: [] }),
-    publishGameStateUpdated(params.boardId, params.mapId),
-  ]);
-  for (const result of notificationResults) {
-    if (result.status === 'rejected') {
-      console.error('Failed to publish completed turn', result.reason);
-    }
   }
 }
 

@@ -310,6 +310,13 @@ export async function deleteProcessingTurnFromRedis(boardId: string, mapId: stri
 
 /* Generic locking */
 
+export class RedisLockError extends Error {
+  constructor() {
+    super('Failed to acquire lock');
+    this.name = 'RedisLockError';
+  }
+}
+
 async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<() => Promise<void>> {
   const lockValue = crypto.randomUUID(); // Unique token to identify the lock owner
 
@@ -339,6 +346,6 @@ async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<(
       }
     }
   }
-  throw new Error('Failed to aquire lock');
+  throw new RedisLockError();
 }
 

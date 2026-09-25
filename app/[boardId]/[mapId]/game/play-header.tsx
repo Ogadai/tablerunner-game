@@ -74,13 +74,31 @@ export default function PlayHeader(
   }, [onReadyCountdownChange, readyCountdown]);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function triggerProcessing() {
-      // Send two string parameters to the Route Handler
-      await fetch('/api/processing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ boardId, mapId }),
-      });
+      if (controller.signal.aborted) {
+        return;
+      }
+      try {
+        const response = await fetch('/api/processing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ boardId, mapId }),
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) {
+          return;
+        }
+        // Every client calls this; a lock conflict means another request won.
+        if (!response.ok && response.status !== 423) {
+          console.error('Between-turn processing failed:', response.status);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error('Unable to request between-turn processing', error);
+        }
+      }
     }
 
     async function fetchGameState() {
@@ -106,6 +124,7 @@ export default function PlayHeader(
     });
 
     return () => {
+      controller.abort();
       disposeGameSub();
       disposeReadySub();
     }
