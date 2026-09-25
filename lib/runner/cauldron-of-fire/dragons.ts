@@ -8,6 +8,9 @@ import { MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
 import { games } from "@/lib/games/games";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
+import { MonsterState } from "@/lib/store/types";
+import { SP } from "next/dist/shared/lib/utils";
+import { SpellIds } from "@/lib/games/spells";
 
 const OWNER = 'dragons';
 const DRAGON_LED_RGB = 'A00000';
@@ -67,12 +70,20 @@ export const dragons: ProcessRunner = {
         type: "dragon",
         location: dragonLocation,
         health: 60,
+        magic: 40,
+        spells: [
+          SpellIds.fireBreathLarge,
+        ]
       },
       {
         id: "fire-dragon-baby",
         type: "dragonbaby",
         location: babyLocation,
         health: 30,
+        magic: 20,
+        spells: [
+          SpellIds.fireBreathSmall,
+        ]
       },
     );
 
@@ -197,11 +208,21 @@ export const dragons: ProcessRunner = {
       }
 
       // Kill all the monsters here
+      const extraMonsters: MonsterState[] = [];
       for(const monster of params.monsters) {
-        if (lavaLocations.includes(monster.location)) {
+        if (monster.health > 0 && lavaLocations.includes(monster.location)) {
           monster.health = 0;
+
+          // Add a fire spirit in its place
+          extraMonsters.push({
+            id: `fire-spirit-${monster.id}`,
+            type: 'firespirit',
+            location: monster.location,
+            health: 20,
+          });
         }
       }
+      params.monsters.push(...extraMonsters);
 
       // Kill any NPCs here
       for(const npc of params.gameState.npcs) {
@@ -212,7 +233,7 @@ export const dragons: ProcessRunner = {
 
       // Kill any players here
       for(const player of params.gameState.players) {
-        if (lavaLocations.includes(player.location.id)) {
+        if (player.health > 0 && lavaLocations.includes(player.location.id)) {
           player.health = 0;
           playerMessageAtLocation(params, player.id, `**{player} fell into the lava**`);
         }

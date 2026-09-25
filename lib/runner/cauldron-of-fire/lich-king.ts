@@ -351,6 +351,13 @@ export const lichKing: ProcessRunner = {
             }
           }
         }
+
+        if (spell.id === SpellIds.familiar) {
+          canCast = locations
+            .find(l => l.id === lich.location.id)!
+            .monsters.filter(m => m.health > 0 && m.type === 'skeletaldragon').length === 0;
+          requireTarget = false;
+        }
         
         if (canCast && lich.magic >= spell.magicCost) {
           availableActions.push({
@@ -404,7 +411,8 @@ export const lichKing: ProcessRunner = {
             Each action has an "action" cost, and you cannot exceed 20 action points.
             Spells also have a "magic" cost, and you cannot exceed the amount of magic you have left
             (your "magic" will go up by ${Math.ceil(lich.baseStats!.magic * 0.2)} points each turn until your maximum in "baseStats").
-            As a necromancer, you favour Raise Dead and Animate Corpse spells to build an army of minions.
+            As a necromancer, your best spell is Summon Familiar, but otherwise you favour
+            Raise Dead and Animate Corpse spells to build an army of minions.
             If there are no heros at your location, you can choose to do nothing and wait for the heros to come to you,
             or you can move around the castle looking for them.`,
           prompt: `${JSON.stringify(gameInfo)}`,

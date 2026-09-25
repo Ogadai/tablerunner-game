@@ -173,10 +173,13 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
   if (targets.length === 0) {
     return [];
   }
-  const necromancy = spellId === SpellIds.raiseDead || spellId === SpellIds.animateCorpse;
+  const necromancy = spellId === SpellIds.raiseDead || spellId === SpellIds.animateCorpse || spellId === SpellIds.familiar;
   if (necromancy && isMonsterCaster(params, npc)) {
     const undead = params.monsters.filter(m => m.id !== npc.id && m.location === npc.location.id
       && m.health > 0 && (m.type === 'skeleton' || m.zombie));
+    if (spellId === SpellIds.familiar) {
+      if (undead.length >= 1) return [];
+    }
     if (undead.length >= 4) return [];
   }
   // Include spells that become affordable after the available mana potion.

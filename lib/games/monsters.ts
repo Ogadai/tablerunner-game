@@ -11,7 +11,7 @@ export function getPointsForDamage(monsterType: string, damage: number): number 
 
 export function getMonsterStrength(monster: MonsterListEntry): number {
   const stats = monster.baseStats;
-  const strength = stats.attack + stats.damage + stats.defence + stats.health;
+  const strength = stats.attack + stats.damage + stats.defence + stats.magic + stats.health;
 
   return Math.max(0, Math.min(1,
     (strength - monsterRelativeStrengths.weakest)
@@ -161,6 +161,32 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       speed: 8,
     },
   },
+  'hydra': {
+    id: 'hydra',
+    name: 'Hydra',
+    iconXY: { x: 5, y: 4 },
+    baseStats: {
+      attack: 20,
+      damage: 10,
+      defence: 14,
+      magic: 0,
+      health: 20,
+      speed: 15,
+    },
+  },
+  'troll': {
+    id: 'troll',
+    name: 'Troll',
+    iconXY: { x: 8, y: 3 },
+    baseStats: {
+      attack: 11,
+      damage: 14,
+      defence: 12,
+      magic: 0,
+      health: 20,
+      speed: 6,
+    },
+  },
   'skeleton': {
     id: 'skeleton',
     name: 'Skeleton',
@@ -187,6 +213,25 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       speed: 4,
     },
   },
+  'oculusfiend': {
+    id: 'oculusfiend',
+    name: 'Oculus Fiend',
+    iconXY: { x: 9, y: 3 },
+    baseStats: {
+      attack: 6,
+      damage: 5,
+      defence: 12,
+      magic: 20,
+      health: 25,
+      speed: 6,
+    },
+    spells: [
+      SpellIds.fear,
+      SpellIds.terror,
+      SpellIds.iceShards,
+      SpellIds.iceStorm,
+    ]
+  },
   'cyclops': {
     id: 'cyclops',
     name: 'Cyclops',
@@ -199,6 +244,38 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       health: 25,
       speed: 5,
     },
+  },
+  'rocktroll': {
+    id: 'rocktroll',
+    name: 'Rock Troll',
+    iconXY: { x: 7, y: 4 },
+    baseStats: {
+      attack: 12,
+      damage: 18,
+      defence: 20,
+      magic: 0,
+      health: 25,
+      speed: 6,
+    },
+  },
+  'squizard': {
+    id: 'squizard',
+    name: 'Squizard',
+    iconXY: { x: 4, y: 4 },
+    baseStats: {
+      attack: 6,
+      damage: 5,
+      defence: 10,
+      magic: 30,
+      health: 20,
+      speed: 6,
+    },
+    spells: [
+      SpellIds.fireBall,
+      SpellIds.fireWall,
+      SpellIds.lightning,
+      SpellIds.fireRain,
+    ]
   },
   'minotaur': {
     id: 'minotaur',
@@ -213,6 +290,19 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       speed: 5,
     },
   },
+  'firespirit': {
+    id: 'firespirit',
+    name: 'Fire Spirit',
+    iconXY: { x: 7, y: 3 },
+    baseStats: {
+      attack: 15,
+      damage: 20,
+      defence: 120,
+      magic: 0,
+      health: 20,
+      speed: 10,
+    },
+  },
   'lich': {
     id: 'lich',
     spells: [
@@ -222,6 +312,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       SpellIds.lightning,
       SpellIds.raiseDead,
       SpellIds.animateCorpse,
+      SpellIds.familiar,
     ],
 
     name: 'Lich',
@@ -243,10 +334,29 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       attack: 20,
       damage: 18,
       defence: 22,
-      magic: 10,
+      magic: 20,
       health: 30,
       speed: 11,
     },
+    spells: [
+      SpellIds.fireBreathSmall,
+    ],
+  },
+  'skeletaldragon': {
+    id: 'skeletaldragon',
+    name: 'Skeletal Dragon',
+    iconXY: { x: 6, y: 4 },
+    baseStats: {
+      attack: 16,
+      damage: 12,
+      defence: 14,
+      magic: 20,
+      health: 15,
+      speed: 10,
+    },
+    spells: [
+      SpellIds.fireBreathSmall,
+    ],
   },
   'dragon': {
     id: 'dragon',
@@ -256,10 +366,13 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       attack: 30,
       damage: 25,
       defence: 28,
-      magic: 20,
+      magic: 40,
       health: 60,
       speed: 20,
     },
+    spells: [
+      SpellIds.fireBreathLarge,
+    ],
   },
   'spiriteagle': {
     id: 'spiriteagle',
@@ -313,4 +426,6 @@ export const mostersExcludeFromAutoPopulate: string[] = [
   'spiriteagle',
   'spiritwolf',
   'spiritbear',
+  'skeletaldragon',
+  'firespirit',
 ];

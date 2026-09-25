@@ -23,6 +23,9 @@ export enum SpellIds {
   spiritWarrior = 'spiritWarrior',
   raiseDead = 'raiseDead',
   animateCorpse = 'animateCorpse',
+  fireBreathSmall = 'fireBreathSmall',
+  fireBreathLarge = 'fireBreathLarge',
+  familiar = 'familiar',
 };
 
 export const spells: Record<string, SpellDef> = {
@@ -292,6 +295,45 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 6, y: 2 },
     bonusStats: {
       special: 'Animate a fallen character or monster'
+    }
+  },
+  [SpellIds.fireBreathSmall]: {
+    id: SpellIds.fireBreathSmall.toString(),
+    name: 'Fire Breath',
+    intelligence: 15,
+    pickTarget: true,
+    targetType: SpellTargetType.enemy,
+    magicCost: 12,
+    actionCost: 15,
+    iconXY: { x: 1, y: 0 },
+    bonusStats: {
+      damage: 20,
+    }
+  },
+  [SpellIds.fireBreathLarge]: {
+    id: SpellIds.fireBreathLarge.toString(),
+    name: 'Fire Breath',
+    intelligence: 25,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 20,
+    actionCost: 15,
+    iconXY: { x: 1, y: 0 },
+    bonusStats: {
+      damage: 20,
+    }
+  },
+  [SpellIds.familiar]: {
+    id: SpellIds.familiar.toString(),
+    name: 'Summon Familiar',
+    intelligence: 20,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 20,
+    actionCost: 15,
+    iconXY: { x: 0, y: 4 },
+    bonusStats: {
+      special: 'Summon a familiar as a minion'
     }
   },
 };
