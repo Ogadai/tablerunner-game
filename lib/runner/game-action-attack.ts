@@ -10,6 +10,7 @@ import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages'
 import { getMonsterStats } from './monster-stats';
 import { ConsumableIds, consumableItems, ItemIds, lootItems } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
+import { getCombatStats } from "../store/playerStats";
 
 const MAXIMUM_COIN_DROP = 100;
 const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
@@ -30,7 +31,7 @@ export function processAttackForDamage(attackerStats: { attack: number, damage: 
 export function actionAttack(params: BaseParams, player: INamedTarget, action: PlayerActionAttack): void {
   const monster = params.monsters.find(m => m.id === action.target);
   if (monster) {
-    const success = genericAttackMonster(params, player, player.baseStats!, monster);
+    const success = genericAttackMonster(params, player, getCombatStats(player), monster);
 
     if (success && player.zombie && !monster.zombie) {
       // Infected the monster
@@ -42,7 +43,7 @@ export function actionAttack(params: BaseParams, player: INamedTarget, action: P
   const target = params.gameState.players.find(p => p.id === action.target)
     || params.gameState.npcs.find(npc => npc.id === action.target);
   if (target) {
-    genericAttackTarget(params, player, player.baseStats!, target);
+    genericAttackTarget(params, player, getCombatStats(player), target);
   }
 }
 
@@ -56,7 +57,7 @@ function genericAttackTarget(
     return false;
   }
 
-  const damage = processAttackForDamage(attackStats, target.baseStats!);
+  const damage = processAttackForDamage(attackStats, getCombatStats(target));
   if (damage > 0) {
     target.health = Math.max(0, target.health - damage);
     playerMessageAtLocation(params, target.id,
@@ -80,7 +81,7 @@ export function monsterAttack(
   try {
     const monsterStats = getMonsterStats(monster);
 
-    const damage = processAttackForDamage(monsterStats, target.baseStats!);
+    const damage = processAttackForDamage(monsterStats, getCombatStats(target));
 
     if (damage > 0) {
       target.health -= damage;

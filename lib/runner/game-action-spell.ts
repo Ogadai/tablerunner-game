@@ -10,6 +10,7 @@ import { specialSpellActions } from './special-spell-actions';
 
 import { getAvailableSpellTargets } from './spell-targets';
 import { getMonsterStats } from './monster-stats';
+import { getCombatStats } from '../store/playerStats';
 
 const MAX_RECENT_SPELLS = 2;
 
@@ -53,14 +54,14 @@ function applySpellEnemy(
   for(const monster of targets) {
     const attackStats = {
       name: spell.name,
-      attack: player.baseStats!.magic,
+      attack: getCombatStats(player).magic,
       damage: spell.bonusStats.damage || 0,
     };
     if ('type' in monster) {
       genericAttackMonster(params, player, attackStats, monster as MonsterState);
     } else {
       const target = monster as INamedTarget;
-      const damage = processAttackForDamage(attackStats, target.baseStats!);
+      const damage = processAttackForDamage(attackStats, getCombatStats(target));
       target.health = Math.max(0, target.health - damage);
 
       playerMessageAtLocation(params, target.id,

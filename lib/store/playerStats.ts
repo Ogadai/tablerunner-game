@@ -119,6 +119,13 @@ export function getNamedTargetStats(baseStats: BaseStats, target: Pick<INamedTar
   return enhancedStats;  
 }
 
+export function getCombatStats(target: INamedTarget): BaseStats {
+  // NPCs persist raw stats; players and monster combatants already expose enhanced stats.
+  return 'masterId' in target
+    ? getNamedTargetStats(target.baseStats!, target)
+    : target.baseStats!;
+}
+
 export function getPlayerStats(playerState: PlayerState): BaseStats {
   const weaponId = playerState.equipped.weapon;
   const weapon = !!weaponId && playerState.equipment.find(e => e.id == weaponId);
