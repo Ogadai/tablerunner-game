@@ -10,6 +10,7 @@ import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-vi
 import { VideoNames } from "@/lib/messages/video-list";
 import { MonsterState } from "@/lib/store/types";
 import { SpellIds } from "@/lib/games/spells";
+import { handlePlayerIsDead } from "../game-action-attack";
 
 const OWNER = 'dragons';
 const DRAGON_LED_RGB = 'A00000';
@@ -240,7 +241,7 @@ export const dragons: ProcessRunner = {
       for(const player of params.gameState.players) {
         if (player.health > 0 && lavaLocations.includes(player.location.id)) {
           player.health = 0;
-          playerMessageAtLocation(params, player.id, `**{player} fell into the lava**`);
+          handlePlayerIsDead(params, player, '**{player} fell into the lava**');
         }
       }
 

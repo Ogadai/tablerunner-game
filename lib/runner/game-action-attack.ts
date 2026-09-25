@@ -105,8 +105,8 @@ export function monsterAttack(
   }
 }
 
-export function handlePlayerIsDead(params: BaseParams, target: INamedTarget) {
-  playerMessageAtLocation(params, target.id, `**{player}** {playerNoun} **dead**!`);
+export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, message?: string) {
+  playerMessageAtLocation(params, target.id, message || '**{player}** {playerNoun} **dead**!');
   target.respawnTurns = 6;
 
   // auto drop special items if they have them
