@@ -41,7 +41,9 @@
   width: 6mm;
   height: 6mm;
   border-radius: 50%;
-  background-color: #ffffff;
+  background-color: var(--bg-circle) !important;
+  color: var(--color-text-primary) !important;
+  color-scheme: only light dark !important;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -51,17 +53,16 @@
 }
 
 .cellUnderground .circle {
-  background-color: #e0e0e0;
   border: 1px solid black;
 }
 
 .cellUnderground .moveLine {
-  background: rgba(128, 128, 128);
+  background: var(--bg-disabled);
   opacity: 0.5;
 }
 
 .namedCircle {
-  background-color: var(--color-stamina);
+  background-color: var(--color-stamina) !important;
 }
 
 .number {
@@ -93,7 +94,7 @@
 }
 
 .moveLine {
-  background: linear-gradient(90deg, rgba(255, 255, 255), rgba(190, 190, 190));
+  background: linear-gradient(90deg, var(--bg-circle), var(--bg-circle));
   opacity: 0.5;
 }
 
@@ -111,31 +112,31 @@
   }
 }
 
-.playerLocation {
+.circle.playerLocation {
   animation: location-flash 1s ease-in-out infinite;
 }
 
 .noTravel {
-  background-color: #808080 !important;
+  background-color: var(--bg-disabled) !important;
   cursor: default;
 }
 
 .shop {
-  background-color: #CE6378 !important;
+  background-color: var(--bg-shop) !important;
 }
 
 .portal {
-  background-color: #00AFAF !important;
+  background-color: var(--bg-portal) !important;
 }
 
 @keyframes location-flash {
   0% {
-    background-color: #ffffff;
+    background-color: var(--bg-circle) !important;
   }
   50% {
-    background-color: var(--gold-bright);
+    background-color: var(--gold-bright) !important;
   }
   100% {
-    background-color: #ffffff;
+    background-color: var(--bg-circle) !important;
   }
 }
