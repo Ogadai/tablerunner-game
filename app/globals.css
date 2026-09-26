@@ -42,6 +42,7 @@
 
   --border-stone: #bdae99;
   --border-stone-light: #9e8e76;
+  --border-block: #2b221a;
 
   /* System Colors */
   --color-mana: #1a5fb4;
@@ -95,6 +96,7 @@
 
     --border-stone: #3a3126;
     --border-stone-light: #5c4e3c;
+    --border-block: #e6dfd3;
 
     /* System Colors */
     --color-mana: #2b7ae6;

@@ -131,40 +131,6 @@
   width: 71%;
 }
 
-.circle {
-  width: 6mm;
-  height: 6mm;
-  border-radius: 50%;
-  background-color: #ffffff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  position: relative;
-  z-index: 1;
-}
-
-.cellUnderground {
-  .circle {
-    background-color: #e0e0e0;
-    border: 1px solid black;
-  }
-
-  .moveLine {
-    background: linear-gradient(90deg, rgba(128, 128, 128), rgba(190, 190, 190));
-    background: rgba(128, 128, 128);
-    opacity: 0.5;
-  }
-}
-.number {
-  font-family: 'Cinzel', serif;
-  font-size: 7pt;
-  font-weight: 600;
-  color: #000000;
-  text-align: center;
-  line-height: 1;
-}
-
 .monsterCount {
   position: absolute;
   right: 0px;

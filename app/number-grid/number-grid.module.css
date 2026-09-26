@@ -53,7 +53,7 @@
 }
 
 .cellUnderground .circle {
-  border: 1px solid black;
+  border: 1px solid var(--border-block);
 }
 
 .cellUnderground .moveLine {
@@ -62,7 +62,7 @@
 }
 
 .namedCircle {
-  background-color: var(--color-stamina);
+  background-color: var(--bg-portal);
 }
 
 .number {
