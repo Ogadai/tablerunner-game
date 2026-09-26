@@ -8,8 +8,12 @@
    Theme Variables
    ========================================================================== */
 
-/* LIGHT MODE DEFAULTS */
 :root {
+  color-scheme: only light dark;
+}
+
+/* LIGHT MODE DEFAULTS */
+:root:root {
   /* Color Palette - Weathered Parchment & Gold */
   --bg-main: #f2ebd9;
   --bg-card: #eadeca;
@@ -57,7 +61,7 @@
 
 /* DARK MODE OVERRIDES */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:root {
     /* Color Palette - Deep Nocturnal & Gold */
     --bg-main: #120f0d;
     --bg-card: #1c1612;
@@ -114,7 +118,7 @@ html {
   height: 100%;
 }
 
-body {
+html body {
   background-color: var(--bg-main);
   color: var(--color-text-primary);
   font-family: var(--font-body);
