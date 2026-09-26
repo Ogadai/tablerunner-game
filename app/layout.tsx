@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { lora } from '@/app/fonts';
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TableRunner",
   description: "A game played between a table-top board game and an app",
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
