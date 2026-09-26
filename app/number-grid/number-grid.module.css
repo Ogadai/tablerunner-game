@@ -41,9 +41,9 @@
   width: 6mm;
   height: 6mm;
   border-radius: 50%;
-  background-color: var(--bg-circle) !important;
-  color: var(--color-text-primary) !important;
-  color-scheme: only light dark !important;
+  background-color: var(--bg-circle);
+  color: var(--color-text-primary);
+  color-scheme: only light dark;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -62,14 +62,14 @@
 }
 
 .namedCircle {
-  background-color: var(--color-stamina) !important;
+  background-color: var(--color-stamina);
 }
 
 .number {
   font-family: 'Cinzel', serif;
   font-size: 7pt;
   font-weight: 600;
-  color: #000000;
+  color: var(--color-text-primary);
   text-align: center;
   line-height: 1;
 }
@@ -117,26 +117,26 @@
 }
 
 .noTravel {
-  background-color: var(--bg-disabled) !important;
+  background-color: var(--bg-disabled);
   cursor: default;
 }
 
 .shop {
-  background-color: var(--bg-shop) !important;
+  background-color: var(--bg-shop);
 }
 
 .portal {
-  background-color: var(--bg-portal) !important;
+  background-color: var(--bg-portal);
 }
 
 @keyframes location-flash {
   0% {
-    background-color: var(--bg-circle) !important;
+    background-color: var(--bg-circle);
   }
   50% {
-    background-color: var(--gold-bright) !important;
+    background-color: var(--gold-bright);
   }
   100% {
-    background-color: var(--bg-circle) !important;
+    background-color: var(--bg-circle);
   }
 }
