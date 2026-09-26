@@ -117,12 +117,8 @@
 }
 
 .noTravel {
-  background-color: var(--bg-disabled);
+  opacity: 0.5;
   cursor: default;
-
-  .number {
-    color: var(--color-text-muted);
-  }
 }
 
 .shop {
