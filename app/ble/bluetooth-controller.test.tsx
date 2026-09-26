@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import BluetoothController from './bluetooth-controller';
 import { BleState } from './ble-states';
 import Swal from 'sweetalert2';
@@ -464,7 +464,7 @@ describe('BluetoothController', () => {
 
       const subscriber = mockCallback.mock.calls[0][0];
 
-      await waitFor(() => {
+      await act(async () => {
         subscriber(BleState.Connected);
       });
 
@@ -526,15 +526,13 @@ describe('BluetoothController', () => {
       });
 
       (bluetoothService.getState as jest.Mock).mockReturnValue(BleState.Disconnected);
-      const { rerender } = render(<BluetoothController bleOtherPlayer={false} />);
+      render(<BluetoothController bleOtherPlayer={false} />);
 
       const subscriber = mockCallback.mock.calls[0][0];
-      
-      await waitFor(() => {
+
+      await act(async () => {
         subscriber(BleState.Connected);
       });
-
-      rerender(<BluetoothController bleOtherPlayer={false} />);
 
       const button = screen.getByRole('button');
       expect(button.className).toContain(BleState.Connected);
