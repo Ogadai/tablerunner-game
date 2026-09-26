@@ -53,7 +53,8 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 1, y: 0 },
     bonusStats: {
       damage: 15,
-    }
+    },
+    damageType: 'fire',
   },
   [SpellIds.fireWall]: {
     id: SpellIds.fireWall.toString(),
@@ -66,7 +67,8 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 2, y: 0 },
     bonusStats: {
       damage: 8,
-    }
+    },
+    damageType: 'fire',
   },
   [SpellIds.iceShards]: {
     id: SpellIds.iceShards.toString(),
@@ -79,7 +81,8 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 3, y: 0 },
     bonusStats: {
       damage: 8,
-    }
+    },
+    damageType: 'ice',
   },
   [SpellIds.iceStorm]: {
     id: SpellIds.iceStorm.toString(),
@@ -92,7 +95,8 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 4, y: 0 },
     bonusStats: {
       damage: 6,
-    }
+    },
+    damageType: 'ice',
   },
   [SpellIds.heal]: {
     id: SpellIds.heal.toString(),
@@ -230,7 +234,8 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 1, y: 3 },
     bonusStats: {
       damage: 17,
-    }
+    },
+    damageType: 'fire',
   },
   [SpellIds.spiritGuide]: {
     id: SpellIds.spiritGuide.toString(),
@@ -308,7 +313,8 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 1, y: 0 },
     bonusStats: {
       damage: 20,
-    }
+    },
+    damageType: 'fire',
   },
   [SpellIds.fireBreathLarge]: {
     id: SpellIds.fireBreathLarge.toString(),
@@ -321,7 +327,8 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 1, y: 0 },
     bonusStats: {
       damage: 20,
-    }
+    },
+    damageType: 'fire',
   },
   [SpellIds.familiar]: {
     id: SpellIds.familiar.toString(),

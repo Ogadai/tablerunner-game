@@ -11,6 +11,7 @@ import { getMonsterStats } from './monster-stats';
 import { ConsumableIds, consumableItems, ItemIds, lootItems } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
 import { getCombatStats } from "../store/playerStats";
+import { SpellDef } from "../games/types";
 
 const MAXIMUM_COIN_DROP = 100;
 const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
@@ -120,10 +121,14 @@ export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, mes
   })));  
 }
 
-export function genericAttackMonster(params: BaseParams, player: INamedTarget, attackStats: { name?: string, attack: number, damage: number }, monster: MonsterState): boolean {
+export function genericAttackMonster(params: BaseParams, player: INamedTarget, attackStats: { name?: string, attack: number, damage: number, damageType?: SpellDef['damageType'] }, monster: MonsterState): boolean {
   try {
     if (monster && monster.health > 0) {
-      const damage = processAttackForDamage(attackStats, getMonsterStats(monster));
+      const monsterDef = monsters[monster.type];
+      const resisted = attackStats.damageType && monsterDef.resistant?.includes(attackStats.damageType);
+      const vulnerable = attackStats.damageType && monsterDef.vulnerable?.includes(attackStats.damageType);
+      const damageMultiplier = (resisted ? 0.5 : 1) * (vulnerable ? 2 : 1);
+      const damage = Math.ceil(processAttackForDamage(attackStats, getMonsterStats(monster)) * damageMultiplier);
 
       const attackName = attackStats.name
         ? `**{player}{possessive}** ${attackStats.name}`
@@ -148,7 +153,7 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
           player.points += Math.ceil(totalPoints / players.length);
         }
 
-        playerMessageAtLocation(params, player.id, `${attackName} hit **${getMonsterName(monster)}** for **${appliedDamage}** damage${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
+        playerMessageAtLocation(params, player.id, `${attackName} hit **${getMonsterName(monster)}** for **${appliedDamage}** damage${resisted ? ' (**resisted**)' : ''}${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
         return true;
       } else {
         playerMessageAtLocation(params, player.id, `${attackName} missed **${getMonsterName(monster)}**`);

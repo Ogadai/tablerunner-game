@@ -32,7 +32,7 @@ it('casts on the selected monster, spends mana once, and deduplicates recent spe
   player.recentSpells = [SpellIds.heal, SpellIds.fireBall];
   actionCastSpell(params, player, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.fireBall, targetId: monster.id });
   expect(genericAttackMonster).toHaveBeenCalledTimes(1);
-  expect(genericAttackMonster).toHaveBeenCalledWith(params, player, { name: 'Fire Ball', attack: 10, damage: 15 }, monster);
+  expect(genericAttackMonster).toHaveBeenCalledWith(params, player, { name: 'Fire Ball', attack: 10, damage: 15, damageType: 'fire' }, monster);
   expect(player.magic).toBe(5);
   expect(player.recentSpells).toEqual([SpellIds.fireBall, SpellIds.heal]);
 });

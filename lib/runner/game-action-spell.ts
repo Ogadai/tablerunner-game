@@ -56,6 +56,7 @@ function applySpellEnemy(
       name: spell.name,
       attack: getCombatStats(player).magic,
       damage: spell.bonusStats.damage || 0,
+      damageType: spell.damageType,
     };
     if ('type' in monster) {
       genericAttackMonster(params, player, attackStats, monster as MonsterState);

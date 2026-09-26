@@ -79,6 +79,8 @@ export interface MonsterListEntry {
   iconXY: { x: number, y: number };
   baseStats: BaseStats;
   spells?: SpellIds[];
+  resistant?: ('fire' | 'ice')[];
+  vulnerable?: ('fire' | 'ice')[];
 }
 
 export enum PlayerItemType {
@@ -157,4 +159,5 @@ export interface SpellDef {
     special?: string;
     turns?: number;
   };
+  damageType?: 'fire' | 'ice',
 }

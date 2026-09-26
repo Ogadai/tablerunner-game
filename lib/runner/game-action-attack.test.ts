@@ -3,6 +3,8 @@ import { BaseParams } from './base-params';
 import { MonsterState, NPCState, PlayerActionAttack, PlayerActionType, PlayerState } from '../store/types';
 import { ConsumableIds } from '../games/items';
 import { createItemForInventory } from './apply-inventory';
+import { SpellDef } from '../games/types';
+import { getPointsForDamage } from '../games/monsters';
 
 jest.mock('./apply-inventory', () => ({
   createItemForInventory: jest.fn((_state, item) => ({ id: 'item', type: item.id })),
@@ -138,6 +140,25 @@ describe('processAttackForDamage', () => {
 });
 
 describe('genericAttackMonster', () => {
+  it.each<{ type: string, damageType: SpellDef['damageType'], damage: number, resisted: boolean }>([
+    { type: 'firespirit', damageType: 'fire', damage: 2, resisted: true },
+    { type: 'firespirit', damageType: 'ice', damage: 6, resisted: false },
+    { type: 'firespirit', damageType: undefined, damage: 3, resisted: false },
+    { type: 'rat', damageType: 'fire', damage: 3, resisted: false },
+  ])('applies $damageType damage to $type with the correct message and points', ({ type, damageType, damage, resisted }) => {
+    const player = createPlayer('p1');
+    const monster = createMonster('m1', type, 20);
+    const params = createParams([monster], [player]);
+    hit();
+
+    expect(genericAttackMonster(params, player, { name: 'Spell', attack: 10, damage: 6, damageType }, monster)).toBe(true);
+
+    expect(monster.health).toBe(20 - damage);
+    expect(player.points).toBe(Math.ceil(getPointsForDamage(type, damage)));
+    expect(params.messages.p1.messages[0].text).toContain(`for **${damage}** damage`);
+    expect(params.messages.p1.messages[0].text.includes('resisted')).toBe(resisted);
+  });
+
   it('caps damage at remaining health and shares points only with living nearby players', () => {
     const player = createPlayer('p1');
     const ally = createPlayer('p2');

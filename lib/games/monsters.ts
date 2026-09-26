@@ -257,6 +257,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       health: 25,
       speed: 6,
     },
+    resistant: ['ice', 'fire'],
   },
   'squizard': {
     id: 'squizard',
@@ -302,6 +303,8 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       health: 20,
       speed: 10,
     },
+    resistant: ['fire'],
+    vulnerable: ['ice'],
   },
   'lich': {
     id: 'lich',
@@ -341,6 +344,8 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     spells: [
       SpellIds.fireBreathSmall,
     ],
+    resistant: ['fire'],
+    vulnerable: ['ice'],
   },
   'skeletaldragon': {
     id: 'skeletaldragon',
@@ -373,6 +378,8 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     spells: [
       SpellIds.fireBreathLarge,
     ],
+    resistant: ['fire'],
+    vulnerable: ['ice'],
   },
   'spiriteagle': {
     id: 'spiriteagle',
