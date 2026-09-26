@@ -3,7 +3,17 @@ import { createNpc, createPlayer } from './test-support/fixtures';
 import { NOTHING_EQUPPED, PlayerActionType, type PlayerActionCast, type PlayerActionUseItem, type PlayerActionsState } from './types';
 
 describe('action budgets', () => {
-  it.each([[0, 18, 12], [4, 18, 12], [5, 17, 11], [49, 9, 3], [50, 8, 2], [100, 8, 2]])('calculates costs at speed %i', (speed, move, attack) => {
+  it.each([
+    [0, 18, 12],
+    [5, 18, 12],
+    [6, 18, 12],
+    [7, 17, 11],
+    [10, 16, 10],
+    [20, 13, 7],
+    [28, 9, 3],
+    [29, 8, 2],
+    [100, 8, 2],
+  ])('calculates costs at speed %i', (speed, move, attack) => {
     const player = createPlayer();
     player.baseStats!.speed = speed;
     expect(getPlayerActionsPerTurn(player)).toEqual({ total: 20, move, attack });

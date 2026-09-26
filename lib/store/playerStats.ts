@@ -16,7 +16,7 @@ export interface PlayerActionsPerTurn {
 
 export function getPlayerActionsPerTurn(playerState: INamedTarget): PlayerActionsPerTurn {
   const playerSpeed = playerState.baseStats!.speed;
-  const speedBonus = Math.min(10, Math.floor(playerSpeed / 5));
+  const speedBonus = Math.min(10, Math.floor(Math.pow(playerSpeed, 1.5) / 15));
 
   return {
     total: playerState.health > 0 ? BASE_ACTIONS_PER_TURN : 0,
