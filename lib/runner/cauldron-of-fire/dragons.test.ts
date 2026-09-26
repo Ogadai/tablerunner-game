@@ -38,6 +38,21 @@ it('erupts after the scheduled turn, killing occupants and destroying shops in l
   expect(params.gameState.locationOverrides).toContainEqual({ id: 162, description: 'This building has been destroyed by Lava' });
 });
 
+it('preserves existing fire spirits without replacing them on successive lava turns', async () => {
+  const fireSpirit = createMonster({ id: 'fire-spirit-rat', type: 'firespirit', location: 162, health: 7 });
+  const params = createParams({ monsters: [fireSpirit] });
+  params.gameState.processState.dragons = { lastLava: 0, currentLavaTurn: 0, currentLavaMax: 2 };
+
+  for (let turn = 0; turn < 2; turn++) {
+    await dragons.executeForTurn!(params);
+
+    expect(params.monsters).toEqual([
+      { id: 'fire-spirit-rat', type: 'firespirit', location: 162, health: 7 },
+    ]);
+    params.gameState.turn++;
+  }
+});
+
 it('clears lava state and LEDs when an eruption ends', async () => {
   const params = createParams();
   params.gameState.processState.dragons = { lastLava: 0, nextLava: 1, currentLavaTurn: 3, currentLavaMax: 2 };

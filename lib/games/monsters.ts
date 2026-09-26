@@ -297,7 +297,7 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     baseStats: {
       attack: 15,
       damage: 20,
-      defence: 120,
+      defence: 12,
       magic: 0,
       health: 20,
       speed: 10,

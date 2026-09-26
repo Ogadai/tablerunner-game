@@ -226,10 +226,10 @@ export const dragons: ProcessRunner = {
         lavaLocations.push(...LAVA_EXTENT[lavaLevel - 1]);
       }
 
-      // Kill all the monsters here
+      // Kill all the monsters here except fire spirits
       const extraMonsters: MonsterState[] = [];
       for(const monster of params.monsters) {
-        if (monster.health > 0 && lavaLocations.includes(monster.location)) {
+        if (monster.type !== 'firespirit' && monster.health > 0 && lavaLocations.includes(monster.location)) {
           monster.health = 0;
 
           // Add a fire spirit in its place
