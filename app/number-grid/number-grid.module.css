@@ -119,6 +119,10 @@
 .noTravel {
   background-color: var(--bg-disabled);
   cursor: default;
+
+  .number {
+    color: var(--color-text-muted);
+  }
 }
 
 .shop {
