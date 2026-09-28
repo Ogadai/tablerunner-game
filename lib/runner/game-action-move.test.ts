@@ -3,7 +3,7 @@ import { actionMove, actionRespawn, updateLockLeds } from './game-action-move';
 import { PlayerActionType } from '../store/types';
 import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 
-jest.mock('../games/games', () => ({ games: [{ id: 'test-game', startLocation: 1, locations: [
+jest.mock('../games/games', () => ({ games: [{ id: 'test-game', locations: [
   { id: 1, description: 'Start', move: [{ id: 2, direction: 'e' }] },
   { id: 2, description: 'Hall', move: [{ id: 3, direction: 'n' }] },
 ] }] }));
@@ -49,14 +49,15 @@ it.each(['e', 'w'] as const)('ignores blocked or unavailable movement %s', direc
   expect(params.gameState.visited).toEqual([1]);
 });
 
-it('respawns at the start with one health and no retreat direction', () => {
+it.each([1, 2])('respawns at the player\'s start location %i with one health and no retreat direction', startLocation => {
   const params = createParams();
   const player = params.gameState.players[0];
-  player.location.id = 2;
+  player.startLocation = startLocation;
+  player.location.id = startLocation === 1 ? 2 : 1;
   player.health = 0;
   player.retreatDirection = 's';
   actionRespawn(params, player);
-  expect(player.location.id).toBe(1);
+  expect(player.location.id).toBe(startLocation);
   expect(player.health).toBe(1);
   expect(player.retreatDirection).toBeUndefined();
 });

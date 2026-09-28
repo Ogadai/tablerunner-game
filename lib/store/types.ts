@@ -75,6 +75,7 @@ export interface INamedTarget extends ITarget {
 }
 
 export interface PlayerState extends INamedTarget {
+  startLocation: number;
   retreatDirection?: string;
   rgbColour: string;
   characterStats: CharacterStats;

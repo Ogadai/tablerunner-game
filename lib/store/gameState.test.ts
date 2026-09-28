@@ -23,10 +23,11 @@ jest.mock('../games/character-names', () => ({ pickCharacterName: jest.fn() }));
 
 const mockRedis = jest.mocked(redis);
 const game = games[0];
+const starterPlayer = game.createStarterPlayer();
 function createState(): GameState {
   return {
     gameId: game.id, turn: 0, name: 'Test game', characters: game.characters,
-    players: [], npcs: [], visited: [game.startLocation], stores: [], portals: [],
+    players: [], npcs: [], visited: [], stores: [], portals: [],
     visitedPortals: [], counters: { itemId: 0, monsterId: 0 }, leds: [], processState: {},
   };
 }
@@ -37,6 +38,8 @@ beforeEach(() => {
   jest.mocked(populateItemsForMap).mockResolvedValue([]);
   jest.mocked(pickCharacterName).mockReturnValue('Test Hero');
 });
+
+afterEach(() => jest.restoreAllMocks());
 
 describe('game and board persistence', () => {
   it('returns the stored game for the requested board and map', async () => {
@@ -84,25 +87,25 @@ describe('createNewGameState', () => {
   });
 
   it('initializes and persists the game, locations and every store', async () => {
-    const items = [{ id: 'item-1', type: 'healingPotion', location: game.startLocation }];
+    const items = [{ id: 'item-1', type: 'healingPotion', location: starterPlayer.location }];
     jest.mocked(populateItemsForMap).mockResolvedValue(items);
     jest.mocked(setupProcesses).mockImplementation(async params => {
       params.gameState.processState.test = { initialized: true };
-      params.monsters.push({ id: 'monster-1', type: 'rat', health: 5, location: game.startLocation, team: 'monster' });
+      params.monsters.push({ id: 'monster-1', type: 'rat', health: 5, location: starterPlayer.location, team: 'monster' });
     });
     const result = await createNewGameState('board', 'map', game.id);
     expect(result).toEqual({ success: true, data: expect.objectContaining({
       gameId: game.id, name: `${game.id} on board board and map map`, turn: 0,
-      players: [], npcs: [], characters: game.characters, visited: [game.startLocation],
+      players: [], npcs: [], characters: game.characters, visited: [],
       stores: Object.keys(game.storeItems).map(Number), portals: game.portalLocations ?? [],
-      visitedPortals: game.portalLocations?.includes(game.startLocation) ? [game.startLocation] : [],
+      visitedPortals: [],
       counters: { itemId: 0, monsterId: 0 }, processState: { test: { initialized: true } },
     }) });
     expect(populateItemsForMap).toHaveBeenCalledWith(result.data, 'map');
     expect(setupProcesses).toHaveBeenCalledWith(expect.objectContaining({ boardId: 'board', mapId: 'map', messages: {}, items }));
     expect(mockRedis.setGameStateInRedis).toHaveBeenCalledWith('board', 'map', result.data);
     expect(mockRedis.setLocationsStateInRedis).toHaveBeenCalledWith('board', 'map', {
-      items, monsters: [{ id: 'monster-1', type: 'rat', health: 5, location: game.startLocation, team: 'monster' }],
+      items, monsters: [{ id: 'monster-1', type: 'rat', health: 5, location: starterPlayer.location, team: 'monster' }],
       coins: [], blockedMoves: [], npcs: [],
     });
     expect(createStoreInventoryState).toHaveBeenCalledTimes(Object.keys(game.storeItems).length);
@@ -137,9 +140,11 @@ describe('player creation and deletion', () => {
     await expect(createPlayerForGame('board', 'map', 'mage')).resolves.toEqual({ success: true });
     const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
     const player = saved.players[0];
-    expect(player).toMatchObject({ id: 'mage', name: 'Test Hero', location: { id: game.startLocation },
+    expect(player).toMatchObject({ id: 'mage', name: 'Test Hero',
+      startLocation: starterPlayer.location, location: { id: starterPlayer.location },
       characterStats: characters.mage.characterStats, spells: characters.mage.spells,
-      level: 1, points: 0, availableStats: 5, coins: 20,
+      level: starterPlayer.level, points: 0, availableStats: starterPlayer.availableStats,
+      coins: starterPlayer.coins, team: starterPlayer.team,
     });
     expect(player.health).toBe(player.baseStats!.health);
     expect(player.magic).toBe(player.baseStats!.magic);
@@ -149,7 +154,31 @@ describe('player creation and deletion', () => {
     expect(player.characterStats).not.toBe(characters.mage.characterStats);
     expect(player.spells).not.toBe(characters.mage.spells);
     expect(state.players).toEqual([]);
+    expect(state.visited).toEqual([]);
+    expect(state.visitedPortals).toEqual([]);
+    expect(saved.visited).toEqual([starterPlayer.location]);
+    expect(saved.visitedPortals).toEqual(game.portalLocations?.includes(starterPlayer.location) ? [starterPlayer.location] : []);
     expect(mockRedis.setGameStateInRedis).toHaveBeenCalledWith('board', 'map', saved);
+  });
+
+  it.each([1, 23])('uses game-specific starting properties at location %i', async location => {
+    const customStarter = { location, level: 3, availableStats: 8, coins: 50, team: 'red' };
+    const createStarter = jest.spyOn(game, 'createStarterPlayer').mockReturnValue(customStarter);
+    const state = createState();
+    state.visited = [10, location];
+    state.visitedPortals = game.portalLocations?.includes(location) ? [10, location] : [];
+    mockRedis.getGameStateFromRedis.mockResolvedValue(state);
+
+    await expect(createPlayerForGame('board', 'map', 'mage')).resolves.toEqual({ success: true });
+
+    const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
+    expect(createStarter).toHaveBeenCalledTimes(1);
+    expect(saved.players[0]).toMatchObject({
+      startLocation: location, location: game.locations.find(l => l.id === location),
+      level: 3, availableStats: 8, coins: 50, team: 'red',
+    });
+    expect(saved.visited).toEqual([10, location]);
+    expect(saved.visitedPortals).toEqual(game.portalLocations?.includes(location) ? [10, location] : []);
   });
 
   it('rejects a missing game', async () => {

@@ -8,7 +8,7 @@ export function createPlayer(overrides: Partial<PlayerState> = {}): PlayerState 
     characterStats: { strength: 6, skill: 12, reactions: 10, resiliance: 20, intelligence: 10 },
     baseStats: { attack: 6, damage: 6, defence: 10, magic: 10, health: 20, speed: 10 },
     level: 1, points: 0, availableStats: 5, coins: 20,
-    team: 'good', ...overrides,
+    team: 'good', startLocation: 10, ...overrides,
   };
 }
 

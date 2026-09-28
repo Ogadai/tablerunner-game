@@ -13,9 +13,6 @@ import { createStoreInventoryState } from "./playerInventory";
 import { setupProcesses } from "../runner/game-processes";
 import { updatePortalAndShopLeds } from "../runner/game-action-portal";
 
-const INITIAL_AVAILABLE_STATS = 5;
-const INITIAL_COINS = 20;
-
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
     const result = await getGameStateFromRedis(boardId, mapId);
@@ -79,10 +76,10 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     characters: gameDef.characters,
     players: [],
     npcs: [],
-    visited: [gameDef.startLocation],
+    visited: [],
     stores: Object.keys(gameDef.storeItems).map(i => parseInt(i, 10)),
     portals: gameDef.portalLocations ? [...gameDef.portalLocations] : [],
-    visitedPortals: gameDef.portalLocations?.includes(gameDef.startLocation) ? [gameDef.startLocation] : [],
+    visitedPortals: [],
     counters: {
       itemId: 0,
       monsterId: 0,
@@ -175,31 +172,37 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
     }
 
     const equipment = characterDef.equipment.map(e => createItemForInventory(gameState, e));
+    const starterPlayer = gameDef.createStarterPlayer();
 
     const newPlayer: PlayerState = {
       id: playerId,
       name: pickCharacterName(characterDef.id),
       rgbColour: characterDef.rgbColour,
-      location: gameDef.locations.find(l => l.id === gameDef.startLocation)!,
+      startLocation: starterPlayer.location,
+      location: gameDef.locations.find(l => l.id === starterPlayer.location)!,
       characterStats: { ...characterDef.characterStats },
       health: 0,
       magic: 0,
       points: 0,
-      level: 1,
-      availableStats: INITIAL_AVAILABLE_STATS,
+      level: starterPlayer.level,
+      availableStats: starterPlayer.availableStats,
       equipment,
       equipped: {
         weapon: equipment[0].id
       },
       spells: [...characterDef.spells],
-      coins: INITIAL_COINS,
-      team: 'good',
+      coins: starterPlayer.coins,
+      team: starterPlayer.team,
     };
 
     const baseStats = getPlayerStats(newPlayer);
 
     const newGameState: GameState = {
       ...gameState,
+      visited: [...gameState.visited.filter(v => v !== starterPlayer.location), starterPlayer.location],
+      visitedPortals: gameDef.portalLocations?.includes(starterPlayer.location)
+        ? [...gameState.visitedPortals.filter(v => v !== starterPlayer.location), starterPlayer.location]
+        : [],
       players: [...gameState.players, {
         ...newPlayer,
         baseStats: baseStats,

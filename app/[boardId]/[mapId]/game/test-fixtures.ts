@@ -16,7 +16,9 @@ export function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
     location: { id: 1, description: 'Start', move: [] },
     rgbColour: 'ff0000', characterStats: makeCharacter().characterStats,
     level: 1, points: 0, availableStats: 0, coins: 0,
-    spells: [], equipment: [], equipped: {}, team: 'good', ...overrides,
+    spells: [], equipment: [], equipped: {}, team: 'good',
+    startLocation: 10,
+    ...overrides,
   };
 }
 

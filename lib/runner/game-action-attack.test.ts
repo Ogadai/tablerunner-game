@@ -16,6 +16,7 @@ function createPlayer(id: string, health = 10): PlayerState {
     id,
     name: id,
     team: 'good',
+    startLocation: 1,
     location: { id: 1, description: '', move: [] },
     rgbColour: '#fff',
     characterStats: { strength: 1, skill: 1, reactions: 1, resiliance: 1, intelligence: 1 },

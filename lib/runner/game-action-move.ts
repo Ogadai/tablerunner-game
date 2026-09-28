@@ -53,7 +53,7 @@ export function actionRespawn(params: BaseParams, player: PlayerState): void {
   try {
     const gameDef = games.find(g => g.id === params.gameState.gameId)!;
 
-    const newLocation = gameDef.locations.find(l => l.id === gameDef.startLocation)!;
+    const newLocation = gameDef.locations.find(l => l.id === player.startLocation)!;
     player.location = getPlayerLocation(params, newLocation)
     player.health = 1;
 
