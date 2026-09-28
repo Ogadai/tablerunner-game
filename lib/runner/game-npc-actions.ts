@@ -138,9 +138,9 @@ function getMagicPotionAction(params: BaseParams, npc: INamedTarget): ActionsWit
   const manaPotion = consumableItems[ConsumableIds.manaPotion];
 
   if (potions.length > 0) {
-    const magic = manaPotion.bonusStats!.magic || 5;
+    if (npc.magic <= npc.baseStats!.magic - 5) {
+      const magic = Math.min(manaPotion.bonusStats!.magic || 5, npc.baseStats!.magic - npc.magic);
 
-    if (npc.magic <= npc.baseStats!.magic - magic) {
       const item = potions[0];
 
       const action: PlayerActionUseItem = {

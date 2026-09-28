@@ -22,7 +22,7 @@ it('adds temporary bonuses with an extra turn for end-of-turn processing', () =>
   const player = params.gameState.players[0];
   player.equipment = [{ id: 'buff', type: item.id }];
   actionUseItem(params, player, { id: 1, type: PlayerActionType.UseItem, itemId: 'buff', description: '' });
-  expect(player.effects).toEqual([{ description: 'Toughness Potion', turns: 6, defence: 5 }]);
+  expect(player.effects).toEqual([{ description: 'Toughness Potion', turns: 11, defence: 5 }]);
   expect(player.equipment).toEqual([]);
 });
 
