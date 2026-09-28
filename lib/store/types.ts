@@ -59,7 +59,7 @@ export interface ITarget {
   effects?: CharacterEffect[];
   zombie?: boolean;
   infected?: number;
-  team: string;
+  team: string | null;
 }
 
 export interface INamedTarget extends ITarget {

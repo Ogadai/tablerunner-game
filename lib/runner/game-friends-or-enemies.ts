@@ -2,7 +2,7 @@ import { GameState, INamedTarget, ITarget, MonsterState } from "../store/types";
 import { getMonsterCombatant } from "./monster-combatant";
 
 export function isEnemy(actor: ITarget, target: ITarget): boolean {
-  return actor.team !== target.team;
+  return (target.team !== null) && actor.team !== target.team;
 }
 
 export function isFriend(actor: ITarget, target: ITarget): boolean {
@@ -12,11 +12,11 @@ export function isFriend(actor: ITarget, target: ITarget): boolean {
 export type RelationshipParams = { gameState: Pick<GameState, 'players' | 'npcs'>, monsters: MonsterState[] };
 
 export function getEnemies(params: RelationshipParams, actor: INamedTarget): INamedTarget[] {
-  return getAll(params, actor).filter(n => isEnemy(n, actor));
+  return getAll(params, actor).filter(n => isEnemy(actor, n));
 }
 
 export function getFriends(params: RelationshipParams, actor: INamedTarget): INamedTarget[] {
-  return getAll(params, actor).filter(n => isFriend(n, actor));
+  return getAll(params, actor).filter(n => isFriend(actor, n));
 }
 
 function getAll(params: RelationshipParams, actor: INamedTarget): INamedTarget[] {

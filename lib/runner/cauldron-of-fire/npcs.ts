@@ -160,7 +160,7 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
     hireCost: cost,
     iconXY: iconXY,
     health: baseStats.health,
-    team: 'good',
+    team: null,
   };
 }
 
