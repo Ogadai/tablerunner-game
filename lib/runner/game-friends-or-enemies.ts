@@ -1,12 +1,20 @@
-import { GameState, INamedTarget, MonsterState } from "../store/types";
+import { GameState, INamedTarget, ITarget, MonsterState } from "../store/types";
 import { getMonsterCombatant } from "./monster-combatant";
 
+export function isEnemy(actor: ITarget, target: ITarget): boolean {
+  return actor.team !== target.team;
+}
+
+export function isFriend(actor: ITarget, target: ITarget): boolean {
+  return actor.team === target.team;
+}
+
 export function getEnemies(params: { gameState: GameState, monsters: MonsterState[] }, actor: INamedTarget): INamedTarget[] {
-  return getAll(params, actor).filter(a => a.team !== actor.team);
+  return getAll(params, actor).filter(n => isEnemy(n, actor));
 }
 
 export function getFriends(params: { gameState: GameState, monsters: MonsterState[] }, actor: INamedTarget): INamedTarget[] {
-  return getAll(params, actor).filter(a => a.team === actor.team);
+  return getAll(params, actor).filter(n => isFriend(n, actor));
 }
 
 function getAll(params: { gameState: GameState, monsters: MonsterState[] }, actor: INamedTarget): INamedTarget[] {
