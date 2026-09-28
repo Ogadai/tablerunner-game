@@ -30,6 +30,7 @@ function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterL
       type: spirit.id,
       location: player.location.id,
       health: spirit.baseStats.health,
+      team: player.team,
     });
     playerMessageAtLocation(params, player.id, `**{player}** summoned **${spirit.name}**`);
     return;
@@ -55,6 +56,7 @@ function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterL
     health: spirit.baseStats.health,
     turnsLeft: expiryTurns,
     expiryAction: expiryAction,
+    team: player.team,
   };
 
   params.gameState.npcs.push(newNPC);
@@ -70,8 +72,14 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
       } else if (params.gameState.npcs.some(npc => npc.id === target.id)) {
         const npc = target as NPCState;
         params.gameState.npcs = params.gameState.npcs.filter(n => n.id !== npc.id);
-        params.monsters.push({ id: npc.id, type: npc.monsterType ?? 'zombie',
-          location: npc.location.id, health, zombie: true });
+        params.monsters.push({
+          id: npc.id,
+          type: npc.monsterType ?? 'zombie',
+          location: npc.location.id,
+          health,
+          zombie: true,
+          team: player.team,
+        });
       } else {
         // Players retain control of their character when raised as a zombie.
         target.zombie = true;
@@ -121,6 +129,7 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
         expiryAction: 'monster',
         monsterType: monsterDef.id,
         zombie: true,
+        team: player.team,
       };
 
       // remove the monster and add the npc

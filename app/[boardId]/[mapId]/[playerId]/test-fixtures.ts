@@ -35,5 +35,5 @@ export function makeNpc(overrides: Partial<NPCState> = {}): NPCState {
   return { id: 'npc-1', name: 'Mercenary', health: 10, magic: 0,
     location: { id: 1, description: 'Start', move: [] }, equipment: [], equipped: {},
     spells: [], baseStats: makeBaseStats(), masterId: null,
-    hireCost: 10, iconXY: { x: 0, y: 0 }, ...overrides };
+    hireCost: 10, iconXY: { x: 0, y: 0 }, team: 'good', ...overrides };
 }

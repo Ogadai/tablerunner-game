@@ -82,7 +82,8 @@ export const zombies: ProcessRunner = {
                   location: zombie.location,
                   type: 'zombie',
                   zombie: true,
-                  health: monsters['zombie'].baseStats.health
+                  health: monsters['zombie'].baseStats.health,
+                  team: 'monster',
                 });
                 params.monsters.push(newMonster);
               }

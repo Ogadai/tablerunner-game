@@ -157,6 +157,7 @@ const createStartMonsters = (params: BaseParams, invasion: InvasionDef, existing
         type: invasion.monsterType,
         location: startLocation,
         health: monsters[invasion.monsterType].baseStats.health,
+        team: 'monster',
       });
 
       params.monsters.push(newMonster);

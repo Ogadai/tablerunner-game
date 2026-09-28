@@ -193,6 +193,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       },
       spells: [...characterDef.spells],
       coins: INITIAL_COINS,
+      team: 'good',
     };
 
     const baseStats = getPlayerStats(newPlayer);

@@ -70,6 +70,7 @@ const checkInitiate = (params: BaseParams, state: LichKingDef): boolean => {
       ],
       equipped: { weapon: staff.id, armour: armour.id, helmet: helmet.id },
       health: monsterDef.baseStats.health,
+      team: 'monster',
     };
 
     // Replace the dormant monster with its equipped, active state.
@@ -192,6 +193,7 @@ export const lichKing: ProcessRunner = {
       location: LICH_LOCATION,
       health: 30,
       spells: [],
+      team: 'monster',
     });
 
     // Move protection for the Lich King back entrances
@@ -202,36 +204,42 @@ export const lichKing: ProcessRunner = {
         type: "minotaur",
         location: minotaurLocations[Math.floor(Math.random() * minotaurLocations.length)],
         health: 30,
+        team: 'monster',
       },
       {
         id: "lich-guard-2",
         type: "minotaur",
         location: minotaurLocations[Math.floor(Math.random() * minotaurLocations.length)],
         health: 30,
+        team: 'monster',
       },
       {
         id: "lich-guard-3",
         type: "ogre",
         location: 181,
         health: 22,
+        team: 'monster',
       },
       {
         id: "lich-guard-4",
         type: "ogre",
         location: 181,
         health: 22,
+        team: 'monster',
       },
       {
         id: "lich-guard-5",
         type: "skeleton",
         location: 224,
         health: 16,
+        team: 'monster',
       },
       {
         id: "lich-guard-6",
         type: "skeleton",
         location: 224,
         health: 16,
+        team: 'monster',
       },
     );
   },

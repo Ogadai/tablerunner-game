@@ -64,6 +64,7 @@ function getCellMonsters(gameState: GameState, cell: number, playerCount: number
     type: c.id,
     location: cell,
     health: monsters[c.id].baseStats.health,
+    team: 'monster',
   }));
 }
 

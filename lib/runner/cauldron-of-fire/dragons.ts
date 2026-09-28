@@ -80,7 +80,8 @@ export const dragons: ProcessRunner = {
         magic: 40,
         spells: [
           SpellIds.fireBreathLarge,
-        ]
+        ],
+        team: 'monster',
       },
       {
         id: "fire-dragon-baby",
@@ -90,7 +91,8 @@ export const dragons: ProcessRunner = {
         magic: 20,
         spells: [
           SpellIds.fireBreathSmall,
-        ]
+        ],
+        team: 'monster',
       },
     );
 
@@ -238,6 +240,7 @@ export const dragons: ProcessRunner = {
             type: 'firespirit',
             location: monster.location,
             health: 20,
+            team: 'monster',
           });
         }
       }

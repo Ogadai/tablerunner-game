@@ -16,5 +16,5 @@ export function createParams(overrides: Partial<BaseParams> = {}): BaseParams {
 }
 
 export function createMonster(overrides: Partial<MonsterState> = {}): MonsterState {
-  return { id: 'rat', type: 'rat', location: 1, health: 5, ...overrides };
+  return { id: 'rat', type: 'rat', location: 1, health: 5, team: 'monster', ...overrides };
 }

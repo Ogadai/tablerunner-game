@@ -6,6 +6,7 @@ import { getMonsterStats } from './monster-stats';
 export function getMonsterCombatant(monster: MonsterState): INamedTarget {
   return {
     id: monster.id,
+    team: monster.team,
     get name() { return monsters[monster.type].name; },
     get location() { return { id: monster.location, description: '', move: [] }; },
     get baseStats() { return getMonsterStats(monster); },

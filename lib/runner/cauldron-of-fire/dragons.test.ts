@@ -47,7 +47,7 @@ it('preserves existing fire spirits without replacing them on successive lava tu
     await dragons.executeForTurn!(params);
 
     expect(params.monsters).toEqual([
-      { id: 'fire-spirit-rat', type: 'firespirit', location: 162, health: 7 },
+      { id: 'fire-spirit-rat', type: 'firespirit', location: 162, health: 7, team: 'monster', },
     ]);
     params.gameState.turn++;
   }

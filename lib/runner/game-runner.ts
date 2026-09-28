@@ -291,6 +291,7 @@ function processNpcTimeouts(params: BaseParams) {
               effects: [],
               health: (npc.expiryAction === 'dead') ? 0 : npc.health,
               zombie: npc.zombie,
+              team: 'monster',
             };
 
             params.monsters.push(monster);
