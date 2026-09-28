@@ -111,9 +111,9 @@ const describeSpell = (spell: SpellDef): string => {
   if (spell.bonusStats.special) {
     return spell.bonusStats.special;
   } else {
-    const effects = Object.keys(spell.bonusStats)
-      .filter(k => k !== 'turns')
-      .map(k => `${(spell.bonusStats as any)[k]} ${k}`)
+    const effects = Object.entries(spell.bonusStats)
+      .filter(([key]) => key !== 'turns')
+      .map(([key, value]) => `${value} ${key}`)
       .join(', ');
 
     return `${effects}${spell.bonusStats.turns ? ` for ${spell.bonusStats.turns} turns` : ''}`;
@@ -121,7 +121,7 @@ const describeSpell = (spell: SpellDef): string => {
 }
 
 const toGameAction = (params: BaseParams, action: LichActions, lich: INamedTarget, targets: INamedTarget[], deadMonsters: ITarget[]): PlayerAction | null => {
-  const usePotion = (type: ConsumableIds): PlayerActionUseItem | null => {
+  const createPotionAction = (type: ConsumableIds): PlayerActionUseItem | null => {
     const potion = lich.equipment.find(e => e.type === type);
     if (potion) {
       return {
@@ -135,9 +135,9 @@ const toGameAction = (params: BaseParams, action: LichActions, lich: INamedTarge
   }
 
   if (action.name === 'drink healing potion') {
-    return usePotion(ConsumableIds.healingPotion);
+    return createPotionAction(ConsumableIds.healingPotion);
   } else if (action.name === 'drink mana potion') {
-    return usePotion(ConsumableIds.manaPotion);
+    return createPotionAction(ConsumableIds.manaPotion);
   } else if (action.name === 'attack') {
     return {
       type: PlayerActionType.Attack,

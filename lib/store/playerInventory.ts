@@ -115,7 +115,7 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
 
       const item = sourceList.find(i => i.id === itemId);
       if (item) {
-        (updatedInventory.equipped as any)[allItems[item.type].type] = item.id;
+        updatedInventory.equipped![allItems[item.type].type as keyof PlayerInventoryEquipSlots] = item.id;
       }
     }
 

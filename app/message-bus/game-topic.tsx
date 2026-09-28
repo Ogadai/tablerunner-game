@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import * as Ably from 'ably';
 import { BleConnectedStatusMessage, GameTopicMessageType } from '../../lib/message-types';
 import GameTopicService from './game-topic-service';
@@ -23,8 +23,8 @@ function connectToAbly(playerId: string): Ably.Realtime {
           });
           const tokenRequest = await response.json();
           callback(null, tokenRequest); // Pass token request directly to Ably
-        } catch (err: any) {
-          callback(err, null);
+        } catch (err) {
+          callback(err instanceof Error ? err.message : String(err), null);
         }
       },
       transportParams: {
@@ -51,7 +51,9 @@ export default function GameTopic({
   onBleStatusReceived?: (message: BleConnectedStatusMessage | null) => void;
   onSetBleStatusCallback?: (callback: (message: BleConnectedStatusMessage) => void) => void;
 }) {
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
+  const [activeUsers, setActiveUsers] = useState<Ably.PresenceMessage[]>([]);
+  const handleBleStatusReceived = useEffectEvent((message: BleConnectedStatusMessage | null) => onBleStatusReceived(message));
+  const setBleStatusCallback = useEffectEvent((callback: (message: BleConnectedStatusMessage) => void) => onSetBleStatusCallback(callback));
 
   useEffect(() => {
     // Instantiate Ably pointing to your POST auth endpoint
@@ -72,15 +74,15 @@ export default function GameTopic({
       setActiveUsers(members || []);
 
       if (connectedMember) {
-        onBleStatusReceived(connectedMember);
+        handleBleStatusReceived(connectedMember);
       } else {
-        onBleStatusReceived({ connected: false });
+        handleBleStatusReceived({ connected: false });
       }
     });
 
     // Listen for update
     channel.presence.subscribe(['update'], (message) => {
-      onBleStatusReceived(message.data);
+      handleBleStatusReceived(message.data);
     });
 
     channel.subscribe(message => {
@@ -112,7 +114,7 @@ export default function GameTopic({
       }
     });
 
-    onSetBleStatusCallback((message: BleConnectedStatusMessage) => {
+    setBleStatusCallback((message: BleConnectedStatusMessage) => {
       if (message) {
         channel.presence.update(message);
       }
@@ -126,7 +128,7 @@ export default function GameTopic({
       }
       channel.unsubscribe();
     };
-  }, [topicId]);
+  }, [topicId, playerId]);
 
   return (<div className={styles.playerContainer}>
     <span className={styles.playerCount}>{activeUsers.length}</span>

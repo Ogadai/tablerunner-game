@@ -42,7 +42,7 @@ export function getPlayerActionsCosts(playerState: INamedTarget, actionsState: P
       case PlayerActionType.UseItem:
         const useAction = action as PlayerActionUseItem;
         const item = playerState.equipment.find(e => e.id == useAction.itemId);
-        const itemDef: ConsumableItemDef = item && (allItems as any)[item.type];
+        const itemDef: ConsumableItemDef | undefined = item && allItems[item.type] as ConsumableItemDef;
         return total + (itemDef ? itemDef.useCost : 0);
       case PlayerActionType.Cast:
         const castAction = action as PlayerActionCast;
@@ -86,16 +86,16 @@ export function getNamedTargetStats(baseStats: BaseStats, target: Pick<INamedTar
   };
 
   // Account for any equipment bonuses
-  for(const slot of Object.keys(target.equipped)) {
-    const itemId = (target.equipped as any)[slot] as (string | undefined | null);
+  const statNames = ['attack', 'damage', 'defence', 'magic', 'health', 'speed'] as const;
+  for(const itemId of Object.values(target.equipped)) {
     const item = !!itemId && target.equipment.find(e => e.id == itemId);
     const itemDef = item && allItems[item.type];
     if (itemDef) {
-      for(const stat of Object.keys(itemDef.bonusStats!)) {
-        const bonusAmount = (itemDef.bonusStats as any)[stat];
+      for(const stat of statNames) {
+        const bonusAmount = itemDef.bonusStats?.[stat];
         if (bonusAmount) {
-          (enhancedStats as any)[stat] += bonusAmount;
-          (enhancedStats.bonuses as any)[stat] += bonusAmount;
+          enhancedStats[stat] += bonusAmount;
+          enhancedStats.bonuses![stat] += bonusAmount;
         }
       }
     }
@@ -104,13 +104,11 @@ export function getNamedTargetStats(baseStats: BaseStats, target: Pick<INamedTar
   // Account for any effects
   if (target.effects) {
     for(const effect of target.effects) {
-      const { description, special, turns, ...effectBonus } = effect;
-
-      for(const stat of Object.keys(effectBonus)) {
-        const bonusAmount = (effectBonus as any)[stat];
+      for(const stat of ['attack', 'damage', 'defence', 'speed'] as const) {
+        const bonusAmount = effect[stat];
         if (bonusAmount) {
-          (enhancedStats as any)[stat] += bonusAmount;
-          (enhancedStats.bonuses as any)[stat] += bonusAmount;
+          enhancedStats[stat] += bonusAmount;
+          enhancedStats.bonuses![stat] += bonusAmount;
         }
       }
     }

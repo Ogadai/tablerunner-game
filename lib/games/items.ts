@@ -354,6 +354,6 @@ const excludeFromLoot: string[] = [
   ...Object.keys(keyItems)
 ];
 export const lootItems: ItemDef[] =
-  Object.entries(allItems).map(([id, item]) => item)
+  Object.values(allItems)
     .filter(i => !excludeFromLoot.includes(i.id));
 

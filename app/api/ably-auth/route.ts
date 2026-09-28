@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     });
     
     return NextResponse.json(tokenData);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to generate token' }, { status: 500 });
   }
 }

@@ -13,7 +13,7 @@ const MAX_ZOMBIES_AT_SHOP = 4;
 const MAX_ZOMBIES_ON_MAP = 30;
 
 export const zombies: ProcessRunner = {
-  async setup(params: BaseParams): Promise<void> {
+  async setup(): Promise<void> {
   },
 
   async executeForTurn(params: BaseParams) {
@@ -113,7 +113,7 @@ export const zombies: ProcessRunner = {
 
 function getPossibleMoveLocations(params: BaseParams, fromLocation: number): number[] {
   const getGameDef = games.find(g => g.id === params.gameState.gameId)!;
-  const locationDef = getGameDef?.locations.find(l => l.id === fromLocation)!;
+  const locationDef = getGameDef.locations.find(l => l.id === fromLocation)!;
 
   const moveLocations = locationDef.move
     .filter(mv => !params.blockedMoves.find(block => block.location === fromLocation && block.direction === mv.direction))

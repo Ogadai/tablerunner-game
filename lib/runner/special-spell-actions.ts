@@ -8,17 +8,17 @@ import { isMonsterCaster } from './spell-targets';
 import { playerMessageAtLocation } from './game-messages';
 
 export const specialSpellActions: Record<string, (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) => void> = {
-  [SpellIds.spiritGuide]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
+  [SpellIds.spiritGuide]: (params: BaseParams, player: INamedTarget) =>
       summonSpirit(params, player, monsters['spiriteagle'], 5),
-  [SpellIds.spiritGuarian]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
+  [SpellIds.spiritGuarian]: (params: BaseParams, player: INamedTarget) =>
       summonSpirit(params, player, monsters['spiritwolf'], 10),
-  [SpellIds.spiritWarrior]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
+  [SpellIds.spiritWarrior]: (params: BaseParams, player: INamedTarget) =>
       summonSpirit(params, player, monsters['spiritbear'], 15),
-  [SpellIds.raiseDead]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
+  [SpellIds.raiseDead]: (params: BaseParams, player: INamedTarget) =>
       summonSpirit(params, player, monsters['skeleton'], 7, 'dead'),
   [SpellIds.animateCorpse]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
       animateCorpse(params, player, targets, 12),
-  [SpellIds.familiar]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
+  [SpellIds.familiar]: (params: BaseParams, player: INamedTarget) =>
       summonSpirit(params, player, monsters['skeletaldragon'], 10, 'dead'),
 };
 

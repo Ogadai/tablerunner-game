@@ -8,9 +8,13 @@ describe('readyStateSyncService', () => {
     sync = (await import('./ready-state-sync-service')).default;
   });
 
-  it('returns an independent empty default for unknown games', () => {
-    sync.get('board', 'map').readyPlayerIds.push('warrior');
-    expect(sync.get('board', 'map')).toEqual({ readyPlayerIds: [] });
+  it('returns a stable empty snapshot for each unknown game', () => {
+    const state = sync.get('board', 'map');
+    expect(state).toEqual({ readyPlayerIds: [] });
+    expect(sync.get('board', 'map')).toBe(state);
+    expect(sync.get('other', 'map')).not.toBe(state);
+    expect(sync.get('board', 'other')).not.toBe(state);
+    expect(sync.get('other', 'map').readyPlayerIds).not.toBe(state.readyPlayerIds);
   });
 
   it('stores and replaces readiness without notifying other boards or maps', () => {

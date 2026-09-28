@@ -8,12 +8,13 @@ export default function PlayerVideo({ topicId, turn }: { topicId: string; turn: 
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [lastPlayedUrl, setLastPlayedUrl] = useState<string | null>(null);
 
-  useEffect(() => {
+  const [previousTurn, setPreviousTurn] = useState(turn);
+  if (previousTurn !== turn) {
+    setPreviousTurn(turn);
     if (!playingUrl) {
-      setPlayingUrl(null);
       setLastPlayedUrl(null);
     }
-  }, [turn]);
+  }
 
   useEffect(() => VideoTopicService.subscribe(topicId, (message: VideoTopicMessage) => {
     if (message.type === GameTopicMessageType.VideoPreload) {

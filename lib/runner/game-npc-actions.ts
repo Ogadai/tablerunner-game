@@ -231,8 +231,8 @@ function getSpellValue(npc: INamedTarget, spell: SpellDef, targets: ITarget[]): 
     // Summons contribute over several turns, comparable to a strong attack.
     return 15;
   } else {
-    const sumBonuses = ['attack', 'damage', 'defence', 'speed']
-      .reduce((total, bonus) => total + Math.abs((spell.bonusStats as any)[bonus] || 0), 0)
+    const sumBonuses = (['attack', 'damage', 'defence', 'speed'] as const)
+      .reduce((total, bonus) => total + Math.abs(spell.bonusStats[bonus] || 0), 0)
     return targets.length * sumBonuses;
   }
 }

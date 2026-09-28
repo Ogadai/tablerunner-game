@@ -1,11 +1,9 @@
 import { Redis } from '@upstash/redis';
-import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage, GameTopicMessageBase } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings, ProcessingTurn } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState } from "./types";
 import { validateGameScope } from './savedGameTypes';
 import { getGameKey, getPlayersReadyKey, publishGameStateUpdated, publishReadyStateUpdated } from './redis-access';
 
 const redis = Redis.fromEnv();
-const defaultLockTTL = 5000;
 
 const singletonStateTypes = new Set(['game', 'playersReady', 'monsters', 'boardSettings', 'processingTurn']);
 const entityStateTypes = new Set(['playerActions', 'npcActions', 'playerStats', 'playerInventory', 'playerMessages', 'store']);

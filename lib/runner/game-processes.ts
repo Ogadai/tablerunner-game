@@ -1,7 +1,6 @@
 import { BaseParams } from "./base-params";
 import { ProcessRunner } from './types';
 import { cauldronOfFireProcesses } from './cauldron-of-fire/processes';
-import { GameState } from "../store/types";
 
 const gameProcesses: { [id: string]: ProcessRunner } = {
   cauldronfire: cauldronOfFireProcesses,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { GameState, PlayerAction, PlayerActionFastTravel, PlayerActionType, PlayerState } from '@/lib/store/types';
 import type { Location } from '@/lib/games/types';
@@ -35,33 +35,26 @@ export default function FastTravel({
   endTurnAction,
 }: FastTravelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [availableLocations, setAvailableLocations] = useState<number[] | null>(null);
-   const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      console.log('scrolling', containerRef.current);
-      (containerRef.current as any).scrollTo({ top: 200, left: 0 });
-    }
-  }, [containerRef.current]); // Empty dependency array ensures this runs once on mount
-
   const canFastTravel = playerCanMove && !hasLivingEnemies && actionPointsLeft >= moveCost;
+  const request = useMemo(() => ({ boardId, mapId, playerId: player.id, isOpen, canFastTravel, gameState }),
+    [boardId, mapId, player.id, isOpen, canFastTravel, gameState]);
+  const [destinations, setDestinations] = useState<{ request: typeof request; locations: number[] } | null>(null);
+  const availableLocations = destinations?.request === request ? destinations.locations : null;
 
   useEffect(() => {
-    if (!isOpen || !canFastTravel) return;
+    if (!request.isOpen || !request.canFastTravel) return;
     let active = true;
-    setAvailableLocations(null);
     async function loadDestinations() {
       try {
-        const result = await getAvailableFastTravelLocations(boardId, mapId, player.id);
-        if (active) setAvailableLocations(result.data ?? []);
+        const result = await getAvailableFastTravelLocations(request.boardId, request.mapId, request.playerId);
+        if (active) setDestinations({ request, locations: result.data ?? [] });
       } catch {
-        if (active) setAvailableLocations([]);
+        if (active) setDestinations({ request, locations: [] });
       }
     }
     void loadDestinations();
     return () => { active = false; };
-  }, [isOpen, canFastTravel, boardId, mapId, player.id, gameState]);
+  }, [request]);
 
   const handleTravel = async (targetLocation: number) => {
     if (!canFastTravel || !availableLocations?.includes(targetLocation)) return;
@@ -116,12 +109,12 @@ function FastTravelDialogContent({
   availableLocations: number[];
   onCircleClick: (location: number) => void;
 }) {
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const currentCoordinates = getCellCoordinates(player.location.id);
 
   useEffect(() => {
     if (containerRef.current) {
-      const divElement = containerRef.current as HTMLElement;
+      const divElement = containerRef.current;
       const locationCell = divElement.querySelector(`#grid-cell-${player.location.id}`);
 
       if (locationCell) {
@@ -134,7 +127,7 @@ function FastTravelDialogContent({
         });
       }
     }
-  }, [containerRef.current]); // Empty dependency array ensures this runs once on mount
+  }, [player.location.id, currentCoordinates.row, currentCoordinates.col]);
 
   const getCircleClass = (location: Location) => {
     if (location.id === player.location.id) {

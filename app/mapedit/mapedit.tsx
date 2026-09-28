@@ -169,14 +169,26 @@ export default function MapEdit() {
         gameId,
         counters: {
           monsterId: 0,
-        }
-      } as any, 2);
+          itemId: 0,
+        },
+        turn: 0,
+        name: 'Map preview',
+        characters: [],
+        players: [],
+        npcs: [],
+        visited: [],
+        stores: [],
+        portals: [],
+        visitedPortals: [],
+        leds: [],
+        processState: {},
+      }, 2);
 
       setMonsterList(generatedMonsters);
     }
 
     getMonsters();
-  }, []);
+  }, [gameId]);
 
   const bindClickLocation = (cell: number) => () => {
     const location = mapState.find(l => l.id === cell);

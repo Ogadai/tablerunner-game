@@ -6,18 +6,15 @@ const mediumLocations: number[] = [80, 120, 117, 116, 87, 76, 74, 73, 113, 121, 
 const hardLocations: number[] = [160, 156, 198, 200, 162, 199, 240, 202, 236, 205, 206, 232, 208, 192, 227, 214, 225, 216, 224, 223, 221, 220, 218];
 const resurrectionLocations: number[] = [3, 120, 73, 116, 101, 136, 200, 156, 202, 232, 192];
 
-const easyLoot = Object.entries(lootItems)
-  .map(([id, item]) => item)
+const easyLoot = Object.values(lootItems)
   .filter(item => item.value && item.value < 50)
   .map(item => item.id);
 
-const mediumLoot = Object.entries(lootItems)
-  .map(([id, item]) => item)
+const mediumLoot = Object.values(lootItems)
   .filter(item => item.value && item.value > 20 && item.value < 150)
   .map(item => item.id);
 
-const hardLoot = Object.entries(lootItems)
-  .map(([id, item]) => item)
+const hardLoot = Object.values(lootItems)
   .filter(item => item.value && item.value > 120)
   .map(item => item.id);
 

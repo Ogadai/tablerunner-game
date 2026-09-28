@@ -3,10 +3,14 @@ import { BleState } from './ble-states';
 
 describe('BluetoothService', () => {
   let service: BluetoothService;
-  let mockCharacteristic: any;
-  let mockDevice: any;
-  let mockServer: any;
-  let mockBluetooth: any;
+  let mockCharacteristic: { writeValue: jest.Mock<Promise<void>, [Uint8Array]> };
+  let mockDevice: {
+    gatt: { connected: boolean; connect: jest.Mock; disconnect: jest.Mock };
+    addEventListener: jest.Mock;
+    removeEventListener: jest.Mock;
+  };
+  let mockServer: { getPrimaryService: jest.Mock };
+  let mockBluetooth: { requestDevice: jest.Mock };
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -51,7 +55,7 @@ describe('BluetoothService', () => {
     await jest.runAllTimersAsync();
     jest.useRealTimers();
     jest.restoreAllMocks();
-    delete (navigator as any).bluetooth;
+    Reflect.deleteProperty(navigator, 'bluetooth');
     localStorage.clear();
   });
 
@@ -67,7 +71,7 @@ describe('BluetoothService', () => {
   });
 
   it('should set NotSupported when initialize runs without Bluetooth support', () => {
-    delete (navigator as any).bluetooth;
+    Reflect.deleteProperty(navigator, 'bluetooth');
 
     service.initialize();
 
@@ -123,7 +127,7 @@ describe('BluetoothService', () => {
   });
 
   it('should set state to NotSupported and return early when no Bluetooth is available', async () => {
-    delete (navigator as any).bluetooth;
+    Reflect.deleteProperty(navigator, 'bluetooth');
 
     await service.connect('board-42');
 
@@ -132,8 +136,8 @@ describe('BluetoothService', () => {
   });
 
   it('should disconnect and clear the device state', () => {
-    (service as any).device = mockDevice;
-    (service as any).characteristic = mockCharacteristic;
+    service['device'] = mockDevice as unknown as BluetoothDevice;
+    service['characteristic'] = mockCharacteristic as unknown as BluetoothRemoteGATTCharacteristic;
 
     service.disconnect();
 
@@ -154,8 +158,8 @@ describe('BluetoothService', () => {
   });
 
   it('should send a message using the BLE characteristic when connected', async () => {
-    (service as any).device = mockDevice;
-    (service as any).characteristic = mockCharacteristic;
+    service['device'] = mockDevice as unknown as BluetoothDevice;
+    service['characteristic'] = mockCharacteristic as unknown as BluetoothRemoteGATTCharacteristic;
 
     await service.sendMessage('PING');
     await jest.runAllTimersAsync();
@@ -170,13 +174,13 @@ describe('BluetoothService', () => {
     const listener = jest.fn();
     service.subscribe(listener);
 
-    (service as any).device = mockDevice;
-    (service as any).characteristic = mockCharacteristic;
+    service['device'] = mockDevice as unknown as BluetoothDevice;
+    service['characteristic'] = mockCharacteristic as unknown as BluetoothRemoteGATTCharacteristic;
 
-    (service as any).onDisconnected();
+    service['onDisconnected']();
 
     expect(listener).toHaveBeenLastCalledWith(BleState.Disconnected);
-    expect((service as any).device).toBeNull();
-    expect((service as any).characteristic).toBeNull();
+    expect(service['device']).toBeNull();
+    expect(service['characteristic']).toBeNull();
   });
 });

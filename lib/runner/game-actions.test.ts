@@ -27,10 +27,20 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-it('targets opposing teams when monsters fight each other without a player present', async () => {
+it('does not run monster combat without a player or scripted monster present', async () => {
   const params = createParams({ monsters: [createMonster({ id: 'red', team: 'red', location: 2 }),
     createMonster({ id: 'blue', team: 'blue', location: 2 })] });
   await runGameActions(params);
+  expect(monsterAttack).not.toHaveBeenCalled();
+  expect(getMonsterActionsStateFromRedis).not.toHaveBeenCalled();
+});
+
+it('runs combat between opposing teams without a player when a scripted monster is present', async () => {
+  const params = createParams({ monsters: [createMonster({ id: 'red', team: 'red', location: 2, scriptedActions: true }),
+    createMonster({ id: 'blue', team: 'blue', location: 2 })] });
+  jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [{ ...attack(1), target: 'blue' }] });
+  await runGameActions(params);
+  expect(getMonsterActionsStateFromRedis).toHaveBeenCalledWith('board', 'map', 'red');
   expect(jest.mocked(monsterAttack).mock.calls.map(call => [call[1].id, call[2].id]).sort())
     .toEqual([['blue', 'red'], ['red', 'blue']]);
 });

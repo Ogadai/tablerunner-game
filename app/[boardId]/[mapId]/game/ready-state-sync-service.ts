@@ -13,8 +13,13 @@ class ReadyStateSyncService {
   }
 
   get(boardId: string, mapId: string): PlayerReadyState {
-    return this.readyStates.get(this.getKey(boardId, mapId))
-      || { readyPlayerIds: [] };
+    const key = this.getKey(boardId, mapId);
+    let state = this.readyStates.get(key);
+    if (!state) {
+      state = { readyPlayerIds: [] };
+      this.readyStates.set(key, state);
+    }
+    return state;
   }
 
   set(boardId: string, mapId: string, gameState: PlayerReadyState): void {

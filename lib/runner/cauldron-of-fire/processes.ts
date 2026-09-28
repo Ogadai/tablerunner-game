@@ -7,7 +7,6 @@ import { zombies } from './zombies';
 import { npcs } from './npcs';
 import { invasions } from './invasions';
 import { dragons } from './dragons';
-import { GameState } from "@/lib/store/types";
 
 const allProcesses = [keyProcess, lichKing, zombies, npcs, invasions, dragons];
 

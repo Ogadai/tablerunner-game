@@ -1,5 +1,5 @@
 import { ConsumableIds, keyItems } from "../games/items";
-import { INamedTarget, PlayerState } from "../store/types";
+import { INamedTarget } from "../store/types";
 import { BaseParams } from "./base-params";
 import { updateLockLeds } from "./game-action-move";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
@@ -12,7 +12,7 @@ export const specialItemActions: Record<string, (params: BaseParams, player: INa
 };
 
 for(const keyItemType of Object.keys(keyItems)) {
-  specialItemActions[keyItemType] = (params: BaseParams, player: INamedTarget) => useKey(params, player, keyItemType);
+  specialItemActions[keyItemType] = (params: BaseParams, player: INamedTarget) => applyKey(params, player, keyItemType);
 }
 
 function useResurrectionStone(params: BaseParams, player: INamedTarget, alwaysZombies: boolean): boolean {
@@ -54,7 +54,7 @@ function useResurrectionStone(params: BaseParams, player: INamedTarget, alwaysZo
   return true;
 }
 
-function useKey(params: BaseParams, player: INamedTarget, keyItemType: string): boolean {
+function applyKey(params: BaseParams, player: INamedTarget, keyItemType: string): boolean {
   const itemDef = keyItems[keyItemType];
   const playersAtLocation = params.gameState.players.filter(p => p.location.id === player.location.id);
   

@@ -26,7 +26,7 @@ export interface GameState {
     itemId: number,
   }
   leds: LedState[];
-  processState: { [owner: string]: any };
+  processState: { [owner: string]: unknown };
 }
 
 export const NOTHING_EQUPPED = '<none>';

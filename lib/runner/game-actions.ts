@@ -200,7 +200,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
 
         for(const entityActions of entityActionsForLocations[locId].entities) {
           if (entityActions.actions.length > 0) {
-            await processNextAction(params, entityActions, locationId);
+            await processNextAction(params, entityActions);
             moreActions = true;
           }
         }
@@ -251,9 +251,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
           };
         }
       } else {
-        for(const respawnAction of playerRespawns[player.id]) {
-          actionRespawn(params, player);
-        }
+        playerRespawns[player.id].forEach(() => actionRespawn(params, player));
 
         if (player.respawnTurns !== undefined && player.respawnTurns > 0) {
           player.respawnTurns--;
@@ -292,7 +290,7 @@ function limitPlayerActionsToCost(playerState: INamedTarget, actionsState: Playe
   }
 }
 
-async function processNextAction(params: BaseParams, entityActions: EntityActions, locationId: number): Promise<void> {
+async function processNextAction(params: BaseParams, entityActions: EntityActions): Promise<void> {
   try {
     const getPlayerById = (id: string) => params.gameState.players.find(p => p.id === id)!;
     const getNpcById = (id: string) => params.gameState.npcs.find(n => n.id === id)!;
@@ -335,7 +333,7 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
             const attackAction = nextAction as PlayerActionAttack
             const target = getEnemies(params, getMonsterCombatant(monster)).find(target => target.id === attackAction.target);
             if (target && target.health > 0 && target.location.id === monster.location) {
-              monsterAttack(params, monster, target, locationId);
+              monsterAttack(params, monster, target);
             }
             break;
           }

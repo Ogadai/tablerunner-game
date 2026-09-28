@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image';
 import Swal from 'sweetalert2'
 import { getSwalDefaultOptions } from '@/app/swal';
 import { useRouter } from 'next/navigation';
@@ -11,7 +10,7 @@ import { createPlayerForGame, deletePlayerFromGame } from '@/lib/store/gameState
 import { CharacterListEntry } from "@/lib/games/types";
 
 export default function PlayGame(
-  { boardId, mapId, name, gameState }
+  { boardId, mapId, gameState }
   : { boardId: string, mapId: string, name: string, gameState: GameState }
 ) {
   const router = useRouter();

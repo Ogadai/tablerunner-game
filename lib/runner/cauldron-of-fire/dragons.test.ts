@@ -67,7 +67,7 @@ it('reacts once to the baby’s death and pauses the mother’s route while play
   await dragons.setup!(params);
   params.monsters[1].health = 0;
   await dragons.executeForTurn!(params);
-  expect(params.gameState.processState.dragons.dragonBabyDead).toBe(true);
+  expect(params.gameState.processState.dragons).toEqual(expect.objectContaining({ dragonBabyDead: true }));
   expect(publishPlayVideo).toHaveBeenCalledTimes(1);
   await dragons.executeForTurn!(params);
   expect(params.monsters[0].location).toBe(239);

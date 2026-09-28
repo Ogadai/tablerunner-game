@@ -287,7 +287,7 @@ describe('actionAttack', () => {
     target.team = 'good';
     const params = createParams([attacker, target], []);
     hit(1);
-    monsterAttack(params, attacker, getMonsterCombatant(target), 1);
+    monsterAttack(params, attacker, getMonsterCombatant(target));
     expect(target.health).toBe(0);
     expect(target).not.toHaveProperty('respawnTurns');
     expect(params.coins.length).toBe(1);
@@ -357,7 +357,7 @@ describe('monsterAttack and player death', () => {
     const monster = createMonster('m1', 'rat');
     const params = createParams([monster], [player]);
     hit(0.9);
-    monsterAttack(params, monster, player, 1);
+    monsterAttack(params, monster, player);
     expect(player.health).toBe(0);
     expect(player.respawnTurns).toBe(6);
   });
@@ -367,7 +367,7 @@ describe('monsterAttack and player death', () => {
     const monster = { ...createMonster('m1', 'rat'), zombie: true };
     const params = createParams([monster], [player]);
     hit().mockReturnValueOnce(roll);
-    monsterAttack(params, monster, player, 1);
+    monsterAttack(params, monster, player);
     expect(player.health).toBe(9);
     expect(player.infected).toBe(infected);
   });
@@ -377,7 +377,7 @@ describe('monsterAttack and player death', () => {
     const monster = { ...createMonster('m1', 'rat'), zombie: true };
     const params = createParams([monster], [player]);
     jest.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.9);
-    monsterAttack(params, monster, player, 1);
+    monsterAttack(params, monster, player);
     expect(player.health).toBe(10);
     expect(player.infected).toBeUndefined();
     expect(params.messages.p1.messages).toEqual([{ text: '**Zombie Rat** missed **You**' }]);

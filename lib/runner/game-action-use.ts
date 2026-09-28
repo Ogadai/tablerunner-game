@@ -1,7 +1,7 @@
-import { PlayerState, PlayerActionUseItem, CharacterEffect, INamedTarget } from "../store/types";
+import { PlayerActionUseItem, CharacterEffect, INamedTarget } from "../store/types";
 import { ConsumableItemDef } from '@/lib/games/types';
 import { BaseParams } from './base-params';
-import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
+import { playerMessageAtLocation } from './game-messages';
 import { allItems } from "../games/items";
 import { specialItemActions } from './special-item-actions';
 
@@ -36,11 +36,11 @@ export function actionUseItem(params: BaseParams, player: INamedTarget, action: 
     if (specialItemActions[usableItem.id]) {
       shouldRemoveItem = specialItemActions[usableItem.id](params, player);
     } else if (usableItem.bonusStats && usableItem.turns != undefined && usableItem.turns > 0) {
-      const { health, magic, special, ...effectBonuses } = usableItem.bonusStats;
+      const { attack, damage, defence, speed } = usableItem.bonusStats;
       const newEffect: CharacterEffect = {
         description: usableItem.name,
         turns: usableItem.turns + 1,
-        ...effectBonuses
+        attack, damage, defence, speed
       };
 
       if (!player.effects) {

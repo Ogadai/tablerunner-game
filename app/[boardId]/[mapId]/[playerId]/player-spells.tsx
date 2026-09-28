@@ -4,7 +4,7 @@ import { Dialog, Popover } from 'radix-ui';
 import { getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
 import styles from './player-spells.module.css';
 import { PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionType, PlayerState } from '@/lib/store/types';
-import { EquipableItemDef, PlayerItemType, SpellDef, SpellTargetType } from '@/lib/games/types';
+import { EquipableItemDef, SpellDef, SpellTargetType } from '@/lib/games/types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import { getSwalDefaultOptions } from '@/app/swal';
 import EntityStats from './entity-base-stats';
@@ -132,8 +132,6 @@ export default function PlayerSpells({
         const actionCost = getSpellActionCost(spell, playerStats?.baseStats?.magic);
         const canCast = actionCost <= actionPointsLeft && spell.magicCost <= playerStats.magicLeft
             && canCastSpell(spellId);
-
-        canCastSpell
 
         return { spell, canCast }
       });

@@ -151,7 +151,7 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
     name: name,
     location: { id: mapNpc.location, description: '', move: [] },
     magic: 0,
-    spells: getNpcSpells(type, cost),
+    spells: getNpcSpells(type),
     equipment: equipment,
     equipped: {
       weapon: equipment[0].id,
@@ -204,9 +204,7 @@ function getNpcEquipment(npcId: string, type: string): PlayerItem[] {
   return [];
 }
 
-function getNpcSpells(type: string, cost: number): SpellIds[] {
-  const pick = (spells: SpellIds[], count: number): SpellIds[] => spells;
-
+function getNpcSpells(type: string): SpellIds[] {
   switch(type) {
     case 'barbarian':
     case 'ranger':
@@ -215,26 +213,22 @@ function getNpcSpells(type: string, cost: number): SpellIds[] {
       return [
         SpellIds.iceShards,
         SpellIds.fear,
-        ...pick([
-          SpellIds.iceStorm,
-          SpellIds.terror,
-          SpellIds.lightning,
-          SpellIds.shieldWall,
-          SpellIds.strengthAura,
-        ], Math.ceil(cost / 50))
+        SpellIds.iceStorm,
+        SpellIds.terror,
+        SpellIds.lightning,
+        SpellIds.shieldWall,
+        SpellIds.strengthAura,
       ];
     case 'mage':
       return [
         SpellIds.spiritArrow,
         SpellIds.heal,
-        ...pick([
-          SpellIds.fireBall,
-          SpellIds.fireWall,
-          SpellIds.healingAura,
-          SpellIds.strengthAura,
-          SpellIds.fireRain,
-          SpellIds.shield,
-        ], Math.ceil(cost / 50))
+        SpellIds.fireBall,
+        SpellIds.fireWall,
+        SpellIds.healingAura,
+        SpellIds.strengthAura,
+        SpellIds.fireRain,
+        SpellIds.shield,
       ];
   }
   return [];

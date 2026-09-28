@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom';
 import { act, render, screen } from '@testing-library/react';
-import * as Ably from 'ably';
 import GameTopic from './game-topic';
 import GameTopicService from './game-topic-service';
 import VideoTopicService from './video-topic-service';

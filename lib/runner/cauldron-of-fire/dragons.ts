@@ -1,6 +1,6 @@
 import { allItems, EquipableIds } from "@/lib/games/items";
 import { BaseParams } from "../base-params";
-import { broadcastMessage, playerMessageAtLocation } from "../game-messages";
+import { broadcastMessage } from "../game-messages";
 import { ProcessRunner } from "../types";
 import { createItemForInventory } from "../apply-inventory";
 import { getCellAtCoordinates, getCellCoordinates } from "@/lib/games/monster-pack";
@@ -215,12 +215,12 @@ export const dragons: ProcessRunner = {
       dragonLed = dragon.location;
     }
 
-    let lavaLocations: number[] = [];
+    const lavaLocations: number[] = [];
 
     if (processLava) {
       dragonsState.currentLavaTurn!++;
 
-      let lavaLevel = (dragonsState.currentLavaTurn! > dragonsState.currentLavaMax!)
+      const lavaLevel = (dragonsState.currentLavaTurn! > dragonsState.currentLavaMax!)
         ? 2 * dragonsState.currentLavaMax! - dragonsState.currentLavaTurn!
         : dragonsState.currentLavaTurn!;
 

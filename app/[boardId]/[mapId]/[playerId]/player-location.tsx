@@ -7,7 +7,7 @@ import { moveDescriptions, moveLabels, moveLabelOrder } from './move-description
 import styles from './player-location.module.css';
 import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
 import { LocationMoveDirection } from "@/lib/games/types";
-import { addPlayerAction, getPlayerActionsState, removePlayerAction } from "@/lib/store/playerActionsState";
+import { addPlayerAction, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
 import LocationTopicService from "@/app/message-bus/location-topic-service";
@@ -46,7 +46,8 @@ export default function PlayerLocation(
   const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [], npcs: [] });
   const [playerState, setPlayerState] = useState<PlayerState | null>();
   const [playerStats, setPlayerStats] = useState<PlayerStats>(emptyPlayerStats);
-  const [actionsState, setActionsState] = useState<PlayerActionsState>({ actions: [] });
+  const [actionsSnapshot, setActionsSnapshot] = useState<{ gameState: GameState; state: PlayerActionsState } | null>(null);
+  const actionsState = actionsSnapshot?.gameState === gameState ? actionsSnapshot.state : { actions: [] };
   const router = useRouter();
 
   const playerAlive = playerState && playerState.health > 0;
@@ -66,7 +67,6 @@ export default function PlayerLocation(
       router.push(`/${boardId}/${mapId}`);
     } else {
       playerStatsSyncService.updatePlayer(boardId, mapId, player);
-      setActionsState({ actions: [] });
 
       async function fetchLocationState() {
         const state = await getLocationState(boardId, mapId, player!.location.id);
@@ -81,7 +81,7 @@ export default function PlayerLocation(
         }),
         playerStatsSyncService.subscribe((stats, actionsState, addStatsState, activePlayer) => {
           setPlayerStats(stats);
-          setActionsState(actionsState);
+          setActionsSnapshot({ gameState, state: actionsState });
           setPlayerState(activePlayer);
         }),
       ];
@@ -90,7 +90,7 @@ export default function PlayerLocation(
 
       return () => disposeFns.forEach(f => f());
     }
-  }, [gameState]);
+  }, [gameState, boardId, mapId, playerId, router, topicId]);
 
   const addNewAction = async (opts: Omit<PlayerAction, 'id'>) => {
     const state = await addPlayerAction(boardId, mapId, playerState!.id, {

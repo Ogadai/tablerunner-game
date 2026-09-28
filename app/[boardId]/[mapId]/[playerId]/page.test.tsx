@@ -23,6 +23,7 @@ describe('Player page', () => {
   const push = jest.fn();
   const disposeGame = jest.fn();
   const disposeProcessing = jest.fn();
+  const disposeReady = jest.fn();
 
   beforeEach(() => {
     jest.mocked(useParams).mockReturnValue({ boardId: 'board', mapId: 'map', playerId: 'warrior' });
@@ -31,7 +32,13 @@ describe('Player page', () => {
     jest.mocked(readyService.get).mockReturnValue({ readyPlayerIds: [] });
     jest.mocked(gameService.subscribe).mockImplementation((_board, _map, callback) => { onGame = callback; return disposeGame; });
     jest.mocked(processingService.subscribe).mockImplementation((_topic, callback) => { onProcessing = callback; return disposeProcessing; });
-    jest.mocked(readyService.subscribe).mockImplementation((_board, _map, callback) => { onReady = callback; return jest.fn(); });
+    jest.mocked(readyService.subscribe).mockImplementation((_board, _map, callback) => {
+      onReady = state => {
+        jest.mocked(readyService.get).mockReturnValue(state);
+        callback(state);
+      };
+      return disposeReady;
+    });
     jest.mocked(setPlayerReady).mockResolvedValue({ success: true });
     jest.mocked(PlayerLocation).mockImplementation((props: ComponentProps<typeof PlayerLocation>) =>
       <button disabled={props.processing} onClick={() => props.endTurnAction('n')}>
@@ -72,7 +79,7 @@ describe('Player page', () => {
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
   });
 
-  it('tracks processing events and disposes game and processing subscriptions', () => {
+  it('tracks processing events and disposes all subscriptions', () => {
     const { unmount } = render(<Page />);
     act(() => onProcessing(true));
     expect(screen.getByRole('button')).toBeDisabled();
@@ -85,5 +92,6 @@ describe('Player page', () => {
     unmount();
     expect(disposeGame).toHaveBeenCalledTimes(1);
     expect(disposeProcessing).toHaveBeenCalledTimes(1);
+    expect(disposeReady).toHaveBeenCalledTimes(1);
   });
 });

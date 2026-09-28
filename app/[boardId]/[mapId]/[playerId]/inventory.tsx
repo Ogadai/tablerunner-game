@@ -1,4 +1,4 @@
-import { INamedTarget } from '@/lib/store/types';
+import { INamedTarget, PlayerInventoryEquipSlots } from '@/lib/store/types';
 import styles from './inventory-item.module.css';
 import { PlayerItem } from '@/lib/games/types';
 import { allItems } from '@/lib/games/items';
@@ -16,7 +16,7 @@ export default function Inventory({ player, isSelf, actionPointsLeft, isDead, on
   usedItemIds: string[];
 }) {
   const isEquipped = (item: PlayerItem) => {
-    return (player.equipped as any)[allItems[item.type].type] === item.id;
+    return player.equipped[allItems[item.type].type as keyof PlayerInventoryEquipSlots] === item.id;
   };
   const isUsed = (item: PlayerItem) => {
     return usedItemIds.includes(item.id || '');

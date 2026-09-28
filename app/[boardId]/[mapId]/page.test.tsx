@@ -36,7 +36,7 @@ describe("Route Page", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (gameStateSyncService as any).loading = false;
+    (gameStateSyncService as unknown as { loading: boolean }).loading = false;
     (useParams as jest.Mock).mockReturnValue({ boardId: "board-1", mapId: "map-2" });
     (gameStateSyncService.subscribe as jest.Mock).mockImplementation(
       (_boardId: string, _mapId: string, listener: (gameState: { name: string } | undefined) => void) => {
@@ -47,7 +47,7 @@ describe("Route Page", () => {
   });
 
   it("shows loading while game state is being fetched", () => {
-    (gameStateSyncService as any).loading = true;
+    (gameStateSyncService as unknown as { loading: boolean }).loading = true;
     (gameStateSyncService.get as jest.Mock).mockReturnValue(undefined);
 
     render(<Page />);

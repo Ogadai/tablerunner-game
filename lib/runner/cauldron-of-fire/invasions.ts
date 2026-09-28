@@ -190,7 +190,7 @@ const getInvasionLocations = (params: BaseParams, invasion: InvasionDef): number
 
 const getPossibleMoveLocations = (params: BaseParams, fromLocation: number): number[] => {
   const getGameDef = games.find(g => g.id === params.gameState.gameId)!;
-  const locationDef = getGameDef?.locations.find(l => l.id === fromLocation)!;
+  const locationDef = getGameDef.locations.find(l => l.id === fromLocation)!;
 
   const moveLocations = locationDef.move
     .filter(mv => !params.blockedMoves.find(block => block.location === fromLocation && block.direction === mv.direction))

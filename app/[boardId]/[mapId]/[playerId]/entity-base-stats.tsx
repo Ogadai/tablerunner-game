@@ -6,12 +6,12 @@ export default function EntityBaseStats({
   baseStats,
   statsList
 }: {
-  current: { health?: number, magic?: number },
+  current: Partial<Omit<BaseStats, 'bonuses'>>,
   baseStats: BaseStats,
   statsList?: string[]
 }) {
-  const getStatBarClass = (statName: keyof BaseStats) => {
-    const currentValue = (current as any)[statName] as number;
+  const getStatBarClass = (statName: 'health' | 'magic') => {
+    const currentValue = current[statName] ?? 0;
     if (currentValue < baseStats.health * 0.2) {
       return styles.critical;
     }
@@ -21,13 +21,13 @@ export default function EntityBaseStats({
     return styles.healthy;
   }
 
-  const getStat = (statName: keyof BaseStats) => {
-    const statValue = baseStats[statName] as number;
-    const bonusValue = (baseStats.bonuses && baseStats.bonuses[statName] as number) || 0;
+  const getStat = (statName: Exclude<keyof BaseStats, 'bonuses'>) => {
+    const statValue = baseStats[statName];
+    const bonusValue = baseStats.bonuses?.[statName] || 0;
     
-    const currentValue = (current as any)[statName] as number;
+    const currentValue = current[statName];
 
-    const formattedStat = ((current as any)[statName] !== undefined)
+    const formattedStat = (currentValue !== undefined)
       ? (currentValue < statValue ? `${currentValue}/${statValue}` : `${currentValue}`)
       : `${statValue}`;
 

@@ -34,7 +34,7 @@ export default function CharacterStats({
 }) {
   const [playerAddStats, setPlayerAddStats] = useState<PlayerAddStatsState>({ characterStats: emptyStats });
 
-  const baseStats = playerStats?.baseStats! || player.baseStats!;
+  const baseStats = playerStats?.baseStats || player.baseStats!;
 
   useEffect(() => {
     const disposeFns = [

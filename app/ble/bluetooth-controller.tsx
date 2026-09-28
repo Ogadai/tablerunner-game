@@ -15,11 +15,6 @@ const isIOS = (): boolean => {
   return /iPhone|iPad|iPod/.test(navigator.userAgent);
 };
 
-const GLOBAL_STATE: { connectTimeout: any, isPrompting: boolean } = {
-  connectTimeout: null,
-  isPrompting: false
-}
-
 export default function BluetoothController({
   bleOtherPlayer,
   readyCountdown,
@@ -44,7 +39,7 @@ export default function BluetoothController({
     bluetoothService.disconnect();
   };
 
-  const askReconnect = async () => {
+  const askReconnect = useCallback(async () => {
     const result = await Swal.fire({
       ...getSwalDefaultOptions(),
       title: 'Reconnect to board?',
@@ -59,58 +54,17 @@ export default function BluetoothController({
     } else {
       localStorage.setItem('ble_connected', 'false');
     }
-  };
-
-  // const checkAskConnect = () => {
-  //   if (!GLOBAL_STATE.connectTimeout) {
-  //     const timeout = setTimeout(async () => {
-  //       GLOBAL_STATE.connectTimeout = null;
-  //       GLOBAL_STATE.isPrompting = true;
-  //       await askConnect();
-  //       GLOBAL_STATE.isPrompting = false;
-  //     }, 2000);
-
-  //     GLOBAL_STATE.connectTimeout = timeout;
-  //   }
-  // }
-
-  const askConnect = async () => {
-    const result = await Swal.fire({
-      ...getSwalDefaultOptions(),
-      title: 'Connect to board?',
-      text: "One device should be connected to the Tablerunner board. Connect this device?",
-      showCancelButton: true,
-      confirmButtonColor: 'var(--gold-antique)',
-      confirmButtonText: 'Connect'
-    });
-
-    if (result.isConfirmed) {
-      await connectBluetooth();
-    }
-  };
+  }, [connectBluetooth]);
 
   useEffect(() => {
-    if (GLOBAL_STATE.connectTimeout) {
-      clearTimeout(GLOBAL_STATE.connectTimeout);
-      GLOBAL_STATE.connectTimeout = null;
-    }
-    if (bleOtherPlayer && GLOBAL_STATE.isPrompting) {
-      Swal.close({ isConfirmed: false });
-    }
-
     bluetoothService.initialize();
     const unsubscribe = bluetoothService.subscribe(setBleState);
 
     if (localStorage.getItem('ble_connected') === 'true') {
       askReconnect();
-    } else
-    // if (!bleOtherPlayer &&
-    //   bluetoothService.getState() !== BleState.Connected &&
-    //   bluetoothService.getState() !== BleState.OtherConnected) {
-    //   checkAskConnect();
-    // }
+    }
     return unsubscribe;
-  }, [bleOtherPlayer]);
+  }, [bleOtherPlayer, askReconnect]);
 
   const showBleState = bleOtherPlayer ? BleState.OtherConnected : bleState;
   const onClick = async () => {

@@ -80,8 +80,7 @@ function genericAttackTarget(
 export function monsterAttack(
   params: BaseParams,
   monster: MonsterState,
-  target: INamedTarget,
-  locationId: number): void {
+  target: INamedTarget): void {
   try {
     if (monster.health <= 0 || target.health <= 0 || target.location.id !== monster.location || !isEnemy(monster, target)) return;
     const targetMonster = params.monsters.find(m => m.id === target.id);
