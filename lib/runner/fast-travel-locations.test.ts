@@ -18,13 +18,13 @@ it.each(['player', 'npc', 'monster'])('blocks routes through a living enemy %s, 
   if ('type' in target) params.monsters.push(target);
   else if ('masterId' in target) params.gameState.npcs.push(target);
   else params.gameState.players.push(target);
-  expect(getFastTravelLocations(params, locations, actor)).toEqual([1]);
+  expect(getFastTravelLocations(params, locations, actor)).toEqual([]);
   target.team = actor.team;
   params.gameState.leds = [{ location: 2, owner: 'monster', rgb: '' }];
-  expect(getFastTravelLocations(params, locations, actor)).toEqual([1, 2, 3, 4, 5, 6]);
+  expect(getFastTravelLocations(params, locations, actor)).toEqual([2, 3, 4, 5, 6]);
   target.team = 'enemy';
   target.health = 0;
   expect(getFastTravelLocations(params, locations, actor)).toContain(6);
   params.gameState.leds.push({ location: 2, owner: 'lock', rgb: '' });
-  expect(getFastTravelLocations(params, locations, actor)).toEqual([1]);
+  expect(getFastTravelLocations(params, locations, actor)).toEqual([]);
 });

@@ -41,7 +41,7 @@ export default function PlayerLocation(
     isPlayerReady: boolean,
     processing: boolean,
     readyPlayerDirection?: { [id: string]: LocationMoveDirection },
-    endTurnAction: (direction?: LocationMoveDirection) => void,
+    endTurnAction: (direction?: LocationMoveDirection, ready?: boolean) => void,
   }) {
   const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [], npcs: [] });
   const [playerState, setPlayerState] = useState<PlayerState | null>();
@@ -126,7 +126,9 @@ export default function PlayerLocation(
   
   const notReadyAction = async () => {
     const travelAction = actionsState.actions.find(
-      a => a.type === PlayerActionType.Move || a.type === PlayerActionType.Portal
+      a => a.type === PlayerActionType.Move
+        || a.type === PlayerActionType.Portal
+        || a.type === PlayerActionType.FastTravel
     );
 
     if (travelAction) {
@@ -134,7 +136,7 @@ export default function PlayerLocation(
       playerStatsSyncService.updateActionsState(state.data!);
     }
 
-    endTurnAction();
+    endTurnAction(undefined, false);
   }
 
   const bindRemoveAction = (action: PlayerAction) => 

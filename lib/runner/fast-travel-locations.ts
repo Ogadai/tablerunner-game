@@ -14,7 +14,11 @@ export function getFastTravelLocations(
     if (getEnemies(params, { ...player, location }).some(target => target.health > 0)) return;
     if ((remainingSteps.get(location.id) ?? -1) >= remaining) return;
     remainingSteps.set(location.id, remaining);
-    available.add(location.id);
+
+    if (player.location.id !== location.id) {
+      available.add(location.id);
+    }
+
     if (remaining <= 0) return;
     for (const move of location.move) {
       if (!params.gameState.visited.includes(move.id)) continue;

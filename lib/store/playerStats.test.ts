@@ -38,7 +38,7 @@ describe('action budgets', () => {
       { id: 8, type: PlayerActionType.Cast, description: '', spellId: 'spiritArrow' } as PlayerActionCast,
       { id: 9, type: PlayerActionType.Cast, description: '', spellId: 'fireBall' } as PlayerActionCast,
     ] };
-    expect(getPlayerActionsCosts(player, actions)).toBe(10 + 16 + 16 + 10 + 5 + 7 + 8);
+    expect(getPlayerActionsCosts(player, actions)).toBe(10 + 16 + 16 + 10 + 16 + 5 + 7 + 8);
     expect(getPlayerActionsMagic(player, actions)).toBe(8);
   });
 });

@@ -52,11 +52,11 @@ export default function Page() {
 
   const isPlayerReady = () => readyState.readyPlayerIds.includes(playerId);
 
-  const endTurnAction = async (direction?: LocationMoveDirection) => {
+  const endTurnAction = async (direction?: LocationMoveDirection, ready = true) => {
     setSettingReady(true);
     setTurnError(null);
     try {
-      const result = await setPlayerReady(boardId, mapId, playerId, !isPlayerReady(), direction);
+      const result = await setPlayerReady(boardId, mapId, playerId, ready, direction);
       if (!result.success) {
         setGameProcessing(false);
         setTurnError(result.error || 'The turn failed. Please try again.');

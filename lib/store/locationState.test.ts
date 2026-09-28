@@ -14,9 +14,9 @@ it('returns team-aware travel destinations using current NPC state', async () =>
   const npc = createNpc({ team: 'red', location: { id: 2, description: '', move: [] } });
   jest.mocked(getGameStateFromRedis).mockResolvedValue(game);
   jest.mocked(getLocationsStateFromRedis).mockResolvedValue(createLocations({ npcs: [npc] }));
-  await expect(getAvailableFastTravelLocations('board', 'map', 'hero')).resolves.toEqual({ success: true, data: [1] });
+  await expect(getAvailableFastTravelLocations('board', 'map', 'hero')).resolves.toEqual({ success: true, data: [] });
   npc.team = game.players[0].team;
-  await expect(getAvailableFastTravelLocations('board', 'map', 'hero')).resolves.toEqual({ success: true, data: [1, 2] });
+  await expect(getAvailableFastTravelLocations('board', 'map', 'hero')).resolves.toEqual({ success: true, data: [2] });
 });
 
 it('selects monsters, items and NPCs at the requested location, including dead entities', async () => {

@@ -41,7 +41,9 @@ describe('Player page', () => {
     });
     jest.mocked(setPlayerReady).mockResolvedValue({ success: true });
     jest.mocked(PlayerLocation).mockImplementation((props: ComponentProps<typeof PlayerLocation>) =>
-      <button disabled={props.processing} onClick={() => props.endTurnAction('n')}>
+      <button disabled={props.processing} onClick={() => props.isPlayerReady
+        ? props.endTurnAction(undefined, false)
+        : props.endTurnAction('n')}>
         {props.isPlayerReady ? 'Cancel ready' : 'Submit turn'}
       </button>);
   });
@@ -64,7 +66,16 @@ describe('Player page', () => {
     await act(async () => finish({ success: true }));
     act(() => onReady({ readyPlayerIds: ['warrior'] }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel ready' }));
-    await waitFor(() => expect(setPlayerReady).toHaveBeenLastCalledWith('board', 'map', 'warrior', false, 'n'));
+    await waitFor(() => expect(setPlayerReady).toHaveBeenLastCalledWith('board', 'map', 'warrior', false, undefined));
+  });
+
+  it('submits as ready even when the readiness snapshot already includes the player', async () => {
+    render(<Page />);
+    act(() => onReady({ readyPlayerIds: ['warrior'] }));
+    await act(async () => {
+      await jest.mocked(PlayerLocation).mock.calls.at(-1)![0].endTurnAction('n');
+    });
+    expect(setPlayerReady).toHaveBeenCalledWith('board', 'map', 'warrior', true, 'n');
   });
 
   it.each(['response', 'exception'])('reports a submission %s failure and allows retry', async failure => {

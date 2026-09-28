@@ -38,6 +38,7 @@ export function getPlayerActionsCosts(playerState: INamedTarget, actionsState: P
         return total + actionsPerTurn.attack;
       case PlayerActionType.Move:
       case PlayerActionType.Portal:
+      case PlayerActionType.FastTravel:
         return total + actionsPerTurn.move;
       case PlayerActionType.UseItem:
         const useAction = action as PlayerActionUseItem;
