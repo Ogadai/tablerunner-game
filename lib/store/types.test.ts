@@ -9,7 +9,7 @@ it('preserves living names and uses only the first name for zombies', () => {
 });
 
 it('labels zombie monsters without duplicating the prefix for the zombie species', () => {
-  expect(getMonsterName({ id: 'rat', type: 'rat', health: 1, location: 1 })).toBe(monsters.rat.name);
-  expect(getMonsterName({ id: 'rat', type: 'rat', health: 1, location: 1, zombie: true })).toBe(`Zombie ${monsters.rat.name}`);
-  expect(getMonsterName({ id: 'z', type: 'zombie', health: 1, location: 1, zombie: true })).toBe(monsters.zombie.name);
+  expect(getMonsterName({ id: 'rat', type: 'rat', health: 1, location: 1, team: 'monster' })).toBe(monsters.rat.name);
+  expect(getMonsterName({ id: 'rat', type: 'rat', health: 1, location: 1, zombie: true, team: 'monster' })).toBe(`Zombie ${monsters.rat.name}`);
+  expect(getMonsterName({ id: 'z', type: 'zombie', health: 1, location: 1, zombie: true, team: 'monster' })).toBe(monsters.zombie.name);
 });

@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Dialog } from 'radix-ui';
-import { GameState, PlayerAction, PlayerActionFastTravel, PlayerActionPortal, PlayerActionType, PlayerState } from '@/lib/store/types';
-import type { Location, LocationMove } from '@/lib/games/types';
-import { games } from '@/lib/games/games';
+import { GameState, PlayerAction, PlayerActionFastTravel, PlayerActionType, PlayerState } from '@/lib/store/types';
+import type { Location } from '@/lib/games/types';
 import NumberGrid from '@/app/number-grid/number-grid';
 import styles from './fast-travel.module.css';
 import { getCellCoordinates } from '@/lib/games/monster-pack';
+import { getAvailableFastTravelLocations } from '@/lib/store/locationState';
 
 interface FastTravelProps {
   boardId: string;
@@ -23,6 +23,8 @@ interface FastTravelProps {
 }
 
 export default function FastTravel({
+  boardId,
+  mapId,
   player,
   gameState,
   playerCanMove,
@@ -33,6 +35,7 @@ export default function FastTravel({
   endTurnAction,
 }: FastTravelProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [availableLocations, setAvailableLocations] = useState<number[] | null>(null);
    const containerRef = useRef(null);
 
   useEffect(() => {
@@ -44,7 +47,24 @@ export default function FastTravel({
 
   const canFastTravel = playerCanMove && !hasLivingEnemies && actionPointsLeft >= moveCost;
 
+  useEffect(() => {
+    if (!isOpen || !canFastTravel) return;
+    let active = true;
+    setAvailableLocations(null);
+    async function loadDestinations() {
+      try {
+        const result = await getAvailableFastTravelLocations(boardId, mapId, player.id);
+        if (active) setAvailableLocations(result.data ?? []);
+      } catch {
+        if (active) setAvailableLocations([]);
+      }
+    }
+    void loadDestinations();
+    return () => { active = false; };
+  }, [isOpen, canFastTravel, boardId, mapId, player.id, gameState]);
+
   const handleTravel = async (targetLocation: number) => {
+    if (!canFastTravel || !availableLocations?.includes(targetLocation)) return;
     await addNewAction({
       type: PlayerActionType.FastTravel,
       description: `Run to Location ${targetLocation}`,
@@ -60,6 +80,7 @@ export default function FastTravel({
       <Dialog.Trigger asChild>
         <button
           type="button"
+          disabled={!canFastTravel}
           className={`${styles.travelIcon} ${canFastTravel ? '' : styles.disabledTravelIcon}`}
           aria-label="Fast Travel"
           title="Fast Travel"
@@ -72,11 +93,12 @@ export default function FastTravel({
           <Dialog.Title className="DialogTitle">
             Run for it
           </Dialog.Title>
-          <FastTravelDialogContent
+          {availableLocations === null ? <p>Loading destinations...</p> : <FastTravelDialogContent
             player={player}
             gameState={gameState}
+            availableLocations={availableLocations}
             onCircleClick={handleTravel}
-          />
+          />}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -86,10 +108,12 @@ export default function FastTravel({
 function FastTravelDialogContent({
   player,
   gameState,
+  availableLocations,
   onCircleClick,
 }: {
   player: PlayerState;
   gameState: GameState;
+  availableLocations: number[];
   onCircleClick: (location: number) => void;
 }) {
   const containerRef = useRef(null);
@@ -111,29 +135,6 @@ function FastTravelDialogContent({
       }
     }
   }, [containerRef.current]); // Empty dependency array ensures this runs once on mount
-
-  const gameDef = games.find(g => g.id === gameState.gameId);
-  const locations = gameDef?.locations || [];
-  const visited = gameState.visited;
-
-  const getAvailableLocations = (from: number, steps: number): number[] => {
-    const location = locations.find(l => l.id === from)!;
-    const available: number[] = [from];
-    if (steps > 0) {
-      for(const mv of location.move) {
-        if (visited.includes(mv.id)) {
-          const ledLit = gameState.leds.find(l => l.location === mv.id);
-          if (!ledLit || ledLit.owner === 'portal' || ledLit.owner === 'shop') {
-            available.push(
-              ...getAvailableLocations(mv.id, steps - 1)
-            );
-          }
-        }
-      }
-    }
-    return available;
-  }
-  const availableLocations = getAvailableLocations(player.location.id, 5);
 
   const getCircleClass = (location: Location) => {
     if (location.id === player.location.id) {

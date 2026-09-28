@@ -16,6 +16,8 @@ import { generateText, Output } from 'ai'; // <-- Import Output here
 import { z } from 'zod';
 import { getMonsterCombatant } from '../monster-combatant';
 import { getPlayerActionsPerTurn } from '@/lib/store/playerStats';
+import { getEnemies, isFriend } from '../game-friends-or-enemies';
+import { getAvailableSpellTargets } from '../spell-targets';
 
 const OWNER = 'lich-king';
 const LICH_KING_ID = 'lich-king';
@@ -118,7 +120,7 @@ const describeSpell = (spell: SpellDef): string => {
   }
 }
 
-const toGameAction = (action: LichActions, lich: INamedTarget, targets: INamedTarget[], deadMonsters: ITarget[]): PlayerAction | null => {
+const toGameAction = (params: BaseParams, action: LichActions, lich: INamedTarget, targets: INamedTarget[], deadMonsters: ITarget[]): PlayerAction | null => {
   const usePotion = (type: ConsumableIds): PlayerActionUseItem | null => {
     const potion = lich.equipment.find(e => e.type === type);
     if (potion) {
@@ -166,7 +168,11 @@ const toGameAction = (action: LichActions, lich: INamedTarget, targets: INamedTa
         id: 1,
         spellId: spell.id,
         description: '',
-        targetId: spell.pickTarget ? getTarget(spell.targetType) : undefined,
+        targetId: spell.pickTarget
+          ? spell.targetType === SpellTargetType.friend
+            ? action.target || getAvailableSpellTargets(params, lich, spell)[0]?.id
+            : getTarget(spell.targetType)
+          : undefined,
       } as PlayerActionCast;
     }
   }
@@ -278,17 +284,15 @@ export const lichKing: ProcessRunner = {
       const monster = locationsState.monsters.find(m => m.id === LICH_KING_ID);
       if (!monster || monster.health <= 0) return;
       const lich = getMonsterCombatant(monster);
+      const combatParams = { ...params, monsters: locationsState.monsters };
 
       // Gather the information for the AI
       const locations = gameDef.locations
         .filter(l => CASTLE_LOCATIONS.includes(l.id))
         .map(l => ({
           ...l,
-          monsters: locationsState.monsters.filter(m => m.location === l.id),
-          heros: [
-            ...params.gameState.players.filter(p => p.location.id === l.id),
-            ...params.gameState.npcs.filter(n => n.location.id === l.id),
-          ]
+          monsters: locationsState.monsters.filter(m => m.location === l.id && isFriend(lich, m)),
+          heros: getEnemies(combatParams, { ...lich, location: l }),
         }));
 
       const availableActions: {
@@ -322,7 +326,7 @@ export const lichKing: ProcessRunner = {
       }
 
       const availableTargets: INamedTarget[] = locations.find(l => l.id === lich.location.id)!.heros.filter(t => t.health > 0);
-      const deadMonsters: ITarget[] = locations.find(l => l.id === lich.location.id)!.monsters.filter(m => m.health === 0);
+      const deadMonsters: ITarget[] = locationsState.monsters.filter(m => m.location === lich.location.id && m.health === 0);
       if (availableTargets.length > 0) {
         availableActions.push({
           action: 'attack',
@@ -335,8 +339,9 @@ export const lichKing: ProcessRunner = {
 
       const spellDetails = lich.spells.map(s => spells[s]);
       for(const spell of spellDetails) {
-        let canCast = availableTargets.length > 0;
-        let requireTarget = spell.pickTarget && (availableTargets.length > 1);
+        const spellTargets = getAvailableSpellTargets(combatParams, lich, spell);
+        let canCast = spellTargets.length > 0;
+        let requireTarget = spell.pickTarget && (spellTargets.length > 1);
 
         if (spell.id === SpellIds.raiseDead || spell.id === SpellIds.animateCorpse) {
           canCast = false;
@@ -444,7 +449,7 @@ export const lichKing: ProcessRunner = {
         const monsterActions = actionResponse.actions
           .filter(a => availableActions.some(available => available.action === a.name))
           .map(a => {
-            const action = toGameAction(a, planningLich, availableTargets, deadMonsters);
+            const action = toGameAction(combatParams, a, planningLich, availableTargets, deadMonsters);
             if (action?.type === PlayerActionType.UseItem) {
               planningLich.equipment = planningLich.equipment.filter(item => item.id !== (action as PlayerActionUseItem).itemId);
             }

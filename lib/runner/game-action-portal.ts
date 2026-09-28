@@ -4,14 +4,16 @@ import {
   PlayerActionPortal,
   PlayerState,
 } from "../store/types";
-import { Location } from '../games/types';
 import { games } from "../games/games";
 import { BaseParams } from './base-params';
 import { getPlayerLocation } from "./game-location";
-import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
+import { playerMessageAtLocation } from './game-messages';
+import { getEnemies } from './game-friends-or-enemies';
+import { getFastTravelLocations } from './fast-travel-locations';
 
 export function actionPortal(params: BaseParams, player: PlayerState, action: PlayerActionPortal): void {
   try {
+    if (getEnemies(params, player).some(target => target.health > 0)) return;
     const gameDef = games.find(g => g.id === params.gameState.gameId)!;
     const destinationLocation = gameDef.locations.find(l => l.id === action.targetLocation);
 
@@ -65,7 +67,7 @@ export function actionFastTravel(params: BaseParams, player: PlayerState, action
   const gameDef = games.find(g => g.id === params.gameState.gameId)!;
   const locations = gameDef.locations;
 
-  const availableLocations = getAvailableLocations(params, locations, player.location, 5);
+  const availableLocations = getFastTravelLocations(params, locations, player);
   if (!availableLocations.includes(action.targetLocation)) {
     console.error(`Destination location ${action.targetLocation} is not valid for fast travel`);
     return;
@@ -103,23 +105,4 @@ export function updatePortalAndShopLeds(gameState: GameState) {
     ...portalLeds,
     ...shopLeds,
   ];
-}
-
-const getAvailableLocations = (params: BaseParams, locations: Location[], from: Location, steps: number): number[] => {
-  const available: number[] = [from.id];
-  if (steps > 0) {
-    for(const mv of from.move) {
-      if (params.gameState.visited.includes(mv.id)) {
-        const ledLit = params.gameState.leds.find(l => l.location === mv.id);
-        if (!ledLit || ledLit.owner === 'portal' || ledLit.owner === 'shop') {
-
-          const toLocation = locations.find(l => l.id === mv.id)!;
-          available.push(
-            ...getAvailableLocations(params, locations, toLocation, steps - 1)
-          );
-        }
-      }
-    }
-  }
-  return available;
 }

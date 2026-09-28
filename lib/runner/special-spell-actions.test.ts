@@ -35,7 +35,7 @@ it('transfers a monster corpse to a temporary zombie follower', () => {
 });
 
 it('lets monster necromancers revive monsters and convert NPCs while players retain their identity', () => {
-  const caster = createMonster({ id: 'caster' });
+  const caster = createMonster({ id: 'caster', team: 'red' });
   const corpse = createMonster({ health: 0 });
   const params = createParams({ monsters: [caster, corpse] });
   const npc = createNpc({ health: 0 });
@@ -45,8 +45,19 @@ it('lets monster necromancers revive monsters and convert NPCs while players ret
   specialSpellActions[SpellIds.animateCorpse](params, getMonsterCombatant(caster), spells.animateCorpse, [corpse, npc, player]);
   expect(corpse.zombie).toBe(true);
   expect(corpse.health).toBeGreaterThan(0);
+  expect(corpse.team).toBe(caster.team);
   expect(params.gameState.npcs).toEqual([]);
-  expect(params.monsters).toContainEqual(expect.objectContaining({ id: npc.id, type: 'zombie', health: 10 }));
+  expect(params.monsters).toContainEqual(expect.objectContaining({ id: npc.id, type: 'zombie', health: 10, team: caster.team }));
   expect(params.gameState.players[0]).toBe(player);
   expect(player).toMatchObject({ zombie: true, health: 20 });
+});
+
+it('assigns a reanimated NPC to the caster team', () => {
+  const params = createParams();
+  const player = params.gameState.players[0];
+  player.team = 'red';
+  const npc = createNpc({ team: 'blue', health: 0 });
+  params.gameState.npcs = [npc];
+  specialSpellActions[SpellIds.animateCorpse](params, player, spells.animateCorpse, [npc]);
+  expect(npc).toMatchObject({ team: player.team, masterId: player.id, zombie: true });
 });

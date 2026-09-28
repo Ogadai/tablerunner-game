@@ -7,7 +7,7 @@ import { actionCastSpell, actionReadScroll } from './game-action-spell';
 import { actionUseItem } from './game-action-use';
 import { getNpcActions } from './game-npc-actions';
 import { PlayerActionAttack, PlayerActionCast, PlayerActionMove, PlayerActionReadScroll, PlayerActionType, PlayerActionUseItem } from '../store/types';
-import { createMonster, createNpc, createParams } from './test-support/fixtures';
+import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 
 jest.mock('../store/redis-access', () => ({ getActionsStateFromRedis: jest.fn(), getMonsterActionsStateFromRedis: jest.fn() }));
 jest.mock('./game-action-attack', () => ({ actionAttack: jest.fn(), monsterAttack: jest.fn() }));
@@ -26,6 +26,26 @@ beforeEach(() => {
   jest.mocked(getNpcActions).mockReturnValue({ actions: [] });
 });
 afterEach(() => jest.restoreAllMocks());
+
+it('targets opposing teams when monsters fight each other without a player present', async () => {
+  const params = createParams({ monsters: [createMonster({ id: 'red', team: 'red', location: 2 }),
+    createMonster({ id: 'blue', team: 'blue', location: 2 })] });
+  await runGameActions(params);
+  expect(jest.mocked(monsterAttack).mock.calls.map(call => [call[1].id, call[2].id]).sort())
+    .toEqual([['blue', 'red'], ['red', 'blue']]);
+});
+
+it('allows recovery among allied monsters but suppresses it around enemy players', async () => {
+  const params = createParams({ monsters: [createMonster({ team: 'good' })] });
+  const player = params.gameState.players[0];
+  player.health = 10;
+  await runGameActions(params);
+  expect(monsterAttack).not.toHaveBeenCalled();
+  expect(player.health).toBe(12);
+  params.gameState.players.push(createPlayer({ id: 'enemy', team: 'red' }));
+  await runGameActions(params);
+  expect(player.health).toBe(12);
+});
 
 it('trims actions from the end to fit the player budget', async () => {
   const params = createParams();

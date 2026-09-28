@@ -1,12 +1,33 @@
 /** @jest-environment node */
 import { actionMove, actionRespawn, updateLockLeds } from './game-action-move';
 import { PlayerActionType } from '../store/types';
-import { createParams } from './test-support/fixtures';
+import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 
 jest.mock('../games/games', () => ({ games: [{ id: 'test-game', startLocation: 1, locations: [
   { id: 1, description: 'Start', move: [{ id: 2, direction: 'e' }] },
   { id: 2, description: 'Hall', move: [{ id: 3, direction: 'n' }] },
 ] }] }));
+
+it.each(['player', 'npc', 'monster'])('blocks movement past an enemy %s but permits retreat', kind => {
+  const params = createParams();
+  const player = params.gameState.players[0];
+  if (kind === 'player') params.gameState.players.push(createPlayer({ id: 'enemy', team: 'red' }));
+  if (kind === 'npc') params.gameState.npcs.push(createNpc({ team: 'red' }));
+  if (kind === 'monster') params.monsters.push(createMonster());
+  const action = { id: 1, type: PlayerActionType.Move, direction: 'e', description: '' } as const;
+  actionMove(params, player, action);
+  expect(player.location.id).toBe(1);
+  player.retreatDirection = 'e';
+  actionMove(params, player, action);
+  expect(player.location.id).toBe(2);
+});
+
+it('allows advancing past an allied monster', () => {
+  const params = createParams({ monsters: [createMonster({ team: 'good' })] });
+  const player = params.gameState.players[0];
+  actionMove(params, player, { id: 1, type: PlayerActionType.Move, direction: 'e', description: '' });
+  expect(player.location.id).toBe(2);
+});
 
 it('moves, records the reverse retreat direction, and discovers locks', () => {
   const params = createParams({ blockedMoves: [{ location: 2, direction: 'n', description: 'Locked' }] });

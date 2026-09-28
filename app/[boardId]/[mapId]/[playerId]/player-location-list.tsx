@@ -3,7 +3,7 @@ import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
 import { getDisplayName, getMonsterName, INamedTarget, MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
-import EntityList, { EntityItemDetail, EntityItemClass } from './entity-list';
+import EntityList, { EntityItemDetail } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
 import { allItems } from "@/lib/games/items";
@@ -13,6 +13,7 @@ import { takeItemAtLocation } from "@/lib/store/playerInventory";
 import { getSwalDefaultOptions } from "@/app/swal";
 import styles from './player-location-list.module.css';
 import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
+import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 
 export interface PlayerLocationListProps {
   boardId: string;
@@ -51,22 +52,16 @@ export default function PlayerLocationList({
     : null;
   
   const onClickEntity = async (entity: EntityItemDetail) => {
-    if (entity.className === EntityItemClass.enemy) {
-      const monster = locationMonsters.find(m => m.id === entity.id)!;
-      if (monster) {
-        setMonsterOpen(monster);
-      } else {
-        const npc = npcs.find(p => p.id === entity.id);
-        if (npc) {
-          setNpcOpen(npc);
-        }
-      }
+    const monster = locationMonsters.find(m => m.id === entity.id);
+    const npc = npcs.find(n => n.id === entity.id);
+    if (monster) {
+      setMonsterOpen(monster);
+    } else if (npc) {
+      setNpcOpen(npc);
     } else if (player.id === entity.id) {
       setCharacterOpen(player);
-    } else if (entity.className === EntityItemClass.friendly) {
+    } else {
       setCharacterOpen(otherPlayers.find(p => p.id === entity.id)!);
-    } else if (entity.className === EntityItemClass.npc) {
-      setNpcOpen(npcs.find(p => p.id === entity.id)!);
     }
   }
 
@@ -111,7 +106,7 @@ export default function PlayerLocationList({
       return;
     }
 
-    if (locationMonsters.some(monster => monster.health > 0)) {
+    if (getEnemies({ gameState: { players: otherPlayers, npcs }, monsters: locationMonsters }, player).some(target => target.health > 0)) {
       await Swal.fire({
         ...getSwalDefaultOptions(),
         title: 'Item blocked!',
@@ -167,7 +162,7 @@ export default function PlayerLocationList({
             { monsterOpen &&
               <MonsterCard
                 monster={monsterOpen}
-                canAttack={canAttack}
+                canAttack={canAttack && player.health > 0 && isEnemy(player, monsterOpen)}
                 onAttack={() => onAttackMonster(monsterOpen)}
               ></MonsterCard>
             }

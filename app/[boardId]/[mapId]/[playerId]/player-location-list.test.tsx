@@ -8,6 +8,7 @@ import CharacterCard from './character-card';
 import sync from './player-stats-sync.service';
 import { EntityItemClass } from './entity-list';
 import { makeEntity, makePlayer, makeStats } from './test-fixtures';
+import { createNpc } from '@/lib/runner/test-support/fixtures';
 
 jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() } }));
 jest.mock('@/lib/store/playerInventory', () => ({ takeItemAtLocation: jest.fn() }));
@@ -15,7 +16,7 @@ jest.mock('./player-stats-sync.service', () => ({ __esModule: true, default: { u
 jest.mock('./character-card', () => ({ __esModule: true, default: jest.fn() }));
 
 const sword = { id: 'sword-1', type: 'swordRusty' };
-const monster = { id: 'enemy-1', type: 'goblin', health: 10, location: 1 };
+const monster = { id: 'enemy-1', type: 'goblin', health: 10, location: 1, team: 'monster' };
 
 function setup(overrides: Partial<ComponentProps<typeof PlayerLocationList>> = {}) {
   const props = {
@@ -43,6 +44,30 @@ describe('PlayerLocationList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rusty Sword' }));
     await waitFor(() => expect(sync.updateInventory).toHaveBeenCalledWith({ equipment: [sword], equipped: {} }));
     expect(takeItemAtLocation).toHaveBeenCalledWith('board', 'map', 'warrior', sword.id);
+  });
+
+  it.each(['player', 'npc'])('blocks pickup for an enemy %s', async kind => {
+    setup(kind === 'player' ? { otherPlayers: [makePlayer({ id: 'enemy', team: 'red' })] }
+      : { npcs: [createNpc({ team: 'red' })] });
+    fireEvent.click(screen.getByRole('button', { name: 'Rusty Sword' }));
+    await waitFor(() => expect(Swal.fire).toHaveBeenCalled());
+    expect(takeItemAtLocation).not.toHaveBeenCalled();
+  });
+
+  it('allows pickup and viewing an allied monster without offering an attack', async () => {
+    setup({ monsters: [{ ...monster, team: 'good' }], entities: [makeEntity({ className: EntityItemClass.npc })] });
+    fireEvent.click(screen.getByRole('button', { name: 'Rusty Sword' }));
+    await waitFor(() => expect(takeItemAtLocation).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('listitem'));
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Goblin');
+    expect(screen.queryByRole('button', { name: 'Attack' })).not.toBeInTheDocument();
+  });
+
+  it('opens an enemy player character card', () => {
+    const enemy = makePlayer({ id: 'enemy-1', name: 'Rival', team: 'red' });
+    setup({ otherPlayers: [enemy], entities: [makeEntity()] });
+    fireEvent.click(screen.getByRole('listitem'));
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Rival Level 1');
   });
 
   it.each(['dead', 'enemies'])('blocks item pickup when %s', async reason => {

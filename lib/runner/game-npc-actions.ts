@@ -8,6 +8,7 @@ import { BaseParams } from "./base-params";
 
 import { getAvailableSpellTargets, isMonsterCaster } from './spell-targets';
 import { getMonsterStats } from './monster-stats';
+import { getEnemies, isFriend } from './game-friends-or-enemies';
 
 interface ValueBase {
   value: number;
@@ -59,12 +60,7 @@ export function getCombatActions(params: BaseParams, npc: INamedTarget): PlayerA
 };
 
 function getAvailableActions(params: BaseParams, npc: INamedTarget, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
-  const attackTargets = isMonsterCaster(params, npc)
-    ? [
-        ...params.gameState.players,
-        ...params.gameState.npcs.filter(target => target.id !== npc.id),
-      ].filter(target => target.location.id === npc.location.id && target.health > 0)
-    : params.monsters.filter(m => m.location === npc.location.id && m.health > 0);
+  const attackTargets = getEnemies(params, npc).filter(target => target.health > 0);
   const actions: (ActionsWithCosts | null)[] =
     attackTargets.map(target => getAttackAction(params, npc, target, actionsPerTurn));
 
@@ -176,7 +172,7 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
   const necromancy = spellId === SpellIds.raiseDead || spellId === SpellIds.animateCorpse || spellId === SpellIds.familiar;
   if (necromancy && isMonsterCaster(params, npc)) {
     const undead = params.monsters.filter(m => m.id !== npc.id && m.location === npc.location.id
-      && m.health > 0 && (m.type === 'skeleton' || m.zombie));
+      && isFriend(npc, m) && m.health > 0 && (m.type === 'skeleton' || m.zombie));
     if (spellId === SpellIds.familiar) {
       if (undead.length >= 1) return [];
     }

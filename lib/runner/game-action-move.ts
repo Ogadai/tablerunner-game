@@ -7,12 +7,14 @@ import { games } from "../games/games";
 import { OPPOSITE_DIRECTION } from '@/lib/games/types';
 import { BaseParams } from './base-params';
 import { getPlayerLocation } from "./game-location";
+import { getEnemies } from './game-friends-or-enemies';
 
 export const LOCKED_LOCATION_OWNER = 'lock';
 const LOCKED_LOCATION_RGB = 'AD0000';
 
 export function actionMove(params: BaseParams, player: PlayerState, action: PlayerActionMove): void {
   try {
+    if (getEnemies(params, player).some(target => target.health > 0) && action.direction !== player.retreatDirection) return;
     const gameDef = games.find(g => g.id === params.gameState.gameId)!;
 
     const currentLocation = gameDef.locations.find(l => l.id === player.location.id)!;

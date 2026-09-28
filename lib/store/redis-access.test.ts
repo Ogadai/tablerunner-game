@@ -129,8 +129,8 @@ describe('turn transactions', () => {
   it('commits all turn results and consumes pending inputs in the same transaction', async () => {
     const game = createGame({ players: [createPlayer(), createPlayer({ id: 'other' })] });
     const locations = createLocations({ monsters: [
-      { id: 'boss', type: 'rat', health: 10, location: 1, scriptedActions: true },
-      { id: 'rat', type: 'rat', health: 5, location: 1 },
+      { id: 'boss', type: 'rat', health: 10, location: 1, scriptedActions: true, team: 'monster' },
+      { id: 'rat', type: 'rat', health: 5, location: 1, team: 'monster' },
     ] });
     const messages = { hero: { messages: [{ text: 'Won' }] }, other: { messages: [] } };
     await store.commitGameTurnInRedis('b', 'm', game, locations, messages, [5]);
@@ -215,8 +215,8 @@ describe('game deletion', () => {
   it('removes player, store, scripted monster and processing data before notifying subscribers', async () => {
     client.del.mockImplementation(async () => { expect(publishMessage).not.toHaveBeenCalled(); });
     client.get.mockResolvedValueOnce(createGame()).mockResolvedValueOnce(createLocations({ monsters: [
-      { id: 'boss', type: 'rat', health: 1, location: 1, scriptedActions: true },
-      { id: 'normal', type: 'rat', health: 1, location: 1 },
+      { id: 'boss', type: 'rat', health: 1, location: 1, scriptedActions: true, team: 'monster' },
+      { id: 'normal', type: 'rat', health: 1, location: 1, team: 'monster' },
     ] }));
     await store.deleteGameStateFromRedis('b', 'm');
     expect(client.del.mock.calls.map(([key]) => key).sort()).toEqual([

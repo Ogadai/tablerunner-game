@@ -7,6 +7,10 @@ import { getLocationState } from '@/lib/store/locationState';
 import locationTopic from '@/app/message-bus/location-topic-service';
 import { PlayerActionType, type PlayerActionsState } from '@/lib/store/types';
 import PlayerLocation from './player-location';
+import PlayerLocationList from './player-location-list';
+import PlayerPortal from './player-portal';
+import FastTravel from './fast-travel';
+import { createMonster, createNpc } from '@/lib/runner/test-support/fixtures';
 import sync from './player-stats-sync.service';
 import { makeGameState, makePlayer as makeTestPlayer, makeStats } from './test-fixtures';
 
@@ -22,11 +26,11 @@ jest.mock('@/app/message-bus/location-topic-service', () => ({ __esModule: true,
 jest.mock('./player-stats-sync.service', () => ({ __esModule: true, emptyPlayerStats: {}, default: {
   updatePlayer: jest.fn(), subscribe: jest.fn(), updateActionsState: jest.fn(),
 } }));
-jest.mock('./player-location-list', () => ({ __esModule: true, default: () => null }));
+jest.mock('./player-location-list', () => ({ __esModule: true, default: jest.fn(() => null) }));
 jest.mock('./player-spells', () => ({ __esModule: true, default: () => null }));
 jest.mock('./player-store', () => ({ __esModule: true, default: () => <span>Store available</span> }));
-jest.mock('./player-portal', () => ({ __esModule: true, default: () => <span>Portal available</span> }));
-jest.mock('./fast-travel', () => ({ __esModule: true, default: () => null }));
+jest.mock('./player-portal', () => ({ __esModule: true, default: jest.fn(() => <span>Portal available</span>) }));
+jest.mock('./fast-travel', () => ({ __esModule: true, default: jest.fn(() => null) }));
 jest.mock('./player-video', () => ({ __esModule: true, default: () => null }));
 
 describe('PlayerLocation', () => {
@@ -75,7 +79,7 @@ describe('PlayerLocation', () => {
 
   it('blocks advancing past living enemies but allows retreat', async () => {
     jest.mocked(getLocationState).mockResolvedValue({ success: true, data: {
-      monsters: [{ id: 'goblin-1', type: 'goblin', location: 1, health: 10 }], items: [], npcs: [],
+      monsters: [{ id: 'goblin-1', type: 'goblin', location: 1, health: 10, team: 'monster' }], items: [], npcs: [],
     } });
     const player = makePlayer({ retreatDirection: 's', location: { id: 1, description: 'Start',
       move: [{ id: 2, direction: 'n' }, { id: 3, direction: 's' }] } });
@@ -85,6 +89,35 @@ describe('PlayerLocation', () => {
     expect(addPlayerAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'south' }));
     await waitFor(() => expect(props.endTurnAction).toHaveBeenCalledWith('s'));
+  });
+
+  it('classifies mixed teams and blocks travel for an enemy player or NPC', async () => {
+    const player = makePlayer();
+    const ally = makePlayer({ id: 'ranger' });
+    const enemy = makePlayer({ id: 'mage', team: 'red' });
+    jest.mocked(getLocationState).mockResolvedValue({ success: true, data: {
+      items: [], monsters: [createMonster({ id: 'ally-monster', team: player.team }), createMonster()],
+      npcs: [createNpc({ id: 'ally-npc' }), createNpc({ id: 'enemy-npc', team: 'red' })],
+    } });
+    await setup({ gameState: makeGameState({ players: [player, ally, enemy], portals: [1] }) });
+    const entities = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].entities;
+    expect(Object.fromEntries(entities.map(entity => [entity.id, entity.className]))).toEqual({
+      barbarian: 'self', ranger: 'friendly', mage: 'enemy', 'ally-npc': 'npc', 'enemy-npc': 'enemy', 'ally-monster': 'npc', rat: 'enemy',
+    });
+    expect(jest.mocked(PlayerPortal).mock.calls.at(-1)![0].hasLivingEnemies).toBe(true);
+    expect(jest.mocked(FastTravel).mock.calls.at(-1)![0].hasLivingEnemies).toBe(true);
+  });
+
+  it('permits movement, portals and running with an allied monster', async () => {
+    jest.mocked(getLocationState).mockResolvedValue({ success: true, data: {
+      items: [], npcs: [], monsters: [createMonster({ team: 'good' })],
+    } });
+    const player = makePlayer({ location: { id: 1, description: '', move: [{ id: 2, direction: 'n' }] } });
+    await setup({ gameState: makeGameState({ players: [player], portals: [1] }) });
+    expect(jest.mocked(PlayerPortal).mock.calls.at(-1)![0].hasLivingEnemies).toBe(false);
+    expect(jest.mocked(FastTravel).mock.calls.at(-1)![0].hasLivingEnemies).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'north' }));
+    await waitFor(() => expect(addPlayerAction).toHaveBeenCalled());
   });
 
   it('removes a queued travel action when cancelling ready', async () => {

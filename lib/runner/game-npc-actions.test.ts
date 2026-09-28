@@ -4,11 +4,20 @@ import { getPlayerActionsCosts } from '../store/playerStats';
 import { PlayerActionType } from '../store/types';
 import { ConsumableIds } from '../games/items';
 import { SpellIds } from '../games/spells';
-import { createMonster, createNpc, createParams } from './test-support/fixtures';
+import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 import { getMonsterCombatant } from './monster-combatant';
 
 beforeEach(() => jest.spyOn(Math, 'random').mockReturnValue(0));
 afterEach(() => jest.restoreAllMocks());
+
+it.each(['npc', 'monster'])('plans attacks by team for a %s, including enemy monsters', kind => {
+  const actor = kind === 'npc' ? createNpc({ team: 'red' }) : getMonsterCombatant(createMonster({ id: 'actor', team: 'red' }));
+  const params = createParams({ monsters: [createMonster({ team: 'red' }), createMonster({ id: 'enemy-monster', team: 'blue' })] });
+  params.gameState.players = [createPlayer({ team: 'red' })];
+  const actions = getCombatActions(params, actor).actions;
+  expect(actions.length).toBeGreaterThan(0);
+  expect(actions.every(action => 'target' in action && action.target === 'enemy-monster')).toBe(true);
+});
 
 it('returns no actions for dead combatants or when nothing useful can be done', () => {
   const params = createParams();

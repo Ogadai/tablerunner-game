@@ -5,6 +5,7 @@ import { ConsumableIds } from '../games/items';
 import { createItemForInventory } from './apply-inventory';
 import { SpellDef } from '../games/types';
 import { getPointsForDamage } from '../games/monsters';
+import { getMonsterCombatant } from './monster-combatant';
 
 jest.mock('./apply-inventory', () => ({
   createItemForInventory: jest.fn((_state, item) => ({ id: 'item', type: item.id })),
@@ -14,6 +15,7 @@ function createPlayer(id: string, health = 10): PlayerState {
   return {
     id,
     name: id,
+    team: 'good',
     location: { id: 1, description: '', move: [] },
     rgbColour: '#fff',
     characterStats: { strength: 1, skill: 1, reactions: 1, resiliance: 1, intelligence: 1 },
@@ -31,7 +33,7 @@ function createPlayer(id: string, health = 10): PlayerState {
 }
 
 function createMonster(id: string, type: string, health = 1): MonsterState {
-  return { id, type, location: 1, health };
+  return { id, type, location: 1, health, team: 'monster' };
 }
 
 function createParams(monsters: MonsterState[], players: PlayerState[]): BaseParams {
@@ -240,6 +242,57 @@ describe('genericAttackMonster', () => {
 describe('actionAttack', () => {
   const attack = (target: string): PlayerActionAttack => ({ id: 1, type: PlayerActionType.Attack, description: '', target });
 
+  it('shares damage rewards only with allies and releases coins after the last enemy player dies', () => {
+    const player = createPlayer('p1');
+    const enemy = createPlayer('p2', 1);
+    enemy.team = 'enemy';
+    const monster = createMonster('monster', 'rat');
+    const params = createParams([monster], [player, enemy]);
+    const random = hit(1);
+    actionAttack(params, player, attack(monster.id));
+    expect(player.points).toBeGreaterThan(0);
+    expect(enemy.points).toBe(0);
+    expect(player.coins).toBe(0);
+    expect(params.coins).toHaveLength(1);
+    random.mockReturnValueOnce(0.9).mockReturnValueOnce(0).mockReturnValueOnce(1);
+    actionAttack(params, player, attack(enemy.id));
+    expect(enemy.health).toBe(0);
+    expect(enemy.coins).toBe(0);
+    expect(player.coins).toBeGreaterThan(0);
+    expect(params.coins).toEqual([]);
+  });
+
+  it.each(['player', 'npc', 'monster'])('rejects allied and distant %s targets', kind => {
+    const player = createPlayer('p1');
+    const monster = createMonster('m1', 'rat', 5);
+    monster.team = player.team;
+    const other = createPlayer('p2');
+    const npc: NPCState = { ...other, id: 'npc', masterId: null, hireCost: 0, iconXY: { x: 0, y: 0 } };
+    const params = createParams([monster], [player, other]);
+    params.gameState.npcs = [npc];
+    const target = kind === 'monster' ? monster : kind === 'npc' ? npc : other;
+    const random = hit();
+    actionAttack(params, player, attack(target.id));
+    expect(random).not.toHaveBeenCalled();
+    target.team = 'enemy';
+    if (typeof target.location === 'number') target.location = 2;
+    else target.location.id = 2;
+    actionAttack(params, player, attack(target.id));
+    expect(random).not.toHaveBeenCalled();
+  });
+
+  it('lets a monster damage an enemy monster without treating it as a player death', () => {
+    const attacker = createMonster('attacker', 'rat');
+    const target = createMonster('target', 'rat');
+    target.team = 'good';
+    const params = createParams([attacker, target], []);
+    hit(1);
+    monsterAttack(params, attacker, getMonsterCombatant(target), 1);
+    expect(target.health).toBe(0);
+    expect(target).not.toHaveProperty('respawnTurns');
+    expect(params.coins.length).toBe(1);
+  });
+
   it('infects a non-zombie monster hit by a zombie player', () => {
     const player = createPlayer('p1');
     player.zombie = true;
@@ -254,6 +307,7 @@ describe('actionAttack', () => {
   it.each(['player', 'npc'])('attacks a %s target and handles death', kind => {
     const player = createPlayer('p1');
     const target = createPlayer('p2', 1);
+    target.team = 'enemy';
     const npc: NPCState = { ...target, masterId: null, hireCost: 0, iconXY: { x: 0, y: 0 } };
     const params = createParams([], kind === 'player' ? [player, target] : [player]);
     params.gameState.npcs = kind === 'npc' ? [npc] : [];

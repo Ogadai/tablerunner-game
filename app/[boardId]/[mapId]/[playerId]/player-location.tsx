@@ -21,6 +21,7 @@ import { EntityItemClass, EntityItemDetail } from './entity-list';
 import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-stats-sync.service";
 import FastTravel from './fast-travel';
 import PlayerVideo from './player-video';
+import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 
 export default function PlayerLocation(
   {
@@ -155,9 +156,12 @@ export default function PlayerLocation(
     endTurnAction();
   }
 
+  const hasLivingEnemies = getEnemies({ gameState: { players: otherPlayers, npcs }, monsters: locationState.monsters }, playerState)
+    .some(target => target.health > 0);
+
   const canMoveDirection = (locationMove: PlayerLocationMove): boolean =>
     !locationMove.blockDescription &&
-    (!locationState.monsters.some(monster => monster.health > 0) || locationMove.direction === playerState.retreatDirection);
+    (!hasLivingEnemies || locationMove.direction === playerState.retreatDirection);
 
   const getOtherPlayerMoveIndicator = (direction: LocationMoveDirection): {
     className: string;
@@ -198,7 +202,7 @@ export default function PlayerLocation(
       id: otherPlayer.id,
       name: otherPlayer.name,
       iconXY: characters[otherPlayer.id].iconXY,
-      className: EntityItemClass.friendly,
+      className: isEnemy(playerState, otherPlayer) ? EntityItemClass.enemy : EntityItemClass.friendly,
       health: otherPlayer.health,
       maxHealth: otherPlayer.baseStats?.health || otherPlayer.health
     })),
@@ -206,7 +210,7 @@ export default function PlayerLocation(
       id: npc.id,
       name: npc.name,
       iconXY: npc.iconXY,
-      className: EntityItemClass.npc,
+      className: isEnemy(playerState, npc) ? EntityItemClass.enemy : EntityItemClass.npc,
       health: npc.health,
       maxHealth: npc.baseStats?.health || npc.health
     })),
@@ -214,14 +218,13 @@ export default function PlayerLocation(
       id: monster.id,
       name: monsters[monster.type].name,
       iconXY: monsters[monster.type].iconXY,
-      className: EntityItemClass.enemy,
+      className: isEnemy(playerState, monster) ? EntityItemClass.enemy : EntityItemClass.npc,
       health: monster.health,
       maxHealth: monsters[monster.type].baseStats.health
     }))
   ];
 
   const hasPortalStone = gameState.portals?.includes(playerState.location.id);
-  const hasLivingMonsters = locationState.monsters.some(monster => monster.health > 0);
 
   const locationOverride = gameState.locationOverrides
     && gameState.locationOverrides.find(l => l.id === playerState.location.id);
@@ -318,7 +321,7 @@ export default function PlayerLocation(
             player={playerState}
             gameState={gameState}
             playerCanMove={playerStats.playerCanMove}
-            hasLivingEnemies={hasLivingMonsters}
+            hasLivingEnemies={hasLivingEnemies}
             actionPointsLeft={playerStats.actionPointsTotal - playerStats.actionPointsUsed}
             moveCost={playerStats.actionsPerTurn.move}
             addNewAction={addNewAction}
@@ -337,7 +340,7 @@ export default function PlayerLocation(
             player={playerState}
             gameState={gameState}
             playerCanMove={playerStats.playerCanMove}
-            hasLivingEnemies={hasLivingMonsters}
+            hasLivingEnemies={hasLivingEnemies}
             actionPointsLeft={playerStats.actionPointsTotal - playerStats.actionPointsUsed}
             moveCost={playerStats.actionsPerTurn.move}
             addNewAction={addNewAction}

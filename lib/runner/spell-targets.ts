@@ -1,6 +1,7 @@
 import { SpellDef, SpellTargetType } from '../games/types';
 import { INamedTarget, MonsterState } from '../store/types';
 import { BaseParams } from './base-params';
+import { isEnemy, isFriend } from './game-friends-or-enemies';
 
 export function isMonsterCaster(params: BaseParams, caster: INamedTarget): boolean {
   return params.monsters.some(monster => monster.id === caster.id);
@@ -13,7 +14,7 @@ export function getAvailableSpellTargets(params: BaseParams, caster: INamedTarge
   const characterTargets = [...params.gameState.players, ...params.gameState.npcs]
     .filter(t => t.location.id === caster.location.id && (t.health > 0) === alive);
   if (!alive) return [...monsterTargets, ...characterTargets];
-  const monsterSide = isMonsterCaster(params, caster);
-  const targetMonsterSide = spell.targetType === SpellTargetType.friend ? monsterSide : !monsterSide;
-  return targetMonsterSide ? monsterTargets : characterTargets;
+  // Keep the stored targets so damage, healing and effects update the original state.
+  return [...monsterTargets, ...characterTargets].filter(target =>
+    spell.targetType === SpellTargetType.friend ? isFriend(caster, target) : isEnemy(caster, target));
 }

@@ -9,6 +9,7 @@ import { publishMessage } from "../messages/message-publisher";
 import { allItems, SELL_COST_RATIO } from "../games/items";
 import { PlayerItem } from "../games/types";
 import { createItemForInventory } from "../runner/apply-inventory";
+import { getEnemies } from '../runner/game-friends-or-enemies';
 
 async function publishLocationUpdated(boardId: string, mapId: string, locationId: number): Promise<void> {
   const msg: LocationUpdatedMessage = {
@@ -73,6 +74,7 @@ export async function hireNpc(
     playerInventory.coins -= npc.hireCost;
     playerInventory.hiredNpcIds = [...(playerInventory.hiredNpcIds || []), npc.id];
     npc.masterId = playerId;
+    npc.team = player.team;
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
     await setLocationsStateInRedis(boardId, mapId, locationsState);
@@ -197,7 +199,7 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
       throw new Error('Cannot take item while dead');
     }
 
-    if (locationsState.monsters.some(m => m.location === playerState.location.id && m.health > 0)) {
+    if (getEnemies({ gameState: { ...gameState, npcs: locationsState.npcs ?? gameState.npcs }, monsters: locationsState.monsters }, playerState).some(target => target.health > 0)) {
       throw new Error('Cannot take item while there are enemies here');
     }
 

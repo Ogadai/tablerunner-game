@@ -56,6 +56,8 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
     // Inventory writes must also stay excluded for the full turn-processing window.
     gameStateLock = await lockGameStateInRedis(boardId, mapId, processingLockTTL);
     const gameState = await getGameStateFromRedis(boardId, mapId);
+    if (!gameState) return;
+
     readyLock = await lockReadyStateInRedis(boardId, mapId);
     const readyState = await getReadyStateFromRedis(boardId, mapId);
 
@@ -103,7 +105,7 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
     const processingTurn = await getProcessingTurnFromRedis(boardId, mapId)
     const gameState = await getGameStateFromRedis(boardId, mapId);
 
-    if (gameState.players && gameState.players.some(player => player.health > 0) && processingTurn.turn !== gameState.turn) {
+    if (gameState && gameState.players && gameState.players.some(player => player.health > 0) && processingTurn.turn !== gameState.turn) {
       await setProcessingTurnInRedis(boardId, mapId, { turn: gameState.turn });
 
       await executeProcessesBetweenTurns({

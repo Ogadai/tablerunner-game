@@ -1,12 +1,28 @@
 /** @jest-environment node */
 import { actionFastTravel, actionPortal, updatePortalAndShopLeds } from './game-action-portal';
 import { PlayerActionType } from '../store/types';
-import { createParams } from './test-support/fixtures';
+import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 
 jest.mock('../games/games', () => ({ games: [{ id: 'test-game', locations: Array.from({ length: 7 }, (_, i) => ({
   id: i + 1, description: 'Road', move: i < 6 ? [{ id: i + 2, direction: 'e' }] : [],
 })) }] }));
 afterEach(() => jest.restoreAllMocks());
+
+it.each(['player', 'npc', 'monster'])('rejects portals and running while an enemy %s is present', kind => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  const params = createParams();
+  params.gameState.portals = [1, 3];
+  params.gameState.visited = [1, 2, 3];
+  const player = params.gameState.players[0];
+  player.location.move = [{ id: 2, direction: 'e' }];
+  if (kind === 'player') params.gameState.players.push(createPlayer({ id: 'enemy', team: 'red' }));
+  if (kind === 'npc') params.gameState.npcs.push(createNpc({ team: 'red' }));
+  if (kind === 'monster') params.monsters.push(createMonster());
+  actionPortal(params, player, { id: 1, type: PlayerActionType.Portal, description: '', targetLocation: 3 });
+  expect(player.location.id).toBe(1);
+  actionFastTravel(params, player, { id: 1, type: PlayerActionType.FastTravel, description: '', targetLocation: 3 });
+  expect(player.location.id).toBe(1);
+});
 
 it('teleports to a portal and records both ends without duplicating discoveries', () => {
   const params = createParams();
@@ -40,6 +56,7 @@ it.each([
   const params = createParams();
   params.gameState.visited = [1, 2, 3, 4, 5, 6, 7];
   params.gameState.leds = [{ location: 2, rgb: '', owner }];
+  if (owner === 'monster') params.monsters.push(createMonster({ location: 2 }));
   const player = params.gameState.players[0];
   player.location.move = [{ id: 2, direction: 'e' }];
   actionFastTravel(params, player, { id: 1, type: PlayerActionType.FastTravel, targetLocation, description: '' });

@@ -5,7 +5,7 @@ describe('MonsterCard', () => {
   it.each([[true, 10, true], [false, 10, false], [true, 0, false]])(
     'gates attacking by permission %s and health %s', (canAttack, health, visible) => {
       const onAttack = jest.fn();
-      render(<MonsterCard monster={{ id: 'goblin-1', type: 'goblin', location: 1, health }}
+      render(<MonsterCard monster={{ id: 'goblin-1', type: 'goblin', location: 1, health, team: 'monster' }}
         canAttack={canAttack} onAttack={onAttack} />);
       if (visible) {
         fireEvent.click(screen.getByRole('button', { name: 'Attack' }));

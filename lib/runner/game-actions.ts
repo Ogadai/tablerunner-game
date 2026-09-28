@@ -33,6 +33,7 @@ import { getCombatActions, getNpcActions } from "./game-npc-actions";
 import { getMonsterCombatant } from './monster-combatant';
 import { games } from '../games/games';
 import { playerMessageAtLocation } from './game-messages';
+import { getEnemies } from './game-friends-or-enemies';
 
 enum EntityActionEntityTypes {
   player,
@@ -68,6 +69,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
     // First gather all the player actions per location
     for(const player of params.gameState.players) {
       const locId = `${player.location.id}`;
+      playerFought[player.id] = getEnemies(params, player).some(target => target.health > 0);
       if (!entityActionsForLocations[locId]) {
         entityActionsForLocations[locId] = {
           entities: []
@@ -143,18 +145,9 @@ export async function runGameActions(params: BaseParams): Promise<void> {
       const monstersAtLocation = params.monsters.filter(m => m.location === locationId && m.health > 0);
 
       if (monstersAtLocation.length > 0) {
-        const targetsAtLocation = entityActionsForLocations[locId].entities
-            .filter(e => e.entityType !== EntityActionEntityTypes.monster)
-            .map(e => getNamedTargetById(params, e.entityId))
-            .filter(target => target && target.health > 0);
-
-        // Mark each player as having fought
-        for(const player of targetsAtLocation) {
-          playerFought[player.id] = true;
-        }
-
         for (const monster of monstersAtLocation) {
           const combatant = getMonsterCombatant(monster);
+          const targetsAtLocation = getEnemies(params, combatant).filter(target => target.health > 0);
           let actions: PlayerAction[];
           if (monster.scriptedActions) {
             const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
@@ -340,7 +333,7 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
           case PlayerActionType.Attack:
           {
             const attackAction = nextAction as PlayerActionAttack
-            const target = getNamedTargetById(params, attackAction.target);
+            const target = getEnemies(params, getMonsterCombatant(monster)).find(target => target.id === attackAction.target);
             if (target && target.health > 0 && target.location.id === monster.location) {
               monsterAttack(params, monster, target, locationId);
             }
@@ -397,8 +390,3 @@ function monsterPickTarget(targets: INamedTarget[], entityActionsForLocation: En
 
   return targets[targets.length - 1];
 }
-
-const getNamedTargetById = (params: BaseParams, id: string): INamedTarget =>
-  // Also include NPCs
-  params.gameState.players.find(p => p.id === id)
-    || params.gameState.npcs.find(npc => npc.id === id)!;

@@ -26,6 +26,7 @@ TypeScript. It is designed for deployment to Vercel.
 - Prefer functional React components.
 - Use async/await rather than promise chains.
 - Follow existing naming conventions.
+- Match existing coding styles.
 - Avoid introducing unnecessary dependencies.
 
 ## Development Rules

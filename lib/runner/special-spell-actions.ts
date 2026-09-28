@@ -67,6 +67,7 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
     for (const target of targets) {
       if ('type' in target) {
         const monster = target as MonsterState;
+        monster.team = player.team;
         monster.zombie = true;
         monster.health = Math.min(health, monsters[monster.type].baseStats.health);
       } else if (params.gameState.npcs.some(npc => npc.id === target.id)) {
@@ -100,9 +101,10 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
       target.zombie = true;
       target.health = Math.max(health, (target as INamedTarget).baseStats!.health);
 
-      if (!(target as PlayerState).characterStats) {
+      if ('masterId' in target) {
         // This is an NPC
         const npc = (target as NPCState);
+        npc.team = player.team;
         npc.masterId = masterId;
         npc.turnsLeft = expiryTurns;
         npc.expiryAction = 'monster';

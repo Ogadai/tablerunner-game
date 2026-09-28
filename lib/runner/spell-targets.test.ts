@@ -28,3 +28,21 @@ it('selects local corpses from both sides, excluding living and remote targets',
   params.gameState.npcs.push(npc);
   expect(getAvailableSpellTargets(params, player, spells[SpellIds.animateCorpse])).toEqual([params.monsters[0], dead, npc]);
 });
+
+it('selects mixed teams for player, NPC and monster casters, including self for friendly spells', () => {
+  const player = createPlayer({ team: 'red' });
+  const npc = createNpc({ team: 'red' });
+  const monster = createMonster({ team: 'red' });
+  const enemyPlayer = createPlayer({ id: 'enemy-player', team: 'blue' });
+  const enemyNpc = createNpc({ id: 'enemy-npc', team: 'blue' });
+  const enemyMonster = createMonster({ id: 'enemy-monster', team: 'blue' });
+  const params = createParams({ monsters: [monster, enemyMonster] });
+  params.gameState.players = [player, enemyPlayer];
+  params.gameState.npcs = [npc, enemyNpc];
+  for (const caster of [player, npc, getMonsterCombatant(monster)]) {
+    expect(getAvailableSpellTargets(params, caster, spells[SpellIds.heal]).map(t => t.id).sort())
+      .toEqual([player.id, npc.id, monster.id].sort());
+    expect(getAvailableSpellTargets(params, caster, spells[SpellIds.fireBall]).map(t => t.id).sort())
+      .toEqual(['enemy-player', 'enemy-npc', 'enemy-monster'].sort());
+  }
+});

@@ -298,7 +298,8 @@ button:focus-visible,
 /* Disabled State */
 button:disabled,
 .btn:disabled {
-  background: #dcd4c4;
+  filter: grayscale();
+  pointer-events: none;
   border-color: #bfae99;
   color: #8c8070;
   cursor: not-allowed;

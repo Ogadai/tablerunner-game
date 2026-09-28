@@ -28,6 +28,7 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
     const npc = params.gameState.npcs.find(n => n.id === npcId);
     if (npc) {
       npc.masterId = player.id;
+      npc.team = player.team;
     }
   }
 

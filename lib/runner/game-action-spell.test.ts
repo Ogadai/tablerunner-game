@@ -4,10 +4,46 @@ import { genericAttackMonster, handlePlayerIsDead, processAttackForDamage } from
 import { SpellIds, spells } from '../games/spells';
 import { scrollItems } from '../games/items';
 import { PlayerActionType } from '../store/types';
-import { createMonster, createParams } from './test-support/fixtures';
+import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 import { getMonsterCombatant } from './monster-combatant';
 
 jest.mock('./game-action-attack', () => ({ genericAttackMonster: jest.fn(), handlePlayerIsDead: jest.fn(), processAttackForDamage: jest.fn() }));
+
+it('heals and buffs allied monsters in persisted state, rejecting enemies and friendly fire', () => {
+  const ally = createMonster({ team: 'good', health: 1 });
+  const params = createParams({ monsters: [ally] });
+  const caster = params.gameState.players[0];
+  caster.spells = [SpellIds.heal, SpellIds.shield, SpellIds.fireBall];
+  caster.magic = 100;
+  const cast = (spellId: SpellIds) => actionCastSpell(params, caster, {
+    id: 1, type: PlayerActionType.Cast, description: '', spellId, targetId: ally.id,
+  });
+  cast(SpellIds.heal);
+  expect(ally.health).toBeGreaterThan(1);
+  cast(SpellIds.shield);
+  expect(ally.effects).toContainEqual(expect.objectContaining({ description: spells.shield.name }));
+  const magic = caster.magic;
+  cast(SpellIds.fireBall);
+  expect(genericAttackMonster).not.toHaveBeenCalled();
+  expect(caster.magic).toBe(magic);
+  ally.team = 'enemy';
+  ally.health = 1;
+  cast(SpellIds.heal);
+  expect(ally.health).toBe(1);
+  expect(caster.magic).toBe(magic);
+});
+
+it.each(['player', 'npc'])('damages an enemy %s with a player spell', kind => {
+  const target = kind === 'player' ? createPlayer({ id: 'enemy', team: 'other' }) : createNpc({ team: 'other' });
+  const params = createParams();
+  if ('masterId' in target) params.gameState.npcs.push(target);
+  else params.gameState.players.push(target);
+  const caster = params.gameState.players[0];
+  caster.spells = [SpellIds.fireBall];
+  jest.mocked(processAttackForDamage).mockReturnValue(3);
+  actionCastSpell(params, caster, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.fireBall, targetId: target.id });
+  expect(target.health).toBe(17);
+});
 
 it.each(['unknown', 'dead', 'no-magic', 'remote', 'missing-target'])('does not spend mana for an invalid cast: %s', reason => {
   const params = createParams({ monsters: [createMonster()] });

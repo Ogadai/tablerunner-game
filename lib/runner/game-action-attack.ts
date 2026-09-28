@@ -12,6 +12,8 @@ import { ConsumableIds, consumableItems, ItemIds, lootItems } from "../games/ite
 import { createItemForInventory } from "./apply-inventory";
 import { getCombatStats } from "../store/playerStats";
 import { SpellDef } from "../games/types";
+import { getEnemies, isEnemy, isFriend } from './game-friends-or-enemies';
+import { getMonsterCombatant } from './monster-combatant';
 
 const MAXIMUM_COIN_DROP = 100;
 const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
@@ -30,6 +32,7 @@ export function processAttackForDamage(attackerStats: { attack: number, damage: 
 }
 
 export function actionAttack(params: BaseParams, player: INamedTarget, action: PlayerActionAttack): void {
+  if (player.health <= 0 || !getEnemies(params, player).some(target => target.id === action.target && target.health > 0)) return;
   const monster = params.monsters.find(m => m.id === action.target);
   if (monster) {
     const success = genericAttackMonster(params, player, getCombatStats(player), monster);
@@ -80,6 +83,13 @@ export function monsterAttack(
   target: INamedTarget,
   locationId: number): void {
   try {
+    if (monster.health <= 0 || target.health <= 0 || target.location.id !== monster.location || !isEnemy(monster, target)) return;
+    const targetMonster = params.monsters.find(m => m.id === target.id);
+    if (targetMonster) {
+      const hit = genericAttackMonster(params, getMonsterCombatant(monster), getMonsterStats(monster), targetMonster);
+      if (hit && monster.zombie && !targetMonster.zombie) targetMonster.infected = ZOMBIE_TURNS;
+      return;
+    }
     const monsterStats = getMonsterStats(monster);
 
     const damage = processAttackForDamage(monsterStats, getCombatStats(target));
@@ -119,6 +129,12 @@ export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, mes
     ...i,
     location: target.location.id
   })));  
+
+  // A player or NPC may be the last enemy guarding coins dropped by monsters.
+  const collector = params.gameState.players.find(player => player.health > 0
+    && player.location.id === target.location.id
+    && !getEnemies(params, player).some(enemy => enemy.health > 0));
+  if (collector) distributeLocationCoins(params, collector);
 }
 
 export function genericAttackMonster(params: BaseParams, player: INamedTarget, attackStats: { name?: string, attack: number, damage: number, damageType?: SpellDef['damageType'] }, monster: MonsterState): boolean {
@@ -143,9 +159,9 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
           monsterDropCoins(params, player, monster);
         }
 
-        // Assign points to all living players at location
+        // Share points with living players on the attacker's team at this location.
         const players = params.gameState.players.filter(p =>
-          p.location.id === player.location.id && p.health > 0
+          p.location.id === player.location.id && p.health > 0 && isFriend(player, p)
         );
 
         const totalPoints = getPointsForDamage(monster.type, appliedDamage);
@@ -179,19 +195,18 @@ function monsterDropCoins(params: BaseParams, player: INamedTarget, monster: Mon
     params.coins.push({ location: locationId, coins: droppedCoins });
   }
 
-  const hasLivingMonster = params.monsters.some(currentMonster =>
-    currentMonster.location === locationId && currentMonster.health > 0
-  );
+  const hasLivingEnemy = getEnemies(params, player).some(target => target.health > 0);
 
-  if (!hasLivingMonster) {
-    distributeLocationCoins(params, locationId);
+  if (!hasLivingEnemy) {
+    distributeLocationCoins(params, player);
   }
 }
 
-function distributeLocationCoins(params: BaseParams, locationId: number) {
+function distributeLocationCoins(params: BaseParams, actor: INamedTarget) {
+  const locationId = actor.location.id;
   const locationCoins = params.coins.find(coins => coins.location === locationId);
   const players = params.gameState.players.filter(player =>
-    player.location.id === locationId && player.health > 0
+    player.location.id === locationId && player.health > 0 && isFriend(actor, player)
   );
 
   if (!locationCoins || players.length === 0) {

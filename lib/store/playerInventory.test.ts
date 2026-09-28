@@ -1,7 +1,7 @@
 import { buyAndSellInStore, createStoreInventoryState, dropItemAtLocation, getPlayerInventory, getStoreInventoryState, hireNpc, playerEquipItem, takeItemAtLocation } from './playerInventory';
 import * as redis from './redis-access';
 import { publishMessage } from '../messages/message-publisher';
-import { createGame, createLocations, createNpc } from './test-support/fixtures';
+import { createGame, createLocations, createNpc, createPlayer } from './test-support/fixtures';
 import { NOTHING_EQUPPED, type PlayerInventoryState, type StoreInventoryState } from './types';
 
 jest.mock('./redis-access', () => ({
@@ -110,12 +110,23 @@ describe('equipping and dropping items', () => {
 });
 
 describe('taking items', () => {
+  it.each(['player', 'npc'])('blocks pickup for an enemy %s', async kind => {
+    if (kind === 'player') game.players.push(createPlayer({ id: 'enemy', team: 'red' }));
+    else locations.npcs[0].team = 'red';
+    await expect(takeItemAtLocation('board', 'map', 'hero', 'potion')).resolves.toMatchObject({ success: false, error: 'Cannot take item while there are enemies here' });
+    expectNoWrites();
+  });
+
+  it('allows pickup with a living allied monster', async () => {
+    locations.monsters.push({ id: 'ally', type: 'rat', location: 1, health: 5, team: game.players[0].team });
+    await expect(takeItemAtLocation('board', 'map', 'hero', 'potion')).resolves.toMatchObject({ success: true });
+  });
   it('takes a local item, preserving pending equipment and ignoring dead/distant monsters', async () => {
     inventory.equipment = [];
     inventory.equipped = { weapon: NOTHING_EQUPPED };
     locations.monsters = [
-      { id: 'dead', type: 'rat', health: 0, location: 1 },
-      { id: 'away', type: 'rat', health: 5, location: 2 },
+      { id: 'dead', type: 'rat', health: 0, location: 1, team: 'monster' },
+      { id: 'away', type: 'rat', health: 5, location: 2, team: 'monster' },
     ];
     const item = locations.items[0];
     await expect(takeItemAtLocation('board', 'map', 'hero', 'potion')).resolves.toEqual({ success: true, data: { equipment: [item], equipped: { weapon: NOTHING_EQUPPED } } });
@@ -134,7 +145,7 @@ describe('taking items', () => {
   });
 
   it.each(['enemy', 'distant item', 'missing item'])('rejects taking an item with %s', async scenario => {
-    if (scenario === 'enemy') locations.monsters.push({ id: 'rat', type: 'rat', health: 1, location: 1 });
+    if (scenario === 'enemy') locations.monsters.push({ id: 'rat', type: 'rat', health: 1, location: 1, team: 'monster' });
     if (scenario === 'distant item') locations.items[0].location = 2;
     if (scenario === 'missing item') locations.items = [];
     await expect(takeItemAtLocation('board', 'map', 'hero', 'potion')).resolves.toEqual({ success: false,

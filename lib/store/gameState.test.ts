@@ -88,7 +88,7 @@ describe('createNewGameState', () => {
     jest.mocked(populateItemsForMap).mockResolvedValue(items);
     jest.mocked(setupProcesses).mockImplementation(async params => {
       params.gameState.processState.test = { initialized: true };
-      params.monsters.push({ id: 'monster-1', type: 'rat', health: 5, location: game.startLocation });
+      params.monsters.push({ id: 'monster-1', type: 'rat', health: 5, location: game.startLocation, team: 'monster' });
     });
     const result = await createNewGameState('board', 'map', game.id);
     expect(result).toEqual({ success: true, data: expect.objectContaining({
@@ -102,7 +102,7 @@ describe('createNewGameState', () => {
     expect(setupProcesses).toHaveBeenCalledWith(expect.objectContaining({ boardId: 'board', mapId: 'map', messages: {}, items }));
     expect(mockRedis.setGameStateInRedis).toHaveBeenCalledWith('board', 'map', result.data);
     expect(mockRedis.setLocationsStateInRedis).toHaveBeenCalledWith('board', 'map', {
-      items, monsters: [{ id: 'monster-1', type: 'rat', health: 5, location: game.startLocation }],
+      items, monsters: [{ id: 'monster-1', type: 'rat', health: 5, location: game.startLocation, team: 'monster' }],
       coins: [], blockedMoves: [], npcs: [],
     });
     expect(createStoreInventoryState).toHaveBeenCalledTimes(Object.keys(game.storeItems).length);
