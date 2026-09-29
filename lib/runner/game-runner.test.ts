@@ -4,12 +4,14 @@ import * as redis from '../store/redis-access';
 import { runGameActions } from './game-actions';
 import { executeProcessesBetweenTurns, executeProcessesForTurn } from './game-processes';
 import { populateMonsters } from './populate-monsters';
-import { createGame, createMonster, createNpc, createParams } from './test-support/fixtures';
+import { createGame, createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
+import { applyPlayerInventory } from './apply-inventory';
+import { applyPlayerAddedStats } from './level-up';
 
 jest.mock('../store/redis-access', () => ({
   getGameStateFromRedis: jest.fn(), commitGameTurnInRedis: jest.fn(), commitPausedGameInRedis: jest.fn(),
   getActionsStateFromRedis: jest.fn(), setReadyStateInRedis: jest.fn(), getLocationsStateFromRedis: jest.fn(),
-  getPlayerStatsFromRedis: jest.fn(), lockGameStateInRedis: jest.fn(), lockReadyStateInRedis: jest.fn(),
+  getPlayerTurnInputsFromRedis: jest.fn(), lockGameStateInRedis: jest.fn(), lockReadyStateInRedis: jest.fn(),
   publishGameProcessingStarted: jest.fn(), publishGameProcessingFailed: jest.fn(), publishGameStateUpdated: jest.fn(),
   publishReadyStateUpdated: jest.fn(), getReadyStateFromRedis: jest.fn(), lockForProcessing: jest.fn(),
   getProcessingTurnFromRedis: jest.fn(), setProcessingTurnInRedis: jest.fn(), processingLockTTL: 60,
@@ -34,6 +36,13 @@ beforeEach(() => {
   jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: [] });
   jest.mocked(redis.getLocationsStateFromRedis).mockResolvedValue({ monsters: [], items: [], coins: [], npcs: [], blockedMoves: [] });
   jest.mocked(populateMonsters).mockResolvedValue([]);
+  jest.mocked(redis.getPlayerTurnInputsFromRedis).mockImplementation(async (_boardId, _mapId, playerIds) =>
+    Object.fromEntries(playerIds.map(id => [id, {
+      inventory: { equipped: null, equipment: null, hiredNpcIds: [] },
+      addedStats: { characterStats: null },
+      actions: { actions: [] },
+    }])),
+  );
   jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 afterEach(() => jest.restoreAllMocks());
@@ -115,6 +124,43 @@ it('preserves the original processing error even if recovery also fails', async 
   await expect(processGameTurn(createParams())).rejects.toBe(error);
   expect(redis.publishGameProcessingFailed).toHaveBeenCalledWith('board', 'map');
   expect(redis.commitGameTurnInRedis).not.toHaveBeenCalled();
+});
+
+it('applies batched inputs in player order before passing actions to combat', async () => {
+  const params = createParams();
+  params.gameState.players.push(createPlayer({ id: 'second' }));
+  const inputs = {
+    hero: { inventory: { equipped: null, equipment: null, coins: 0 }, addedStats: { characterStats: null }, actions: { actions: [] } },
+    second: { inventory: { equipped: null, equipment: [], coins: 7 }, addedStats: { characterStats: null }, actions: { actions: [] } },
+  };
+  jest.mocked(redis.getPlayerTurnInputsFromRedis).mockResolvedValue(inputs);
+  const order: string[] = [];
+  jest.mocked(applyPlayerInventory).mockImplementation(async (_params, player) => { order.push(`inventory:${player.id}`); });
+  jest.mocked(applyPlayerAddedStats).mockImplementation(async (_params, player) => { order.push(`stats:${player.id}`); });
+  jest.mocked(runGameActions).mockImplementation(async () => { order.push('actions'); });
+
+  await processGameTurn(params);
+
+  expect(redis.getPlayerTurnInputsFromRedis).toHaveBeenCalledTimes(1);
+  expect(redis.getPlayerTurnInputsFromRedis).toHaveBeenCalledWith('board', 'map', ['hero', 'second']);
+  expect(order).toEqual(['inventory:hero', 'stats:hero', 'inventory:second', 'stats:second', 'actions']);
+  for (const player of params.gameState.players) {
+    const input = inputs[player.id as keyof typeof inputs];
+    expect(applyPlayerInventory).toHaveBeenCalledWith(params, player, input.inventory);
+    expect(applyPlayerAddedStats).toHaveBeenCalledWith(params, player, input.addedStats);
+  }
+  expect(runGameActions).toHaveBeenCalledWith(params, { hero: inputs.hero.actions, second: inputs.second.actions });
+  expect(redis.getActionsStateFromRedis).not.toHaveBeenCalled();
+});
+
+it('recovers without committing when the batched input read fails', async () => {
+  const error = new Error('Read failed');
+  jest.mocked(redis.getPlayerTurnInputsFromRedis).mockRejectedValue(error);
+  await expect(processGameTurn(createParams())).rejects.toBe(error);
+  expect(applyPlayerInventory).not.toHaveBeenCalled();
+  expect(runGameActions).not.toHaveBeenCalled();
+  expect(redis.commitGameTurnInRedis).not.toHaveBeenCalled();
+  expect(redis.publishGameProcessingFailed).toHaveBeenCalledWith('board', 'map');
 });
 
 it.each([2, 3])('runs between-turn work once per turn and always rechecks readiness (last %i)', async turn => {

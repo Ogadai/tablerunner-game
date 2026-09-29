@@ -4,10 +4,10 @@ import * as store from './redis-access';
 import { publishMessage } from '../messages/message-publisher';
 import { createGame, createLocations, createPlayer } from './test-support/fixtures';
 
-jest.mock('@upstash/redis', () => ({ Redis: { fromEnv: jest.fn(() => ({ get: jest.fn(), set: jest.fn(), del: jest.fn(), eval: jest.fn(), multi: jest.fn() })) } }));
+jest.mock('@upstash/redis', () => ({ Redis: { fromEnv: jest.fn(() => ({ get: jest.fn(), mget: jest.fn(), set: jest.fn(), del: jest.fn(), eval: jest.fn(), multi: jest.fn() })) } }));
 jest.mock('../messages/message-publisher', () => ({ publishMessage: jest.fn() }));
 const client = jest.mocked(Redis.fromEnv).mock.results[0].value as {
-  get: jest.Mock; set: jest.Mock; del: jest.Mock; eval: jest.Mock; multi: jest.Mock;
+  get: jest.Mock; mget: jest.Mock; set: jest.Mock; del: jest.Mock; eval: jest.Mock; multi: jest.Mock;
 };
 const transaction = { set: jest.fn(), del: jest.fn(), exec: jest.fn() };
 const expiry = { ex: 604800 };
@@ -20,6 +20,47 @@ beforeEach(() => {
   client.set.mockResolvedValue('OK');
 });
 afterEach(() => jest.restoreAllMocks());
+
+it('fetches four players in one batch and preserves each input and missing-state default', async () => {
+  const inventory = { equipped: {}, equipment: [], coins: 0, hiredNpcIds: ['npc'] };
+  const addedStats = { characterStats: { strength: 1 } };
+  const actions = { actions: [{ id: 1, type: 'respawn', description: '' }] };
+  client.mget.mockResolvedValue([
+    inventory, null, actions,
+    null, addedStats, null,
+    null, null, null,
+    inventory, addedStats, actions,
+  ]);
+
+  const inputs = await store.getPlayerTurnInputsFromRedis('b', 'm', ['p1', 'p2', 'p3', 'p4']);
+
+  expect(client.mget).toHaveBeenCalledTimes(1);
+  expect(client.mget).toHaveBeenCalledWith(
+    'playerInventory:b:m:p1', 'playerStats:b:m:p1', 'playerActions:b:m:p1',
+    'playerInventory:b:m:p2', 'playerStats:b:m:p2', 'playerActions:b:m:p2',
+    'playerInventory:b:m:p3', 'playerStats:b:m:p3', 'playerActions:b:m:p3',
+    'playerInventory:b:m:p4', 'playerStats:b:m:p4', 'playerActions:b:m:p4',
+  );
+  expect(inputs).toEqual({
+    p1: { inventory, addedStats: { characterStats: null }, actions },
+    p2: { inventory: { equipped: null, equipment: null, hiredNpcIds: [] }, addedStats, actions: { actions: [] } },
+    p3: { inventory: { equipped: null, equipment: null, hiredNpcIds: [] }, addedStats: { characterStats: null }, actions: { actions: [] } },
+    p4: { inventory, addedStats, actions },
+  });
+  expect(inputs.p2.actions.actions).not.toBe(inputs.p3.actions.actions);
+  expect(client.get).not.toHaveBeenCalled();
+});
+
+it('skips Redis when there are no player inputs to fetch', async () => {
+  await expect(store.getPlayerTurnInputsFromRedis('b', 'm', [])).resolves.toEqual({});
+  expect(client.mget).not.toHaveBeenCalled();
+});
+
+it('propagates a failed batched input read', async () => {
+  const error = new Error('Read failed');
+  client.mget.mockRejectedValue(error);
+  await expect(store.getPlayerTurnInputsFromRedis('b', 'm', ['p'])).rejects.toBe(error);
+});
 
 const reads = [
   ['game', () => store.getGameStateFromRedis('b', 'm'), null],

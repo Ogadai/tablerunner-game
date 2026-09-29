@@ -1,11 +1,8 @@
-import { GameState, NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerState } from "../store/types";
+import { GameState, NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
-import { getPlayerInventoryFromRedis } from '../store/redis-access';
 import { ItemDef, PlayerItem } from "../games/types";
 
-export async function applyPlayerInventory(params: BaseParams, player: PlayerState): Promise<void> {
-  const result = await getPlayerInventoryFromRedis(params.boardId, params.mapId, player.id);
-
+export async function applyPlayerInventory(params: BaseParams, player: PlayerState, result: PlayerInventoryState): Promise<void> {
   if (result.equipped) {
     for(const key of Object.keys(result.equipped) as (keyof PlayerInventoryEquipSlots)[]) {
       if (result.equipped[key] === NOTHING_EQUPPED) {

@@ -1,11 +1,8 @@
 /** @jest-environment node */
 import { applyPlayerInventory, createItemForInventory } from './apply-inventory';
-import { getPlayerInventoryFromRedis } from '../store/redis-access';
 import { NOTHING_EQUPPED } from '../store/types';
 import { allItems, ConsumableIds } from '../games/items';
 import { createNpc, createParams } from './test-support/fixtures';
-
-jest.mock('../store/redis-access', () => ({ getPlayerInventoryFromRedis: jest.fn() }));
 
 it('merges pending slots, removes unequipped slots, and applies empty inventory and zero coins', async () => {
   const params = createParams();
@@ -13,12 +10,10 @@ it('merges pending slots, removes unequipped slots, and applies empty inventory 
   player.equipped = { weapon: 'sword', armour: 'mail' };
   const npc = createNpc();
   params.gameState.npcs = [npc];
-  jest.mocked(getPlayerInventoryFromRedis).mockResolvedValue({
+  await applyPlayerInventory(params, player, {
     equipped: { weapon: NOTHING_EQUPPED, helmet: 'hat' }, equipment: [], coins: 0,
     hiredNpcIds: ['missing', npc.id],
   });
-  await applyPlayerInventory(params, player);
-  expect(getPlayerInventoryFromRedis).toHaveBeenCalledWith('board', 'map', player.id);
   expect(player.equipped).toEqual({ armour: 'mail', helmet: 'hat' });
   expect(player.equipment).toEqual([]);
   expect(player.coins).toBe(0);
@@ -29,8 +24,7 @@ it('preserves inventory when no pending changes exist', async () => {
   const params = createParams();
   const player = params.gameState.players[0];
   const before = structuredClone(player);
-  jest.mocked(getPlayerInventoryFromRedis).mockResolvedValue({ equipped: null, equipment: null });
-  await applyPlayerInventory(params, player);
+  await applyPlayerInventory(params, player, { equipped: null, equipment: null });
   expect(player).toEqual(before);
 });
 

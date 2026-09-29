@@ -15,7 +15,6 @@ import {
   MonsterState,
 } from "../store/types";
 import {
-  getActionsStateFromRedis,
   getMonsterActionsStateFromRedis,
 } from '../store/redis-access';
 import { EquipableItemDef, PlayerItem } from '@/lib/games/types';
@@ -56,7 +55,7 @@ interface EntityActionsForLocation {
 const MAGIC_BONUS_RATIO = 0.2;
 const HEAL_SCALING = 0.1;
 
-export async function runGameActions(params: BaseParams): Promise<void> {
+export async function runGameActions(params: BaseParams, playerActions: Record<string, PlayerActionsState>): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
   const monsterMoves: { monster: MonsterState; action: PlayerActionMove }[] = [];
   const playerMoves: Record<string, PlayerActionMove[]> = {};
@@ -76,7 +75,7 @@ export async function runGameActions(params: BaseParams): Promise<void> {
         };
       }
 
-      const playerActionState = await getActionsStateFromRedis(params.boardId, params.mapId, player.id);
+      const playerActionState = playerActions[player.id];
 
       // Check there aren't too many actions
       limitPlayerActionsToCost(player, playerActionState);

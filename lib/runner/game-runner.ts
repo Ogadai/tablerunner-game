@@ -6,6 +6,7 @@ import {
   NPCState,
   MonsterState,
   PlayerActionType,
+  PlayerActionsState,
 } from "../store/types";
 import {
   getGameStateFromRedis,
@@ -14,7 +15,7 @@ import {
   getActionsStateFromRedis,
   setReadyStateInRedis,
   getLocationsStateFromRedis,
-  getPlayerStatsFromRedis,
+  getPlayerTurnInputsFromRedis,
   lockGameStateInRedis,
   lockReadyStateInRedis,
   publishGameProcessingStarted,
@@ -193,14 +194,19 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 
     await initialiseProcessesForTurn(params);
 
+    const playerInputs = await getPlayerTurnInputsFromRedis(
+      params.boardId, params.mapId, params.gameState.players.map(player => player.id),
+    );
+    const playerActions: Record<string, PlayerActionsState> = {};
     for(const player of params.gameState.players) {
-      await applyPlayerInventory(params, player);
-      const addedStats = await getPlayerStatsFromRedis(params.boardId, params.mapId, player.id);
+      const { inventory, addedStats, actions } = playerInputs[player.id];
+      await applyPlayerInventory(params, player, inventory);
       await applyPlayerAddedStats(params, player, addedStats);
+      playerActions[player.id] = actions;
     }
 
     // Run the game turn
-    await runGameTurn(params);
+    await runGameTurn(params, playerActions);
 
     for(const player of params.gameState.players) {
       if (params.gameState.portals?.includes(player.location.id)) {
@@ -249,8 +255,8 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
   }
 }
 
-async function runGameTurn(params: BaseParams): Promise<void> {
-  await runGameActions(params);
+async function runGameTurn(params: BaseParams, playerActions: Record<string, PlayerActionsState>): Promise<void> {
+  await runGameActions(params, playerActions);
 
   processTargetEffects(params.gameState.players);
   processTargetEffects(params.gameState.npcs);

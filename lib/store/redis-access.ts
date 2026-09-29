@@ -2,6 +2,7 @@ import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage, GameTopicMessageBase } from "../message-types";
 import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings, ProcessingTurn } from "./types";
 import { publishMessage } from '../messages/message-publisher';
+import { PlayerTurnInputs } from './types';
 
 const redis = Redis.fromEnv();
 const defaultLockTTL = 5000;
@@ -179,6 +180,32 @@ export async function publishReadyStateUpdated(boardId: string, mapId: string, n
     readyPlayerDirection: newReadyState.readyPlayerDirection
   };
   await publishMessage(boardId, mapId, msg);
+}
+
+/* Pending inputs for all players in a turn */
+
+export async function getPlayerTurnInputsFromRedis(
+  boardId: string,
+  mapId: string,
+  playerIds: string[],
+): Promise<Record<string, PlayerTurnInputs>> {
+  if (playerIds.length === 0) return {};
+
+  const keys = playerIds.flatMap(playerId => [
+    getPlayerInventoryKey(boardId, mapId, playerId),
+    getPlayerStatsKey(boardId, mapId, playerId),
+    getPlayerActionsKey(boardId, mapId, playerId),
+  ]);
+  const results = await redis.mget<(PlayerInventoryState | PlayerAddStatsState | PlayerActionsState | null)[]>(...keys);
+
+  return Object.fromEntries(playerIds.map((playerId, index) => {
+    const offset = index * 3;
+    return [playerId, {
+      inventory: (results[offset] as PlayerInventoryState | null) || { equipped: null, equipment: null, hiredNpcIds: [] },
+      addedStats: (results[offset + 1] as PlayerAddStatsState | null) || { characterStats: null },
+      actions: (results[offset + 2] as PlayerActionsState | null) || { actions: [] },
+    }];
+  }));
 }
 
 /* Individual Player Actions State */
