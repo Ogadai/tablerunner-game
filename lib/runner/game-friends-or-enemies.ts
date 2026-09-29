@@ -2,7 +2,7 @@ import { GameState, INamedTarget, ITarget, MonsterState } from "../store/types";
 import { getMonsterCombatant } from "./monster-combatant";
 
 export function isEnemy(actor: ITarget, target: ITarget): boolean {
-  return (target.team !== null) && actor.team !== target.team;
+  return actor.team !== null && target.team !== null && actor.team !== target.team;
 }
 
 export function isFriend(actor: ITarget, target: ITarget): boolean {
