@@ -10,6 +10,7 @@ import { populateItemsForMap } from '../runner/populate-items';
 import { setupProcesses } from '../runner/game-processes';
 import { createStoreInventoryState } from './playerInventory';
 import { pickCharacterName } from '../games/character-names';
+import { gameCreation } from '../runner/game-creation';
 
 jest.mock('./redis-access', () => ({
   getGameStateFromRedis: jest.fn(), setGameStateInRedis: jest.fn(),
@@ -23,7 +24,7 @@ jest.mock('../games/character-names', () => ({ pickCharacterName: jest.fn() }));
 
 const mockRedis = jest.mocked(redis);
 const game = games[0];
-const starterPlayer = game.createStarterPlayer();
+const starterPlayer = gameCreation[game.id].createStarterPlayer();
 function createState(): GameState {
   return {
     gameId: game.id, turn: 0, name: 'Test game', characters: game.characters,
@@ -163,7 +164,10 @@ describe('player creation and deletion', () => {
 
   it.each([1, 23])('uses game-specific starting properties at location %i', async location => {
     const customStarter = { location, level: 3, availableStats: 8, coins: 50, team: 'red' };
-    const createStarter = jest.spyOn(game, 'createStarterPlayer').mockReturnValue(customStarter);
+
+    const creation = gameCreation[game.id];
+    const createStarter = jest.spyOn(creation, 'createStarterPlayer').mockReturnValue(customStarter);
+
     const state = createState();
     state.visited = [10, location];
     state.visitedPortals = game.portalLocations?.includes(location) ? [10, location] : [];

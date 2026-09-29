@@ -1,4 +1,4 @@
-import { createStarterPlayer } from './players';
+import { createStarterPlayer } from './game-creation';
 
 it('creates a player with the Cauldron of Fire starting properties', () => {
   expect(createStarterPlayer()).toEqual({

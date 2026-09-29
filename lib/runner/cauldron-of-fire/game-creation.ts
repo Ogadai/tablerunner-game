@@ -1,4 +1,4 @@
-import { StarterPlayer } from '../../types';
+import { GameCreation, StarterPlayer } from "../types";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;
@@ -13,3 +13,7 @@ export function createStarterPlayer(): StarterPlayer {
     team: 'good',
   };
 }
+
+export const cauldronOfFireGameCreation: GameCreation = {
+  createStarterPlayer
+};

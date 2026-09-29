@@ -6,3 +6,15 @@ export interface ProcessRunner {
   executeForTurn?(params: BaseParams): Promise<void>;
   executeBetweenTurns?(params: BaseParams): Promise<void>;
 }
+
+export interface StarterPlayer {
+  location: number;
+  level: number;
+  availableStats: number;
+  coins: number;
+  team: string;
+};
+
+export interface GameCreation {
+  createStarterPlayer: () => StarterPlayer;
+}

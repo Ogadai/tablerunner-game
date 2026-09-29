@@ -1,13 +1,5 @@
 import { SpellIds } from "./spells";
 
-export interface StarterPlayer {
-  location: number;
-  level: number;
-  availableStats: number;
-  coins: number;
-  team: string;
-};
-
 export interface GameListEntry {
   map: string;
   id: string;
@@ -19,7 +11,6 @@ export interface GameListEntry {
   itemLocations: GameItemLocation[];
   storeItems: { [locationId: number]: string[] };
   portalLocations?: number[];
-  createStarterPlayer: () => StarterPlayer;
 }
 
 export interface GameItemLocation {

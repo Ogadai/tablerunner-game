@@ -5,7 +5,6 @@ import { cauldronOfFirePortals } from './portals';
 
 import { GameListEntry } from '../../types';
 import { characters } from '../../characters';
-import { createStarterPlayer } from './players';
 
 export { getMonsters } from './monsters';
 
@@ -21,7 +20,6 @@ export const cauldronOfFire: GameListEntry = {
     { ...characters.mage },
     { ...characters.ranger }
   ],
-  createStarterPlayer: createStarterPlayer,
   locations: cauldronOfFireLocations,
   itemLocations: cauldronOfFireItems,
   storeItems: cauldronOfFireStoreItems,
