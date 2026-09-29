@@ -203,7 +203,12 @@ describe('store transactions', () => {
     expect(game.counters.itemId).toBe(1);
     expect(storage.setPlayerInventoryInRedis).toHaveBeenCalledWith('board', 'map', 'hero', inventory);
     expect(storage.setStoreStateInRedis).toHaveBeenCalledWith('board', 'map', 1, store);
-    expect(storage.setGameStateInRedis).toHaveBeenCalledWith('board', 'map', game);
+    expect(storage.setGameStateInRedis).toHaveBeenCalledWith('board', 'map', game, { notify: false });
+    expect(publishMessage).toHaveBeenCalledTimes(1);
+    expect(publishMessage).toHaveBeenCalledWith('board', 'map', {
+      type: 'store_updated', locationId: 1, playerId: 'hero',
+      playerInventory: inventory, storeInventory: store,
+    });
     expect(releaseStore).toHaveBeenCalledTimes(1);
     expect(releaseGame).toHaveBeenCalledTimes(1);
   });
@@ -214,6 +219,12 @@ describe('store transactions', () => {
     await buyAndSellInStore('board', 'map', 'hero', 1, { sellItemIds: ['sword'], buyItemTypes: [] });
     expect(inventory.coins).toBe(7);
     expect(store.items.find(item => item.itemId === 'swordRusty')!.count).toBe(3);
+    expect(storage.setGameStateInRedis).not.toHaveBeenCalled();
+    expect(publishMessage).toHaveBeenCalledTimes(1);
+    expect(publishMessage).toHaveBeenCalledWith('board', 'map', {
+      type: 'store_updated', locationId: 1, playerId: 'hero',
+      playerInventory: inventory, storeInventory: store,
+    });
   });
 
   it.each([

@@ -11,6 +11,7 @@ import { addPlayerAction, removePlayerAction } from "@/lib/store/playerActionsSt
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
 import LocationTopicService from "@/app/message-bus/location-topic-service";
+import StoreTopicService from "@/app/message-bus/store-topic-service";
 import { getGameTopicId } from "@/lib/message-types";
 import PlayerSpells from './player-spells';
 import PlayerStore from './player-store';
@@ -74,6 +75,11 @@ export default function PlayerLocation(
       }
 
       const disposeFns = [
+        StoreTopicService.subscribe(topicId, message => {
+          if (message.playerId === playerId) {
+            playerStatsSyncService.updateInventory(message.playerInventory);
+          }
+        }),
         LocationTopicService.subscribe(topicId, locationId => {
           if (locationId === player.location.id) {
             fetchLocationState();

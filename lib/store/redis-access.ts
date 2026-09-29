@@ -41,9 +41,11 @@ export async function getGameStateFromRedis(boardId: string, mapId: string): Pro
   return await redis.get(getGameKey(boardId, mapId)) as GameState;
 }
 
-export async function setGameStateInRedis(boardId: string, mapId: string, newGameState: GameState): Promise<void> {
+export async function setGameStateInRedis(boardId: string, mapId: string, newGameState: GameState, { notify = true }: { notify?: boolean } = {}): Promise<void> {
   await redis.set(getGameKey(boardId, mapId), newGameState, gameStateOptions);
-  await publishGameStateUpdated(boardId, mapId);
+  if (notify) {
+    await publishGameStateUpdated(boardId, mapId);
+  }
 }
 
 // Save cooldown resets and respawns without consuming other pending turn inputs.

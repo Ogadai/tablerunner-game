@@ -4,7 +4,7 @@ import { ApiResponse } from "../api-response";
 import { getGameStateFromRedis, getPlayerInventoryFromRedis, getStoreStateFromRedis, lockGameStateInRedis, lockLocationsStateInRedis, lockStoreStateInRedis, setGameStateInRedis, setLocationsStateInRedis, setPlayerInventoryInRedis, setStoreStateInRedis } from './redis-access';
 import { NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState, StoreInventoryState, StoreTransaction } from './types';
 import { getLocationsStateFromRedis } from './redis-access';
-import { GameTopicMessageType, LocationUpdatedMessage } from "../message-types";
+import { GameTopicMessageType, LocationUpdatedMessage, StoreUpdatedMessage } from "../message-types";
 import { publishMessage } from "../messages/message-publisher";
 import { allItems, SELL_COST_RATIO } from "../games/items";
 import { PlayerItem } from "../games/types";
@@ -324,7 +324,19 @@ export async function buyAndSellInStore(
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
     await setStoreStateInRedis(boardId, mapId, locationId, storeState);
-    await setGameStateInRedis(boardId, mapId, gameState);
+    if (transaction.buyItemTypes.length > 0) {
+      // Only the item-ID counter changed; clients do not need a game refresh.
+      await setGameStateInRedis(boardId, mapId, gameState, { notify: false });
+    }
+
+    const message: StoreUpdatedMessage = {
+      type: GameTopicMessageType.StoreUpdated,
+      locationId,
+      playerId,
+      playerInventory,
+      storeInventory: storeState,
+    };
+    await publishMessage(boardId, mapId, message);
 
     return {
       success: true,

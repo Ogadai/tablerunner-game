@@ -51,6 +51,14 @@ it('fetches four players in one batch and preserves each input and missing-state
   expect(client.get).not.toHaveBeenCalled();
 });
 
+it('persists counter-only game changes without broadcasting a game update', async () => {
+  const game = createGame();
+  game.counters.itemId++;
+  await store.setGameStateInRedis('b', 'm', game, { notify: false });
+  expect(client.set).toHaveBeenCalledWith('game:b:m', game, expiry);
+  expect(publishMessage).not.toHaveBeenCalled();
+});
+
 it('skips Redis when there are no player inputs to fetch', async () => {
   await expect(store.getPlayerTurnInputsFromRedis('b', 'm', [])).resolves.toEqual({});
   expect(client.mget).not.toHaveBeenCalled();

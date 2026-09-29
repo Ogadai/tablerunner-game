@@ -1,4 +1,5 @@
 import { LocationMoveDirection } from "./games/types";
+import type { PlayerInventoryState, StoreInventoryState } from "./store/types";
 
 export enum GameTopicMessageType {
   BleConnectedStatus = 'ble_connected',
@@ -7,6 +8,7 @@ export enum GameTopicMessageType {
   GameStateUpdated = 'game_state_updated',
   ReadyStateUpdated = 'ready_state_updated',
   LocationUpdated = 'location_updated',
+  StoreUpdated = 'store_updated',
   VideoPreload = 'video_preload',
   VideoPlay = 'video_play',
 }
@@ -35,6 +37,14 @@ export interface ReadyStateUpdatedMessage extends GameTopicMessageBase {
 export interface LocationUpdatedMessage extends GameTopicMessageBase {
   type: GameTopicMessageType.LocationUpdated;
   locationId: number;
+}
+
+export interface StoreUpdatedMessage extends GameTopicMessageBase {
+  type: GameTopicMessageType.StoreUpdated;
+  locationId: number;
+  playerId: string;
+  playerInventory: PlayerInventoryState;
+  storeInventory: StoreInventoryState;
 }
 
 export interface VideoPreloadMessage extends GameTopicMessageBase {

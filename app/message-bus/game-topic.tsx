@@ -7,6 +7,7 @@ import GameTopicService from './game-topic-service';
 import PlayerReadyTopicService from './playerReady-topic-service';
 import styles from './game-topic.module.css';
 import LocationTopicService from './location-topic-service';
+import StoreTopicService from './store-topic-service';
 import GameProcessingStartedService from './game-processing-service';
 import VideoTopicService from './video-topic-service';
 
@@ -93,6 +94,8 @@ export default function GameTopic({
         PlayerReadyTopicService.raisePlayerReadyStateUpdated(topicId, { readyPlayerIds: [] });
       } else if (message.name === GameTopicMessageType.GameStateUpdated) {
         GameTopicService.raiseGameStateUpdated(topicId);
+      } else if (message.name === GameTopicMessageType.StoreUpdated) {
+        StoreTopicService.raiseStoreUpdated(topicId, message.data);
       } else if (message.name === GameTopicMessageType.ReadyStateUpdated) {
         PlayerReadyTopicService.raisePlayerReadyStateUpdated(
           topicId,

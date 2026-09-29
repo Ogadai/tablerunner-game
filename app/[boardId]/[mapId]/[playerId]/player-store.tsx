@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import tabStyles from './tabs.module.css';
 import styles from './player-store.module.css';
@@ -11,6 +11,8 @@ import { allItems } from '@/lib/games/items';
 import CoinDisplay from './coin-display';
 import { PlayerItem } from '@/lib/games/types';
 import playerStatsSyncService from './player-stats-sync.service';
+import StoreTopicService from '@/app/message-bus/store-topic-service';
+import { getGameTopicId } from '@/lib/message-types';
 
 export default function PlayerStore({
   boardId,
@@ -25,6 +27,17 @@ export default function PlayerStore({
 }) {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [storeInventory, setStoreInventory] = useState<StoreInventoryState>({ items: [] });
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    return StoreTopicService.subscribe(getGameTopicId(boardId, mapId), message => {
+      if (message.locationId === player.location.id) {
+        setStoreInventory(message.storeInventory);
+      }
+    });
+  }, [open, boardId, mapId, player.location.id]);
   
   const getStoreState = async () => {
     const result = await getStoreInventoryState(boardId, mapId, player.location.id);
@@ -34,6 +47,7 @@ export default function PlayerStore({
   }
 
   const onOpenChange = (open: boolean) => {
+    setOpen(open);
     if (open) {
       getStoreState();
     }
@@ -98,7 +112,7 @@ export default function PlayerStore({
             aria-label={activeTab === 'buy' ? 'Buy' : 'Sell'}
           >
             <div className={styles.storeGrid}>
-              {activeTab === 'buy' && storeInventory.items.map(storeItem => {
+              {activeTab === 'buy' && storeInventory.items.filter(item => item.count > 0).map(storeItem => {
                 return (
                   <InventoryItem
                     key={storeItem.itemId}

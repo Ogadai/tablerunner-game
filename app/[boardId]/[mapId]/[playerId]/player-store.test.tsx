@@ -1,8 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { buyAndSellInStore, getStoreInventoryState } from '@/lib/store/playerInventory';
 import PlayerStore from './player-store';
 import sync from './player-stats-sync.service';
 import { makePlayer } from './test-fixtures';
+import StoreTopicService from '@/app/message-bus/store-topic-service';
+import { GameTopicMessageType } from '@/lib/message-types';
 
 jest.mock('@/lib/store/playerInventory', () => ({ buyAndSellInStore: jest.fn(), getStoreInventoryState: jest.fn() }));
 jest.mock('./player-stats-sync.service', () => ({ __esModule: true, default: { updateInventory: jest.fn() } }));
@@ -27,6 +29,28 @@ describe('PlayerStore', () => {
     expect(buyAndSellInStore).toHaveBeenCalledWith('board', 'map', 'warrior', 1,
       tab === 'Buy' ? { buyItemTypes: ['swordRusty'], sellItemIds: [] }
         : { buyItemTypes: [], sellItemIds: ['owned-sword'] });
+  });
+
+  it('updates an open shop from matching stock notifications without refetching', async () => {
+    render(<PlayerStore boardId="board" mapId="map" player={makePlayer({ coins: 20 })} usedItemIds={[]} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
+    await screen.findByRole('button', { name: 'Rusty Sword' });
+    const message = {
+      type: GameTopicMessageType.StoreUpdated as const,
+      locationId: 2,
+      playerId: 'other-player',
+      playerInventory: { equipment: [], equipped: {}, coins: 10 },
+      storeInventory: { items: [{ itemId: 'swordRusty', count: 0 }] },
+    };
+
+    act(() => StoreTopicService.raiseStoreUpdated('board-map', message));
+    expect(screen.getByRole('button', { name: 'Rusty Sword' })).toBeInTheDocument();
+    act(() => StoreTopicService.raiseStoreUpdated('other-map', { ...message, locationId: 1 }));
+    expect(screen.getByRole('button', { name: 'Rusty Sword' })).toBeInTheDocument();
+    act(() => StoreTopicService.raiseStoreUpdated('board-map', { ...message, locationId: 1 }));
+    expect(screen.queryByRole('button', { name: 'Rusty Sword' })).not.toBeInTheDocument();
+    expect(getStoreInventoryState).toHaveBeenCalledTimes(1);
+    expect(sync.updateInventory).not.toHaveBeenCalled();
   });
 
   it('leaves inventory unchanged after a rejected purchase', async () => {
