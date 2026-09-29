@@ -195,9 +195,11 @@ export async function getReadyStateFromRedis(boardId: string, mapId: string): Pr
   };
 }
 
-export async function setReadyStateInRedis(boardId: string, mapId: string, newReadyState: PlayerReadyState): Promise<void> {
+export async function setReadyStateInRedis(boardId: string, mapId: string, newReadyState: PlayerReadyState, { notify = true }: { notify?: boolean } = {}): Promise<void> {
   await redis.set(getPlayersReadyKey(boardId, mapId), newReadyState, gameStateOptions);
-  await publishReadyStateUpdated(boardId, mapId, newReadyState);
+  if (notify) {
+    await publishReadyStateUpdated(boardId, mapId, newReadyState);
+  }
 }
 
 export async function deleteReadyStateFromRedis(boardId: string, mapId: string): Promise<void> {

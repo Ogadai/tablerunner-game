@@ -1,6 +1,7 @@
 import { GameTopicMessageBase, getGameTopicId } from "../message-types";
 
 const getGameTopic = (boardId: string, mapId: string) => `game:${getGameTopicId(boardId, mapId)}`;
+const publishTimeoutMs = 2000;
 
 export async function publishMessage(boardId: string, mapId: string, body: GameTopicMessageBase): Promise<void> {
   const apiKey = process.env.ABLY_API_KEY;
@@ -12,6 +13,7 @@ export async function publishMessage(boardId: string, mapId: string, body: GameT
     `https://rest.ably.io/channels/${encodeURIComponent(getGameTopic(boardId, mapId))}/messages`,
     {
       method: 'POST',
+      signal: AbortSignal.timeout(publishTimeoutMs),
       headers: {
         Authorization: `Basic ${Buffer.from(apiKey).toString('base64')}`,
         'Content-Type': 'application/json',

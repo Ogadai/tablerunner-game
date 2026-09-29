@@ -44,6 +44,8 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
   let processingLock:  (() => Promise<void>) | null = null;
   let readyLock: (() => Promise<void>) | null = null;
   let gameStateUpdated = false;
+  let turnFailed = false;
+  let pendingNotification: Promise<void> | undefined;
   try {
     try {
       processingLock = await lockForProcessing(boardId, mapId);
@@ -68,12 +70,24 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
       // Do not hold the short readiness lock during turn execution.
       await readyLock();
       readyLock = null;
-      gameStateUpdated = await processTurnIfReady(boardId, mapId, gameState, readyState);
+      const locationsState = await getLocationsStateFromRedis(boardId, mapId);
+      pendingNotification = notifyProcessingStarted(boardId, mapId);
+      try {
+        await processGameTurn({ boardId, mapId, gameState, messages: {}, ...locationsState });
+        gameStateUpdated = true;
+      } catch (error) {
+        turnFailed = true;
+        throw error;
+      }
     }
   } finally {
     if (gameStateLock) {
       await gameStateLock();
     }
+    // Overlap delivery with execution, then release the state lock before waiting.
+    // Keep processing serialized until start settles so it cannot arrive after a
+    // later turn's completion. Failure/completion notifications follow unlock.
+    await pendingNotification;
     if (processingLock) {
       await processingLock();
     }
@@ -81,6 +95,18 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
       // On a not-ready snapshot, release processing first so a new ready update
       // cannot be accepted and then deferred to a check that has already finished.
       await readyLock();
+    }
+
+    if (turnFailed) {
+      const notificationResults = await Promise.allSettled([
+        publishReadyStateUpdated(boardId, mapId, { readyPlayerIds: [] }),
+        publishGameProcessingFailed(boardId, mapId),
+      ]);
+      for (const result of notificationResults) {
+        if (result.status === 'rejected') {
+          console.error('Failed to publish turn processing failure', result.reason);
+        }
+      }
     }
   }
 
@@ -96,6 +122,14 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
         console.error('Failed to publish game update', result.reason);
       }
     }
+  }
+}
+
+async function notifyProcessingStarted(boardId: string, mapId: string): Promise<void> {
+  try {
+    await publishGameProcessingStarted(boardId, mapId);
+  } catch (error) {
+    console.error('Failed to publish turn processing start', error);
   }
 }
 
@@ -131,24 +165,6 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
   await checkAllPlayersReady(boardId, mapId);
 }
 
-async function processTurnIfReady(boardId: string, mapId: string, gameState: GameState, readyState: PlayerReadyState): Promise<boolean> {
-  if (gameState.players.every(player =>
-    (player.health === 0) || readyState.readyPlayerIds.includes(player.id)
-  )) {
-    const locationsState = await getLocationsStateFromRedis(boardId, mapId);
-
-    await processGameTurn({
-      boardId,
-      mapId,
-      gameState,
-      messages: {},
-      ...locationsState
-    });
-    return true;
-  }
-  return false;
-}
-
 async function processPausedGame(boardId: string, mapId: string, gameState: GameState, readyState: PlayerReadyState): Promise<boolean> {
   let changed = readyState.readyPlayerIds.length > 0;
   const respawnedPlayerIds: string[] = [];
@@ -172,7 +188,6 @@ async function processPausedGame(boardId: string, mapId: string, gameState: Game
 
 export async function processGameTurn(params: BaseParams): Promise<void> {
   try {
-    await publishGameProcessingStarted(params.boardId, params.mapId);
     const originalStores = [...params.gameState.stores];
 
     if (params.monsters.length < 30) {
@@ -241,15 +256,11 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       originalStores.filter(location => !params.gameState.stores.includes(location)),
     );
   } catch (error) {
-    // Notify clients even if Redis is still unavailable during recovery.
-    const recoveryResults = await Promise.allSettled([
-      setReadyStateInRedis(params.boardId, params.mapId, { readyPlayerIds: [] }),
-      publishGameProcessingFailed(params.boardId, params.mapId),
-    ]);
-    for (const result of recoveryResults) {
-      if (result.status === 'rejected') {
-        console.error('Failed to recover from turn processing error', result.reason);
-      }
+    // Recover state under the lock; the caller notifies after releasing it.
+    try {
+      await setReadyStateInRedis(params.boardId, params.mapId, { readyPlayerIds: [] }, { notify: false });
+    } catch (recoveryError) {
+      console.error('Failed to recover from turn processing error', recoveryError);
     }
     throw error;
   }

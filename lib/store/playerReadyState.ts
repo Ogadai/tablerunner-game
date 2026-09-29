@@ -3,7 +3,7 @@
 import { ApiResponse } from "../api-response";
 import { PlayerReadyState } from "./types";
 import { LocationMoveDirection } from "../games/types";
-import { getReadyStateFromRedis, setReadyStateInRedis, lockReadyStateInRedis } from './redis-access';
+import { getReadyStateFromRedis, setReadyStateInRedis, lockReadyStateInRedis, publishReadyStateUpdated } from './redis-access';
 import { checkAllPlayersReady } from '../runner/game-runner';
 
 export async function getPlayerReadyState(boardId: string, mapId: string): Promise<ApiResponse<PlayerReadyState>> {
@@ -43,7 +43,11 @@ export async function setPlayerReady(boardId: string, mapId: string, playerId: s
     }
 
     // Store data in Redis
-    await setReadyStateInRedis(boardId, mapId, newState);
+    await setReadyStateInRedis(boardId, mapId, newState, { notify: false });
+
+    // Clients apply snapshots directly, so keep them ordered with readiness writes.
+    // Publication is bounded and must not prevent a saved update from processing.
+    await notifyPlayerReady(boardId, mapId, newState);
 
     // The five-second readiness lock only protects the readiness update, not turn execution.
     await readyLock();
@@ -66,5 +70,13 @@ export async function setPlayerReady(boardId: string, mapId: string, playerId: s
     if (readyLock) {
       await readyLock();
     }
+  }
+}
+
+async function notifyPlayerReady(boardId: string, mapId: string, state: PlayerReadyState): Promise<void> {
+  try {
+    await publishReadyStateUpdated(boardId, mapId, state);
+  } catch (error) {
+    console.error('Failed to publish readiness update', error);
   }
 }

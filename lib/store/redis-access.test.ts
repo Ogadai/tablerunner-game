@@ -193,6 +193,13 @@ it('does not publish when persistence fails', async () => {
   expect(publishMessage).not.toHaveBeenCalled();
 });
 
+it('can save readiness without waiting for notification delivery', async () => {
+  const ready = { readyPlayerIds: ['hero'] };
+  await store.setReadyStateInRedis('b', 'm', ready, { notify: false });
+  expect(client.set).toHaveBeenCalledWith('playersReady:b:m', ready, expiry);
+  expect(publishMessage).not.toHaveBeenCalled();
+});
+
 it('publishes processing lifecycle messages', async () => {
   await store.publishGameProcessingStarted('b', 'm');
   await store.publishGameProcessingFailed('b', 'm');

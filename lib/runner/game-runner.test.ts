@@ -119,10 +119,12 @@ it('expires effects and summons, records portals, and commits destroyed shops wi
 
 it('preserves the original processing error even if recovery also fails', async () => {
   const error = new Error('action failed');
+  jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: ['hero'] });
   jest.mocked(runGameActions).mockRejectedValue(error);
   jest.mocked(redis.setReadyStateInRedis).mockRejectedValue(new Error('recovery failed'));
-  await expect(processGameTurn(createParams())).rejects.toBe(error);
+  await expect(checkAllPlayersReady('board', 'map')).rejects.toBe(error);
   expect(redis.publishGameProcessingFailed).toHaveBeenCalledWith('board', 'map');
+  expect(releaseProcessing.mock.invocationCallOrder[0]).toBeLessThan(jest.mocked(redis.publishGameProcessingFailed).mock.invocationCallOrder[0]);
   expect(redis.commitGameTurnInRedis).not.toHaveBeenCalled();
 });
 
@@ -155,12 +157,56 @@ it('applies batched inputs in player order before passing actions to combat', as
 
 it('recovers without committing when the batched input read fails', async () => {
   const error = new Error('Read failed');
+  jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: ['hero'] });
   jest.mocked(redis.getPlayerTurnInputsFromRedis).mockRejectedValue(error);
-  await expect(processGameTurn(createParams())).rejects.toBe(error);
+  await expect(checkAllPlayersReady('board', 'map')).rejects.toBe(error);
   expect(applyPlayerInventory).not.toHaveBeenCalled();
   expect(runGameActions).not.toHaveBeenCalled();
   expect(redis.commitGameTurnInRedis).not.toHaveBeenCalled();
   expect(redis.publishGameProcessingFailed).toHaveBeenCalledWith('board', 'map');
+  expect(redis.setReadyStateInRedis).toHaveBeenCalledWith('board', 'map', { readyPlayerIds: [] }, { notify: false });
+});
+
+it.each([false, true])('releases the state lock while start delivery is pending, keeping turns ordered (failure=%s)', async fails => {
+  jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: ['hero'] });
+  let finishStart!: () => void;
+  const startedNotification = new Promise<void>(resolve => { finishStart = resolve; });
+  jest.mocked(redis.publishGameProcessingStarted).mockReturnValue(startedNotification);
+  const error = new Error('action failed');
+  if (fails) jest.mocked(runGameActions).mockRejectedValue(error);
+  let locksReleased!: () => void;
+  const released = new Promise<void>(resolve => { locksReleased = resolve; });
+  releaseGame.mockImplementation(async () => { locksReleased(); });
+
+  const processing = checkAllPlayersReady('board', 'map');
+  const outcome = fails ? expect(processing).rejects.toBe(error) : expect(processing).resolves.toBeUndefined();
+  await released;
+  expect(runGameActions).toHaveBeenCalledTimes(1);
+  expect(releaseGame).toHaveBeenCalledTimes(1);
+  expect(releaseReady).toHaveBeenCalledTimes(1);
+  expect(releaseProcessing).not.toHaveBeenCalled();
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledTimes(fails ? 0 : 1);
+  expect(redis.publishGameStateUpdated).not.toHaveBeenCalled();
+  expect(redis.publishGameProcessingFailed).not.toHaveBeenCalled();
+  expect(redis.publishReadyStateUpdated).not.toHaveBeenCalled();
+
+  finishStart();
+  await outcome;
+  expect(releaseProcessing).toHaveBeenCalledTimes(1);
+  expect(redis.publishReadyStateUpdated).toHaveBeenCalledWith('board', 'map', { readyPlayerIds: [] });
+  expect(redis.publishGameProcessingFailed).toHaveBeenCalledTimes(fails ? 1 : 0);
+  expect(redis.publishGameStateUpdated).toHaveBeenCalledTimes(fails ? 0 : 1);
+  expect(releaseProcessing.mock.invocationCallOrder[0])
+    .toBeLessThan(jest.mocked(redis.publishReadyStateUpdated).mock.invocationCallOrder[0]);
+});
+
+it('still commits the turn when publishing the start fails', async () => {
+  jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: ['hero'] });
+  jest.mocked(redis.publishGameProcessingStarted).mockRejectedValue(new Error('publish failed'));
+  await expect(checkAllPlayersReady('board', 'map')).resolves.toBeUndefined();
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledTimes(1);
+  expect(redis.publishGameStateUpdated).toHaveBeenCalledTimes(1);
+  expect(redis.publishGameProcessingFailed).not.toHaveBeenCalled();
 });
 
 it.each([2, 3])('runs between-turn work once per turn and always rechecks readiness (last %i)', async turn => {
