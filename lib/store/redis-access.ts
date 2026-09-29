@@ -2,7 +2,7 @@ import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage, GameTopicMessageBase } from "../message-types";
 import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings, ProcessingTurn } from "./types";
 import { publishMessage } from '../messages/message-publisher';
-import { PlayerTurnInputs } from './types';
+import { PlayerSnapshot, PlayerTurnInputs } from './types';
 
 const redis = Redis.fromEnv();
 const defaultLockTTL = 5000;
@@ -39,6 +39,36 @@ const getProcessingLock = (boardId: string, mapId: string) => `processingLock:${
 
 export async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
   return await redis.get(getGameKey(boardId, mapId)) as GameState;
+}
+
+export async function getPlayerSnapshotFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerSnapshot> {
+  // Read the game and pending inputs together so a turn commit cannot split the snapshot.
+  const [gameState, inventory, actions, addedStats, locations, messages] = await redis.mget<[
+    GameState | null, PlayerInventoryState | null, PlayerActionsState | null,
+    PlayerAddStatsState | null, AllLocationsState | null, PlayerMessagesState | null,
+  ]>(
+    getGameKey(boardId, mapId),
+    getPlayerInventoryKey(boardId, mapId, playerId),
+    getPlayerActionsKey(boardId, mapId, playerId),
+    getPlayerStatsKey(boardId, mapId, playerId),
+    getLocationsKey(boardId, mapId),
+    getPlayerMessagesKey(boardId, mapId, playerId),
+  );
+  const locationId = gameState?.players.find(player => player.id === playerId)?.location.id;
+
+  return {
+    playerId,
+    gameState,
+    inventory: inventory || { equipped: null, equipment: null, hiredNpcIds: [] },
+    actions: actions || { actions: [] },
+    addedStats: addedStats || { characterStats: null },
+    location: {
+      monsters: locations?.monsters.filter(monster => monster.location === locationId) || [],
+      items: locations?.items.filter(item => item.location === locationId) || [],
+      npcs: locations?.npcs?.filter(npc => npc.location.id === locationId) || [],
+    },
+    messages: messages || { messages: [] },
+  };
 }
 
 export async function setGameStateInRedis(boardId: string, mapId: string, newGameState: GameState, { notify = true }: { notify?: boolean } = {}): Promise<void> {

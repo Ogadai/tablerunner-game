@@ -1,12 +1,8 @@
 'use client';
 
-import { ApiResponse } from "@/lib/api-response";
 import { BaseStats } from "@/lib/games/types";
-import { getPlayerActionsState } from "@/lib/store/playerActionsState";
-import { getPlayerInventory } from "@/lib/store/playerInventory";
 import { getPlayerActionsCosts, getPlayerActionsMagic, getPlayerActionsPerTurn, getPlayerStats, PlayerActionsPerTurn } from "@/lib/store/playerStats";
-import { getPlayerAddStatsState } from "@/lib/store/playerStatsState";
-import { PlayerActionsState, PlayerActionType, PlayerAddStatsState, PlayerInventoryState, PlayerState } from "@/lib/store/types";
+import { PlayerActionsState, PlayerActionType, PlayerAddStatsState, PlayerInventoryState, PlayerState, PlayerTurnInputs } from "@/lib/store/types";
 
 export interface PlayerStats {
   baseStats: BaseStats;
@@ -53,8 +49,6 @@ type PlayerStatsListener = (
 class PlayerStatsSyncService {
   private statsPromise: Promise<PlayerStats> = Promise.resolve(emptyPlayerStats);
 
-  private boardId: string = '';
-  private mapId: string = '';
   private player: PlayerState | null = null;
 
   private inventoryState: PlayerInventoryState | null = null;
@@ -77,13 +71,11 @@ class PlayerStatsSyncService {
     return this.statsPromise.then(() => this.addStatsState || null);
   }
 
-  updatePlayer(boardId: string, mapId: string, player: PlayerState): void {
-    this.boardId = boardId;
-    this.mapId = mapId;
+  updatePlayer(player: PlayerState, inputs: PlayerTurnInputs): void {
     this.player = player;
-    this.inventoryState = null;
-    this.actionsState = null;
-    this.addStatsState = null;
+    this.inventoryState = inputs.inventory;
+    this.actionsState = inputs.actions;
+    this.addStatsState = inputs.addedStats;
     this.activePlayer = null;
     this.currentStats = emptyPlayerStats;
     this.statsPromise = this.getUpdatedStats();
@@ -121,15 +113,9 @@ class PlayerStatsSyncService {
   private async getUpdatedStats(): Promise<PlayerStats> {
     if (!this.player) return emptyPlayerStats;
 
-    const [inventoryState, actionsState, addStatsState] = (await Promise.all([
-      this.getData(this.inventoryState, () => getPlayerInventory(this.boardId, this.mapId, this.player!.id)),
-      this.getData(this.actionsState, () => getPlayerActionsState(this.boardId, this.mapId, this.player!.id)),
-      this.getData(this.addStatsState, () => getPlayerAddStatsState(this.boardId, this.mapId, this.player!.id)),
-    ]));
-
-    this.inventoryState = inventoryState || null;
-    this.actionsState = actionsState || null;
-    this.addStatsState = addStatsState || null;
+    const inventoryState = this.inventoryState;
+    const actionsState = this.actionsState;
+    const addStatsState = this.addStatsState;
 
     const combinedPlayer: PlayerState = {
       ...this.player,
@@ -202,22 +188,6 @@ class PlayerStatsSyncService {
     }
 
     return playerStats;
-  }
-
-  private async getData<T>(data: T, callback: () => Promise<ApiResponse<T>>) {
-    if (data) {
-      return data!;
-    }
-    return await callback().then(this.getResponseData);
-  }
-
-  private getResponseData<T>(response: ApiResponse<T>): T | undefined {
-    if (response.success) {
-      return response.data;
-    } else {
-      console.error(response.error);
-      return undefined;
-    }
   }
 }
 

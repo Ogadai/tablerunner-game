@@ -2,7 +2,7 @@
 import { Redis } from '@upstash/redis';
 import * as store from './redis-access';
 import { publishMessage } from '../messages/message-publisher';
-import { createGame, createLocations, createPlayer } from './test-support/fixtures';
+import { createGame, createLocations, createNpc, createPlayer } from './test-support/fixtures';
 
 jest.mock('@upstash/redis', () => ({ Redis: { fromEnv: jest.fn(() => ({ get: jest.fn(), mget: jest.fn(), set: jest.fn(), del: jest.fn(), eval: jest.fn(), multi: jest.fn() })) } }));
 jest.mock('../messages/message-publisher', () => ({ publishMessage: jest.fn() }));
@@ -20,6 +20,46 @@ beforeEach(() => {
   client.set.mockResolvedValue('OK');
 });
 afterEach(() => jest.restoreAllMocks());
+
+it('reads a player snapshot in one batch and returns only the current location', async () => {
+  const game = createGame();
+  const inventory = { equipped: {}, equipment: [], coins: 0 };
+  const actions = { actions: [{ id: 1, type: 'respawn', description: 'Respawn' }] };
+  const addedStats = { characterStats: { strength: 1 } };
+  const messages = { messages: [{ text: 'Next turn' }] };
+  const npc = createNpc();
+  const locations = createLocations({
+    monsters: [{ id: 'rat', type: 'rat', location: 1, health: 2, team: 'monster' },
+      { id: 'other', type: 'rat', location: 2, health: 2, team: 'monster' }],
+    items: [{ id: 'here', type: 'swordRusty', location: 1 }, { id: 'there', type: 'swordRusty', location: 2 }],
+    npcs: [npc, createNpc({ id: 'other-npc', location: { id: 2, description: '', move: [] } })],
+  });
+  client.mget.mockResolvedValue([game, inventory, actions, addedStats, locations, messages]);
+
+  await expect(store.getPlayerSnapshotFromRedis('b', 'm', 'hero')).resolves.toEqual({
+    playerId: 'hero', gameState: game, inventory, actions, addedStats, messages,
+    location: { monsters: [locations.monsters[0]], items: [locations.items[0]], npcs: [npc] },
+  });
+  expect(client.mget).toHaveBeenCalledTimes(1);
+  expect(client.mget).toHaveBeenCalledWith('game:b:m', 'playerInventory:b:m:hero', 'playerActions:b:m:hero',
+    'playerStats:b:m:hero', 'monsters:b:m', 'playerMessages:b:m:hero');
+  expect(client.get).not.toHaveBeenCalled();
+});
+
+it.each([null, createGame(), createGame({ players: [] })])('supplies snapshot defaults for missing state', async gameState => {
+  client.mget.mockResolvedValue([gameState, null, null, null, null, null]);
+  await expect(store.getPlayerSnapshotFromRedis('b', 'm', 'hero')).resolves.toEqual({
+    playerId: 'hero', gameState,
+    inventory: { equipped: null, equipment: null, hiredNpcIds: [] },
+    actions: { actions: [] }, addedStats: { characterStats: null },
+    location: { monsters: [], items: [], npcs: [] }, messages: { messages: [] },
+  });
+});
+
+it('propagates a failed snapshot read', async () => {
+  client.mget.mockRejectedValue(new Error('Read failed'));
+  await expect(store.getPlayerSnapshotFromRedis('b', 'm', 'hero')).rejects.toThrow('Read failed');
+});
 
 it('fetches four players in one batch and preserves each input and missing-state default', async () => {
   const inventory = { equipped: {}, equipment: [], coins: 0, hiredNpcIds: ['npc'] };

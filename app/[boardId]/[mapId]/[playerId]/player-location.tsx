@@ -5,7 +5,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerSnapshot, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
 import { LocationMoveDirection } from "@/lib/games/types";
 import { addPlayerAction, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
@@ -29,6 +29,7 @@ export default function PlayerLocation(
     boardId,
     mapId,
     gameState,
+    snapshot,
     playerId,
     isPlayerReady,
     processing,
@@ -38,13 +39,16 @@ export default function PlayerLocation(
     boardId: string;
     mapId: string;
     gameState: GameState,
+    snapshot?: PlayerSnapshot,
     playerId: string,
     isPlayerReady: boolean,
     processing: boolean,
     readyPlayerDirection?: { [id: string]: LocationMoveDirection },
     endTurnAction: (direction?: LocationMoveDirection, ready?: boolean) => void,
   }) {
-  const [locationState, setLocationState] = useState<LocationState>({ monsters: [], items: [], npcs: [] });
+  const [locationUpdate, setLocationUpdate] = useState<{ snapshot: PlayerSnapshot; state: LocationState } | null>(null);
+  const locationState = locationUpdate && locationUpdate.snapshot === snapshot
+    ? locationUpdate.state : snapshot?.location || { monsters: [], items: [], npcs: [] };
   const [playerState, setPlayerState] = useState<PlayerState | null>();
   const [playerStats, setPlayerStats] = useState<PlayerStats>(emptyPlayerStats);
   const [actionsSnapshot, setActionsSnapshot] = useState<{ gameState: GameState; state: PlayerActionsState } | null>(null);
@@ -66,12 +70,17 @@ export default function PlayerLocation(
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) {
       router.push(`/${boardId}/${mapId}`);
-    } else {
-      playerStatsSyncService.updatePlayer(boardId, mapId, player);
+    } else if (snapshot) {
+      playerStatsSyncService.updatePlayer(player, snapshot);
+      let disposed = false;
+      let requestId = 0;
 
       async function fetchLocationState() {
+        const currentRequest = ++requestId;
         const state = await getLocationState(boardId, mapId, player!.location.id);
-        setLocationState(state.data!);
+        if (!disposed && currentRequest === requestId && state.success && state.data) {
+          setLocationUpdate({ snapshot: snapshot!, state: state.data });
+        }
       }
 
       const disposeFns = [
@@ -92,11 +101,12 @@ export default function PlayerLocation(
         }),
       ];
 
-      fetchLocationState();
-
-      return () => disposeFns.forEach(f => f());
+      return () => {
+        disposed = true;
+        disposeFns.forEach(f => f());
+      };
     }
-  }, [gameState, boardId, mapId, playerId, router, topicId]);
+  }, [gameState, snapshot, boardId, mapId, playerId, router, topicId]);
 
   const addNewAction = async (opts: Omit<PlayerAction, 'id'>) => {
     const state = await addPlayerAction(boardId, mapId, playerState!.id, {
@@ -151,7 +161,7 @@ export default function PlayerLocation(
       playerStatsSyncService.updateActionsState(state.data!);
     };
 
-  if (!playerState) {
+  if (!snapshot || !playerState) {
     return <p>Loading...</p>;
   }
 

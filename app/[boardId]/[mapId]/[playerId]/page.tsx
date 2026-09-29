@@ -30,6 +30,7 @@ export default function Page() {
   const [turnError, setTurnError] = useState<string | null>(null);
 
   const topicId = getGameTopicId(boardId, mapId);
+  const snapshot = gameStateSyncService.getPlayerSnapshot(boardId, mapId, playerId);
 
   useEffect(() => {
     const disposeGameState = gameStateSyncService.subscribe(boardId, mapId, state => {
@@ -77,9 +78,11 @@ export default function Page() {
     <div className={styles.playerScreenContent}>
       {turnError && <p role="alert">{turnError}</p>}
       <PlayerLocation
+        key={`${boardId}:${mapId}:${playerId}`}
         boardId={boardId}
         mapId={mapId}
         gameState={gameState}
+        snapshot={snapshot?.gameState === gameState ? snapshot : undefined}
         playerId={playerId}
         processing={settingReady || gameProcessing}
         isPlayerReady={isPlayerReady()}

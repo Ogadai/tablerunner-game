@@ -12,7 +12,7 @@ import { makeGameState } from './test-fixtures';
 jest.mock('next/navigation', () => ({ useParams: jest.fn(), useRouter: jest.fn() }));
 jest.mock('@/lib/store/playerReadyState', () => ({ setPlayerReady: jest.fn() }));
 jest.mock('@/app/message-bus/game-processing-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
-jest.mock('../game/game-state-sync-service', () => ({ __esModule: true, default: { get: jest.fn(), subscribe: jest.fn() } }));
+jest.mock('../game/game-state-sync-service', () => ({ __esModule: true, default: { get: jest.fn(), getPlayerSnapshot: jest.fn(), subscribe: jest.fn() } }));
 jest.mock('../game/ready-state-sync-service', () => ({ __esModule: true, default: { get: jest.fn(), subscribe: jest.fn() } }));
 jest.mock('./player-location', () => ({ __esModule: true, default: jest.fn() }));
 

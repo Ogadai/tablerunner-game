@@ -1,5 +1,5 @@
 import type { CharacterListEntry } from '@/lib/games/types';
-import type { GameState, PlayerState } from '@/lib/store/types';
+import type { GameState, PlayerSnapshot, PlayerState } from '@/lib/store/types';
 
 export function makeCharacter(id = 'warrior'): CharacterListEntry {
   return {
@@ -28,5 +28,15 @@ export function makeGameState(overrides: Partial<GameState> = {}): GameState {
     characters: [makeCharacter(), makeCharacter('mage')], players: [], npcs: [],
     visited: [], stores: [], portals: [], visitedPortals: [],
     counters: { monsterId: 0, itemId: 0 }, leds: [], processState: {}, ...overrides,
+  };
+}
+
+export function makePlayerSnapshot(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
+  return {
+    playerId: 'warrior', gameState: makeGameState({ players: [makePlayer()] }),
+    inventory: { equipped: null, equipment: null, hiredNpcIds: [] },
+    actions: { actions: [] }, addedStats: { characterStats: null },
+    location: { monsters: [], items: [], npcs: [] }, messages: { messages: [] },
+    ...overrides,
   };
 }

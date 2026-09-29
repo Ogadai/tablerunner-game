@@ -5,7 +5,7 @@ import gameStateSyncService from "./game-state-sync-service";
 import readyStateSyncService from "./ready-state-sync-service";
 import PlayHeaderMenu from './play-header-menu';
 import styles from './play-header.module.css';
-import { PlayerState } from "@/lib/store/types";
+import { PlayerSnapshot, PlayerState } from "@/lib/store/types";
 import { getGameTopicId } from "@/lib/message-types";
 import { getGameState } from "@/lib/store/gameState";
 import { getPlayerReadyState } from "@/lib/store/playerReadyState";
@@ -14,12 +14,14 @@ import { GameState, PlayerReadyState } from "@/lib/store/types";
 import GameTopicService from '../../../message-bus/game-topic-service';
 import PlayerReadyTopicService from '../../../message-bus/playerReady-topic-service';
 import PlayHeaderMessages from "./play-header-messages";
+import { fetchPlayerSnapshot } from './player-snapshot';
 
 export default function PlayHeader(
   { boardId, mapId, onReadyCountdownChange }
   : { boardId: string, mapId: string, onReadyCountdownChange?: (countdown: number | null) => void }
 ) {
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [playerSnapshot, setPlayerSnapshot] = useState<PlayerSnapshot | null>(null);
   const [readyState, setReadyState] = useState<PlayerReadyState>({ readyPlayerIds: [] });
   const [readyCountdown, setReadyCountdown] = useState<number | null>(null);
   const readyCountdownRef = useRef<number | null>(null);
@@ -75,6 +77,7 @@ export default function PlayHeader(
 
   useEffect(() => {
     const controller = new AbortController();
+    let requestId = 0;
 
     async function triggerProcessing() {
       if (controller.signal.aborted) {
@@ -102,16 +105,33 @@ export default function PlayHeader(
     }
 
     async function fetchGameState() {
-      const state = await getGameState(boardId, mapId);
-      setGameState(state?.data || null);
-      gameStateSyncService.set(boardId, mapId, state.success ? state.data : undefined);
-
-      triggerProcessing();
+      const currentRequest = ++requestId;
+      try {
+        if (playerId) {
+          const snapshot = await fetchPlayerSnapshot(boardId, mapId, playerId, controller.signal);
+          if (controller.signal.aborted || currentRequest !== requestId) return;
+          setPlayerSnapshot(snapshot);
+          setGameState(snapshot.gameState);
+          gameStateSyncService.set(boardId, mapId, snapshot.gameState || undefined, snapshot);
+        } else {
+          const state = await getGameState(boardId, mapId);
+          if (controller.signal.aborted || currentRequest !== requestId) return;
+          setPlayerSnapshot(null);
+          setGameState(state.data || null);
+          gameStateSyncService.set(boardId, mapId, state.success ? state.data : undefined);
+        }
+        void triggerProcessing();
+      } catch (error) {
+        if (!controller.signal.aborted && currentRequest === requestId) {
+          console.error('Unable to refresh game state', error);
+        }
+      }
     }
     fetchGameState();
 
     async function fetchReadyState() {
       const state = await getPlayerReadyState(boardId, mapId);
+      if (controller.signal.aborted) return;
       setReadyState(state.data!);
       readyStateSyncService.set(boardId, mapId, state.data!);
     }
@@ -128,7 +148,7 @@ export default function PlayHeader(
       disposeGameSub();
       disposeReadySub();
     }
-  }, [boardId, mapId, topicId]);
+  }, [boardId, mapId, playerId, topicId]);
 
   if (!gameState) {
     return <div className={styles.headerContainer}>
@@ -169,7 +189,9 @@ export default function PlayHeader(
   return (
     <div className={styles.headerContainerGame}>
       { (gameState && playerId.length > 0) &&
-        <PlayHeaderMessages boardId={boardId} mapId={mapId} playerId={playerId} gameState={gameState} />
+        <PlayHeaderMessages key={`${boardId}:${mapId}:${playerId}`} playerMessages={
+          playerSnapshot?.playerId === playerId ? playerSnapshot.messages : undefined
+        } />
       }
       <div className={styles.headerContent}>
         <ul className={styles.playerList}>

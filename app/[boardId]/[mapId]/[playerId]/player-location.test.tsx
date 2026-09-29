@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import { addPlayerAction, removePlayerAction } from '@/lib/store/playerActionsState';
 import { getLocationState } from '@/lib/store/locationState';
 import locationTopic from '@/app/message-bus/location-topic-service';
-import { PlayerActionType, type PlayerActionsState } from '@/lib/store/types';
+import { PlayerActionType, type LocationState, type PlayerActionsState } from '@/lib/store/types';
 import PlayerLocation from './player-location';
 import PlayerLocationList from './player-location-list';
 import PlayerPortal from './player-portal';
@@ -13,6 +13,7 @@ import FastTravel from './fast-travel';
 import { createMonster, createNpc } from '@/lib/runner/test-support/fixtures';
 import sync from './player-stats-sync.service';
 import { makeGameState, makePlayer as makeTestPlayer, makeStats } from './test-fixtures';
+import { makePlayerSnapshot } from '../game/test-fixtures';
 
 function makePlayer(overrides: Parameters<typeof makeTestPlayer>[0] = {}) {
   return makeTestPlayer({ id: 'barbarian', ...overrides });
@@ -39,8 +40,10 @@ describe('PlayerLocation', () => {
   const disposeLocation = jest.fn();
   let onLocation: Parameters<typeof locationTopic.subscribe>[1];
   let onStats: Parameters<typeof sync.subscribe>[0];
+  let location: LocationState;
 
   beforeEach(() => {
+    location = { monsters: [], items: [], npcs: [] };
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     jest.mocked(getLocationState).mockResolvedValue({ success: true, data: { monsters: [], items: [], npcs: [] } });
     jest.mocked(addPlayerAction).mockResolvedValue({ success: true, data: { actions: [] } });
@@ -55,7 +58,8 @@ describe('PlayerLocation', () => {
     });
     const props = { boardId: 'board', mapId: 'map', playerId: 'barbarian', gameState: makeGameState({ players: [player] }),
       isPlayerReady: false, processing: false, endTurnAction: jest.fn(), ...overrides };
-    const view = render(<PlayerLocation {...props} />);
+    const snapshot = makePlayerSnapshot({ playerId: props.playerId, gameState: props.gameState, location, actions });
+    const view = render(<PlayerLocation snapshot={snapshot} {...props} />);
     await act(async () => onStats(makeStats({ health: player.health }), actions, null, player));
     return { ...view, props, player };
   }
@@ -78,9 +82,9 @@ describe('PlayerLocation', () => {
   });
 
   it('blocks advancing past living enemies but allows retreat', async () => {
-    jest.mocked(getLocationState).mockResolvedValue({ success: true, data: {
+    location = {
       monsters: [{ id: 'goblin-1', type: 'goblin', location: 1, health: 10, team: 'monster' }], items: [], npcs: [],
-    } });
+    };
     const player = makePlayer({ retreatDirection: 's', location: { id: 1, description: 'Start',
       move: [{ id: 2, direction: 'n' }, { id: 3, direction: 's' }] } });
     const { props } = await setup({ gameState: makeGameState({ players: [player] }) });
@@ -95,10 +99,10 @@ describe('PlayerLocation', () => {
     const player = makePlayer();
     const ally = makePlayer({ id: 'ranger' });
     const enemy = makePlayer({ id: 'mage', team: 'red' });
-    jest.mocked(getLocationState).mockResolvedValue({ success: true, data: {
+    location = {
       items: [], monsters: [createMonster({ id: 'ally-monster', team: player.team }), createMonster()],
       npcs: [createNpc({ id: 'ally-npc' }), createNpc({ id: 'enemy-npc', team: 'red' })],
-    } });
+    };
     await setup({ gameState: makeGameState({ players: [player, ally, enemy], portals: [1] }) });
     const entities = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].entities;
     expect(Object.fromEntries(entities.map(entity => [entity.id, entity.className]))).toEqual({
@@ -109,9 +113,9 @@ describe('PlayerLocation', () => {
   });
 
   it('permits movement, portals and running with an allied monster', async () => {
-    jest.mocked(getLocationState).mockResolvedValue({ success: true, data: {
+    location = {
       items: [], npcs: [], monsters: [createMonster({ team: 'good' })],
-    } });
+    };
     const player = makePlayer({ location: { id: 1, description: '', move: [{ id: 2, direction: 'n' }] } });
     await setup({ gameState: makeGameState({ players: [player], portals: [1] }) });
     expect(jest.mocked(PlayerPortal).mock.calls.at(-1)![0].hasLivingEnemies).toBe(false);
@@ -185,11 +189,11 @@ describe('PlayerLocation', () => {
 
   it('refreshes only matching location events and disposes subscriptions', async () => {
     const { unmount } = await setup();
-    expect(getLocationState).toHaveBeenCalledTimes(1);
+    expect(getLocationState).not.toHaveBeenCalled();
     await act(async () => onLocation(2));
-    expect(getLocationState).toHaveBeenCalledTimes(1);
+    expect(getLocationState).not.toHaveBeenCalled();
     await act(async () => onLocation(1));
-    expect(getLocationState).toHaveBeenCalledTimes(2);
+    expect(getLocationState).toHaveBeenCalledTimes(1);
     unmount();
     expect(disposeStats).toHaveBeenCalledTimes(1);
     expect(disposeLocation).toHaveBeenCalledTimes(1);

@@ -238,6 +238,13 @@ export interface PlayerTurnInputs {
   actions: PlayerActionsState;
 }
 
+export interface PlayerSnapshot extends PlayerTurnInputs {
+  playerId: string;
+  gameState: GameState | null;
+  location: LocationState;
+  messages: PlayerMessagesState;
+}
+
 export interface StoreInventoryItem {
   itemId: string;
   count: number;

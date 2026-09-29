@@ -5,27 +5,19 @@ import Markdown from 'react-markdown'
 
 import styles from "./play-header-messages.module.css";
 
-import { getPlayerMessages } from "@/lib/store/playerMessages";
-import { GameState, PlayerMessagesState } from '@/lib/store/types';
+import { PlayerMessagesState } from '@/lib/store/types';
 
-export default function PlayHeaderMessages(  { boardId, mapId, playerId, gameState }
-  : { boardId: string, mapId: string, playerId: string, gameState: GameState }
+export default function PlayHeaderMessages({ playerMessages }
+  : { playerMessages?: PlayerMessagesState }
 ) {
-  const [playerMessages, setPlayerMessages] = useState<PlayerMessagesState | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    async function fetchPlayerMessages() {
-      const messages = await getPlayerMessages(boardId, mapId, playerId);
-      setPlayerMessages(messages.data!);
-
-      if (messages.data?.messages && messages.data?.messages.length > 0) {
-        setTimeout(() => setIsOpen(true), 500);
-      }
+    if (playerMessages?.messages.length) {
+      const timer = setTimeout(() => setIsOpen(true), 500);
+      return () => clearTimeout(timer);
     }
-
-    fetchPlayerMessages();
-  }, [gameState, playerId, boardId, mapId]);
+  }, [playerMessages]);
 
   const hasMessages = playerMessages?.messages && playerMessages.messages.length > 0;
   const messagesWithIDs = playerMessages?.messages.map((message, index) => ({ ...message, id: index })) || [];

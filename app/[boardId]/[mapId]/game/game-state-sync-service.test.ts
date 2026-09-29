@@ -1,5 +1,5 @@
 import type service from './game-state-sync-service';
-import { makeGameState } from './test-fixtures';
+import { makeGameState, makePlayerSnapshot } from './test-fixtures';
 
 jest.mock('./game-state-lighting-service', () => ({
   __esModule: true, default: { update: jest.fn() },
@@ -58,5 +58,19 @@ describe('gameStateSyncService', () => {
     expect(first).toHaveBeenCalledWith(undefined);
     expect(second).toHaveBeenCalledTimes(1);
     expect(sync.get('board', 'map')).toBeUndefined();
+  });
+
+  it('publishes matching snapshots with game state and clears them on a game-only update', () => {
+    const snapshot = makePlayerSnapshot();
+    const listener = jest.fn(() => expect(sync.getPlayerSnapshot('board', 'map', 'warrior')).toBe(snapshot));
+    const dispose = sync.subscribe('board', 'map', listener);
+    sync.set('board', 'map', snapshot.gameState!, snapshot);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(sync.getPlayerSnapshot('board', 'map', 'mage')).toBeUndefined();
+    expect(sync.getPlayerSnapshot('other', 'map', 'warrior')).toBeUndefined();
+    expect(sync.getPlayerSnapshot('board', 'other', 'warrior')).toBeUndefined();
+    dispose();
+    sync.set('board', 'map', makeGameState());
+    expect(sync.getPlayerSnapshot('board', 'map', 'warrior')).toBeUndefined();
   });
 });
