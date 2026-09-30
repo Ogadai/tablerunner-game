@@ -18,22 +18,22 @@ const MAP_NPCS: IMapNpc[] = [
   },
   {
     location: 91, // village square
-    min: 0,
-    max: 2,
+    min: 1,
+    max: 3,
     from: 60,
     to: 100, 
   },
   {
     location: 58, // tavern
-    min: 1,
-    max: 3,
+    min: 2,
+    max: 4,
     from: 80,
     to: 150, 
   },
   {
     location: 22, // village market
     min: 1,
-    max: 2,
+    max: 3,
     from: 60,
     to: 130, 
   },
@@ -46,8 +46,8 @@ const MAP_NPCS: IMapNpc[] = [
   },
   {
     location: 23, // general store
-    min: 1,
-    max: 2,
+    min: 2,
+    max: 4,
     from: 80,
     to: 140, 
   },
@@ -122,7 +122,7 @@ const getNpcStats: { [type: string]: ((cost: number) => BaseStats) } = {
 };
 
 function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
-  const magicUser = Math.random() < 0.2;
+  const magicUser = Math.random() < 0.33;
   const type = NPC_TYPES[Math.floor(Math.random() * 2 + (magicUser ? 2 : 0))];
   const race = NPC_RACES[Math.floor(Math.random() * NPC_RACES.length)];
 
