@@ -14,6 +14,7 @@ import { handlePlayerIsDead } from "../game-action-attack";
 
 const OWNER = 'dragons';
 const DRAGON_LED_RGB = 'A00000';
+const WARN_LED_RGB = '9E4217';
 const babyLocations = [136, 101, 120, 73];
 const babyPreloadLocations: {[loc: string]: number} = {
   '136': 137,
@@ -26,6 +27,7 @@ const LAVA_MIN_TURNS = 20;
 const LAVA_TURN_RANGE = 30;
 
 const LAVA_EXTENT: number[][] = [
+  [],
   [162, 232, 195],
   [162, 161, 163, 232, 233, 195, 194, 196],
   [162, 161, 163, 200, 198, 159, 232, 233, 208, 195, 194, 196, 167, 207],
@@ -129,7 +131,7 @@ export const dragons: ProcessRunner = {
 
       if (params.gameState.turn > dragonsState.nextLava!) {
         dragonsState.currentLavaTurn = 0;
-        dragonsState.currentLavaMax = 2 + Math.floor(Math.random() * 2);
+        dragonsState.currentLavaMax = 3 + Math.floor(Math.random() * 2);
         processLava = true;
 
         broadcastMessage(params, 'The **Volcano** stirs. **The Lava is rising**');
@@ -166,7 +168,7 @@ export const dragons: ProcessRunner = {
           dragonsState.currentLavaTurn = 0;
         }
         dragonsState.dragonFlightTurn = 0;
-        dragonsState.currentLavaMax = 4;
+        dragonsState.currentLavaMax = 5;
         
         const availableRoutes = AVAILABLE_ROUTES[`${babyDragon.location}`];
         dragonsState.dragonRoute = availableRoutes[Math.floor(Math.random() * availableRoutes.length)];
@@ -216,6 +218,7 @@ export const dragons: ProcessRunner = {
     }
 
     const lavaLocations: number[] = [];
+    const warnLocations: number[] = [];
 
     if (processLava) {
       dragonsState.currentLavaTurn!++;
@@ -226,6 +229,9 @@ export const dragons: ProcessRunner = {
 
       if (lavaLevel > 0) {
         lavaLocations.push(...LAVA_EXTENT[lavaLevel - 1]);
+      }
+      if (lavaLevel < LAVA_EXTENT.length) {
+        warnLocations.push(...LAVA_EXTENT[lavaLevel]);
       }
 
       // Kill all the monsters here except fire spirits
@@ -293,7 +299,12 @@ export const dragons: ProcessRunner = {
         location: l,
         rgb: DRAGON_LED_RGB,
         owner: OWNER,
-      }))
+      })),
+      ...warnLocations.map(l => ({
+        location: l,
+        rgb: WARN_LED_RGB,
+        owner: OWNER,
+      })),
     ];
 
     saveState(params, dragonsState);
