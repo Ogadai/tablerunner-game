@@ -118,7 +118,7 @@ export function monsterAttack(
 
 export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, message?: string) {
   playerMessageAtLocation(params, target.id, message || '**{player}** {playerNoun} **dead**!');
-  target.respawnTurns = 6;
+  target.respawnTurns = 3;
 
   // auto drop special items if they have them
   const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));

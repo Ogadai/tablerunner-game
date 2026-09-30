@@ -42,7 +42,7 @@ it('warns for one turn after the scheduled eruption before killing occupants and
 
   params.gameState.turn = 5;
   await dragons.executeForTurn!(params);
-  expect(params.gameState.players[0]).toMatchObject({ health: 0, respawnTurns: 6 });
+  expect(params.gameState.players[0]).toMatchObject({ health: 0, respawnTurns: 3 });
   expect(params.gameState.npcs[0].health).toBe(0);
   expect(params.monsters[0].health).toBe(0);
   expect(params.monsters[1]).toMatchObject({ type: 'firespirit', location: 162, health: 20 });

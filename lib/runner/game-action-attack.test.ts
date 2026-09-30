@@ -314,7 +314,7 @@ describe('actionAttack', () => {
     params.gameState.npcs = kind === 'npc' ? [npc] : [];
     hit();
     actionAttack(params, player, attack('p2'));
-    expect(kind === 'npc' ? npc : target).toMatchObject({ health: 0, respawnTurns: 6 });
+    expect(kind === 'npc' ? npc : target).toMatchObject({ health: 0, respawnTurns: 3 });
   });
 
   it('ignores unknown targets', () => {
@@ -360,7 +360,7 @@ describe('monsterAttack and player death', () => {
     hit(0.9);
     monsterAttack(params, monster, player);
     expect(player.health).toBe(0);
-    expect(player.respawnTurns).toBe(6);
+    expect(player.respawnTurns).toBe(3);
   });
 
   it.each([[0.09, 3], [0.1, undefined]] as const)('applies zombie infection at roll %s', (roll, infected) => {
@@ -394,7 +394,7 @@ describe('monsterAttack and player death', () => {
     handlePlayerIsDead(params, player, '**{player}** fell into a trap');
     expect(player.equipment).toEqual([potion]);
     expect(params.items).toEqual([{ ...stone, location: 1 }, { ...shard, location: 1 }]);
-    expect(player.respawnTurns).toBe(6);
+    expect(player.respawnTurns).toBe(3);
     expect(params.messages.p1.messages).toEqual([{ text: '**You** fell into a trap' }]);
   });
 });

@@ -99,10 +99,10 @@ it('skips queued movement if combat kills the player and advances respawn countd
   const params = createParams({ monsters: [createMonster()] });
   const player = params.gameState.players[0];
   playerActions.hero = { actions: [move] };
-  jest.mocked(monsterAttack).mockImplementation(() => { player.health = 0; player.respawnTurns = 6; });
+  jest.mocked(monsterAttack).mockImplementation(() => { player.health = 0; player.respawnTurns = 3; });
   await runGameActions(params, playerActions);
   expect(actionMove).not.toHaveBeenCalled();
-  expect(player.respawnTurns).toBe(5);
+  expect(player.respawnTurns).toBe(2);
 });
 
 it('dispatches item, spell, and scroll actions', async () => {
