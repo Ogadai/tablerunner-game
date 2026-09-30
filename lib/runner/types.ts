@@ -1,4 +1,11 @@
 import { BaseParams } from "./base-params";
+import { GameState, MonsterState } from "../store/types";
+
+export interface GameRunnerDefinition {
+  gameCreation: GameCreation;
+  getMonsters(gameState: GameState, playerCount?: number): Promise<MonsterState[]>;
+  processes: ProcessRunner;
+}
 
 export interface ProcessRunner {
   setup?(params: BaseParams): Promise<void>;

@@ -10,7 +10,7 @@ import { populateItemsForMap } from '../runner/populate-items';
 import { setupProcesses } from '../runner/game-processes';
 import { createStoreInventoryState } from './playerInventory';
 import { pickCharacterName } from '../games/character-names';
-import { gameCreation } from '../runner/game-creation';
+import { gameRunners } from '../runner/games';
 
 jest.mock('./redis-access', () => ({
   getGameStateFromRedis: jest.fn(), setGameStateInRedis: jest.fn(),
@@ -19,12 +19,13 @@ jest.mock('./redis-access', () => ({
 }));
 jest.mock('../runner/populate-items', () => ({ populateItemsForMap: jest.fn() }));
 jest.mock('../runner/game-processes', () => ({ setupProcesses: jest.fn() }));
+jest.mock('../runner/cauldron-of-fire/processes', () => ({ cauldronOfFireProcesses: {} }));
 jest.mock('./playerInventory', () => ({ createStoreInventoryState: jest.fn() }));
 jest.mock('../games/character-names', () => ({ pickCharacterName: jest.fn() }));
 
 const mockRedis = jest.mocked(redis);
 const game = games[0];
-const starterPlayer = gameCreation[game.id].createStarterPlayer();
+const starterPlayer = gameRunners[game.id].gameCreation.createStarterPlayer();
 function createState(): GameState {
   return {
     gameId: game.id, turn: 0, name: 'Test game', characters: game.characters,
@@ -165,7 +166,7 @@ describe('player creation and deletion', () => {
   it.each([1, 23])('uses game-specific starting properties at location %i', async location => {
     const customStarter = { location, level: 3, availableStats: 8, coins: 50, team: 'red' };
 
-    const creation = gameCreation[game.id];
+    const creation = gameRunners[game.id].gameCreation;
     const createStarter = jest.spyOn(creation, 'createStarterPlayer').mockReturnValue(customStarter);
 
     const state = createState();

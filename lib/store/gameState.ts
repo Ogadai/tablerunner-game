@@ -12,7 +12,7 @@ import { populateItemsForMap } from "../runner/populate-items";
 import { createStoreInventoryState } from "./playerInventory";
 import { setupProcesses } from "../runner/game-processes";
 import { updatePortalAndShopLeds } from "../runner/game-action-portal";
-import { gameCreation } from "../runner/game-creation";
+import { gameRunners } from "../runner/games";
 
 export async function getGameState(boardId: string, mapId: string): Promise<ApiResponse<GameState>> {
   try {
@@ -173,7 +173,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
     }
 
     const equipment = characterDef.equipment.map(e => createItemForInventory(gameState, e));
-    const starterPlayer = gameCreation[gameDef.id].createStarterPlayer();
+    const starterPlayer = gameRunners[gameDef.id].gameCreation.createStarterPlayer();
 
     const newPlayer: PlayerState = {
       id: playerId,
