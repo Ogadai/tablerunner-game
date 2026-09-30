@@ -1,5 +1,6 @@
 import { BaseParams } from "./base-params";
 import { GameState, MonsterState } from "../store/types";
+import { ItemDef } from "../games/types";
 
 export interface GameRunnerDefinition {
   gameCreation: GameCreation;
@@ -20,6 +21,7 @@ export interface StarterPlayer {
   availableStats: number;
   coins: number;
   team: string;
+  equipment: ItemDef[];
 };
 
 export interface GameCreation {

@@ -6,6 +6,7 @@ import * as redis from './redis-access';
 import { GameState } from './types';
 import { games } from '../games/games';
 import { characters } from '../games/characters';
+import { allItems } from '../games/items';
 import { populateItemsForMap } from '../runner/populate-items';
 import { setupProcesses } from '../runner/game-processes';
 import { createStoreInventoryState } from './playerInventory';
@@ -136,8 +137,11 @@ describe('createNewGameState', () => {
 });
 
 describe('player creation and deletion', () => {
-  it('creates a character with equipment, full health/magic and starting resources', async () => {
+  it.each(games)('creates a character with equipment, full health/magic and starting resources for $id', async game => {
+    const starterPlayer = gameRunners[game.id].gameCreation.createStarterPlayer();
     const state = createState();
+    state.gameId = game.id;
+    state.characters = game.characters;
     mockRedis.getGameStateFromRedis.mockResolvedValue(state);
     await expect(createPlayerForGame('board', 'map', 'mage')).resolves.toEqual({ success: true });
     const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
@@ -150,7 +154,10 @@ describe('player creation and deletion', () => {
     });
     expect(player.health).toBe(player.baseStats!.health);
     expect(player.magic).toBe(player.baseStats!.magic);
-    expect(player.equipment.map(item => item.type)).toEqual(characters.mage.equipment.map(item => item.id));
+    expect(player.equipment.map(item => item.type)).toEqual([
+      ...characters.mage.equipment.map(item => item.id),
+      ...starterPlayer.equipment.map(item => item.id),
+    ]);
     expect(new Set(player.equipment.map(item => item.id)).size).toBe(player.equipment.length);
     expect(player.equipped.weapon).toBe(player.equipment[0].id);
     expect(player.characterStats).not.toBe(characters.mage.characterStats);
@@ -164,7 +171,10 @@ describe('player creation and deletion', () => {
   });
 
   it.each([1, 23])('uses game-specific starting properties at location %i', async location => {
-    const customStarter = { location, level: 3, availableStats: 8, coins: 50, team: 'red' };
+    const customStarter = {
+      location, level: 3, availableStats: 8, coins: 50, team: 'red',
+      equipment: [allItems.healingPotion, allItems.healingPotion],
+    };
 
     const creation = gameRunners[game.id].gameCreation;
     const createStarter = jest.spyOn(creation, 'createStarterPlayer').mockReturnValue(customStarter);
@@ -182,6 +192,12 @@ describe('player creation and deletion', () => {
       startLocation: location, location: game.locations.find(l => l.id === location),
       level: 3, availableStats: 8, coins: 50, team: 'red',
     });
+    const equipment = saved.players[0].equipment;
+    expect(equipment.map(item => item.type)).toEqual([
+      ...characters.mage.equipment.map(item => item.id),
+      ...customStarter.equipment.map(item => item.id),
+    ]);
+    expect(new Set(equipment.map(item => item.id)).size).toBe(equipment.length);
     expect(saved.visited).toEqual([10, location]);
     expect(saved.visitedPortals).toEqual(game.portalLocations?.includes(location) ? [10, location] : []);
   });

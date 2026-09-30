@@ -20,7 +20,6 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.swordRusty,
       allItems.healingPotion,
       allItems.healingPotion,
-      allItems.resurrectionStore,
     ],
     spells: [],
   },
@@ -41,7 +40,6 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.staffSkull,
       allItems.healingPotion,
       allItems.manaPotion,
-      allItems.resurrectionStore,
       allItems.iceStormScroll,
     ],
     spells: [
@@ -66,7 +64,6 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.bowWarped,
       allItems.healingPotion,
       allItems.healingPotion,
-      allItems.resurrectionStore,
     ],
     spells: [],
   },
@@ -87,9 +84,7 @@ export const characters: { [id: string]: CharacterListEntry } = {
       allItems.staffOrb,
       allItems.healingPotion,
       allItems.manaPotion,
-      allItems.resurrectionStore,
       allItems.fireBallScroll,
-      allItems.animateCorpseScroll
     ],
     spells: [
       SpellIds.spiritArrow,

@@ -172,8 +172,12 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       };
     }
 
-    const equipment = characterDef.equipment.map(e => createItemForInventory(gameState, e));
     const starterPlayer = gameRunners[gameDef.id].gameCreation.createStarterPlayer();
+
+    const equipment = [
+      ...characterDef.equipment,
+      ...starterPlayer.equipment,
+    ].map(e => createItemForInventory(gameState, e));
 
     const newPlayer: PlayerState = {
       id: playerId,

@@ -1,3 +1,4 @@
+import { allItems } from "@/lib/games/items";
 import { GameCreation, StarterPlayer } from "../types";
 
 const INITIAL_AVAILABLE_STATS = 5;
@@ -11,6 +12,7 @@ export function createStarterPlayer(): StarterPlayer {
     availableStats: INITIAL_AVAILABLE_STATS,
     coins: INITIAL_COINS,
     team: 'good',
+    equipment: [allItems.resurrectionStore],
   };
 }
 

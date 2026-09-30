@@ -20,7 +20,7 @@ it('places both dragons with spells and distributes uniquely identified loot', a
   expect(params.items.every(i => [202, 136].includes(i.location))).toBe(true);
 });
 
-it('erupts after the scheduled turn, killing occupants and destroying shops in lava', async () => {
+it('warns for one turn after the scheduled eruption before killing occupants and destroying shops in lava', async () => {
   const params = createParams({ monsters: [createMonster({ location: 162 })] });
   params.gameState.players[0].location.id = 162;
   params.gameState.npcs = [createNpc({ location: { id: 162, description: '', move: [] } })];
@@ -28,7 +28,19 @@ it('erupts after the scheduled turn, killing occupants and destroying shops in l
   params.gameState.processState.dragons = { lastLava: 0, nextLava: 3 };
   await dragons.executeForTurn!(params);
   expect(params.gameState.players[0].health).toBe(20);
+  expect(params.gameState.leds).toEqual([]);
+
   params.gameState.turn = 4;
+  await dragons.executeForTurn!(params);
+  expect(params.gameState.players[0].health).toBe(20);
+  expect(params.gameState.players[0].respawnTurns).toBeUndefined();
+  expect(params.gameState.npcs[0].health).toBe(20);
+  expect(params.monsters).toEqual([expect.objectContaining({ type: 'rat', health: 5 })]);
+  expect(params.gameState.stores).toEqual([162, 1]);
+  expect(params.gameState.locationOverrides).toEqual([]);
+  expect(params.gameState.leds).toContainEqual({ location: 162, owner: 'dragons', rgb: '9E4217' });
+
+  params.gameState.turn = 5;
   await dragons.executeForTurn!(params);
   expect(params.gameState.players[0]).toMatchObject({ health: 0, respawnTurns: 6 });
   expect(params.gameState.npcs[0].health).toBe(0);
