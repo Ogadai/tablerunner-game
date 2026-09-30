@@ -1,7 +1,7 @@
 'use server'
 
 import { GameState, MonsterState } from "../store/types";
-import { getMonsters as cauldronOfFireMonsters } from '../games/maps/cauldron-of-fire/index';
+import { getMonsters as cauldronOfFireMonsters } from '../runner/cauldron-of-fire/monsters';
 
 type MonsterFunction = (gameState: GameState, playerCount: number) => Promise<MonsterState[]>;
 

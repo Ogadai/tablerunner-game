@@ -1,6 +1,6 @@
-import { Location } from '../../types';
+import { Location } from '../types';
 
-export const cauldronOfFireLocations: Location[] = [
+export const sharedLocations: Location[] = [
   {
     "id": 1,
     "description": "A wide open cave with a high ceiling and a dripping sound. Another tunnel leads East",

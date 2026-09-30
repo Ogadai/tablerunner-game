@@ -1,12 +1,10 @@
-import { cauldronOfFireLocations } from './locations';
+import { sharedLocations } from '../shared-locations';
 import { cauldronOfFireItems } from './items';
 import { cauldronOfFireStoreItems } from './stores';
 import { cauldronOfFirePortals } from './portals';
 
 import { GameListEntry } from '../../types';
 import { characters } from '../../characters';
-
-export { getMonsters } from './monsters';
 
 export const cauldronOfFire: GameListEntry = {
   id: 'cauldronfire',
@@ -20,7 +18,7 @@ export const cauldronOfFire: GameListEntry = {
     { ...characters.mage },
     { ...characters.ranger }
   ],
-  locations: cauldronOfFireLocations,
+  locations: sharedLocations,
   itemLocations: cauldronOfFireItems,
   storeItems: cauldronOfFireStoreItems,
   portalLocations: cauldronOfFirePortals,
