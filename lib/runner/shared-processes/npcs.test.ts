@@ -15,7 +15,7 @@ jest.mock('../../games/npc-details', () => ({
 }));
 afterEach(() => jest.restoreAllMocks());
 
-it.each([[0, 8, true], [0.5, 14, false]] as const)('generates populated NPCs at configured shops (%s)', async (roll, count, caster) => {
+it.each([[0, 11, true], [0.5, 17, false]] as const)('generates populated NPCs at configured shops (%s)', async (roll, count, caster) => {
   jest.spyOn(Math, 'random').mockReturnValue(roll);
   const params = createParams();
   await npcs.setup!(params);
@@ -23,7 +23,7 @@ it.each([[0, 8, true], [0.5, 14, false]] as const)('generates populated NPCs at 
   expect(generated).toHaveLength(count);
   expect(new Set(generated.map(n => n.id)).size).toBe(count);
   expect(new Set(generated.map(n => n.name)).size).toBe(count);
-  expect(new Set(generated.map(n => n.location.id))).toEqual(new Set(roll === 0 ? [110, 58, 22, 121, 23] : [110, 91, 58, 22, 121, 23]));
+  expect(new Set(generated.map(n => n.location.id))).toEqual(new Set([110, 91, 58, 22, 121, 23]));
   for (const npc of generated) {
     expect(npc.health).toBe(npc.baseStats!.health);
     expect(npc.hireCost).toBeGreaterThanOrEqual(60);
