@@ -1,17 +1,17 @@
 import { sharedLocations } from '../shared-locations';
-import { cauldronOfFireItems } from './items';
-import { cauldronOfFireStoreItems } from './stores';
-import { cauldronOfFirePortals } from './portals';
+import { cauldronOfFireItems } from '../cauldron-of-fire/items';
+import { cauldronOfFireStoreItems } from '../cauldron-of-fire/stores';
+import { cauldronOfFirePortals } from '../cauldron-of-fire/portals';
 
 import { GameListEntry } from '../../types';
 import { characters } from '../../characters';
 
-export const cauldronOfFire: GameListEntry = {
-  id: 'cauldronfire',
-  name: 'Cauldron of Fire',
+export const raceOfFire: GameListEntry = {
+  id: 'racefire',
+  name: 'Race of Fire',
   map: 'cauldron',
-  description: 'Explore the lands of the volcano and defeat the evil Lich King.',
-  heroImage: '/hero-barbarian-witch.png',
+  description: 'Race to be first to collect 3 Fire Crystal Shards and take them to the castle.',
+  heroImage: '/hero-race.png',
   characters: [
     { ...characters.barbarian },
     { ...characters.witch },
@@ -23,4 +23,3 @@ export const cauldronOfFire: GameListEntry = {
   storeItems: cauldronOfFireStoreItems,
   portalLocations: cauldronOfFirePortals,
 };
-

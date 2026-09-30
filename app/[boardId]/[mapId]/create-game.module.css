@@ -9,9 +9,16 @@
 .gameList {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+  overflow-y: auto;
 
   li {
     margin: 0 5px;
+    min-width: 300px;
     max-width: 400px;
   }
+}
+
+.gameDescription {
+  margin: 10px 0;
 }

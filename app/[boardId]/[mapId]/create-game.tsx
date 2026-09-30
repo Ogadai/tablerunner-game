@@ -54,7 +54,7 @@ export default function CreateGame(
                 alt="The Hero image for TableRunner, showing a barbarian and a witch"
               />
 
-              <p>{game.description}</p>
+              <p className={styles.gameDescription}>{game.description}</p>
               <button type="submit">New Game</button>
             </form>
           </div>

@@ -335,13 +335,26 @@ export const keyItems: Record<string, ConsumableItemDef> = {
   },
 };
 
-export type ItemIds = EquipableIds | ConsumableIds | ScrollIds | KeyIds;
+export enum SpecialIds {
+  fireCrystalShard = 'fireCrystalShard',
+}
+export const specialItems: Record<string, ItemDef> = {
+  [SpecialIds.fireCrystalShard]: {
+    id: SpecialIds.fireCrystalShard.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Fire Crystal Shard',
+    iconXY: { x: 6, y: 8 },
+  }
+};
+
+export type ItemIds = EquipableIds | ConsumableIds | ScrollIds | KeyIds | SpecialIds;
 
 export const allItems: Record<string, ItemDef> = {
   ...equipableItems,
   ...consumableItems,
   ...scrollItems,
   ...keyItems,
+  ...specialItems,
 };
 
 const excludeFromLoot: string[] = [
@@ -351,7 +364,8 @@ const excludeFromLoot: string[] = [
   EquipableIds.bowLegendary,
   EquipableIds.staffSun,
   EquipableIds.staffEarth,
-  ...Object.keys(keyItems)
+  ...Object.keys(keyItems),
+  ...Object.keys(specialItems)
 ];
 export const lootItems: ItemDef[] =
   Object.values(allItems)
