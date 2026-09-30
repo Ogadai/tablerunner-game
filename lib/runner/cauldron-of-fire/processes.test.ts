@@ -2,14 +2,14 @@
 import { cauldronOfFireProcesses } from './processes';
 import { keyProcess } from './key-processes';
 import { lichKing } from './lich-king';
-import { dragons } from './dragons';
+import { dragons } from '../shared-processes/dragons';
 import { createParams } from '../test-support/fixtures';
 
 jest.mock('./key-processes', () => ({ keyProcess: { setup: jest.fn(), initialiseForTurn: jest.fn(), executeForTurn: jest.fn(), executeBetweenTurns: jest.fn() } }));
 jest.mock('./lich-king', () => ({ lichKing: { setup: jest.fn(), initialiseForTurn: jest.fn(), executeForTurn: jest.fn(), executeBetweenTurns: jest.fn() } }));
-jest.mock('./dragons', () => ({ dragons: { setup: jest.fn(), initialiseForTurn: jest.fn(), executeForTurn: jest.fn(), executeBetweenTurns: jest.fn() } }));
-jest.mock('./npcs', () => ({ npcs: {} }));
-jest.mock('./zombies', () => ({ zombies: {} }));
+jest.mock('../shared-processes/dragons', () => ({ dragons: { setup: jest.fn(), initialiseForTurn: jest.fn(), executeForTurn: jest.fn(), executeBetweenTurns: jest.fn() } }));
+jest.mock('../shared-processes/npcs', () => ({ npcs: {} }));
+jest.mock('../shared-processes/zombies', () => ({ zombies: {} }));
 jest.mock('./invasions', () => ({ invasions: {} }));
 afterEach(() => jest.restoreAllMocks());
 

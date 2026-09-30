@@ -3,10 +3,10 @@ import { ProcessRunner } from "../types";
 
 import { keyProcess } from './key-processes';
 import { lichKing } from './lich-king';
-import { zombies } from './zombies';
-import { npcs } from './npcs';
+import { zombies } from '../shared-processes/zombies';
+import { npcs } from '../shared-processes/npcs';
 import { invasions } from './invasions';
-import { dragons } from './dragons';
+import { dragons } from '../shared-processes/dragons';
 
 const allProcesses = [keyProcess, lichKing, zombies, npcs, invasions, dragons];
 
