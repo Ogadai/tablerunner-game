@@ -1,8 +1,9 @@
 import { BaseParams } from '../base-params';
 import { ProcessRunner } from '../types';
 import { shardProcess } from './shards';
+import { dragons } from '../cauldron-of-fire/dragons';
 
-const allProcesses = [shardProcess];
+const allProcesses = [shardProcess, dragons];
 
 export const raceOfFireProcesses: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
