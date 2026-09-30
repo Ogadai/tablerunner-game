@@ -5,6 +5,7 @@ import { NPC_DATA, NPC_NAMES } from '@/lib/games/npc-details';
 import { NPCState } from "@/lib/store/types";
 import { BaseStats, PlayerItem } from "@/lib/games/types";
 import { SpellIds } from "@/lib/games/spells";
+import { getNamedTargetStats } from "@/lib/store/playerStats";
 
 interface IMapNpc { location: number, min: number, max: number, from: number, to: number };
 
@@ -145,21 +146,21 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
   }
 
   const equipment = getNpcEquipment(npcId, type);
+  const equipped = { weapon: equipment[0].id };
+  const stats = getNamedTargetStats(baseStats, { equipment, equipped });
   return {
     id: npcId,
     masterId: null,
     name: name,
     location: { id: mapNpc.location, description: '', move: [] },
-    magic: 0,
+    magic: stats.magic,
     spells: getNpcSpells(type),
     equipment: equipment,
-    equipped: {
-      weapon: equipment[0].id,
-    },
+    equipped: equipped,
     baseStats: baseStats,
     hireCost: cost,
     iconXY: iconXY,
-    health: baseStats.health,
+    health: stats.health,
     team: null,
   };
 }

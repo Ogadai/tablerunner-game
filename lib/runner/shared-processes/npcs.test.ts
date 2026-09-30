@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { npcs } from './npcs';
-import { ConsumableIds, EquipableIds } from '../../games/items';
+import { allItems, ConsumableIds, EquipableIds } from '../../games/items';
 import { createParams } from '../test-support/fixtures';
 
 // Keep name availability independent of the production name catalogue.
@@ -25,7 +25,9 @@ it.each([[0, 11, true], [0.5, 17, false]] as const)('generates populated NPCs at
   expect(new Set(generated.map(n => n.name)).size).toBe(count);
   expect(new Set(generated.map(n => n.location.id))).toEqual(new Set([110, 91, 58, 22, 121, 23]));
   for (const npc of generated) {
-    expect(npc.health).toBe(npc.baseStats!.health);
+    const weaponBonuses = allItems[npc.equipment[0].type].bonusStats;
+    expect(npc.health).toBe(npc.baseStats!.health + (weaponBonuses?.health ?? 0));
+    expect(npc.magic).toBe(npc.baseStats!.magic + (weaponBonuses?.magic ?? 0));
     expect(npc.hireCost).toBeGreaterThanOrEqual(60);
     expect(npc.masterId).toBeNull();
     expect(npc.equipment[0].type).toBe(caster ? EquipableIds.staffRuby : EquipableIds.bowElven);
