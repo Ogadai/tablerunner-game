@@ -1,6 +1,5 @@
 import {
   PlayerActionMove,
-  PlayerState,
   PlayerActionAttack,
   PlayerActionType,
   PlayerAction,
@@ -27,7 +26,7 @@ import { actionCastSpell, actionReadScroll } from './game-action-spell';
 import { actionMove, actionRespawn } from "./game-action-move";
 import { actionFastTravel, actionPortal } from "./game-action-portal";
 import { actionUseItem } from './game-action-use';
-import { getCombatActions, getNpcActions } from "./game-npc-actions";
+import { getNpcActions } from "./game-npc-actions";
 
 import { getMonsterCombatant } from './monster-combatant';
 import { games } from '../games/games';
@@ -150,9 +149,9 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
           let actions: PlayerAction[];
           if (monster.scriptedActions) {
             const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
-            actions = queued?.actions ?? getCombatActions(params, combatant).actions;
+            actions = queued?.actions ?? getNpcActions(params, combatant).actions;
           } else if (combatant.spells.length > 0) {
-            actions = getCombatActions(params, combatant).actions;
+            actions = getNpcActions(params, combatant).actions;
           } else if (targetsAtLocation.length > 0) {
             const actionsPerTurn = getPlayerActionsPerTurn(combatant);
             const attackCount = Math.floor(actionsPerTurn.total / actionsPerTurn.attack);
@@ -317,9 +316,7 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
             actionCastSpell(params, character, nextAction as PlayerActionCast);
             break;
           case PlayerActionType.ReadScroll:
-            if (entityActions.entityType === EntityActionEntityTypes.player) {
-              actionReadScroll(params, character as PlayerState, nextAction as PlayerActionReadScroll);
-            }
+            actionReadScroll(params, character, nextAction as PlayerActionReadScroll);
             break;
         }
       }

@@ -14,7 +14,7 @@ jest.mock('./game-action-attack', () => ({ actionAttack: jest.fn(), monsterAttac
 jest.mock('./game-action-move', () => ({ actionMove: jest.fn(), actionRespawn: jest.fn() }));
 jest.mock('./game-action-spell', () => ({ actionCastSpell: jest.fn(), actionReadScroll: jest.fn() }));
 jest.mock('./game-action-use', () => ({ actionUseItem: jest.fn() }));
-jest.mock('./game-npc-actions', () => ({ getNpcActions: jest.fn(), getCombatActions: jest.fn(() => ({ actions: [] })) }));
+jest.mock('./game-npc-actions', () => ({ getNpcActions: jest.fn() }));
 jest.mock('../games/games', () => ({ games: [{ id: 'test-game', locations: [{ id: 1, move: [{ id: 2, direction: 'e' }] }] }] }));
 
 const attack = (id: number): PlayerActionAttack => ({ id, type: PlayerActionType.Attack, target: 'rat', description: '' });

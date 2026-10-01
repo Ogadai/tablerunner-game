@@ -2,7 +2,7 @@ import { scrollItems } from "../games/items";
 import { monsters } from "../games/monsters";
 import { SpellIds, spells } from "../games/spells";
 import { SpellDef } from "../games/types";
-import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll, PlayerState } from "../store/types";
+import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll } from "../store/types";
 import { BaseParams } from "./base-params";
 import { genericAttackMonster, handlePlayerIsDead, processAttackForDamage } from "./game-action-attack";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
@@ -126,23 +126,24 @@ function applySpellEffects(
   }
 }
 
-export function actionReadScroll(params: BaseParams, player: PlayerState, action: PlayerActionReadScroll): void {
-  const item = player.equipment.find(item => item.id === action.itemId);
+export function actionReadScroll(params: BaseParams, character: INamedTarget, action: PlayerActionReadScroll): void {
+  const item = character.equipment.find(item => item.id === action.itemId);
   const scrollItem = item && scrollItems[item.type];
 
   if (scrollItem) {
     const spell = spells[scrollItem.spellId];
+    const characterStats = getCombatStats(character);
 
-    if (player.baseStats!.magic >= spell.intelligence
-      && !player.spells.includes(scrollItem.spellId as SpellIds)
+    if (characterStats.magic >= spell.intelligence
+      && !character.spells.includes(scrollItem.spellId as SpellIds)
     ) {
-      player.spells = [
-        ...player.spells,
+      character.spells = [
+        ...character.spells,
         scrollItem.spellId as SpellIds
       ];
-      player.equipment = player.equipment.filter(e => e.id !== action.itemId);
+      character.equipment = character.equipment.filter(e => e.id !== action.itemId);
 
-      soloMessageAtLocation(params, player.id, `{player} learned **${spell.name}**`);
+      soloMessageAtLocation(params, character.id, `{player} learned **${spell.name}**`);
     }
   }
 }

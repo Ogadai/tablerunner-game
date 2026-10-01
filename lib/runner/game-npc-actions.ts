@@ -1,9 +1,9 @@
-import { ConsumableIds, consumableItems } from "../games/items";
+import { allItems, ConsumableIds, consumableItems } from "../games/items";
 import { monsters } from "../games/monsters";
 import { getSpellActionCost, SpellIds, spells } from "../games/spells";
-import { SpellDef } from "../games/types";
-import { getPlayerActionsPerTurn, PlayerActionsPerTurn } from "../store/playerStats";
-import { INamedTarget, ITarget, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem } from "../store/types";
+import { PlayerItemType, ScrollItemDef, SpellDef } from "../games/types";
+import { getCombatStats, getPlayerActionsPerTurn, LEARN_SCROLL_ACTION_COST, PlayerActionsPerTurn } from "../store/playerStats";
+import { INamedTarget, ITarget, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem } from "../store/types";
 import { BaseParams } from "./base-params";
 
 import { getAvailableSpellTargets, isMonsterCaster } from './spell-targets';
@@ -27,27 +27,28 @@ interface ActionsList extends ValueBase {
   actions: PlayerAction[];
 }
 
-export function getCombatActions(params: BaseParams, npc: INamedTarget): PlayerActionsState {
+export function getNpcActions(params: BaseParams, npc: INamedTarget): PlayerActionsState {
   try {
-    if (npc.health <= 0) return { actions: [] };
-    const actionsPerTurn = getPlayerActionsPerTurn(npc);
+    const combatant = { ...npc, baseStats: getCombatStats(npc) };
+    if (combatant.health <= 0) return { actions: [] };
+    const actionsPerTurn = getPlayerActionsPerTurn(combatant);
 
     let nextId = 1;
-    const actionsWithCosts = getAvailableActions(params, npc, actionsPerTurn)
+    const actionsWithCosts = getAvailableActions(params, combatant, actionsPerTurn)
       .map(a => ({ ...a, action: { ...a.action, id: nextId++ } }));
     if (actionsWithCosts.length === 0) {
       return { actions: [] };
     }
 
     const candidates = [
-      pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic, npc.baseStats!.magic),
+      pickActions(actionsWithCosts, actionsPerTurn.total, combatant.magic, combatant.baseStats!.magic),
     ];
 
     if (actionsWithCosts.length > 1) {
-      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic, npc.baseStats!.magic));
+      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, combatant.magic, combatant.baseStats!.magic));
     }
     if (actionsWithCosts.length > 2) {
-      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, npc.magic, npc.baseStats!.magic));
+      candidates.push(pickActions(actionsWithCosts, actionsPerTurn.total, combatant.magic, combatant.baseStats!.magic));
     }
 
     return {
@@ -73,6 +74,15 @@ function getAvailableActions(params: BaseParams, npc: INamedTarget, actionsPerTu
 
   actions.push(getHealPotionAction(params, npc));
   actions.push(getMagicPotionAction(params, npc));
+
+  for(const item of npc.equipment) {
+    const itemDef = allItems[item.type];
+    if (itemDef.type === PlayerItemType.scroll) {
+      actions.push(
+        getLearnScrollActions(params, npc, item.id, itemDef as ScrollItemDef)
+      );
+    }
+  }
 
   for(const spellId of npc.spells) {
     actions.push(
@@ -156,6 +166,29 @@ function getMagicPotionAction(params: BaseParams, npc: INamedTarget): ActionsWit
         value: magic * (1 + (npc.baseStats!.magic - npc.magic) / npc.baseStats!.magic),
         restoreMagic: magic,
         priority: npc.spells.length > 0 && npc.spells.every(id => spells[id].magicCost > npc.magic) ? 1 : 0,
+        action
+      };
+    }
+  }
+  return null;
+}
+
+function getLearnScrollActions(params: BaseParams, npc: INamedTarget, itemId: string, scroll: ScrollItemDef): ActionsWithCosts | null {
+  if (!npc.spells.includes(scroll.spellId as SpellIds)) {
+    const spell = spells[scroll.spellId];
+    if (spell.intelligence <= npc.baseStats!.magic) {
+      const action: PlayerActionReadScroll = {
+        id: -1,
+        itemId: itemId,
+        type: PlayerActionType.ReadScroll,
+        description: `Read ${scroll.name}`
+      };
+
+      return {
+        cost: LEARN_SCROLL_ACTION_COST,
+        magic: 0,
+        value: 1,
+        priority: 0,
         action
       };
     }
@@ -279,5 +312,3 @@ function weightedRandomPick<T extends ValueBase>(list: T[]): T {
   return list[list.length - 1];
 }
 
-// Preserve the NPC entry point for callers.
-export const getNpcActions = getCombatActions;

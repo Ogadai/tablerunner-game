@@ -4,24 +4,27 @@ import { BaseParams } from './base-params';
 import { playerMessageAtLocation } from './game-messages';
 import { allItems } from "../games/items";
 import { specialItemActions } from './special-item-actions';
+import { getCombatStats } from "../store/playerStats";
 
 export function actionUseItem(params: BaseParams, player: INamedTarget, action: PlayerActionUseItem): void {
   const item = player.equipment.find(item => item.id === action.itemId);
   const usableItem = item && allItems[item.type] as ConsumableItemDef;
 
   if (usableItem) {
+    const characterStats = getCombatStats(player);
+
     const benefitDescriptions: string[] = [];
     // Apply benefit
     if (usableItem.bonusStats?.health) {
       const addedHealth = Math.min(usableItem.bonusStats?.health,
-        player.baseStats!.health - player.health);
+        characterStats.health - player.health);
       player.health += addedHealth;
 
       benefitDescriptions.push(`**${addedHealth}** health`);
     }
     if (usableItem.bonusStats?.magic) {
       const addedmagic = Math.min(usableItem.bonusStats?.magic,
-        player.baseStats!.magic - player.magic);
+        characterStats.magic - player.magic);
       player.magic += addedmagic;
 
       benefitDescriptions.push(`**${addedmagic}** magic`);
