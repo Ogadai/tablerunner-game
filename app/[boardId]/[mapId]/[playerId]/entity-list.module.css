@@ -1,10 +1,37 @@
+.entityList {
+  display: flex;
+  max-width: 100%;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  padding-left: 3px;
+}
+
+.entityListItem {
+  display: block;
+  flex: 0 1 auto;
+  position: relative;
+  overflow-x: visible;
+  width: 69px;
+  height: 98px;
+
+  margin: 2px 0 5px 0;
+  padding-right: 5px;
+  transform: rotateZ(-2deg);
+
+  &.main {
+    flex-shrink: 0;
+  }
+}
 
 .entity {
-  display: inline-block;
-  position: relative;
+  position: absolute;
+  background-color: var(--bg-main);
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.3);
+  left: 0;
+  width: 64px;
   padding: 5px;
   border-radius: 3px;
-  margin: 0 5px 5px 0;
   line-height: 1;
   cursor: pointer;
 
@@ -45,6 +72,7 @@
 
 .self {
   border: 2px solid var(--color-self);
+  flex-shrink: 0;
 }
 
 .friendly {

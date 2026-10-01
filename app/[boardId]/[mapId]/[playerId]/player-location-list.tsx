@@ -3,7 +3,7 @@ import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
 import { getDisplayName, getMonsterName, INamedTarget, MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
-import EntityList, { EntityItemDetail } from './entity-list';
+import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
 import { allItems } from "@/lib/games/items";
@@ -148,8 +148,14 @@ export default function PlayerLocationList({
     .filter(a => a.type === PlayerActionType.UseItem ||  a.type === PlayerActionType.ReadScroll)
     .map(a => (a as PlayerActionUseItem).itemId || '');
 
+  const friendlyEntities = entities.filter(e => e.className !== EntityItemClass.enemy);
+  const enemyEntities = entities.filter(e => e.className === EntityItemClass.enemy);
+
   return (<>
-    <EntityList entities={entities} onClickEntity={onClickEntity} />
+    <div className={styles.entityLists}>
+      <EntityList entities={friendlyEntities} onClickEntity={onClickEntity} />
+      <EntityList entities={enemyEntities} onClickEntity={onClickEntity} />
+    </div>
 
     <LocationItemList items={locationItems} onTakeItem={onTakeItem} />
 

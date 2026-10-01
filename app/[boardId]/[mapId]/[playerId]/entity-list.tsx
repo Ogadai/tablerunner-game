@@ -36,14 +36,15 @@ export default function EntityList({
   }
 
   return (
-    <ul>
-      {entities.map(entity => (
+    <ul className={styles.entityList}>
+      {entities.map((entity, i) => (
         <li
           key={entity.id}
           aria-label={entity.name}
           title={entity.name}
           tabIndex={onClickEntity ? 0 : undefined}
-          className={`${styles.entity} ${styles[entity.className]} ${entity.levelUp ? styles.levelUp : ''}`}
+          className={`${styles.entityListItem} ${i === entities.length - 1 ? styles.main : ''}`}
+            style={{ zIndex: entities.length - i }}
           onClick={() => onClickEntity?.(entity)}
           onKeyDown={event => {
             if (onClickEntity && (event.key === 'Enter' || event.key === ' ')) {
@@ -52,22 +53,26 @@ export default function EntityList({
             }
           }}
         >
-          <span className={styles.entityIcon}
-            style={{
-              backgroundPosition: `-${entity.iconXY.x * 50}px -${entity.iconXY.y * 80}px`,
-            }}
-          />
+          <div
+            className={`${styles.entity} ${styles[entity.className]} ${entity.levelUp ? styles.levelUp : ''}`}
+          >
+            <span className={styles.entityIcon}
+              style={{
+                backgroundPosition: `-${entity.iconXY.x * 50}px -${entity.iconXY.y * 80}px`,
+              }}
+            />
 
-          { entity.health > 0 && entity.health < entity.maxHealth &&
-            <div
-              className={`${styles.healthBar} ${getHealthClass(entity)}`}
-              style={{ height: `${100 * entity.health / entity.maxHealth}%` }}
-            ></div>
-          }
+            { entity.health > 0 && entity.health < entity.maxHealth &&
+              <div
+                className={`${styles.healthBar} ${getHealthClass(entity)}`}
+                style={{ height: `${100 * entity.health / entity.maxHealth}%` }}
+              ></div>
+            }
 
-          { entity.health <= 0 &&
-            <div className={`${styles.playerDead} material-symbols-outlined`}>skull</div>
-          }
+            { entity.health <= 0 &&
+              <div className={`${styles.playerDead} material-symbols-outlined`}>skull</div>
+            }
+          </div>
         </li>
       ))}
     </ul>

@@ -27,7 +27,7 @@ describe('EntityList', () => {
     const { container } = render(<EntityList entities={entities} onClickEntity={onClickEntity} />);
     expect(screen.getByText('skull')).toBeInTheDocument();
     expect(container.querySelector('.healthBar')).toBeNull();
-    expect(screen.getAllByRole('listitem')[1]).toHaveClass('levelUp');
+    expect(screen.getAllByRole('listitem')[1].getElementsByTagName('div')[0]).toHaveClass('levelUp');
     fireEvent.click(screen.getAllByRole('listitem')[1]);
     expect(onClickEntity).toHaveBeenCalledWith(entities[1]);
   });
