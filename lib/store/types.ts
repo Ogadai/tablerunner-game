@@ -86,6 +86,7 @@ export interface PlayerState extends INamedTarget {
 }
 
 export interface NPCState extends INamedTarget {
+  characterType?: 'barbarian' | 'witch' | 'ranger' | 'mage';
   masterId: string | null;
   hireCost: number;
   iconXY: { x: number, y: number };

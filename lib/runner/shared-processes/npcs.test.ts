@@ -25,6 +25,7 @@ it.each([[0, 11, true], [0.5, 17, false]] as const)('generates populated NPCs at
   expect(new Set(generated.map(n => n.name)).size).toBe(count);
   expect(new Set(generated.map(n => n.location.id))).toEqual(new Set([110, 91, 58, 22, 121, 23]));
   for (const npc of generated) {
+    expect(npc.characterType).toBe(caster ? 'witch' : 'ranger');
     const weaponBonuses = allItems[npc.equipment[0].type].bonusStats;
     expect(npc.health).toBe(npc.baseStats!.health + (weaponBonuses?.health ?? 0));
     expect(npc.magic).toBe(npc.baseStats!.magic + (weaponBonuses?.magic ?? 0));

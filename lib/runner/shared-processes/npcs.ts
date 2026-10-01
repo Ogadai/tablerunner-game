@@ -150,6 +150,7 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
   const stats = getNamedTargetStats(baseStats, { equipment, equipped });
   return {
     id: npcId,
+    characterType: type,
     masterId: null,
     name: name,
     location: { id: mapNpc.location, description: '', move: [] },

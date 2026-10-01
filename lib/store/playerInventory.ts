@@ -195,7 +195,7 @@ async function transferNpcItem(
       const item = removeItemFromPlayer(npc, npcInventory, itemId);
       addItemToPlayer(player, playerInventory, item);
     }
-    equipBestNpcItems(npcInventory);
+    equipBestNpcItems(npc, npcInventory);
 
     // Commit both sides together while excluding other inventory writes and turn processing.
     await setCharacterInventoriesInRedis(boardId, mapId, inventories);
