@@ -145,7 +145,7 @@ export default function PlayerLocationList({
   const actionPointsLeft = playerStats.actionPointsTotal - playerStats.actionPointsUsed;
   const canAttack = actionPointsLeft >= playerStats.actionsPerTurn.attack;
   const usedItemIds = actionsState.actions
-    .filter(a => a.type === PlayerActionType.UseItem)
+    .filter(a => a.type === PlayerActionType.UseItem ||  a.type === PlayerActionType.ReadScroll)
     .map(a => (a as PlayerActionUseItem).itemId || '');
 
   return (<>

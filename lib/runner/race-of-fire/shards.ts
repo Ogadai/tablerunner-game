@@ -39,6 +39,13 @@ const shardVideos = [
   VideoNames.fireCrystalShardFound3
 ];
 
+const winnerVideos: { [key: string]: VideoNames } = {
+  barbarian: VideoNames.barbarianWins,
+  witch: VideoNames.witchWins,
+  ranger: VideoNames.rangerWins,
+  mage: VideoNames.mageWins
+};
+
 export const shardProcess: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
     // Make portals "visited"
@@ -73,8 +80,11 @@ export const shardProcess: ProcessRunner = {
     const shardItem = allItems[SpecialIds.fireCrystalShard];
 
     for(const location of locations.values()) {
+      const players = params.gameState.players.filter(p => p.location.id === location);
+
       if (preloadLocations.includes(location)) {
-        await publishPreloadVideo(params.boardId, params.mapId, VideoNames.fireCrystalShardWin);
+        const winVideo = winnerVideos[players[0].id] || VideoNames.fireCrystalShardWin;
+        await publishPreloadVideo(params.boardId, params.mapId, winVideo);
       }
 
       const shards = params.items.filter(i => i.location === location && i.type === SpecialIds.fireCrystalShard);
@@ -82,7 +92,6 @@ export const shardProcess: ProcessRunner = {
         const playerShardCount = (player: PlayerState) =>
             player.equipment.filter(i => i.type === SpecialIds.fireCrystalShard).length;
 
-        const players = params.gameState.players.filter(p => p.location.id === location);
         const mostShardCount = Math.min(2,
           players.reduce((count, player) => Math.max(count, playerShardCount(player)), 0)
         );
@@ -108,10 +117,12 @@ export const shardProcess: ProcessRunner = {
       }
     }
 
+    let winVideo: VideoNames | undefined;
     if (!state.winner) {
       const finishPlayers = params.gameState.players.filter(p => p.location.id === FINISH_LOCATION
         && p.equipment.filter(i => i.type === SpecialIds.fireCrystalShard).length >= SHARDs_REQUIRED
       );
+      winVideo = winnerVideos[finishPlayers[0].id] || VideoNames.fireCrystalShardWin;
 
       for(const player of finishPlayers) {
         playerMessageAtLocation(params, player.id,
@@ -126,7 +137,7 @@ export const shardProcess: ProcessRunner = {
       }
 
       if (state.winner) {
-        await publishPlayVideo(params.boardId, params.mapId, VideoNames.fireCrystalShardWin);
+        await publishPlayVideo(params.boardId, params.mapId, winVideo);
       }
     }
 
