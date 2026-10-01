@@ -4,7 +4,19 @@ import { PlayerItem } from '@/lib/games/types';
 import { allItems } from '@/lib/games/items';
 import InventoryItem from './inventory-item';
 
-export default function Inventory({ player, isSelf, actionPointsLeft, isDead, onEquipItem, onUseItem, onDropItem, onLearnScroll, usedItemIds }: {
+export default function Inventory({
+  player,
+  isSelf,
+  actionPointsLeft,
+  isDead,
+  onEquipItem,
+  onUseItem,
+  onDropItem,
+  onGiveItem,
+  onTakeItem,
+  onLearnScroll,
+  usedItemIds
+}: {
   player: INamedTarget;
   isSelf: boolean,
   actionPointsLeft: number;
@@ -12,6 +24,8 @@ export default function Inventory({ player, isSelf, actionPointsLeft, isDead, on
   onEquipItem: (item: PlayerItem) => void;
   onUseItem: (item: PlayerItem) => void;
   onDropItem: (item: PlayerItem) => void;
+  onGiveItem?: (item: PlayerItem) => void;
+  onTakeItem?: (item: PlayerItem) => void;
   onLearnScroll: (item: PlayerItem) => void;
   usedItemIds: string[];
 }) {
@@ -38,6 +52,8 @@ export default function Inventory({ player, isSelf, actionPointsLeft, isDead, on
           onEquipped={() => onEquipItem(item)}
           onUsed={() => onUseItem(item)}
           onDropped={() => onDropItem(item)}
+          onGive={onGiveItem ? () => onGiveItem(item) : undefined}
+          onTake={onTakeItem ? () => onTakeItem(item) : undefined}
           onLearnScroll={() => onLearnScroll(item)}
         />;
       })}

@@ -22,6 +22,7 @@ export default function CharacterCard({
   onLearnScroll,
   usedItemIds,
   onHired,
+  followerNPCs,
 }: {
   boardId: string;
   mapId: string;
@@ -34,6 +35,7 @@ export default function CharacterCard({
   onLearnScroll: (item: PlayerItem) => void;
   usedItemIds: string[];
   onHired: () => void;
+  followerNPCs?: NPCState[];
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
 
@@ -46,6 +48,21 @@ export default function CharacterCard({
     const response = await dropItemAtLocation(boardId, mapId, player.id, item.id);
     playerStatsSyncService.updateInventory(response.data);
   }
+
+  const onTakeItem = ((player as NPCState).masterId === viewer.id && viewer.health > 0)
+    ? async (item: PlayerItem) => {
+      // TODO: remove the item from the NPC's inventory and add it to the player's inventory,
+      // without updating the GameState (i.e. the NPC needs its own PlayerInventoryState that
+      // can be merged into GameState when the next turn runs)
+    } : undefined;
+
+  const onGiveItem = (followerNPCs && followerNPCs.length > 0 && viewer.health > 0)
+    ? async (item: PlayerItem) => {
+      // TODO: show a popup to pick one of the follower NPCS, then (if the user doesn't cancel),
+      // add the item to the follower NPC and remove from the player's inventory,
+      // without updating the GameState (i.e. the NPC needs its own PlayerInventoryState that
+      // can be merged into GameState when the next turn runs)
+    } : undefined;
 
   const playerState = (player as PlayerState).characterStats ? (player as PlayerState) : null;
 
@@ -93,6 +110,8 @@ export default function CharacterCard({
             onUseItem={onUseItem}
             onLearnScroll={onLearnScroll}
             onDropItem={onDropItem}
+            onTakeItem={onTakeItem}
+            onGiveItem={onGiveItem}
             usedItemIds={usedItemIds}
           />}
     </div>

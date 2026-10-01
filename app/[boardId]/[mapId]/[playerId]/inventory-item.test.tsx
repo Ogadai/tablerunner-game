@@ -21,6 +21,30 @@ function setup(overrides: Partial<ComponentProps<typeof InventoryItem>> = {}) {
 }
 
 describe('InventoryItem', () => {
+  it.each(['Give', 'Take'] as const)('calls the supplied %s action', action => {
+    const onGive = jest.fn();
+    const onTake = jest.fn();
+    setup({ onGive, onTake });
+    fireEvent.click(screen.getByRole('button', { name: action }));
+    expect(action === 'Give' ? onGive : onTake).toHaveBeenCalledTimes(1);
+    expect(action === 'Give' ? onTake : onGive).not.toHaveBeenCalled();
+  });
+
+  it.each(['Give', 'Take', undefined] as const)('only offers the supplied optional action: %s', action => {
+    setup({ onGive: action === 'Give' ? jest.fn() : undefined, onTake: action === 'Take' ? jest.fn() : undefined });
+    if (action) expect(screen.getByRole('button', { name: action })).toBeInTheDocument();
+    if (action !== 'Give') expect(screen.queryByRole('button', { name: 'Give' })).not.toBeInTheDocument();
+    if (action !== 'Take') expect(screen.queryByRole('button', { name: 'Take' })).not.toBeInTheDocument();
+  });
+
+  it.each([{ isSelf: false }, { isDead: true }, { isUsed: true }])(
+    'does not offer give or take with %o', overrides => {
+      setup({ onGive: jest.fn(), onTake: jest.fn(), ...overrides });
+      expect(screen.queryByRole('button', { name: 'Give' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Take' })).not.toBeInTheDocument();
+    },
+  );
+
   it.each(['Equip', 'Drop'] as const)('calls %s and closes the details', async action => {
     const props = setup();
     fireEvent.click(screen.getByRole('button', { name: action }));

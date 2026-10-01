@@ -128,6 +128,9 @@ export default function PlayerLocationList({
   const dialogSubTitle = (openCharacter !== null) ? `Level ${openCharacter.level}` : null;
 
   const displayCharacter: INamedTarget | null = openCharacter || npcOpen;
+  const followerNPCs = openCharacter
+    ? npcs.filter(npc => npc.masterId === openCharacter.id)
+    : [];
 
   const onCloseDialog = () => {
     setNpcOpen(null);
@@ -179,6 +182,7 @@ export default function PlayerLocationList({
                 usedItemIds={usedItemIds}
                 onLearnScroll={onLearnScroll}
                 onHired={onHired}
+                followerNPCs={followerNPCs}
               ></CharacterCard>
             }
           </div>

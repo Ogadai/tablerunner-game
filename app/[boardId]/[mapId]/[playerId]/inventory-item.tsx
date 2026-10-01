@@ -19,6 +19,8 @@ export default function InventoryItem({
   onEquipped,
   onUsed,
   onDropped,
+  onGive,
+  onTake,
   onLearnScroll,
   onBuy,
   onSell,
@@ -35,6 +37,8 @@ export default function InventoryItem({
   onEquipped?: () => void;
   onUsed?: () => void;
   onDropped?: () => void;
+  onGive?: () => void;
+  onTake?: () => void;
   onLearnScroll?: () => void;
   onBuy?: () => void;
   onSell?: () => void;
@@ -59,7 +63,7 @@ export default function InventoryItem({
     setIsOpen(false);
     onDropped!();
   }
-  
+
   const onClickBuy = () => {
     setIsOpen(false);
     onBuy!();
@@ -74,6 +78,8 @@ export default function InventoryItem({
   const isConsumable = itemDef.type === PlayerItemType.consumable;
   const canUse = !!onUsed && !isUsed && isConsumable && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
   const canDrop = !!onDropped && !isUsed;
+  const canGive = !!onGive && !isUsed;
+  const canTake = !!onTake && !isUsed;
   const canLearnSpell = !!onLearnScroll && itemDef.type === PlayerItemType.scroll
     && !playerSpells?.includes((itemDef as ScrollItemDef).spellId as SpellIds)
     && baseStats.magic >= spells[(itemDef as ScrollItemDef).spellId].intelligence
@@ -145,6 +151,20 @@ export default function InventoryItem({
                 className={`btn ${styles.equipButton}`}
                 onClick={onLearnScroll}
               >Learn</button>
+            )}
+            {isSelf && !isDead && canGive && (
+              <button
+                type="button"
+                className={`btn ${styles.equipButton}`}
+                onClick={onGive}
+              >Give</button>
+            )}
+            {canTake && (
+              <button
+                type="button"
+                className={`btn ${styles.equipButton}`}
+                onClick={onTake}
+              >Take</button>
             )}
             {isSelf && !isDead && canDrop && (
               <button
