@@ -40,8 +40,17 @@ export default function EntityList({
       {entities.map(entity => (
         <li
           key={entity.id}
+          aria-label={entity.name}
+          title={entity.name}
+          tabIndex={onClickEntity ? 0 : undefined}
           className={`${styles.entity} ${styles[entity.className]} ${entity.levelUp ? styles.levelUp : ''}`}
           onClick={() => onClickEntity?.(entity)}
+          onKeyDown={event => {
+            if (onClickEntity && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onClickEntity(entity);
+            }
+          }}
         >
           <span className={styles.entityIcon}
             style={{

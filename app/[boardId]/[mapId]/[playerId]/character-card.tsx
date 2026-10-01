@@ -12,6 +12,7 @@ import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service
 import NpcCard from './npc-card';
 import { getPlayerStats } from '@/lib/store/playerStats';
 import { allItems } from '@/lib/games/items';
+import EntityList, { EntityItemClass } from './entity-list';
 
 export default function CharacterCard({
   boardId,
@@ -199,14 +200,21 @@ export default function CharacterCard({
     }}>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
-        <Dialog.Content className="DialogContent">
+        <Dialog.Content className={`DialogContent ${tabStyles.childPopover}`} aria-describedby={undefined}>
           <Dialog.Title className="DialogTitle">Give {giveItem ? allItems[giveItem.type].name : 'item'}</Dialog.Title>
-          <Dialog.Description>Choose a follower to receive this item.</Dialog.Description>
           <div className="DialogContentBody">
-            {availableFollowers.map(npc => <button key={npc.id} type="button" className="btn"
-              disabled={transferring} onClick={() => giveItem && transferItem(npc.id, giveItem, 'give')}>
-              {getDisplayName(npc)}
-            </button>)}
+            <EntityList
+              entities={availableFollowers.map(npc => ({
+                id: npc.id,
+                name: getDisplayName(npc),
+                iconXY: npc.iconXY,
+                className: EntityItemClass.friendly,
+                health: npc.health,
+                maxHealth: npc.baseStats?.health || npc.health,
+              }))}
+              onClickEntity={npc => giveItem && transferItem(npc.id, giveItem, 'give')}
+            >
+            </EntityList>
             {transferError && <p role="alert">{transferError}</p>}
           </div>
           <Dialog.Close disabled={transferring} className="DialogClose btn-secondary material-symbols-outlined" aria-label="Cancel">close</Dialog.Close>

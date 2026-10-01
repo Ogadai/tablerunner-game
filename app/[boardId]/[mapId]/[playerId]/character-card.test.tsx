@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { dropItemAtLocation, getPlayerInventory, giveItemToNpc, playerEquipItem, takeItemFromNpc } from '@/lib/store/playerInventory';
 import CharacterCard from './character-card';
 import sync from './player-stats-sync.service';
@@ -73,21 +73,36 @@ describe('CharacterCard', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Steel Sword' })).not.toBeInTheDocument());
   });
 
-  it('lets the player pick a follower to receive an item', async () => {
+  it.each(['click', 'Enter', ' '] as const)('lets the player select a follower icon with %s to receive an item', async interaction => {
     const player = makePlayer({ equipment: [{ id: 'sword', type: 'swordRusty' }] });
+    const followers = [
+      makeNpc({ masterId: player.id }),
+      makeNpc({ id: 'npc-2', name: 'Archer', masterId: player.id, iconXY: { x: 2, y: 1 } }),
+    ];
     const playerInventory = { equipment: [], equipped: {} };
     jest.mocked(giveItemToNpc).mockResolvedValue({ success: true, data: {
       playerInventory, npcInventory: { equipment: player.equipment, equipped: { weapon: 'sword' } },
     } });
     render(<CharacterCard boardId="board" mapId="map" player={player} viewer={player} isSelf
-      followerNPCs={[makeNpc({ masterId: player.id })]} actionPointsLeft={20} playerStats={makeStats()}
+      followerNPCs={followers} actionPointsLeft={20} playerStats={makeStats()}
       onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
     fireEvent.click(screen.getByRole('button', { name: 'Rusty Sword' }));
     fireEvent.click(screen.getByRole('button', { name: 'Give' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Mercenary/ }));
+    const picker = within(await screen.findByRole('dialog', { name: 'Give Rusty Sword' }));
+    expect(picker.getAllByRole('listitem')).toHaveLength(2);
+    for (const follower of followers) {
+      expect(picker.getByRole('listitem', { name: follower.name })).toHaveAttribute('title', follower.name);
+      expect(picker.queryByText(follower.name)).not.toBeInTheDocument();
+    }
+    const followerIcon = picker.getByRole('listitem', { name: 'Archer' });
+    expect(followerIcon.querySelector('.entityIcon')).toHaveStyle({ backgroundPosition: '-100px -80px' });
+    expect(giveItemToNpc).not.toHaveBeenCalled();
+    if (interaction === 'click') fireEvent.click(followerIcon);
+    else fireEvent.keyDown(followerIcon, { key: interaction });
     await waitFor(() => expect(sync.updateInventory).toHaveBeenCalledWith(playerInventory));
-    expect(giveItemToNpc).toHaveBeenCalledWith('board', 'map', 'warrior', 'npc-1', 'sword');
+    expect(giveItemToNpc).toHaveBeenCalledTimes(1);
+    expect(giveItemToNpc).toHaveBeenCalledWith('board', 'map', 'warrior', 'npc-2', 'sword');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });
