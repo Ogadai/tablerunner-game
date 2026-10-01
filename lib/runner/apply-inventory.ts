@@ -1,8 +1,8 @@
-import { GameState, NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState } from "../store/types";
+import { GameState, INamedTarget, NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { ItemDef, PlayerItem } from "../games/types";
 
-export async function applyPlayerInventory(params: BaseParams, player: PlayerState, result: PlayerInventoryState): Promise<void> {
+export function applyCharacterInventory(player: INamedTarget, result: PlayerInventoryState): void {
   if (result.equipped) {
     for(const key of Object.keys(result.equipped) as (keyof PlayerInventoryEquipSlots)[]) {
       if (result.equipped[key] === NOTHING_EQUPPED) {
@@ -16,6 +16,10 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
   if (result.equipment !== null) {
     player.equipment = result.equipment;
   }
+}
+
+export async function applyPlayerInventory(params: BaseParams, player: PlayerState, result: PlayerInventoryState): Promise<void> {
+  applyCharacterInventory(player, result);
 
   if (result.coins !== undefined) {
     player.coins = result.coins;

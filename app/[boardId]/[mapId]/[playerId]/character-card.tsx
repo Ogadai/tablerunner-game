@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { startTransition, useEffect, useRef, useState, useTransition } from "react";
+import { Dialog } from 'radix-ui';
 
 import tabStyles from './tabs.module.css';
 
-import { INamedTarget, NPCState, PlayerState } from '@/lib/store/types';
+import { getDisplayName, INamedTarget, NPCState, PlayerInventoryState, PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import Inventory from './inventory';
-import { dropItemAtLocation, playerEquipItem } from '@/lib/store/playerInventory';
+import { dropItemAtLocation, getPlayerInventory, giveItemToNpc, playerEquipItem, takeItemFromNpc } from '@/lib/store/playerInventory';
 import { PlayerItem } from "@/lib/games/types";
 import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
 import NpcCard from './npc-card';
+import { getPlayerStats } from '@/lib/store/playerStats';
+import { allItems } from '@/lib/games/items';
 
 export default function CharacterCard({
   boardId,
@@ -38,6 +41,70 @@ export default function CharacterCard({
   followerNPCs?: NPCState[];
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
+  const [inventoryResult, setInventoryResult] = useState<{
+    source: INamedTarget;
+    inventory?: PlayerInventoryState;
+    error?: string;
+  } | null>(null);
+  const [reloadInventory, setReloadInventory] = useState(0);
+  const [giveItem, setGiveItem] = useState<PlayerItem | null>(null);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferring, startTransfer] = useTransition();
+  const inventoryRequest = useRef(0);
+
+  useEffect(() => {
+    if (isSelf) return;
+    const request = ++inventoryRequest.current;
+    startTransition(async () => {
+      try {
+        const response = await getPlayerInventory(boardId, mapId, player.id);
+        if (request !== inventoryRequest.current) return;
+        setInventoryResult({
+          source: player,
+          inventory: response.success ? response.data : undefined,
+          error: response.success && response.data ? undefined : response.error || 'Unable to load inventory.',
+        });
+      } catch {
+        if (request === inventoryRequest.current) {
+          setInventoryResult({ source: player, error: 'Unable to load inventory.' });
+        }
+      }
+    });
+    return () => { inventoryRequest.current = request + 1; };
+  }, [boardId, mapId, player, isSelf, reloadInventory]);
+
+  const currentInventory = !isSelf && inventoryResult?.source === player ? inventoryResult : null;
+  const pendingInventory = currentInventory?.inventory;
+  const loadingInventory = !isSelf && !currentInventory;
+  const displayPlayer = pendingInventory ? {
+    ...player,
+    equipment: pendingInventory.equipment ?? player.equipment,
+    equipped: { ...player.equipped, ...pendingInventory.equipped },
+  } : player;
+
+  const transferItem = (npcId: string, item: PlayerItem, direction: 'give' | 'take') => {
+    if (transferring) return;
+    const request = inventoryRequest.current;
+    setTransferError(null);
+    startTransfer(async () => {
+      try {
+        const action = direction === 'give' ? giveItemToNpc : takeItemFromNpc;
+        const response = await action(boardId, mapId, viewer.id, npcId, item.id);
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Unable to transfer item.');
+        }
+        playerStatsSyncService.updateInventory(response.data.playerInventory);
+        if (request === inventoryRequest.current) {
+          if (!isSelf && player.id === npcId) {
+            setInventoryResult({ source: player, inventory: response.data.npcInventory });
+          }
+          setGiveItem(null);
+        }
+      } catch (error) {
+        if (request === inventoryRequest.current) setTransferError((error as Error).message);
+      }
+    });
+  };
 
   const onEquipItem = async (item: PlayerItem) => {
     const response = await playerEquipItem(boardId, mapId, player.id, item.id);
@@ -49,24 +116,35 @@ export default function CharacterCard({
     playerStatsSyncService.updateInventory(response.data);
   }
 
-  const onTakeItem = ((player as NPCState).masterId === viewer.id && viewer.health > 0)
-    ? async (item: PlayerItem) => {
-      // TODO: remove the item from the NPC's inventory and add it to the player's inventory,
-      // without updating the GameState (i.e. the NPC needs its own PlayerInventoryState that
-      // can be merged into GameState when the next turn runs)
+  const onTakeItem = ((player as NPCState).masterId === viewer.id && viewer.health > 0 && pendingInventory && !transferring)
+    ? (item: PlayerItem) => transferItem(player.id, item, 'take') : undefined;
+
+  const availableFollowers = (followerNPCs || []).filter(npc =>
+    npc.masterId === viewer.id && npc.location.id === viewer.location.id && npc.health > 0);
+  const onGiveItem = (isSelf && availableFollowers.length > 0 && viewer.health > 0 && !transferring)
+    ? (item: PlayerItem) => {
+      setTransferError(null);
+      setGiveItem(item);
     } : undefined;
 
-  const onGiveItem = (followerNPCs && followerNPCs.length > 0 && viewer.health > 0)
-    ? async (item: PlayerItem) => {
-      // TODO: show a popup to pick one of the follower NPCS, then (if the user doesn't cancel),
-      // add the item to the follower NPC and remove from the player's inventory,
-      // without updating the GameState (i.e. the NPC needs its own PlayerInventoryState that
-      // can be merged into GameState when the next turn runs)
-    } : undefined;
-
-  const playerState = (player as PlayerState).characterStats ? (player as PlayerState) : null;
+  const playerState = (displayPlayer as PlayerState).characterStats ? (displayPlayer as PlayerState) : null;
+  const displayedPlayerState = playerState && pendingInventory ? {
+    ...playerState,
+    coins: pendingInventory.coins ?? playerState.coins,
+    baseStats: getPlayerStats(playerState),
+  } : playerState;
 
   return <>
+    {loadingInventory && <p className={tabStyles.transferMsg} role="status">Loading inventory...</p>}
+    {currentInventory?.error && <p role="alert">
+      {currentInventory.error}{' '}
+      <button type="button" onClick={() => {
+        setInventoryResult(null);
+        setReloadInventory(value => value + 1);
+      }}>Retry</button>
+    </p>}
+    {transferError && !giveItem && <p className={tabStyles.transferMsg} role="alert">{transferError}</p>}
+    {transferring && <p className={tabStyles.transferMsg} role="status">Transferring item...</p>}
     <div className={tabStyles.tabs} role="tablist" aria-label="Character details">
       {(['stats', 'inventory'] as const).map(tab => (
         <button
@@ -86,10 +164,10 @@ export default function CharacterCard({
     <div className={`${tabStyles.tabContent} ${activeTab === 'stats' ? tabStyles.tabContentFirst : ''}`}
       id={`${activeTab}-panel`} role="tabpanel" aria-label={activeTab === 'stats' ? 'Stats' : 'Inventory'}>
       {activeTab === 'stats'
-        ? (playerState ? <CharacterStats
+        ? (displayedPlayerState ? <CharacterStats
             boardId={boardId}
             mapId={mapId}
-            player={playerState}
+            player={displayedPlayerState}
             playerStats={playerStats}
             isSelf={isSelf}
           />
@@ -97,12 +175,13 @@ export default function CharacterCard({
           <NpcCard
             boardId={boardId}
             mapId={mapId}
-            npc={player as NPCState}
+            npc={displayPlayer as NPCState}
             player={viewer}
             onHired={onHired}
           />)
         : <Inventory
-            player={player}
+            player={displayPlayer}
+            disabled={loadingInventory || transferring}
             isSelf={isSelf}
             isDead={(playerStats ? playerStats.health : player.health) === 0}
             actionPointsLeft={actionPointsLeft}
@@ -112,8 +191,27 @@ export default function CharacterCard({
             onDropItem={onDropItem}
             onTakeItem={onTakeItem}
             onGiveItem={onGiveItem}
-            usedItemIds={usedItemIds}
+            usedItemIds={isSelf ? usedItemIds : []}
           />}
     </div>
+    <Dialog.Root open={giveItem !== null} onOpenChange={open => {
+      if (!open && !transferring) setGiveItem(null);
+    }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="DialogOverlay" />
+        <Dialog.Content className="DialogContent">
+          <Dialog.Title className="DialogTitle">Give {giveItem ? allItems[giveItem.type].name : 'item'}</Dialog.Title>
+          <Dialog.Description>Choose a follower to receive this item.</Dialog.Description>
+          <div className="DialogContentBody">
+            {availableFollowers.map(npc => <button key={npc.id} type="button" className="btn"
+              disabled={transferring} onClick={() => giveItem && transferItem(npc.id, giveItem, 'give')}>
+              {getDisplayName(npc)}
+            </button>)}
+            {transferError && <p role="alert">{transferError}</p>}
+          </div>
+          <Dialog.Close disabled={transferring} className="DialogClose btn-secondary material-symbols-outlined" aria-label="Cancel">close</Dialog.Close>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   </>;
 };

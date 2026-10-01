@@ -6,6 +6,7 @@ import InventoryItem from './inventory-item';
 
 export default function Inventory({
   player,
+  disabled = false,
   isSelf,
   actionPointsLeft,
   isDead,
@@ -18,6 +19,7 @@ export default function Inventory({
   usedItemIds
 }: {
   player: INamedTarget;
+  disabled?: boolean;
   isSelf: boolean,
   actionPointsLeft: number;
   isDead: boolean;
@@ -41,6 +43,7 @@ export default function Inventory({
       {player.equipment.map(item => {
         return <InventoryItem
           isSelf={isSelf}
+          disabled={disabled}
           isDead={isDead}
           key={`${item.id}}`}
           item={item}

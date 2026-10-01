@@ -171,6 +171,7 @@ export default function PlayerLocationList({
             }
             { displayCharacter &&
               <CharacterCard
+                key={`${boardId}:${mapId}:${displayCharacter.id}`}
                 boardId={boardId}
                 mapId={mapId}
                 player={displayCharacter}

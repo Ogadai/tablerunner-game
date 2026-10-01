@@ -1,14 +1,15 @@
-import { buyAndSellInStore, createStoreInventoryState, dropItemAtLocation, getPlayerInventory, getStoreInventoryState, hireNpc, playerEquipItem, takeItemAtLocation } from './playerInventory';
+import { buyAndSellInStore, createStoreInventoryState, dropItemAtLocation, getPlayerInventory, getStoreInventoryState, giveItemToNpc, hireNpc, playerEquipItem, takeItemAtLocation, takeItemFromNpc } from './playerInventory';
 import * as redis from './redis-access';
 import { publishMessage } from '../messages/message-publisher';
 import { createGame, createLocations, createNpc, createPlayer } from './test-support/fixtures';
-import { NOTHING_EQUPPED, type PlayerInventoryState, type StoreInventoryState } from './types';
+import { NOTHING_EQUPPED, PlayerActionType, type PlayerInventoryState, type StoreInventoryState } from './types';
 
 jest.mock('./redis-access', () => ({
   getGameStateFromRedis: jest.fn(), getPlayerInventoryFromRedis: jest.fn(), getStoreStateFromRedis: jest.fn(),
   getLocationsStateFromRedis: jest.fn(), lockGameStateInRedis: jest.fn(), lockLocationsStateInRedis: jest.fn(),
   lockStoreStateInRedis: jest.fn(), setGameStateInRedis: jest.fn(), setLocationsStateInRedis: jest.fn(),
   setPlayerInventoryInRedis: jest.fn(), setStoreStateInRedis: jest.fn(),
+  getCharacterInventoriesFromRedis: jest.fn(), setCharacterInventoriesInRedis: jest.fn(), getActionsStateFromRedis: jest.fn(),
 }));
 jest.mock('../messages/message-publisher', () => ({ publishMessage: jest.fn() }));
 const storage = jest.mocked(redis);
@@ -39,12 +40,76 @@ beforeEach(() => {
 });
 
 function expectNoWrites() {
+  expect(storage.setCharacterInventoriesInRedis).not.toHaveBeenCalled();
   expect(storage.setPlayerInventoryInRedis).not.toHaveBeenCalled();
   expect(storage.setLocationsStateInRedis).not.toHaveBeenCalled();
   expect(storage.setStoreStateInRedis).not.toHaveBeenCalled();
   expect(storage.setGameStateInRedis).not.toHaveBeenCalled();
   expect(publishMessage).not.toHaveBeenCalled();
 }
+
+describe('follower inventory transfers', () => {
+  let npcInventory: PlayerInventoryState;
+  beforeEach(() => {
+    locations.npcs[0] = createNpc({ masterId: 'hero', equipment: [], equipped: {} });
+    npcInventory = { equipment: null, equipped: null };
+    storage.getCharacterInventoriesFromRedis.mockResolvedValue({ hero: inventory, npc: npcInventory });
+    storage.getActionsStateFromRedis.mockResolvedValue({ actions: [] });
+  });
+
+  it('gives an equipped item without changing committed state and auto-equips the best NPC item', async () => {
+    const steelSword = { id: 'steel', type: 'swordSteel' };
+    npcInventory.equipment = [steelSword, { id: 'potion', type: 'healingPotion' }];
+    const response = await giveItemToNpc('board', 'map', 'hero', 'npc', 'sword');
+    expect(response).toEqual({ success: true, data: { playerInventory: inventory, npcInventory } });
+    expect(inventory.equipment).toEqual([]);
+    expect(inventory.equipped?.weapon).toBe(NOTHING_EQUPPED);
+    expect(npcInventory.equipment).toContainEqual({ id: 'sword', type: 'swordRusty' });
+    expect(npcInventory.equipped?.weapon).toBe('steel');
+    expect(npcInventory.equipped).not.toHaveProperty('consumable');
+    expect(game.players[0].equipment).toEqual([{ id: 'sword', type: 'swordRusty' }]);
+    expect(locations.npcs[0].equipment).toEqual([]);
+    expect(storage.setCharacterInventoriesInRedis).toHaveBeenCalledWith('board', 'map', { hero: inventory, npc: npcInventory });
+    expect(storage.setGameStateInRedis).not.toHaveBeenCalled();
+    expect(releaseGame).toHaveBeenCalledTimes(1);
+    expect(releaseLocations).toHaveBeenCalledTimes(1);
+  });
+
+  it('takes pending equipment, equips a replacement, and clears the last equipped item', async () => {
+    inventory.equipment = [];
+    npcInventory.equipment = [{ id: 'steel', type: 'swordSteel' }, { id: 'rusty', type: 'swordRusty' }];
+    npcInventory.equipped = { weapon: 'steel' };
+    await expect(takeItemFromNpc('board', 'map', 'hero', 'npc', 'steel')).resolves.toMatchObject({ success: true });
+    expect(inventory.equipment).toEqual([{ id: 'steel', type: 'swordSteel' }]);
+    expect(npcInventory.equipped?.weapon).toBe('rusty');
+    await expect(takeItemFromNpc('board', 'map', 'hero', 'npc', 'rusty')).resolves.toMatchObject({ success: true });
+    expect(npcInventory.equipment).toEqual([]);
+    expect(npcInventory.equipped?.weapon).toBe(NOTHING_EQUPPED);
+  });
+
+  it.each(['wrong owner', 'distant npc', 'dead player', 'dead npc', 'missing item', 'queued item'])('rejects giving with %s without saving either inventory', async scenario => {
+    if (scenario === 'wrong owner') locations.npcs[0].masterId = 'other';
+    if (scenario === 'distant npc') locations.npcs[0].location = { id: 2, description: '', move: [] };
+    if (scenario === 'dead player') game.players[0].health = 0;
+    if (scenario === 'dead npc') locations.npcs[0].health = 0;
+    if (scenario === 'missing item') inventory.equipment = [];
+    if (scenario === 'queued item') storage.getActionsStateFromRedis.mockResolvedValue({
+      actions: [{ id: 1, type: PlayerActionType.UseItem, description: '', itemId: 'sword' } as import('./types').PlayerActionUseItem],
+    });
+    await expect(giveItemToNpc('board', 'map', 'hero', 'npc', 'sword')).resolves.toMatchObject({ success: false });
+    expectNoWrites();
+    expect(releaseGame).toHaveBeenCalledTimes(1);
+    expect(releaseLocations).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases both locks after an atomic save failure', async () => {
+    storage.setCharacterInventoriesInRedis.mockRejectedValue(new Error('Write failed'));
+    await expect(giveItemToNpc('board', 'map', 'hero', 'npc', 'sword')).resolves.toEqual({ success: false, error: 'Write failed' });
+    expect(storage.setPlayerInventoryInRedis).not.toHaveBeenCalled();
+    expect(releaseGame).toHaveBeenCalledTimes(1);
+    expect(releaseLocations).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('inventory reads and store initialization', () => {
   it('returns the pending inventory and store stock', async () => {

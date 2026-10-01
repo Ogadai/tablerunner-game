@@ -5,20 +5,24 @@ import { runGameActions } from './game-actions';
 import { executeProcessesBetweenTurns, executeProcessesForTurn } from './game-processes';
 import { populateMonsters } from './populate-monsters';
 import { createGame, createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
-import { applyPlayerInventory } from './apply-inventory';
+import { applyCharacterInventory, applyPlayerInventory } from './apply-inventory';
 import { applyPlayerAddedStats } from './level-up';
 
 jest.mock('../store/redis-access', () => ({
   getGameStateFromRedis: jest.fn(), commitGameTurnInRedis: jest.fn(), commitPausedGameInRedis: jest.fn(),
   getActionsStateFromRedis: jest.fn(), setReadyStateInRedis: jest.fn(), getLocationsStateFromRedis: jest.fn(),
   getPlayerTurnInputsFromRedis: jest.fn(), lockGameStateInRedis: jest.fn(), lockReadyStateInRedis: jest.fn(),
+  getCharacterInventoriesFromRedis: jest.fn(),
   publishGameProcessingStarted: jest.fn(), publishGameProcessingFailed: jest.fn(), publishGameStateUpdated: jest.fn(),
   publishReadyStateUpdated: jest.fn(), getReadyStateFromRedis: jest.fn(), lockForProcessing: jest.fn(),
   getProcessingTurnFromRedis: jest.fn(), setProcessingTurnInRedis: jest.fn(), processingLockTTL: 60,
   RedisLockError: class RedisLockError extends Error {},
 }));
 jest.mock('./game-actions', () => ({ runGameActions: jest.fn() }));
-jest.mock('./apply-inventory', () => ({ applyPlayerInventory: jest.fn() }));
+jest.mock('./apply-inventory', () => ({
+  ...jest.requireActual('./apply-inventory'), applyPlayerInventory: jest.fn(),
+  applyCharacterInventory: jest.fn(jest.requireActual('./apply-inventory').applyCharacterInventory),
+}));
 jest.mock('./level-up', () => ({ levelUpPlayer: jest.fn(), applyPlayerAddedStats: jest.fn() }));
 jest.mock('./game-processes', () => ({ initialiseProcessesForTurn: jest.fn(), executeProcessesForTurn: jest.fn(), executeProcessesBetweenTurns: jest.fn() }));
 jest.mock('./populate-monsters', () => ({ populateMonsters: jest.fn() }));
@@ -36,6 +40,10 @@ beforeEach(() => {
   jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: [] });
   jest.mocked(redis.getLocationsStateFromRedis).mockResolvedValue({ monsters: [], items: [], coins: [], npcs: [], blockedMoves: [] });
   jest.mocked(populateMonsters).mockResolvedValue([]);
+  jest.mocked(applyCharacterInventory).mockImplementation(jest.requireActual('./apply-inventory').applyCharacterInventory);
+  jest.mocked(redis.getCharacterInventoriesFromRedis).mockImplementation(async (_boardId, _mapId, ids) =>
+    Object.fromEntries(ids.map(id => [id, { equipment: null, equipped: null }])),
+  );
   jest.mocked(redis.getPlayerTurnInputsFromRedis).mockImplementation(async (_boardId, _mapId, playerIds) =>
     Object.fromEntries(playerIds.map(id => [id, {
       inventory: { equipped: null, equipment: null, hiredNpcIds: [] },
@@ -114,7 +122,25 @@ it('expires effects and summons, records portals, and commits destroyed shops wi
   expect(params.monsters).toContainEqual(expect.objectContaining({ id: 'undead', health: 0, type: 'rat' }));
   expect(params.gameState.visitedPortals).toEqual([1]);
   expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
-    expect.objectContaining({ monsters: params.monsters, npcs: [] }), params.messages, [1]);
+    expect.objectContaining({ monsters: params.monsters, npcs: [] }), params.messages, [1], ['summon', 'undead']);
+});
+
+it('applies pending NPC inventory before combat and consumes it even if the NPC expires', async () => {
+  const npc = createNpc({ id: 'follower', turnsLeft: 1, expiryAction: 'remove' });
+  const params = createParams();
+  params.gameState.npcs = [npc];
+  const sword = { id: 'steel', type: 'swordSteel' };
+  jest.mocked(redis.getCharacterInventoriesFromRedis).mockResolvedValue({
+    follower: { equipment: [sword], equipped: { weapon: sword.id } },
+  });
+  jest.mocked(runGameActions).mockImplementation(async p => {
+    expect(p.gameState.npcs[0].equipment).toEqual([sword]);
+    expect(p.gameState.npcs[0].equipped.weapon).toBe(sword.id);
+  });
+  await processGameTurn(params);
+  expect(params.gameState.npcs).toEqual([]);
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
+    expect.objectContaining({ npcs: [] }), params.messages, [], ['follower']);
 });
 
 it('preserves the original processing error even if recovery also fails', async () => {

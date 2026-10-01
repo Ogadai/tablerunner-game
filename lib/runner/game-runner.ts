@@ -16,6 +16,7 @@ import {
   setReadyStateInRedis,
   getLocationsStateFromRedis,
   getPlayerTurnInputsFromRedis,
+  getCharacterInventoriesFromRedis,
   lockGameStateInRedis,
   lockReadyStateInRedis,
   publishGameProcessingStarted,
@@ -32,7 +33,7 @@ import {
 import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
 import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
-import { applyPlayerInventory } from "./apply-inventory";
+import { applyCharacterInventory, applyPlayerInventory } from "./apply-inventory";
 import { executeProcessesBetweenTurns, executeProcessesForTurn, initialiseProcessesForTurn } from "./game-processes";
 import { populateMonsters } from "./populate-monsters";
 import { updatePortalAndShopLeds } from "./game-action-portal";
@@ -209,6 +210,12 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 
     await initialiseProcessesForTurn(params);
 
+    const npcInventoryIds = params.gameState.npcs.map(npc => npc.id);
+    const npcInventories = await getCharacterInventoriesFromRedis(params.boardId, params.mapId, npcInventoryIds);
+    for (const npc of params.gameState.npcs) {
+      applyCharacterInventory(npc, npcInventories[npc.id]);
+    }
+
     const playerInputs = await getPlayerTurnInputsFromRedis(
       params.boardId, params.mapId, params.gameState.players.map(player => player.id),
     );
@@ -254,6 +261,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     await commitGameTurnInRedis(
       params.boardId, params.mapId, params.gameState, newLocationsState, params.messages,
       originalStores.filter(location => !params.gameState.stores.includes(location)),
+      npcInventoryIds,
     );
   } catch (error) {
     // Recover state under the lock; the caller notifies after releasing it.

@@ -9,6 +9,7 @@ import CoinDisplay from './coin-display';
 
 export default function InventoryItem({
   isSelf,
+  disabled = false,
   isDead,
   item,
   isEquipped,
@@ -27,6 +28,7 @@ export default function InventoryItem({
   availableCoins,
 }: {
   isSelf: boolean,
+  disabled?: boolean,
   isDead: boolean,
   item: PlayerItem;
   isEquipped: boolean;
@@ -95,6 +97,7 @@ export default function InventoryItem({
       <Popover.Trigger asChild>
         <button
           type="button"
+          disabled={disabled}
           className={`${styles.inventoryItem} ${isEquipped ? styles.equippedItem : ''} ${cannotBuy ? styles.cannotBuy : ''}`}
           aria-label={itemDef.name}
           title={itemDef.name}
@@ -156,14 +159,14 @@ export default function InventoryItem({
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
-                onClick={onGive}
+                onClick={() => { setIsOpen(false); onGive!(); }}
               >Give</button>
             )}
             {canTake && (
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}
-                onClick={onTake}
+                onClick={() => { setIsOpen(false); onTake!(); }}
               >Take</button>
             )}
             {isSelf && !isDead && canDrop && (

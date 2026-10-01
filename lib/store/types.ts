@@ -232,6 +232,11 @@ export interface PlayerInventoryState {
   hiredNpcIds?: string[];
 }
 
+export interface NpcInventoryTransfer {
+  playerInventory: PlayerInventoryState;
+  npcInventory: PlayerInventoryState;
+}
+
 export interface PlayerTurnInputs {
   inventory: PlayerInventoryState;
   addedStats: PlayerAddStatsState;

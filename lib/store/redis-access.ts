@@ -102,6 +102,7 @@ export async function commitGameTurnInRedis(
   locationsState: AllLocationsState,
   messages: Record<string, PlayerMessagesState>,
   removedStoreLocations: number[],
+  consumedNpcInventoryIds: string[] = gameState.npcs.map(npc => npc.id),
 ): Promise<void> {
   const transaction = redis.multi();
   transaction.set(getGameKey(boardId, mapId), gameState, gameStateOptions);
@@ -117,6 +118,9 @@ export async function commitGameTurnInRedis(
 
   for (const monster of locationsState.monsters.filter(m => m.scriptedActions)) {
     transaction.del(getMonsterActionsKey(boardId, mapId, monster.id));
+  }
+  for (const npcId of consumedNpcInventoryIds) {
+    transaction.del(getPlayerInventoryKey(boardId, mapId, npcId));
   }
   for (const location of removedStoreLocations) {
     transaction.del(getStoreInventoryKey(boardId, mapId, location));
@@ -151,6 +155,9 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
     }
 
     const locations = await getLocationsStateFromRedis(boardId, mapId);
+    for (const npcId of new Set([...gameState.npcs, ...locations.npcs].map(npc => npc.id))) {
+      await deletePlayerInventoryFromRedis(boardId, mapId, npcId);
+    }
     for (const monster of locations.monsters.filter(m => m.scriptedActions)) {
       await deleteMonsterActionsStateFromRedis(boardId, mapId, monster.id);
       await deletePlayerMessagesFromRedis(boardId, mapId, monster.id);
@@ -288,6 +295,29 @@ export async function deletePlayerStatsFromRedis(boardId: string, mapId: string,
 }
 
 /* Individual Player Inventory Changes */
+
+// NPCs use the same pending inventory format and keys as players.
+export async function getCharacterInventoriesFromRedis(
+  boardId: string, mapId: string, characterIds: string[],
+): Promise<Record<string, PlayerInventoryState>> {
+  if (characterIds.length === 0) return {};
+  const inventories = await redis.mget<(PlayerInventoryState | null)[]>(
+    ...characterIds.map(id => getPlayerInventoryKey(boardId, mapId, id)),
+  );
+  return Object.fromEntries(characterIds.map((id, index) => [
+    id, inventories[index] || { equipped: null, equipment: null },
+  ]));
+}
+
+export async function setCharacterInventoriesInRedis(
+  boardId: string, mapId: string, inventories: Record<string, PlayerInventoryState>,
+): Promise<void> {
+  const transaction = redis.multi();
+  for (const [id, inventory] of Object.entries(inventories)) {
+    transaction.set(getPlayerInventoryKey(boardId, mapId, id), inventory, gameStateOptions);
+  }
+  await transaction.exec();
+}
 
 export async function getPlayerInventoryFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerInventoryState> {
   const result = await redis.get(getPlayerInventoryKey(boardId, mapId, playerId)) as PlayerInventoryState;

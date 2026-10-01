@@ -21,6 +21,32 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
+it('reads player and NPC inventories together, preserving empty pending inventories', async () => {
+  client.mget.mockResolvedValue([null, { equipment: [], equipped: {} }]);
+  await expect(store.getCharacterInventoriesFromRedis('b', 'm', ['hero', 'npc'])).resolves.toEqual({
+    hero: { equipment: null, equipped: null }, npc: { equipment: [], equipped: {} },
+  });
+  expect(client.mget).toHaveBeenCalledWith('playerInventory:b:m:hero', 'playerInventory:b:m:npc');
+});
+
+it('saves both sides of a transfer in one transaction', async () => {
+  const playerInventory = { equipment: [], equipped: {} };
+  const npcInventory = { equipment: [{ id: 'sword', type: 'swordRusty' }], equipped: { weapon: 'sword' } };
+  await store.setCharacterInventoriesInRedis('b', 'm', { hero: playerInventory, npc: npcInventory });
+  expect(transaction.set.mock.calls).toEqual([
+    ['playerInventory:b:m:hero', playerInventory, expiry], ['playerInventory:b:m:npc', npcInventory, expiry],
+  ]);
+  expect(transaction.exec).toHaveBeenCalledTimes(1);
+  expect(client.set).not.toHaveBeenCalled();
+});
+
+it('clears consumed NPC inventories with the turn even when the NPC no longer exists', async () => {
+  await store.commitGameTurnInRedis('b', 'm', createGame(), createLocations(), { hero: { messages: [] } }, [], ['expired-npc']);
+  expect(transaction.del).toHaveBeenCalledWith('playerInventory:b:m:expired-npc');
+  expect(transaction.exec).toHaveBeenCalledTimes(1);
+  expect(client.del).not.toHaveBeenCalled();
+});
+
 it('reads a player snapshot in one batch and returns only the current location', async () => {
   const game = createGame();
   const inventory = { equipped: {}, equipment: [], coins: 0 };

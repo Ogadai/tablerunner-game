@@ -2,14 +2,15 @@
 
 import { ApiResponse } from "../api-response";
 import { getGameStateFromRedis, getPlayerInventoryFromRedis, getStoreStateFromRedis, lockGameStateInRedis, lockLocationsStateInRedis, lockStoreStateInRedis, setGameStateInRedis, setLocationsStateInRedis, setPlayerInventoryInRedis, setStoreStateInRedis } from './redis-access';
-import { NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState, StoreInventoryState, StoreTransaction } from './types';
-import { getLocationsStateFromRedis } from './redis-access';
+import { INamedTarget, NOTHING_EQUPPED, NpcInventoryTransfer, PlayerActionType, PlayerInventoryEquipSlots, PlayerInventoryState, StoreInventoryState, StoreTransaction } from './types';
+import { getActionsStateFromRedis, getCharacterInventoriesFromRedis, getLocationsStateFromRedis, setCharacterInventoriesInRedis } from './redis-access';
 import { GameTopicMessageType, LocationUpdatedMessage, StoreUpdatedMessage } from "../message-types";
 import { publishMessage } from "../messages/message-publisher";
 import { allItems, SELL_COST_RATIO } from "../games/items";
 import { PlayerItem } from "../games/types";
 import { createItemForInventory } from "../runner/apply-inventory";
 import { getEnemies } from '../runner/game-friends-or-enemies';
+import { equipBestNpcItems } from './npcInventory';
 
 async function publishLocationUpdated(boardId: string, mapId: string, locationId: number): Promise<void> {
   const msg: LocationUpdatedMessage = {
@@ -134,6 +135,76 @@ export async function playerEquipItem(boardId: string, mapId: string, playerId: 
     if (gameStateLock) {
       await gameStateLock();
     }
+  }
+}
+
+export async function giveItemToNpc(
+  boardId: string, mapId: string, playerId: string, npcId: string, itemId: string,
+): Promise<ApiResponse<NpcInventoryTransfer>> {
+  return transferNpcItem(boardId, mapId, playerId, npcId, itemId, 'give');
+}
+
+export async function takeItemFromNpc(
+  boardId: string, mapId: string, playerId: string, npcId: string, itemId: string,
+): Promise<ApiResponse<NpcInventoryTransfer>> {
+  return transferNpcItem(boardId, mapId, playerId, npcId, itemId, 'take');
+}
+
+async function transferNpcItem(
+  boardId: string, mapId: string, playerId: string, npcId: string, itemId: string, direction: 'give' | 'take',
+): Promise<ApiResponse<NpcInventoryTransfer>> {
+  let gameStateLock: (() => Promise<void>) | null = null;
+  let locationsLock: (() => Promise<void>) | null = null;
+  try {
+    gameStateLock = await lockGameStateInRedis(boardId, mapId);
+    locationsLock = await lockLocationsStateInRedis(boardId, mapId);
+    const gameState = await getGameStateFromRedis(boardId, mapId);
+    const locationsState = await getLocationsStateFromRedis(boardId, mapId);
+    const player = gameState?.players.find(p => p.id === playerId);
+    const npc = locationsState.npcs.find(n => n.id === npcId);
+
+    if (!player || !npc || playerId === npcId || npc.location.id !== player.location.id) {
+      throw new Error('NPC is not available at this location');
+    }
+    if (player.health <= 0) {
+      throw new Error('Cannot transfer items while dead');
+    }
+    if (npc.masterId !== playerId) {
+      throw new Error('Cannot transfer items with another player\'s NPC');
+    }
+    if (direction === 'give' && npc.health <= 0) {
+      throw new Error('Cannot give items to a dead NPC');
+    }
+
+    if (direction === 'give') {
+      const actions = await getActionsStateFromRedis(boardId, mapId, playerId);
+      if (actions.actions.some(action =>
+        (action.type === PlayerActionType.UseItem || action.type === PlayerActionType.ReadScroll)
+        && 'itemId' in action && action.itemId === itemId)) {
+        throw new Error('Cannot give an item queued for use this turn');
+      }
+    }
+
+    const inventories = await getCharacterInventoriesFromRedis(boardId, mapId, [playerId, npcId]);
+    const playerInventory = inventories[playerId];
+    const npcInventory = inventories[npcId];
+    if (direction === 'give') {
+      const item = removeItemFromPlayer(player, playerInventory, itemId);
+      addItemToPlayer(npc, npcInventory, item);
+    } else {
+      const item = removeItemFromPlayer(npc, npcInventory, itemId);
+      addItemToPlayer(player, playerInventory, item);
+    }
+    equipBestNpcItems(npcInventory);
+
+    // Commit both sides together while excluding other inventory writes and turn processing.
+    await setCharacterInventoriesInRedis(boardId, mapId, inventories);
+    return { success: true, data: { playerInventory, npcInventory } };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  } finally {
+    if (locationsLock) await locationsLock();
+    if (gameStateLock) await gameStateLock();
   }
 }
 
@@ -358,7 +429,7 @@ export async function buyAndSellInStore(
 }
 
 
-function removeItemFromPlayer(playerState: PlayerState, playerInventory: PlayerInventoryState, itemId: string): PlayerItem {
+function removeItemFromPlayer(playerState: INamedTarget, playerInventory: PlayerInventoryState, itemId: string): PlayerItem {
   const sourceList = playerInventory.equipment != null
         ? playerInventory.equipment : playerState.equipment;
   const item = sourceList.find(i => i.id === itemId
@@ -385,7 +456,7 @@ function removeItemFromPlayer(playerState: PlayerState, playerInventory: PlayerI
   return item;
 }
 
-function addItemToPlayer(playerState: PlayerState, playerInventory: PlayerInventoryState, item: PlayerItem) {
+function addItemToPlayer(playerState: INamedTarget, playerInventory: PlayerInventoryState, item: PlayerItem) {
   const sourceList = playerInventory.equipment != null
       ? playerInventory.equipment : playerState.equipment;
 
