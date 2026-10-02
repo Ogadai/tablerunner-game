@@ -9,6 +9,7 @@ import { GameState, getDisplayName, PlayerState } from "@/lib/store/types";
 import { generateMonster, getCellCoordinates } from "@/lib/games/monster-pack";
 import { monsters } from "@/lib/games/monsters";
 import { joinWithAnd } from "@/lib/string-helpers";
+import { cauldronOfFirePortals } from '@/lib/games/maps/cauldron-of-fire/portals';
 
 const shardLocations: number[][] = [
   [7, 50, 13, 16, 20, 60, 61, 113, 111, 109, 106, 97, 100],
@@ -75,9 +76,13 @@ export const shardProcess: ProcessRunner = {
       (locs, index) => locs.map(l => ({ location: l, weight: index + 2 }))
     ).flat();
 
-    const locationSet = new Set<number>(shardLocations.flat());
+    const excludeSet = new Set<number>([
+      ...shardLocations.flat(),
+      ...cauldronOfFirePortals
+    ]);
+    
     for(let n = 1; n <= 240; n++) {
-      if (!locationSet.has(n)) {
+      if (!excludeSet.has(n)) {
         availableLocations.push({ location: n, weight: 0.2 });
       }
     }
