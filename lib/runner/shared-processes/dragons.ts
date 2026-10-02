@@ -134,7 +134,7 @@ export const dragons: ProcessRunner = {
         dragonsState.currentLavaMax = 3 + Math.floor(Math.random() * 2);
         processLava = true;
 
-        broadcastMessage(params, 'The **Volcano** stirs. **The Lava is rising**');
+        broadcastMessage(params, 'The **Volcano** stirs. ***The Lava is rising***');
       }
     }
 
@@ -173,7 +173,7 @@ export const dragons: ProcessRunner = {
         const availableRoutes = AVAILABLE_ROUTES[`${babyDragon.location}`];
         dragonsState.dragonRoute = availableRoutes[Math.floor(Math.random() * availableRoutes.length)];
 
-        broadcastMessage(params, '**A Mighty Roar echoes across the land**');
+        broadcastMessage(params, '***A Mighty Roar echoes across the land***');
         await publishPlayVideo(params.boardId, params.mapId, VideoNames.dragonWakes);
       }
     } else {
@@ -211,7 +211,7 @@ export const dragons: ProcessRunner = {
         if (dragonsState.dragonFlightTurn === 1) {
           broadcastMessage(params, '**The Fire Dragon emerges from her nest**'); 
         } else if (dragonsState.dragonFlightTurn === 2) {
-          broadcastMessage(params, 'The Fire Dragon is **enraged**. Someone **killed her baby**, you monsters!'); 
+          broadcastMessage(params, 'The Fire Dragon is ***enraged***. Someone ***killed her baby***, you monsters!'); 
         }
       }
       dragonLed = dragon.location;
