@@ -136,7 +136,7 @@ export default function CharacterCard({
   } : playerState;
 
   return <>
-    {loadingInventory && <p className={tabStyles.transferMsg} role="status">Loading inventory...</p>}
+    {loadingInventory && <p className={tabStyles.transferMsg} role="status">Loading...</p>}
     {currentInventory?.error && <p role="alert">
       {currentInventory.error}{' '}
       <button type="button" onClick={() => {
@@ -145,7 +145,7 @@ export default function CharacterCard({
       }}>Retry</button>
     </p>}
     {transferError && !giveItem && <p className={tabStyles.transferMsg} role="alert">{transferError}</p>}
-    {transferring && <p className={tabStyles.transferMsg} role="status">Transferring item...</p>}
+    {transferring && <p className={tabStyles.transferMsg} role="status">Transferring...</p>}
     <div className={tabStyles.tabs} role="tablist" aria-label="Character details">
       {(['stats', 'inventory'] as const).map(tab => (
         <button
