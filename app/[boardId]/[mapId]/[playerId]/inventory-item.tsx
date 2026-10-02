@@ -113,9 +113,11 @@ export default function InventoryItem({
       <Popover.Portal>
         <Popover.Content className={`PopoverContent ${styles.itemPopover}`}>
           <h3 className={styles.itemHeader}>{itemDef.name}</h3>
-          <div className={styles.itemHeaderCoins}>
-            <CoinDisplay coins={coins} />
-          </div>
+          {coins > 0 && (
+            <div className={styles.itemHeaderCoins}>
+              <CoinDisplay coins={coins} />
+            </div>
+          )}
           {bonuses.length > 0 ? (
             <ul>
               {bonuses.map(([stat, value]) => (
@@ -183,7 +185,7 @@ export default function InventoryItem({
                 onClick={onClickBuy}
               >Buy</button>
             }
-            {!!onSell && !isDead && !isUsed &&
+            {!!onSell && coins > 0 && !isDead && !isUsed &&
               <button
                 type="button"
                 className={`btn ${styles.equipButton}`}

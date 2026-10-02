@@ -360,6 +360,12 @@ export async function buyAndSellInStore(
 
     // Sell first at SELL_COST_RATIO of value
     for(const itemId of transaction.sellItemIds) {
+      const sourceList = playerInventory.equipment ?? playerState.equipment;
+      const itemToSell = sourceList.find(i => i.id === itemId);
+      if (itemToSell && (allItems[itemToSell.type].value || 0) <= 0) {
+        throw new Error('Cannot sell an item with no coin value');
+      }
+
       const item = removeItemFromPlayer(playerState, playerInventory, itemId);
 
       playerInventory.coins += Math.ceil((allItems[item.type].value || 0) * SELL_COST_RATIO);

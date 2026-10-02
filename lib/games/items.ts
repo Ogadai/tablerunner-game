@@ -344,6 +344,9 @@ export const specialItems: Record<string, ItemDef> = {
     type: PlayerItemType.consumable,
     name: 'Fire Crystal Shard',
     iconXY: { x: 6, y: 8 },
+    bonusStats: {
+      special: 'Collect 3 shards to win'
+    }
   }
 };
 
