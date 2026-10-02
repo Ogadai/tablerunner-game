@@ -4,7 +4,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 
 import { DropdownMenu } from "radix-ui";
 import { Dialog } from "radix-ui";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
@@ -15,13 +15,40 @@ import { saveGameToBlob } from '@/lib/store/saveGameBlobs';
 import { storeBoardDefaultSettings } from "@/lib/store/types";
 import gameStateLightingService from './game-state-lighting-service';
 
+const subscribeFullscreen = (onChange: () => void) => {
+  document.addEventListener('fullscreenchange', onChange);
+  return () => document.removeEventListener('fullscreenchange', onChange);
+};
+
+const getFullscreenState = () => document.fullscreenElement
+  ? 'fullscreen' : document.fullscreenEnabled ? 'normal' : 'unavailable';
+const getServerFullscreenState = () => 'unavailable';
+
 export default function PlayHeaderMenu(  { boardId, mapId }
   : { boardId: string, mapId: string }
 ) {
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const fullscreenState = useSyncExternalStore(subscribeFullscreen, getFullscreenState, getServerFullscreenState);
+  const isFullscreen = fullscreenState === 'fullscreen';
   const [brightness, setBrightness] = useState(storeBoardDefaultSettings.brightness);
   const brightnessChangeTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const toggleFullscreenAction = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      await Swal.fire({
+        ...getSwalDefaultOptions(),
+        title: 'Unable to change fullscreen mode',
+        icon: 'error',
+      });
+    }
+  };
 
   useEffect(() => {
     if (settingsOpen) {
@@ -129,6 +156,9 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 
 			<DropdownMenu.Portal>
 				<DropdownMenu.Content className={styles.Content} sideOffset={5}>
+          <DropdownMenu.Item className={styles.Item} disabled={fullscreenState === 'unavailable'} onSelect={() => { void toggleFullscreenAction(); }}>
+            {isFullscreen ? 'Exit Full Screen' : 'Full Screen'} <div className={`${styles.RightSlot} material-symbols-outlined`}>{isFullscreen ? 'fullscreen_exit' : 'fullscreen'}</div>
+          </DropdownMenu.Item>
 					<DropdownMenu.Item className={styles.Item} onClick={characterListAction}>
 						Player List <div className={`${styles.RightSlot} material-symbols-outlined`}>group</div>
 					</DropdownMenu.Item>

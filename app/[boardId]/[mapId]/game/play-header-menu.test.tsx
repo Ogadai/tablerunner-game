@@ -39,6 +39,111 @@ describe('PlayHeaderMenu', () => {
   });
   afterEach(() => jest.useRealTimers());
 
+  describe('fullscreen toggle', () => {
+    let fullscreenElement: Element | null;
+    let fullscreenEnabled: boolean;
+    const requestFullscreen = jest.fn<Promise<void>, []>();
+    const exitFullscreen = jest.fn<Promise<void>, []>();
+    const fullscreenProperties = [
+      { target: document, key: 'fullscreenElement' },
+      { target: document, key: 'fullscreenEnabled' },
+      { target: document, key: 'exitFullscreen' },
+      { target: document.documentElement, key: 'requestFullscreen' },
+    ].map(property => ({ ...property, original: Object.getOwnPropertyDescriptor(property.target, property.key) }));
+    const openMenu = () => fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
+    const fullscreenItem = () => screen.getByRole('menuitem', { name: /^Full Screen/ });
+    const exitFullscreenItem = () => screen.getByRole('menuitem', { name: /^Exit Full Screen/ });
+    const changeFullscreen = (element: Element | null) => {
+      fullscreenElement = element;
+      document.dispatchEvent(new Event('fullscreenchange'));
+    };
+
+    beforeEach(() => {
+      fullscreenElement = null;
+      fullscreenEnabled = true;
+      Object.defineProperties(document, {
+        fullscreenElement: { configurable: true, get: () => fullscreenElement },
+        fullscreenEnabled: { configurable: true, get: () => fullscreenEnabled },
+        exitFullscreen: { configurable: true, value: exitFullscreen },
+      });
+      Object.defineProperty(document.documentElement, 'requestFullscreen', { configurable: true, value: requestFullscreen });
+      requestFullscreen.mockReset().mockImplementation(async () => { changeFullscreen(document.documentElement); });
+      exitFullscreen.mockReset().mockImplementation(async () => { changeFullscreen(null); });
+    });
+
+    afterEach(() => {
+      for (const { target, key, original } of fullscreenProperties) {
+        if (original) Object.defineProperty(target, key, original);
+        else Reflect.deleteProperty(target, key);
+      }
+    });
+
+    it.each(['click', 'keyboard'])('enters fullscreen via %s and offers to exit', async interaction => {
+      mount();
+      openMenu();
+      expect(fullscreenItem()).not.toHaveAttribute('aria-disabled', 'true');
+      await act(async () => {
+        if (interaction === 'keyboard') fireEvent.keyDown(fullscreenItem(), { key: 'Enter' });
+        else fireEvent.click(fullscreenItem());
+      });
+      expect(requestFullscreen).toHaveBeenCalledTimes(1);
+      expect(requestFullscreen.mock.contexts[0]).toBe(document.documentElement);
+      expect(exitFullscreen).not.toHaveBeenCalled();
+      openMenu();
+      expect(exitFullscreenItem()).toBeInTheDocument();
+      expect(exitFullscreenItem()).toHaveTextContent('fullscreen_exit');
+    });
+
+    it('exits an existing fullscreen session and offers to enter again', async () => {
+      fullscreenElement = document.documentElement;
+      mount();
+      await select(/^Exit Full Screen/);
+      expect(exitFullscreen).toHaveBeenCalledTimes(1);
+      expect(requestFullscreen).not.toHaveBeenCalled();
+      openMenu();
+      expect(fullscreenItem()).toBeInTheDocument();
+      expect(fullscreenItem()).toHaveTextContent('fullscreen');
+    });
+
+    it('updates the open menu when fullscreen changes externally, including Escape exits', () => {
+      mount();
+      openMenu();
+      act(() => changeFullscreen(document.documentElement));
+      expect(exitFullscreenItem()).toBeInTheDocument();
+      // Browsers emit fullscreenchange after Escape exits fullscreen.
+      act(() => changeFullscreen(null));
+      expect(fullscreenItem()).toBeInTheDocument();
+      expect(requestFullscreen).not.toHaveBeenCalled();
+      expect(exitFullscreen).not.toHaveBeenCalled();
+    });
+
+    it('disables fullscreen when the browser does not support it', async () => {
+      fullscreenEnabled = false;
+      mount();
+      openMenu();
+      expect(fullscreenItem()).toHaveAttribute('aria-disabled', 'true');
+      await act(async () => fireEvent.click(fullscreenItem()));
+      expect(requestFullscreen).not.toHaveBeenCalled();
+      expect(exitFullscreen).not.toHaveBeenCalled();
+      expect(Swal.fire).not.toHaveBeenCalled();
+    });
+
+    it.each(['enter', 'exit'])('shows an error and preserves the menu state when %s fails', async action => {
+      if (action === 'enter') requestFullscreen.mockRejectedValue(new Error('Fullscreen denied'));
+      else {
+        fullscreenElement = document.documentElement;
+        exitFullscreen.mockRejectedValue(new Error('Exit failed'));
+      }
+      mount();
+      await select(action === 'enter' ? /^Full Screen/ : /^Exit Full Screen/);
+      expect(Swal.fire).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Unable to change fullscreen mode', icon: 'error',
+      }));
+      openMenu();
+      expect(action === 'enter' ? fullscreenItem() : exitFullscreenItem()).toBeInTheDocument();
+    });
+  });
+
   it.each([[/Player List/, '/board/map'], [/Load Game/, '/board/map/load']] as const)('navigates from %s', async (label, path) => {
     mount();
     await select(label);
