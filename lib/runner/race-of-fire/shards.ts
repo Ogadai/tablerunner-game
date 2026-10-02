@@ -6,14 +6,16 @@ import { playerMessageAtLocation, broadcastMessage } from "../game-messages";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
 import { GameState, getDisplayName, PlayerState } from "@/lib/store/types";
-import { generateMonster } from "@/lib/games/monster-pack";
+import { generateMonster, getCellCoordinates } from "@/lib/games/monster-pack";
 import { monsters } from "@/lib/games/monsters";
 import { joinWithAnd } from "@/lib/string-helpers";
 
-const shardLocations: number[] = [
-  1, 3, 38, 44, 35, 7, 50, 13, 16, 67, 20, 60, 61,
-  120, 116, 87, 76, 73, 113, 111, 109, 106, 146, 136, 101, 97, 100, 152, 230, 212,
-  160, 156, 162, 240, 202, 192, 227, 221, 220, 214
+const shardLocations: number[][] = [
+  [7, 50, 13, 16, 20, 60, 61, 113, 111, 109, 106, 97, 100],
+  [1, 2, 36, 37, 44, 116, 87, 76, 146, 152, 230,],
+  [3, 35, 120, 73, 136, 101, 212, 213],
+  [160, 156, 164, 162, 240, 206, 192, 166, 227, 221, 220, 214],
+  [202]
 ];
 
 const bossOptions: string[][] = [
@@ -69,15 +71,48 @@ export const shardProcess: ProcessRunner = {
     const shardItem = allItems[SpecialIds.fireCrystalShard];
 
     // Add the shards
-    const availableLocations = [...shardLocations];
+    const availableLocations = shardLocations.map(
+      (locs, index) => locs.map(l => ({ location: l, weight: index + 2 }))
+    ).flat();
+
+    const locationSet = new Set<number>(shardLocations.flat());
+    for(let n = 1; n <= 240; n++) {
+      if (!locationSet.has(n)) {
+        availableLocations.push({ location: n, weight: 0.2 });
+      }
+    }
+
     for(let n = 0; n < SHARD_COUNT; n++) {
-      const index = Math.floor(Math.random() * availableLocations.length);
-      const location = availableLocations.splice(index, 1)[0];
+      const total = availableLocations.reduce((sum, loc) => sum + loc.weight, 0);
+      const randomValue = Math.floor(Math.random() * total);
+
+      let sumWeight = 0;
+      let location: number | undefined;
+      for (let index = 0; index < availableLocations.length; index++) {
+        const loc = availableLocations[index];
+        sumWeight += loc.weight;
+        if (randomValue < sumWeight) {
+          location = loc.location;
+          availableLocations.splice(index, 1);
+          break;
+        }
+      }
+
+      const coords = getCellCoordinates(location!);
+      for(const loc of availableLocations) {
+        const locCoords = getCellCoordinates(loc.location);
+        const distance = Math.sqrt(Math.pow(coords.row - locCoords.row, 2) + Math.pow(coords.col - locCoords.col, 2));
+        if (distance < 2) {
+          loc.weight = 0;
+        } else if (distance < 4.8) {
+          loc.weight = loc.weight / 2;
+        }
+      }
 
       // Add the shard
       params.items.push({
         ...createItemForInventory(params.gameState, shardItem),
-        location
+        location: location!
       });
     }
 
