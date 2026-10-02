@@ -117,7 +117,7 @@ export function monsterAttack(
 }
 
 export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, message?: string) {
-  playerMessageAtLocation(params, target.id, message || '**{player}** {playerNoun} **dead**!');
+  playerMessageAtLocation(params, target.id, message || '***{player} {playerNoun} dead!***');
   target.respawnTurns = 3;
 
   // auto drop special items if they have them
@@ -168,7 +168,7 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
           player.points += Math.ceil(totalPoints / players.length);
         }
 
-        playerMessageAtLocation(params, player.id, `${attackName} hit **${getMonsterName(monster)}** for **${appliedDamage}** damage${resisted ? ' (**resisted**)' : ''}${monster.health <= 0 ? ' and **defeated** it!' : ''}`);
+        playerMessageAtLocation(params, player.id, `${attackName} hit **${getMonsterName(monster)}** for **${appliedDamage}** damage${resisted ? ' (**resisted**)' : ''}${monster.health <= 0 ? ' and *defeated it!*' : ''}`);
         return true;
       } else {
         playerMessageAtLocation(params, player.id, `${attackName} missed **${getMonsterName(monster)}**`);

@@ -48,7 +48,7 @@ it('preloads near the castle and announces victory only once', async () => {
   await lichKing.executeForTurn!(params);
   await lichKing.executeForTurn!(params);
   expect(params.gameState.processState['lich-king']).toEqual(expect.objectContaining({ gameOver: true }));
-  expect(params.messages.hero.messages).toEqual([{ text: 'You have defeated the Evil Lich King! Game Over!' }]);
+  expect(params.messages.hero.messages).toEqual([{ text: '***You have defeated the Evil Lich King! Game Over!***' }]);
   expect(publishPlayVideo).toHaveBeenCalledTimes(1);
 });
 

@@ -11,6 +11,7 @@ import { specialSpellActions } from './special-spell-actions';
 import { getAvailableSpellTargets } from './spell-targets';
 import { getMonsterStats } from './monster-stats';
 import { getCombatStats } from '../store/playerStats';
+import { joinWithAnd } from '../string-helpers';
 
 const MAX_RECENT_SPELLS = 2;
 
@@ -115,9 +116,6 @@ function applySpellEffects(
       (t as INamedTarget).name
         ? (t as INamedTarget).name
         : monsters[(t as MonsterState).type].name;
-
-    const joinWithAnd = (names: string[]) =>
-        names.reduce( (res, v, i) => i === names.length - 2 ? res + v + ' and ' : res + v + ( i == names.length - 1? '' : ', '), '' );
 
     const targetNames = joinWithAnd(targets.map(getTargetName));
 

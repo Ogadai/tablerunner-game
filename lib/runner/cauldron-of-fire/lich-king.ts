@@ -98,7 +98,7 @@ const checkEndGame = (params: BaseParams, state: LichKingDef): boolean => {
     const lich = params.monsters.find(n => n.id === LICH_KING_ID);
 
     if (!lich || lich.health === 0) {
-      broadcastMessage(params, 'You have defeated the Evil Lich King! Game Over!');
+      broadcastMessage(params, '***You have defeated the Evil Lich King! Game Over!***');
       publishPlayVideo(params.boardId, params.mapId, VideoNames.lichKingDead);
       state.gameOver = true;
     }

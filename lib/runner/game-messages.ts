@@ -20,6 +20,8 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
     if (recipientId !== playerId && recipientLocation !== location) continue;
     const self = recipientId === playerId;
     buffer.messages.push({ text: message
+      .replaceAll('**{player}**', self ? '*You*' : `**${name}**`)
+      .replaceAll('**{player}{possessive}**', self ? '*Your*' : `**${name}${name.endsWith('s') ? "'" : "'s"}**`)
       .replaceAll('{player}', self ? 'You' : name)
       .replaceAll('{playerNoun}', self ? 'are' : 'is')
       .replaceAll('{ownership}', self ? 'have' : 'has')
@@ -30,7 +32,10 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
 
 export function soloMessageAtLocation(params: BaseParams, playerId: string, message: string) {
   params.messages[playerId]?.messages.push({
-    text: message.replaceAll('{player}', 'You').replaceAll('{playerNoun}', 'are')
+    text: message
+      .replaceAll('**{player}**', '*You*')
+      .replaceAll('{player}', 'You')
+      .replaceAll('{playerNoun}', 'are')
   });
 }
 

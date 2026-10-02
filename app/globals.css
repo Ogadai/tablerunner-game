@@ -211,13 +211,32 @@ p {
   color: var(--color-text-muted);
 }
 
+em {
+  color: var(--color-success);
+  font-style: normal;
+}
+
 strong {
   color: var(--gold-dark);
 }
 
+em strong {
+  color: var(--red-antique);
+  font-size: 1.2em;
+}
+
 @media (prefers-color-scheme: dark) {
+  em {
+    color: var(--color-success);
+  }  
+
   strong {
     color: var(--gold-bright);
+  }
+  
+  em strong {
+    color: var(--red-antique);
+    font-size: 1.2em;
   }
 }
 

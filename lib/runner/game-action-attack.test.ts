@@ -174,7 +174,7 @@ describe('genericAttackMonster', () => {
     expect(genericAttackMonster(params, player, { attack: 10, damage: 100 }, monster)).toBe(true);
     expect(monster.health).toBe(0);
     expect([player.points, ally.points, dead.points, elsewhere.points]).toEqual([3, 3, 0, 0]);
-    expect(params.messages.p1.messages).toContainEqual({ text: '**You** hit **Rat** for **3** damage and **defeated** it!' });
+    expect(params.messages.p1.messages).toContainEqual({ text: '*You* hit **Rat** for **3** damage and *defeated it!*' });
   });
 
   it('does not award loot or coins for a nonlethal hit', () => {
@@ -186,7 +186,7 @@ describe('genericAttackMonster', () => {
     expect(monster.health).toBe(3);
     expect(params.items).toEqual([]);
     expect(params.coins).toEqual([]);
-    expect(params.messages.p1.messages).toEqual([{ text: '**Your** fireball hit **Rat** for **2** damage' }]);
+    expect(params.messages.p1.messages).toEqual([{ text: '*Your* fireball hit **Rat** for **2** damage' }]);
   });
 
   it('leaves state unchanged on a miss', () => {
@@ -199,7 +199,7 @@ describe('genericAttackMonster', () => {
     expect(player.points).toBe(0);
     expect(params.items).toEqual([]);
     expect(params.coins).toEqual([]);
-    expect(params.messages.p1.messages).toEqual([{ text: '**You** missed **Rat**' }]);
+    expect(params.messages.p1.messages).toEqual([{ text: '*You* missed **Rat**' }]);
   });
 
   it('ignores already dead monsters', () => {
@@ -381,7 +381,7 @@ describe('monsterAttack and player death', () => {
     monsterAttack(params, monster, player);
     expect(player.health).toBe(10);
     expect(player.infected).toBeUndefined();
-    expect(params.messages.p1.messages).toEqual([{ text: '**Zombie Rat** missed **You**' }]);
+    expect(params.messages.p1.messages).toEqual([{ text: '**Zombie Rat** missed *You*' }]);
   });
 
   it('drops resurrection items at the death location and retains other equipment', () => {
@@ -395,6 +395,6 @@ describe('monsterAttack and player death', () => {
     expect(player.equipment).toEqual([potion]);
     expect(params.items).toEqual([{ ...stone, location: 1 }, { ...shard, location: 1 }]);
     expect(player.respawnTurns).toBe(3);
-    expect(params.messages.p1.messages).toEqual([{ text: '**You** fell into a trap' }]);
+    expect(params.messages.p1.messages).toEqual([{ text: '*You* fell into a trap' }]);
   });
 });

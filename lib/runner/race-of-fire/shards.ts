@@ -8,6 +8,7 @@ import { VideoNames } from "@/lib/messages/video-list";
 import { GameState, getDisplayName, PlayerState } from "@/lib/store/types";
 import { generateMonster } from "@/lib/games/monster-pack";
 import { monsters } from "@/lib/games/monsters";
+import { joinWithAnd } from "@/lib/string-helpers";
 
 const shardLocations: number[] = [
   1, 3, 38, 44, 35, 7, 50, 13, 16, 67, 20, 60, 61,
@@ -154,7 +155,7 @@ export const shardProcess: ProcessRunner = {
         )
 
         broadcastMessage(params,
-          `**${getDisplayName(winner)}** has **won the game!**`
+          `***${getDisplayName(winner)} has won the game!***`
         )
 
         state.winner = true;
@@ -162,8 +163,9 @@ export const shardProcess: ProcessRunner = {
       } else if (finishPlayers.length > 1) {
         // Remaining players must battle it out for the win
         broadcastMessage(params,
-          `**${finishPlayers.map(p => getDisplayName(p)).join(', ')}** have all reached the throne with **${SHARDs_REQUIRED} shards**. The winner will be decided by combat!`
+          `**${joinWithAnd(finishPlayers.map(p => getDisplayName(p)))}** have all reached the throne with **${SHARDs_REQUIRED} shards**.`
         );
+        broadcastMessage(params, '***The winner will be decided by combat!***');
 
         for(const player of finishPlayers) {
           // Assign players different teams
