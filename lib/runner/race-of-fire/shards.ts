@@ -2,10 +2,10 @@ import { BaseParams } from "../base-params";
 import { ProcessRunner } from "../types";
 import { allItems, SpecialIds } from "@/lib/games/items";
 import { createItemForInventory } from "../apply-inventory";
-import { playerMessageAtLocation } from "../game-messages";
+import { playerMessageAtLocation, broadcastMessage } from "../game-messages";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
-import { GameState, PlayerState } from "@/lib/store/types";
+import { GameState, getDisplayName, PlayerState } from "@/lib/store/types";
 
 const shardLocations: number[] = [
   1, 3, 38, 44, 35, 7, 50, 13, 16, 67, 20, 60, 61,
@@ -106,8 +106,8 @@ export const shardProcess: ProcessRunner = {
             player.equipment.push(createItemForInventory(params.gameState, shardItem));
             const shardCount = playerShardCount(player);
 
-            playerMessageAtLocation(params, player.id,
-              `**{player}** {ownership} **${shardCount} Fire Crystal Shard${shardCount == 1 ? '' : 's'}**`
+            broadcastMessage(params,
+              `**${getDisplayName(player)}** has **${shardCount} Fire Crystal Shard${shardCount == 1 ? '' : 's'}**`
             );
           }
 
@@ -117,27 +117,40 @@ export const shardProcess: ProcessRunner = {
       }
     }
 
-    let winVideo: VideoNames | undefined;
     if (!state.winner) {
       const finishPlayers = params.gameState.players.filter(p => p.location.id === FINISH_LOCATION
         && p.equipment.filter(i => i.type === SpecialIds.fireCrystalShard).length >= SHARDs_REQUIRED
+        && p.health > 0
       );
-      winVideo = winnerVideos[finishPlayers[0].id] || VideoNames.fireCrystalShardWin;
 
-      for(const player of finishPlayers) {
-        playerMessageAtLocation(params, player.id,
+      if (finishPlayers.length === 1) {
+        const winner = finishPlayers[0];
+        const winVideo = winnerVideos[winner.id] || VideoNames.fireCrystalShardWin;
+
+        playerMessageAtLocation(params, winner.id,
           `**{player}** {ownership} reached the throne with **${SHARDs_REQUIRED} shards**`
         )
 
-        playerMessageAtLocation(params, player.id,
-          `**{player}** {ownership} **won the game!**`
+        broadcastMessage(params,
+          `**${getDisplayName(winner)}** has **won the game!**`
         )
 
         state.winner = true;
-      }
-
-      if (state.winner) {
         await publishPlayVideo(params.boardId, params.mapId, winVideo);
+      } else if (finishPlayers.length > 1) {
+        // Remaining players must battle it out for the win
+        broadcastMessage(params,
+          `**${finishPlayers.map(p => getDisplayName(p)).join(', ')}** have all reached the throne with **${SHARDs_REQUIRED} shards**. The winner will be decided by combat!`
+        );
+
+        for(const player of finishPlayers) {
+          // Assign players different teams
+          player.team = player.id;
+          for(const npc of params.gameState.npcs.filter(n => n.masterId === player.id)) {
+            // Their NPCs are on the same team
+            npc.team = player.id;
+          }
+        }
       }
     }
 
