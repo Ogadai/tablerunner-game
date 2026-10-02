@@ -6,11 +6,20 @@ import { playerMessageAtLocation, broadcastMessage } from "../game-messages";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
 import { GameState, getDisplayName, PlayerState } from "@/lib/store/types";
+import { generateMonster } from "@/lib/games/monster-pack";
+import { monsters } from "@/lib/games/monsters";
 
 const shardLocations: number[] = [
   1, 3, 38, 44, 35, 7, 50, 13, 16, 67, 20, 60, 61,
   120, 116, 87, 76, 73, 113, 111, 109, 106, 146, 136, 101, 97, 100, 152, 230, 212,
   160, 156, 162, 240, 202, 192, 227, 221, 220, 214
+];
+
+const bossOptions: string[][] = [
+  ['skeletaldragon', 'skeletaldragon', 'skeletaldragon'],
+  ['firespirit', 'firespirit', 'squizard', 'ogre'],
+  ['lich', 'skeleton', 'skeleton', 'skeleton', 'skeleton'],
+  ['hydra', 'hydra', 'hydra', 'skeletaldragon'],
 ];
 
 const SHARD_COUNT = 10;
@@ -69,6 +78,19 @@ export const shardProcess: ProcessRunner = {
         ...createItemForInventory(params.gameState, shardItem),
         location
       });
+    }
+
+    // Setup the boss battle
+    const bosses = bossOptions[Math.floor(Math.random() * bossOptions.length)];
+    for(const boss of bosses) {
+      params.monsters.push(
+        generateMonster(params.gameState, {
+          type: boss,
+          location: FINISH_LOCATION,
+          health: monsters[boss].baseStats.health,
+          team: 'monster',
+        })
+      );
     }
   },
 
