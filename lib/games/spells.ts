@@ -216,7 +216,7 @@ export const spells: Record<string, SpellDef> = {
     intelligence: 30,
     pickTarget: false,
     targetType: SpellTargetType.enemy,
-    magicCost: 12,
+    magicCost: 15,
     actionCost: 13,
     iconXY: { x: 0, y: 3 },
     bonusStats: {
@@ -229,7 +229,7 @@ export const spells: Record<string, SpellDef> = {
     intelligence: 30,
     pickTarget: false,
     targetType: SpellTargetType.enemy,
-    magicCost: 13,
+    magicCost: 18,
     actionCost: 13,
     iconXY: { x: 1, y: 3 },
     bonusStats: {

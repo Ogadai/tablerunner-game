@@ -112,6 +112,18 @@ describe('PlayerLocation', () => {
     expect(jest.mocked(FastTravel).mock.calls.at(-1)![0].hasLivingEnemies).toBe(true);
   });
 
+  it('passes equipment-enhanced NPC maximum health to the location health bars', async () => {
+    location.npcs = [createNpc({
+      health: 25,
+      equipment: [{ id: 'staff', type: 'staffEarth' }, { id: 'ring', type: 'ringRuby' }],
+      equipped: { weapon: 'staff' },
+    })];
+    await setup();
+    const entities = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].entities;
+    expect(entities.find(entity => entity.id === location.npcs[0].id))
+      .toMatchObject({ health: 25, maxHealth: 30 });
+  });
+
   it('permits movement, portals and running with an allied monster', async () => {
     location = {
       items: [], npcs: [], monsters: [createMonster({ team: 'good' })],

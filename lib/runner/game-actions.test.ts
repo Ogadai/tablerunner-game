@@ -83,6 +83,25 @@ it('recovers health and mana outside combat and moves followers after their mast
   expect(getNpcActions).not.toHaveBeenCalled();
 });
 
+it('recovers followers using equipment-enhanced health and magic, capped at their maximums', async () => {
+  const params = createParams();
+  const npc = createNpc({
+    masterId: params.gameState.players[0].id,
+    health: 20,
+    magic: 10,
+    equipment: [{ id: 'staff', type: 'staffEarth' }],
+    equipped: { weapon: 'staff' },
+  });
+  params.gameState.npcs = [npc];
+  await runGameActions(params, playerActions);
+  expect(npc).toMatchObject({ health: 23, magic: 14 });
+  npc.health = 29;
+  npc.magic = 19;
+  await runGameActions(params, playerActions);
+  expect(npc).toMatchObject({ health: 30, magic: 20 });
+  expect(npc.baseStats).toMatchObject({ health: 20, magic: 10 });
+});
+
 it('completes combat before movement and suppresses passive healing during combat', async () => {
   const params = createParams({ monsters: [createMonster()] });
   const player = params.gameState.players[0];

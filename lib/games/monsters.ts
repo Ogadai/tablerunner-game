@@ -274,8 +274,8 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     spells: [
       SpellIds.fireBall,
       SpellIds.fireWall,
-      SpellIds.lightning,
-      SpellIds.fireRain,
+      SpellIds.shieldWall,
+      SpellIds.heal,
     ]
   },
   'minotaur': {

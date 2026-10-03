@@ -18,7 +18,7 @@ import {
 } from '../store/redis-access';
 import { EquipableItemDef, PlayerItem } from '@/lib/games/types';
 import { BaseParams } from './base-params';
-import { getPlayerActionsPerTurn, getPlayerActionsCosts } from '../store/playerStats';
+import { getPlayerActionsPerTurn, getPlayerActionsCosts, getCombatStats } from '../store/playerStats';
 import { allItems } from "../games/items";
 import { getMonsterStats } from './monster-stats';
 import { actionAttack, monsterAttack } from './game-action-attack';
@@ -267,14 +267,15 @@ async function retrieveActionsForNpc(params: BaseParams, npc: NPCState, masterIs
 }
 
 function characterRecovery(character: INamedTarget, playerFought: boolean) {
-  if (!playerFought && character.health < character.baseStats!.health) {
-    character.health = Math.min(character.baseStats!.health,
-        character.health + Math.ceil(character.baseStats!.health * HEAL_SCALING)
+  const stats = getCombatStats(character);
+  if (!playerFought && character.health < stats.health) {
+    character.health = Math.min(stats.health,
+        character.health + Math.ceil(stats.health * HEAL_SCALING)
     );
   }
-  if (character.magic < character.baseStats!.magic) {
-    character.magic = Math.min(character.baseStats!.magic,
-      character.magic + Math.ceil(character.baseStats!.magic * MAGIC_BONUS_RATIO)
+  if (character.magic < stats.magic) {
+    character.magic = Math.min(stats.magic,
+      character.magic + Math.ceil(stats.magic * MAGIC_BONUS_RATIO)
     );
   }
 

@@ -10,7 +10,7 @@ import { dropItemAtLocation, getPlayerInventory, giveItemToNpc, playerEquipItem,
 import { PlayerItem } from "@/lib/games/types";
 import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
 import NpcCard from './npc-card';
-import { getPlayerStats } from '@/lib/store/playerStats';
+import { getCombatStats, getPlayerStats } from '@/lib/store/playerStats';
 import { allItems } from '@/lib/games/items';
 import EntityList, { EntityItemClass } from './entity-list';
 
@@ -210,7 +210,7 @@ export default function CharacterCard({
                 iconXY: npc.iconXY,
                 className: EntityItemClass.friendly,
                 health: npc.health,
-                maxHealth: npc.baseStats?.health || npc.health,
+                maxHealth: npc.baseStats ? getCombatStats(npc).health : npc.health,
               }))}
               onClickEntity={npc => giveItem && transferItem(npc.id, giveItem, 'give')}
             >

@@ -23,6 +23,7 @@ import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-
 import FastTravel from './fast-travel';
 import PlayerVideo from './player-video';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
+import { getCombatStats } from '@/lib/store/playerStats';
 
 export default function PlayerLocation(
   {
@@ -230,7 +231,7 @@ export default function PlayerLocation(
       iconXY: npc.iconXY,
       className: isEnemy(playerState, npc) ? EntityItemClass.enemy : EntityItemClass.npc,
       health: npc.health,
-      maxHealth: npc.baseStats?.health || npc.health
+      maxHealth: npc.baseStats ? getCombatStats(npc).health : npc.health
     })),
     ...locationState.monsters.map(monster => ({
       id: monster.id,
