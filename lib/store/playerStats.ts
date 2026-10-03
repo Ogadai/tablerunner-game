@@ -22,11 +22,11 @@ const speedBonuses: { [key: number]: number } = {
   16: 4,
   19: 5,
   22: 6,
-  28: 7,
-  36: 8
+  30: 7,
+  40: 8
 };
 let lastBonus = 0;
-for(let n = 1; n < 36; n++) {
+for(let n = 1; n < 40; n++) {
   if (speedBonuses[n]) {
     lastBonus = speedBonuses[n];
   } else {
@@ -35,7 +35,7 @@ for(let n = 1; n < 36; n++) {
 }
 
 export function getPlayerActionsPerTurn(playerState: INamedTarget): PlayerActionsPerTurn {
-  const speed = Math.min(playerState.baseStats!.speed, 36);
+  const speed = Math.min(playerState.baseStats!.speed, 40);
   const speedBonus = speedBonuses[speed] || 0;
 
   return {

@@ -166,11 +166,11 @@ export const monsters: { [id: string]: MonsterListEntry } = {
     name: 'Hydra',
     iconXY: { x: 5, y: 4 },
     baseStats: {
-      attack: 20,
+      attack: 16,
       damage: 10,
       defence: 14,
       magic: 0,
-      health: 20,
+      health: 18,
       speed: 22,
     },
   },
