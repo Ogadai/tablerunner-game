@@ -5,14 +5,28 @@ import { NOTHING_EQUPPED, PlayerActionType, type PlayerActionCast, type PlayerAc
 describe('action budgets', () => {
   it.each([
     [0, 18, 12],
-    [5, 18, 12],
-    [6, 18, 12],
+    [4, 18, 12],
+    [5, 17, 11],
+    [6, 17, 11],
     [7, 17, 11],
+    [9, 17, 11],
     [10, 16, 10],
+    [12, 16, 10],
+    [13, 15, 9],
+    [15, 15, 9],
+    [16, 14, 8],
+    [18, 14, 8],
+    [19, 13, 7],
     [20, 13, 7],
-    [28, 9, 3],
-    [29, 8, 2],
-    [100, 8, 2],
+    [21, 13, 7],
+    [22, 12, 6],
+    [27, 12, 6],
+    [28, 11, 5],
+    [29, 11, 5],
+    [35, 11, 5],
+    [36, 10, 4],
+    [37, 10, 4],
+    [100, 10, 4],
   ])('calculates costs at speed %i', (speed, move, attack) => {
     const player = createPlayer();
     player.baseStats!.speed = speed;

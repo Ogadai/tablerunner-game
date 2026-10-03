@@ -14,9 +14,29 @@ export interface PlayerActionsPerTurn {
   attack: number,
 }
 
+const speedBonuses: { [key: number]: number } = {
+  0: 0,
+  5: 1,
+  10: 2,
+  13: 3,
+  16: 4,
+  19: 5,
+  22: 6,
+  28: 7,
+  36: 8
+};
+let lastBonus = 0;
+for(let n = 1; n < 36; n++) {
+  if (speedBonuses[n]) {
+    lastBonus = speedBonuses[n];
+  } else {
+    speedBonuses[n] = lastBonus;
+  }
+}
+
 export function getPlayerActionsPerTurn(playerState: INamedTarget): PlayerActionsPerTurn {
-  const playerSpeed = playerState.baseStats!.speed;
-  const speedBonus = Math.min(10, Math.floor(Math.pow(playerSpeed, 1.5) / 15));
+  const speed = Math.min(playerState.baseStats!.speed, 36);
+  const speedBonus = speedBonuses[speed] || 0;
 
   return {
     total: playerState.health > 0 ? BASE_ACTIONS_PER_TURN : 0,
