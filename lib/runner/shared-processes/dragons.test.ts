@@ -8,6 +8,32 @@ jest.mock('../../messages/message-videos', () => ({ publishPlayVideo: jest.fn(),
 beforeEach(() => jest.spyOn(Math, 'random').mockReturnValue(0));
 afterEach(() => jest.restoreAllMocks());
 
+it.each([
+  { location: 118, colRandom: 0.5, rowRandom: 0.9, expected: 123 },
+  { location: 118, colRandom: 0.5, rowRandom: 0, expected: 118 },
+  { location: 222, colRandom: 0.1, rowRandom: 0.5, expected: 223 },
+  { location: 2, colRandom: 0.5, rowRandom: 0, expected: 2 },
+  { location: 121, colRandom: 0.6, rowRandom: 0.5, expected: 122 },
+  { location: 130, colRandom: 0.6, rowRandom: 0.5, expected: 130 },
+  { location: 100, colRandom: 0.4, rowRandom: 0.5, expected: 99 },
+  { location: 130, colRandom: 0.4, rowRandom: 0.5, expected: 130 },
+])('wanders from $location toward $expected while respecting underground cells and map bounds', async ({ location, colRandom, rowRandom, expected }) => {
+  const dragon = createMonster({ type: 'dragon', location });
+  const params = createParams({ monsters: [dragon] });
+  params.gameState.gameId = 'cauldronfire';
+  params.gameState.processState.dragons = {
+    lastLava: 0, nextLava: 100, dragonBabyDead: true,
+    dragonRoute: [location], dragonFlightTurn: 1,
+  };
+  jest.spyOn(Math, 'random')
+    .mockReturnValueOnce(colRandom)
+    .mockReturnValueOnce(rowRandom);
+
+  await dragons.executeForTurn!(params);
+
+  expect(dragon.location).toBe(expected);
+});
+
 it('places both dragons with spells and distributes uniquely identified loot', async () => {
   const params = createParams();
   await dragons.setup!(params);

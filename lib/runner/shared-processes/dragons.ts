@@ -185,14 +185,16 @@ export const dragons: ProcessRunner = {
           // Wander aimlessly
           const cellCoords = getCellCoordinates(dragon.location);
           const offset = {
-            col: cellCoords.col / MAP_COLUMNS,
-            row: cellCoords.row / MAP_ROWS,
+            col: cellCoords.col / (MAP_COLUMNS - 1),
+            row: cellCoords.row / (MAP_ROWS - 1),
           };
-
-          const randChange = (offset: number): number =>
-            (Math.random() < offset / 2)
-          ? -1
-          : ((Math.random() > offset * 2) ? 1 : 0);
+          const randChange = (offset: number): number => {
+            // Keep a 1/3 chance to stay; bias movement toward the centre.
+            // Both directions retain at least a 1/6 chance at every position.
+            const decreaseChance = 1 / 6 + offset / 3;
+            const random = Math.random();
+            return random < decreaseChance ? -1 : (random < decreaseChance + 1 / 3 ? 0 : 1);
+          };
 
           cellCoords.col += randChange(offset.col);
           cellCoords.row += randChange(offset.row);

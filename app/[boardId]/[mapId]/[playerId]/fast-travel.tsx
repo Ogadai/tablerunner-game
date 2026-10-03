@@ -7,6 +7,7 @@ import type { Location } from '@/lib/games/types';
 import NumberGrid from '@/app/number-grid/number-grid';
 import styles from './fast-travel.module.css';
 import { getCellCoordinates } from '@/lib/games/monster-pack';
+import { MAP_ROWS } from '@/lib/games/gridCells';
 import { getAvailableFastTravelLocations } from '@/lib/store/locationState';
 
 interface FastTravelProps {
@@ -122,7 +123,7 @@ function FastTravelDialogContent({
         const cellRect = locationCell.getBoundingClientRect();
 
         divElement.scrollTo({
-          top: (13 - currentCoordinates.row) * cellRect.height + cellRect.height / 2 - divRect.height / 2 + 15,
+          top: (MAP_ROWS - currentCoordinates.row) * cellRect.height + cellRect.height / 2 - divRect.height / 2 + 15,
           left: (1 + currentCoordinates.col) * cellRect.width + cellRect.width / 2 - divRect.width / 2 + 15
         });
       }

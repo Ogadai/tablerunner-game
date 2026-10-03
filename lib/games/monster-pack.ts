@@ -12,6 +12,7 @@ export function getAvailableMonstersByStrength(): { id: string, strength: number
   }).sort((a, b) => a.strength - b.strength);
 }
 
+// Coordinates are 0-based, with row 0 at the bottom and column 0 at the left.
 export const getCellCoordinates = (cell: number) => {
   const index = GRID_CELLS.indexOf(cell);
 
@@ -20,13 +21,18 @@ export const getCellCoordinates = (cell: number) => {
   }
 
   return {
-    row: MAP_ROWS - Math.floor(index / MAP_COLUMNS),
+    row: MAP_ROWS - 1 - Math.floor(index / MAP_COLUMNS),
     col: index % MAP_COLUMNS,
   };
 };
 
 export const getCellAtCoordinates = (coords: { col: number, row: number }): number => {
-  const index = (MAP_ROWS - coords.row) * MAP_COLUMNS + coords.col;
+  if (!Number.isInteger(coords.row) || !Number.isInteger(coords.col)
+      || coords.row < 0 || coords.row >= MAP_ROWS
+      || coords.col < 0 || coords.col >= MAP_COLUMNS) {
+    return 0;
+  }
+  const index = (MAP_ROWS - 1 - coords.row) * MAP_COLUMNS + coords.col;
   if (index >= 0 && index < GRID_CELLS.length) {
     return GRID_CELLS[index];
   }
