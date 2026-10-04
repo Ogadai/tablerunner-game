@@ -19,6 +19,7 @@ import {
   getCharacterInventoriesFromRedis,
   lockGameStateInRedis,
   lockReadyStateInRedis,
+  lockPlayerActionsInRedis,
   publishGameProcessingStarted,
   publishGameProcessingFailed,
   publishGameStateUpdated,
@@ -44,6 +45,7 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
   let gameStateLock: (() => Promise<void>) | null = null;
   let processingLock:  (() => Promise<void>) | null = null;
   let readyLock: (() => Promise<void>) | null = null;
+  const actionsLocks: (() => Promise<void>)[] = [];
   let gameStateUpdated = false;
   let turnFailed = false;
   let pendingNotification: Promise<void> | undefined;
@@ -58,16 +60,26 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
       throw error;
     }
     // Inventory writes must also stay excluded for the full turn-processing window.
-    gameStateLock = await lockGameStateInRedis(boardId, mapId, processingLockTTL);
+    gameStateLock = await lockGameStateInRedis(boardId, mapId, processingLockTTL, 0);
     const gameState = await getGameStateFromRedis(boardId, mapId);
     if (!gameState) return;
 
-    readyLock = await lockReadyStateInRedis(boardId, mapId);
+    readyLock = await lockReadyStateInRedis(boardId, mapId, 0);
     const readyState = await getReadyStateFromRedis(boardId, mapId);
 
-    if (gameState.players.every(player => player.health <= 0)) {
+    const allPlayersDead = gameState.players.every(player => player.health <= 0);
+    const allPlayersReady = gameState.players.every(player => player.health === 0 || readyState.readyPlayerIds.includes(player.id));
+    if (allPlayersDead || allPlayersReady) {
+      // Freeze every queue before reading inputs, including paused-game respawns.
+      // Fail fast on contention; finally releases any locks already acquired.
+      for (const playerId of gameState.players.map(player => player.id).sort()) {
+        actionsLocks.push(await lockPlayerActionsInRedis(boardId, mapId, playerId, processingLockTTL, 0));
+      }
+    }
+
+    if (allPlayersDead) {
       gameStateUpdated = await processPausedGame(boardId, mapId, gameState, readyState);
-    } else if (gameState.players.every(player => player.health === 0 || readyState.readyPlayerIds.includes(player.id))) {
+    } else if (allPlayersReady) {
       // Do not hold the short readiness lock during turn execution.
       await readyLock();
       readyLock = null;
@@ -82,6 +94,9 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
       }
     }
   } finally {
+    for (const releaseActionsLock of actionsLocks.reverse()) {
+      await releaseActionsLock();
+    }
     if (gameStateLock) {
       await gameStateLock();
     }

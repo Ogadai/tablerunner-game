@@ -2,7 +2,7 @@
 
 import { ApiResponse } from "../api-response";
 import { PlayerAction, PlayerActionsState, PlayerActionType } from "./types";
-import { getActionsStateFromRedis, setActionsStateInRedis } from './redis-access';
+import { getActionsStateFromRedis, lockPlayerActionsInRedis, setActionsStateInRedis } from './redis-access';
 
 export async function getPlayerActionsState(boardId: string, mapId: string, playerId: string): Promise<ApiResponse<PlayerActionsState>> {
   try {
@@ -21,7 +21,9 @@ export async function getPlayerActionsState(boardId: string, mapId: string, play
 }
 
 export async function addPlayerAction(boardId: string, mapId: string, playerId: string, action: PlayerAction): Promise<ApiResponse<PlayerActionsState>> {
+  let actionsLock: (() => Promise<void>) | null = null;
   try {
+    actionsLock = await lockPlayerActionsInRedis(boardId, mapId, playerId);
     const currentState = (await getActionsStateFromRedis(boardId, mapId, playerId));
     const newState: PlayerActionsState = {
       ...currentState,
@@ -45,11 +47,17 @@ export async function addPlayerAction(boardId: string, mapId: string, playerId: 
       success: false,
       error: (error as Error).message
     };
+  } finally {
+    if (actionsLock) {
+      await actionsLock();
+    }
   }
 }
 
 export async function removePlayerAction(boardId: string, mapId: string, playerId: string, actionId: number): Promise<ApiResponse<PlayerActionsState>> {
+  let actionsLock: (() => Promise<void>) | null = null;
   try {
+    actionsLock = await lockPlayerActionsInRedis(boardId, mapId, playerId);
     const currentState = (await getActionsStateFromRedis(boardId, mapId, playerId));
     const newState: PlayerActionsState = {
       ...currentState,
@@ -68,5 +76,9 @@ export async function removePlayerAction(boardId: string, mapId: string, playerI
       success: false,
       error: (error as Error).message
     };
+  } finally {
+    if (actionsLock) {
+      await actionsLock();
+    }
   }
 } 

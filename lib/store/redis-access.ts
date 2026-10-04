@@ -6,6 +6,8 @@ import { PlayerSnapshot, PlayerTurnInputs } from './types';
 
 const redis = Redis.fromEnv();
 const defaultLockTTL = 5000;
+const defaultLockWaitMs = 1000;
+const lockRetryIntervalMs = 50;
 export const processingLockTTL = 30000;
 
 export const getGameKey = (boardId: string, mapId: string) => `game:${boardId}:${mapId}`;
@@ -15,6 +17,7 @@ export const getPlayersReadyKey = (boardId: string, mapId: string) => `playersRe
 const getPlayersReadyLock = (boardId: string, mapId: string) => `playersReadyLock:${boardId}:${mapId}`;
 
 const getPlayerActionsKey = (boardId: string, mapId: string, playerId: string) => `playerActions:${boardId}:${mapId}:${playerId}`;
+const getPlayerActionsLock = (boardId: string, mapId: string, playerId: string) => `playerActionsLock:${boardId}:${mapId}:${playerId}`;
 // Retain the legacy key so already queued boss actions survive the refactor.
 const getMonsterActionsKey = (boardId: string, mapId: string, npcId: string) => `npcActions:${boardId}:${mapId}:${npcId}`;
 
@@ -129,8 +132,8 @@ export async function commitGameTurnInRedis(
   await transaction.exec();
 }
 
-export async function lockGameStateInRedis(boardId: string, mapId: string, ttl = defaultLockTTL): Promise<() => Promise<void>> {
-  return getLock(getGameStateLock(boardId, mapId), ttl);
+export async function lockGameStateInRedis(boardId: string, mapId: string, ttl = defaultLockTTL, waitMs = defaultLockWaitMs): Promise<() => Promise<void>> {
+  return getLock(getGameStateLock(boardId, mapId), ttl, waitMs);
 }
 
 export async function deleteGameStateFromRedis(boardId: string, mapId: string): Promise<void> {
@@ -191,8 +194,8 @@ export async function publishGameProcessingFailed(boardId: string, mapId: string
 
 /* All Players "Ready" State */
 
-export async function lockReadyStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
-  return getLock(getPlayersReadyLock(boardId, mapId));
+export async function lockReadyStateInRedis(boardId: string, mapId: string, waitMs = defaultLockWaitMs): Promise<() => Promise<void>> {
+  return getLock(getPlayersReadyLock(boardId, mapId), defaultLockTTL, waitMs);
 }
 
 export async function getReadyStateFromRedis(boardId: string, mapId: string): Promise<PlayerReadyState> {
@@ -250,6 +253,10 @@ export async function getPlayerTurnInputsFromRedis(
 }
 
 /* Individual Player Actions State */
+
+export async function lockPlayerActionsInRedis(boardId: string, mapId: string, playerId: string, ttl = defaultLockTTL, waitMs = defaultLockWaitMs): Promise<() => Promise<void>> {
+  return getLock(getPlayerActionsLock(boardId, mapId, playerId), ttl, waitMs);
+}
 
 export async function getActionsStateFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerActionsState> {
   const result = await redis.get(getPlayerActionsKey(boardId, mapId, playerId)) as PlayerActionsState;
@@ -349,8 +356,8 @@ export async function deletePlayerMessagesFromRedis(boardId: string, mapId: stri
 
 /* Locations State */
 
-export async function lockLocationsStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
-  return getLock(getLocationsLock(boardId, mapId));
+export async function lockLocationsStateInRedis(boardId: string, mapId: string, waitMs = defaultLockWaitMs): Promise<() => Promise<void>> {
+  return getLock(getLocationsLock(boardId, mapId), defaultLockTTL, waitMs);
 }
 
 export async function getLocationsStateFromRedis(boardId: string, mapId: string): Promise<AllLocationsState> {
@@ -369,8 +376,8 @@ export async function deleteLocationsStateFromRedis(boardId: string, mapId: stri
 
 /* Store inventory state */
 
-export async function lockStoreStateInRedis(boardId: string, mapId: string): Promise<() => Promise<void>> {
-  return getLock(getStoreInventoryLock(boardId, mapId));
+export async function lockStoreStateInRedis(boardId: string, mapId: string, waitMs = defaultLockWaitMs): Promise<() => Promise<void>> {
+  return getLock(getStoreInventoryLock(boardId, mapId), defaultLockTTL, waitMs);
 }
 
 export async function getStoreStateFromRedis(boardId: string, mapId: string, location: number): Promise<StoreInventoryState> {
@@ -425,15 +432,25 @@ export class RedisLockError extends Error {
   }
 }
 
-async function getLock(lockKey: string, ttl: number = defaultLockTTL): Promise<() => Promise<void>> {
+// Retry contention only; Redis errors propagate immediately. A zero wait is fail-fast.
+async function getLock(lockKey: string, ttl: number = defaultLockTTL, waitMs = 0): Promise<() => Promise<void>> {
   const lockValue = crypto.randomUUID(); // Unique token to identify the lock owner
+  const deadline = Date.now() + waitMs;
 
   // 'NX' ensures it only sets if the key doesn't exist
   // 'PX' sets the expiration time in milliseconds
-  const acquired = await redis.set(lockKey, lockValue, {
-    nx: true,
-    px: ttl,
-  });
+  let acquired;
+  do {
+    acquired = await redis.set(lockKey, lockValue, {
+      nx: true,
+      px: ttl,
+    });
+    if (acquired === "OK") break;
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) throw new RedisLockError();
+    await new Promise<void>(resolve => setTimeout(resolve, Math.min(lockRetryIntervalMs, remainingMs)));
+    if (Date.now() >= deadline) throw new RedisLockError();
+  } while (true);
 
   if (acquired === "OK") {
     return async () => {

@@ -19,7 +19,10 @@ beforeEach(() => {
   client.get.mockResolvedValue(null);
   client.set.mockResolvedValue('OK');
 });
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.useRealTimers();
+  jest.restoreAllMocks();
+});
 
 it('reads player and NPC inventories together, preserving empty pending inventories', async () => {
   client.mget.mockResolvedValue([null, { equipment: [], equipped: {} }]);
@@ -293,28 +296,85 @@ describe('locks', () => {
     ['monstersLock', () => store.lockLocationsStateInRedis('b', 'm'), 5000],
     ['storeLock', () => store.lockStoreStateInRedis('b', 'm'), 5000],
     ['processingLock', () => store.lockForProcessing('b', 'm'), 30000],
+    ['playerActionsLock:b:m:hero', () => store.lockPlayerActionsInRedis('b', 'm', 'hero'), 5000],
+    ['playerActionsLock:b:m:hero', () => store.lockPlayerActionsInRedis('b', 'm', 'hero', 30000, 0), 30000],
   ] as const)('acquires and atomically releases %s (case %#)', async (type, lock, ttl) => {
     const release = await lock();
     const token = client.set.mock.calls[0][1];
     expect(typeof token).toBe('string');
     expect(token.length).toBeGreaterThan(0);
-    expect(client.set).toHaveBeenCalledWith(`${type}:b:m`, token, { nx: true, px: ttl });
+    const key = type.startsWith('playerActionsLock:') ? type : `${type}:b:m`;
+    expect(client.set).toHaveBeenCalledWith(key, token, { nx: true, px: ttl });
     await release();
-    expect(client.eval).toHaveBeenCalledWith(expect.stringContaining('redis.call("get", KEYS[1]) == ARGV[1]'), [`${type}:b:m`], [token]);
+    expect(client.eval).toHaveBeenCalledWith(expect.stringContaining('redis.call("get", KEYS[1]) == ARGV[1]'), [key], [token]);
     expect(client.eval.mock.calls[0][0]).toContain('return redis.call("del", KEYS[1])');
     expect(client.del).not.toHaveBeenCalled();
   });
 
   it('throws a recognizable lock error when already held', async () => {
     client.set.mockResolvedValue(null);
-    await expect(store.lockGameStateInRedis('b', 'm')).rejects.toBeInstanceOf(store.RedisLockError);
+    await expect(store.lockGameStateInRedis('b', 'm', 5000, 0)).rejects.toBeInstanceOf(store.RedisLockError);
+    expect(client.set).toHaveBeenCalledTimes(1);
     expect(client.eval).not.toHaveBeenCalled();
+  });
+
+  it('keeps processing locks fail-fast', async () => {
+    client.set.mockResolvedValue(null);
+    await expect(store.lockForProcessing('b', 'm')).rejects.toBeInstanceOf(store.RedisLockError);
+    expect(client.set).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    () => store.lockGameStateInRedis('b', 'm'),
+    () => store.lockReadyStateInRedis('b', 'm'),
+    () => store.lockLocationsStateInRedis('b', 'm'),
+    () => store.lockStoreStateInRedis('b', 'm'),
+    () => store.lockPlayerActionsInRedis('b', 'm', 'hero'),
+  ])('retries a user lock and releases it using the acquired token', async lock => {
+    jest.useFakeTimers();
+    client.set.mockResolvedValueOnce(null).mockResolvedValueOnce('OK');
+    const pending = lock();
+    await jest.advanceTimersByTimeAsync(50);
+    const release = await pending;
+    expect(client.set).toHaveBeenCalledTimes(2);
+    expect(client.set.mock.calls[1]).toEqual(client.set.mock.calls[0]);
+    await release();
+    expect(client.eval).toHaveBeenCalledWith(expect.any(String),
+      [client.set.mock.calls[1][0]], [client.set.mock.calls[1][1]]);
+  });
+
+  it('stops retrying after one second without releasing another owner’s lock', async () => {
+    jest.useFakeTimers();
+    client.set.mockResolvedValue(null);
+    const result = expect(store.lockGameStateInRedis('b', 'm')).rejects.toBeInstanceOf(store.RedisLockError);
+    await jest.advanceTimersByTimeAsync(1000);
+    await result;
+    expect(client.set).toHaveBeenCalledTimes(20);
+    expect(client.eval).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(client.set).toHaveBeenCalledTimes(20);
+  });
+
+  it('propagates Redis errors without retrying', async () => {
+    client.set.mockRejectedValue(new Error('Redis unavailable'));
+    await expect(store.lockGameStateInRedis('b', 'm')).rejects.toThrow('Redis unavailable');
+    expect(client.set).toHaveBeenCalledTimes(1);
   });
 
   it('uses a different owner token for each acquisition', async () => {
     await store.lockGameStateInRedis('b', 'm');
     await store.lockGameStateInRedis('b', 'm');
     expect(client.set.mock.calls[0][1]).not.toBe(client.set.mock.calls[1][1]);
+  });
+
+  it('uses separate action lock keys for different players', async () => {
+    const releaseHero = await store.lockPlayerActionsInRedis('b', 'm', 'hero');
+    const releaseMage = await store.lockPlayerActionsInRedis('b', 'm', 'mage');
+    expect(client.set.mock.calls.map(call => call[0])).toEqual([
+      'playerActionsLock:b:m:hero', 'playerActionsLock:b:m:mage',
+    ]);
+    await releaseHero();
+    await releaseMage();
   });
 
   it('logs release errors without masking a completed operation', async () => {
