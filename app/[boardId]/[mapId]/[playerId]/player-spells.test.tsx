@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import Swal from 'sweetalert2';
 import { SpellIds, spells } from '@/lib/games/spells';
 import { PlayerActionType } from '@/lib/store/types';
 import PlayerSpells from './player-spells';
@@ -16,6 +15,21 @@ function setup(spellId = SpellIds.spiritArrow, entities = [makeEntity()]) {
 }
 
 describe('PlayerSpells', () => {
+  it.each([{ actionPointsTotal: 0 }, { magicLeft: 0 }])('disables unaffordable quick actions: %o', stats => {
+    const addNewAction = jest.fn();
+    render(<PlayerSpells playerSpells={[SpellIds.spiritArrow]}
+      player={makePlayer({ recentSpells: [SpellIds.spiritArrow] })} entities={[makeEntity()]}
+      playerStats={makeStats(stats)} addNewAction={addNewAction} />);
+    const spellButton = screen.getByRole('button', { name: 'Spirit Arrow' });
+    expect(spellButton).toBeDisabled();
+    fireEvent.click(spellButton);
+    if ('actionPointsTotal' in stats) {
+      const attackButton = screen.getByRole('button', { name: 'Attack' });
+      expect(attackButton).toBeDisabled();
+      fireEvent.click(attackButton);
+    }
+    expect(addNewAction).not.toHaveBeenCalled();
+  });
   it('attacks the single living enemy, ignoring dead enemies and friends', () => {
     const add = setup(SpellIds.spiritArrow, [makeEntity(), makeEntity({ id: 'dead', health: 0 }),
       makeEntity({ id: 'friend', className: EntityItemClass.friendly })]);
@@ -39,10 +53,11 @@ describe('PlayerSpells', () => {
     await waitFor(() => expect(screen.queryByRole('list')).not.toBeInTheDocument());
   });
 
-  it('warns without submitting when a targeted spell has no targets', () => {
+  it('disables a targeted quick spell when there are no targets', () => {
     const add = setup(SpellIds.spiritArrow, [makeEntity({ health: 0 })]);
-    fireEvent.click(screen.getByRole('button', { name: 'Spirit Arrow' }));
-    expect(Swal.fire).toHaveBeenCalledWith(expect.objectContaining({ title: 'Cannot cast spell!' }));
+    const spellButton = screen.getByRole('button', { name: 'Spirit Arrow' });
+    expect(spellButton).toBeDisabled();
+    fireEvent.click(spellButton);
     expect(add).not.toHaveBeenCalled();
   });
 

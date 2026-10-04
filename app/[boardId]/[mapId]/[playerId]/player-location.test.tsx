@@ -124,6 +124,51 @@ describe('PlayerLocation', () => {
       .toMatchObject({ health: 25, maxHealth: 30 });
   });
 
+  it('blocks rapid attacks while saving and checks the returned queue before another attack', async () => {
+    await setup();
+    let finish!: (result: Awaited<ReturnType<typeof addPlayerAction>>) => void;
+    jest.mocked(addPlayerAction).mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    const submit = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].addNewAction;
+    const attack = { type: PlayerActionType.Attack, description: 'Attack', target: 'enemy' };
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = submit(attack);
+      await submit(attack);
+    });
+    expect(addPlayerAction).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finish({ success: true, data: { actions: [{ ...attack, id: 0 }] } });
+      await pending;
+      await submit(attack);
+    });
+    expect(addPlayerAction).toHaveBeenCalledTimes(1);
+    expect(Swal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      text: 'Not enough Action Points left this turn.',
+    }));
+  });
+
+  it('rejects a spell when queued spells have used the remaining magic', async () => {
+    const { player } = await setup();
+    const cast = { id: 0, type: PlayerActionType.Cast, description: 'Cast', spellId: 'spiritArrow' };
+    await act(async () => onStats(makeStats({ magic: 3, actionPointsTotal: 100 }), { actions: [cast] }, null, player));
+    const submit = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].addNewAction;
+    await act(async () => { await submit(cast); });
+    expect(addPlayerAction).not.toHaveBeenCalled();
+    expect(Swal.fire).toHaveBeenCalledWith(expect.objectContaining({ text: 'Not enough magic left this turn.' }));
+  });
+
+  it('allows another combat submission after a failed save without updating the queue', async () => {
+    await setup();
+    jest.mocked(addPlayerAction).mockResolvedValueOnce({ success: false, error: 'Locked' });
+    const submit = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].addNewAction;
+    const attack = { type: PlayerActionType.Attack, description: 'Attack', target: 'enemy' };
+    await act(async () => { await submit(attack); });
+    expect(sync.updateActionsState).not.toHaveBeenCalled();
+    await act(async () => { await submit(attack); });
+    expect(addPlayerAction).toHaveBeenCalledTimes(2);
+  });
+
   it('permits movement, portals and running with an allied monster', async () => {
     location = {
       items: [], npcs: [], monsters: [createMonster({ team: 'good' })],

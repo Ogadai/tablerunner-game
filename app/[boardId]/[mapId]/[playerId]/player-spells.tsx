@@ -125,12 +125,13 @@ export default function PlayerSpells({
     : [];
 
   const actionPointsLeft = playerStats.actionPointsTotal- playerStats.actionPointsUsed;
+  const canAttack = player.health > 0 && attackTargets.length > 0 && playerStats.actionsPerTurn.attack <= actionPointsLeft;
 
   const recentSpells: { spell: SpellDef, canCast: boolean }[]
       = (player.recentSpells || []).map(spellId => {
         const spell = spells[spellId];
         const actionCost = getSpellActionCost(spell, playerStats?.baseStats?.magic);
-        const canCast = actionCost <= actionPointsLeft && spell.magicCost <= playerStats.magicLeft
+        const canCast = player.health > 0 && actionCost <= actionPointsLeft && spell.magicCost <= playerStats.magicLeft
             && canCastSpell(spellId);
 
         return { spell, canCast }
@@ -200,7 +201,8 @@ export default function PlayerSpells({
         <Popover.Trigger asChild>
           <button
             type="button"
-            className={`${styles.spellIcon} ${attackTargets.length === 0 || playerStats.actionsPerTurn.attack > actionPointsLeft ? styles.disabledSpellIcon : ''}`}
+            className={`${styles.spellIcon} ${canAttack ? '' : styles.disabledSpellIcon}`}
+            disabled={!canAttack}
             aria-label="Attack"
             title="Attack"
             style={{ backgroundPosition: attackIconBackground }}
@@ -221,6 +223,7 @@ export default function PlayerSpells({
           key={spell.id}
           type="button"
           className={`${styles.spellIcon} ${canCast ? '' : styles.disabledSpellIcon}`}
+          disabled={!canCast}
           aria-label={spell.name}
           title={spell.name}
           style={{ backgroundPosition: `-${spell.iconXY.x * 40}px -${spell.iconXY.y * 40}px` }}

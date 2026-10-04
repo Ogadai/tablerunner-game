@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 import { getSwalDefaultOptions } from '@/app/swal';
@@ -23,7 +23,7 @@ import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-
 import FastTravel from './fast-travel';
 import PlayerVideo from './player-video';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
-import { getCombatStats } from '@/lib/store/playerStats';
+import { getCombatStats, getPlayerActionsCosts, getPlayerActionsMagic } from '@/lib/store/playerStats';
 
 export default function PlayerLocation(
   {
@@ -52,6 +52,13 @@ export default function PlayerLocation(
     ? locationUpdate.state : snapshot?.location || { monsters: [], items: [], npcs: [] };
   const [playerState, setPlayerState] = useState<PlayerState | null>();
   const [playerStats, setPlayerStats] = useState<PlayerStats>(emptyPlayerStats);
+  const combatActionPending = useRef(false);
+  const nextActionNumber = useRef(0);
+  const currentPlayerInputs = useRef<{
+    player: PlayerState;
+    stats: PlayerStats;
+    actions: PlayerActionsState;
+  } | null>(null);
   const [actionsSnapshot, setActionsSnapshot] = useState<{ gameState: GameState; state: PlayerActionsState } | null>(null);
   const actionsState = actionsSnapshot?.gameState === gameState ? actionsSnapshot.state : { actions: [] };
   const router = useRouter();
@@ -64,8 +71,6 @@ export default function PlayerLocation(
   const usedItemIds = actionsState.actions
     .filter(a => a.type === PlayerActionType.UseItem)
     .map(a => (a as PlayerActionUseItem).itemId || '');
-  let actionNumber = actionsState.actions.reduce((number, action) => 
-    Math.max(number, action.id + 1), 0);
 
   useEffect(() => {
     const player = gameState.players.find(p => p.id === playerId);
@@ -96,6 +101,8 @@ export default function PlayerLocation(
           }
         }),
         playerStatsSyncService.subscribe((stats, actionsState, addStatsState, activePlayer) => {
+          currentPlayerInputs.current = activePlayer ? { player: activePlayer, stats, actions: actionsState } : null;
+          nextActionNumber.current = actionsState.actions.reduce((number, action) => Math.max(number, action.id + 1), 0);
           setPlayerStats(stats);
           setActionsSnapshot({ gameState, state: actionsState });
           setPlayerState(activePlayer);
@@ -110,11 +117,48 @@ export default function PlayerLocation(
   }, [gameState, snapshot, boardId, mapId, playerId, router, topicId]);
 
   const addNewAction = async (opts: Omit<PlayerAction, 'id'>) => {
-    const state = await addPlayerAction(boardId, mapId, playerState!.id, {
-      ...opts,
-      id: actionNumber++,
-    });
-    playerStatsSyncService.updateActionsState(state.data!);
+    const isCombatAction = opts.type === PlayerActionType.Attack || opts.type === PlayerActionType.Cast;
+    if (isCombatAction && combatActionPending.current) return;
+    const inputs = currentPlayerInputs.current;
+    if (!inputs) return;
+    const nextActionId = inputs.actions.actions.reduce((number, action) => Math.max(number, action.id + 1), nextActionNumber.current);
+    const action = { ...opts, id: nextActionId } as PlayerAction;
+    if (isCombatAction) {
+      const effectivePlayer = { ...inputs.player, baseStats: inputs.stats.baseStats };
+      const nextActions = { actions: [...inputs.actions.actions, action] };
+      const overActionBudget = getPlayerActionsCosts(effectivePlayer, nextActions) > inputs.stats.actionPointsTotal;
+      const overMagicBudget = getPlayerActionsMagic(effectivePlayer, nextActions) > inputs.stats.magic;
+      if (overActionBudget || overMagicBudget) {
+        await Swal.fire({
+          ...getSwalDefaultOptions(),
+          title: 'Action blocked!',
+          icon: 'warning',
+          text: overActionBudget ? 'Not enough Action Points left this turn.' : 'Not enough magic left this turn.',
+        });
+        return;
+      }
+      // Reserve submission synchronously, before React renders or the request finishes.
+      combatActionPending.current = true;
+    }
+    nextActionNumber.current = nextActionId + 1;
+    try {
+      const state = await addPlayerAction(boardId, mapId, inputs.player.id, action);
+      if (!state.success || !state.data) throw new Error(state.error || 'Unable to save action.');
+      // Keep the next click accurate even before the subscription triggers a render.
+      if (currentPlayerInputs.current === inputs) {
+        currentPlayerInputs.current = { ...inputs, actions: state.data };
+      }
+      playerStatsSyncService.updateActionsState(state.data);
+    } catch (error) {
+      await Swal.fire({
+        ...getSwalDefaultOptions(),
+        title: 'Action blocked!',
+        icon: 'warning',
+        text: (error as Error).message,
+      });
+    } finally {
+      if (isCombatAction) combatActionPending.current = false;
+    }
   }
 
   const bindMoveAction = (locationMove: PlayerLocationMove) =>
