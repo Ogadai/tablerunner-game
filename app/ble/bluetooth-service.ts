@@ -62,10 +62,14 @@ export class BluetoothService {
         this.device?.removeEventListener('gattserverdisconnected', this.onDisconnected);
         this.device = selectedDevice;
         this.characteristic = characteristic;
+        this.messageQueue = Promise.resolve();
         this.device.addEventListener('gattserverdisconnected', this.onDisconnected);
         localStorage.setItem('ble_connected', 'true');
 
         await this.runWelcome();
+        if (this.device !== selectedDevice || !selectedDevice.gatt?.connected) {
+          throw new Error('Bluetooth disconnected during setup.');
+        }
         this.setState(BleState.Connected);
         return;
       } catch (error) {
@@ -78,6 +82,7 @@ export class BluetoothService {
         this.device?.removeEventListener('gattserverdisconnected', this.onDisconnected);
         this.device = null;
         this.characteristic = null;
+        this.messageQueue = Promise.resolve();
       }
     }
 
@@ -86,12 +91,15 @@ export class BluetoothService {
   }
   
   private async runWelcome () {
+    const characteristic = this.characteristic;
     // await this.setAll('ff0000');
     await this.sendLEDColoursMessage(skullImage);
 
-    this.messageQueue = this.messageQueue.then(
-      () => new Promise(r => setTimeout(r, 3000))
-    )
+    await new Promise<void>(resolve => setTimeout(resolve, 3000));
+
+    if (this.characteristic !== characteristic) {
+      return;
+    }
     
     await this.setAll('000000');
   }
@@ -123,7 +131,7 @@ export class BluetoothService {
 
   async setColourPerLed(ledColours: { led: number, rgb: string }[]) {
     const message = `LED|${ledColours.map(lc => `${lc.led}:${lc.rgb}`).join(',')}`;
-    this.sendLEDColoursMessage(message);
+    await this.sendLEDColoursMessage(message);
   }
 
   async sendLEDColoursMessage(ledsMessage: string) {
@@ -151,16 +159,27 @@ export class BluetoothService {
 
   async sendMessage(message: string): Promise<void> {
     console.log('sendMessage', message);
-    this.messageQueue = this.messageQueue.then(
-      async() => await this.sendMessageInternal(message)
-    );
-  }
-
-  private async sendMessageInternal(message: string): Promise<void> {
-    if (!this.characteristic || !this.device?.gatt?.connected) {
+    const device = this.device;
+    const characteristic = this.characteristic;
+    if (!characteristic || !device?.gatt?.connected) {
       return;
     }
-    await this.characteristic.writeValue(new TextEncoder().encode(message));
+
+    this.messageQueue = this.messageQueue.then(async () => {
+      if (this.characteristic !== characteristic || !device.gatt?.connected) {
+        return;
+      }
+
+      try {
+        await characteristic.writeValue(new TextEncoder().encode(message));
+      } catch (error) {
+        console.error('Bluetooth write failed', error);
+        if (this.characteristic === characteristic) {
+          this.disconnect();
+        }
+      }
+    });
+    await this.messageQueue;
   }
 
   private async setAll(rgb: string) {
@@ -176,6 +195,7 @@ export class BluetoothService {
     this.device?.removeEventListener('gattserverdisconnected', this.onDisconnected);
     this.device = null;
     this.characteristic = null;
+    this.messageQueue = Promise.resolve();
     localStorage.setItem('ble_connected', 'false');
     this.setState(BleState.Disconnected);
   };

@@ -12,6 +12,12 @@ describe('BluetoothService', () => {
   let mockServer: { getPrimaryService: jest.Mock };
   let mockBluetooth: { requestDevice: jest.Mock };
 
+  async function connect() {
+    const connecting = service.connect('board-42');
+    await jest.runAllTimersAsync();
+    await connecting;
+  }
+
   beforeEach(() => {
     jest.useFakeTimers();
     jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -51,7 +57,7 @@ describe('BluetoothService', () => {
   });
 
   afterEach(async () => {
-    // Drain the queued welcome animation before replacing this test's BLE mocks.
+    // Drain any pending welcome animation before replacing this test's BLE mocks.
     await jest.runAllTimersAsync();
     jest.useRealTimers();
     jest.restoreAllMocks();
@@ -79,7 +85,7 @@ describe('BluetoothService', () => {
   });
 
   it('should request a device, connect, and move to Connected state', async () => {
-    await service.connect('board-42');
+    await connect();
 
     expect(mockBluetooth.requestDevice).toHaveBeenCalledWith({
       filters: [{ namePrefix: 'TABLERUNNER-board-42' }],
@@ -110,7 +116,7 @@ describe('BluetoothService', () => {
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce(mockDevice);
 
-    await service.connect('board-42');
+    await connect();
 
     expect(mockBluetooth.requestDevice).toHaveBeenCalledTimes(2);
     expect(service.getState()).toBe(BleState.Connected);
@@ -182,5 +188,69 @@ describe('BluetoothService', () => {
     expect(listener).toHaveBeenLastCalledWith(BleState.Disconnected);
     expect(service['device']).toBeNull();
     expect(service['characteristic']).toBeNull();
+  });
+
+  it('should wait for the welcome sequence before reporting Connected', async () => {
+    const connecting = service.connect('board-42');
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(service.getState()).toBe(BleState.Connecting);
+
+    await jest.runAllTimersAsync();
+    await connecting;
+
+    expect(service.getState()).toBe(BleState.Connected);
+  });
+
+  it('should reconnect and send commands after a failed write', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    await connect();
+    mockCharacteristic.writeValue.mockRejectedValueOnce(new Error('Connection lost'));
+
+    await service.sendMessage('FAILED');
+
+    expect(service.getState()).toBe(BleState.Disconnected);
+    expect(mockDevice.gatt.disconnect).toHaveBeenCalledTimes(1);
+
+    await connect();
+    mockCharacteristic.writeValue.mockClear();
+    await service.setColourForLeds([42], 'ff0000');
+
+    expect(service.getState()).toBe(BleState.Connected);
+    expect(mockCharacteristic.writeValue).toHaveBeenCalledTimes(1);
+    expect(Array.from(mockCharacteristic.writeValue.mock.calls[0][0])).toEqual(
+      Array.from(new TextEncoder().encode('LED|41:ff0000'))
+    );
+  });
+
+  it('should discard old queued commands and ignore late failures after reconnecting', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    await connect();
+    let rejectWrite!: (error: Error) => void;
+    mockCharacteristic.writeValue.mockImplementationOnce(() => new Promise<void>((resolve, reject) => {
+      rejectWrite = reject;
+    }));
+
+    const pending = service.sendMessage('PENDING');
+    await Promise.resolve();
+    const queued = service.sendMessage('STALE');
+    service.disconnect();
+
+    const newCharacteristic = { writeValue: jest.fn().mockResolvedValue(undefined) };
+    mockServer.getPrimaryService.mockResolvedValue({
+      getCharacteristic: jest.fn().mockResolvedValue(newCharacteristic),
+    });
+    await connect();
+    newCharacteristic.writeValue.mockClear();
+
+    rejectWrite(new Error('Old connection lost'));
+    await Promise.all([pending, queued]);
+    await service.sendMessage('CURRENT');
+
+    expect(service.getState()).toBe(BleState.Connected);
+    expect(newCharacteristic.writeValue).toHaveBeenCalledTimes(1);
+    expect(Array.from(newCharacteristic.writeValue.mock.calls[0][0])).toEqual(
+      Array.from(new TextEncoder().encode('CURRENT'))
+    );
   });
 });
