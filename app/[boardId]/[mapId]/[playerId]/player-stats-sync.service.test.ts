@@ -82,4 +82,33 @@ describe('PlayerStatsSyncService', () => {
     expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, { characterStats: null },
       expect.objectContaining({ equipment: player.equipment, equipped: player.equipped }));
   });
+
+  it('preserves pending inventory when an action returns no data and accepts an explicitly empty inventory', async () => {
+    const inventory = {
+      equipment: [{ id: 'sword', type: 'swordRusty' }],
+      equipped: { weapon: 'sword' },
+      coins: 5,
+    };
+    service.updatePlayer(makePlayer(), { ...inputs, inventory });
+    await service.getStats();
+    const listener = jest.fn();
+    const dispose = service.subscribe(listener);
+    await service.getStats();
+    const stats = await service.getStats();
+    listener.mockClear();
+
+    service.updateInventory(undefined);
+    expect(await service.getStats()).toBe(stats);
+    expect(listener).not.toHaveBeenCalled();
+    service.updateActionsState({ actions: [] });
+    await service.getStats();
+    expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, inputs.addedStats,
+      expect.objectContaining(inventory));
+
+    service.updateInventory({ equipment: [], equipped: {}, coins: 0 });
+    await service.getStats();
+    expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, inputs.addedStats,
+      expect.objectContaining({ equipment: [], coins: 0 }));
+    dispose();
+  });
 });

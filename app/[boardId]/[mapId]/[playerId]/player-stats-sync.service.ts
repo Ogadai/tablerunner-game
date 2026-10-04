@@ -82,7 +82,9 @@ class PlayerStatsSyncService {
   }
 
   updateInventory(inventoryState: PlayerInventoryState | undefined): void {
-    this.inventoryState = inventoryState || { equipment: [], equipped: {} };
+    // Missing data from a failed action must not clear the current inventory.
+    if (!inventoryState) return;
+    this.inventoryState = inventoryState;
     this.statsPromise = this.getUpdatedStats();
   }
 

@@ -109,12 +109,16 @@ export default function CharacterCard({
 
   const onEquipItem = async (item: PlayerItem) => {
     const response = await playerEquipItem(boardId, mapId, player.id, item.id);
-    playerStatsSyncService.updateInventory(response.data);
+    if (response.success && response.data) {
+      playerStatsSyncService.updateInventory(response.data);
+    }
   }
 
   const onDropItem = async (item: PlayerItem) => {
     const response = await dropItemAtLocation(boardId, mapId, player.id, item.id);
-    playerStatsSyncService.updateInventory(response.data);
+    if (response.success && response.data) {
+      playerStatsSyncService.updateInventory(response.data);
+    }
   }
 
   const onTakeItem = ((player as NPCState).masterId === viewer.id && viewer.health > 0 && pendingInventory && !transferring)

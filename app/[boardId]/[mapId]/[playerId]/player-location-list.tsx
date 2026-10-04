@@ -117,7 +117,9 @@ export default function PlayerLocationList({
     }
 
     const response = await takeItemAtLocation(boardId, mapId, player.id, itemId);
-    playerStatsSyncService.updateInventory(response.data);
+    if (response.success && response.data) {
+      playerStatsSyncService.updateInventory(response.data);
+    }
   }
 
   const dialogOpen = (monsterOpen !== null) || (openCharacter !== null) || (npcOpen !== null);
