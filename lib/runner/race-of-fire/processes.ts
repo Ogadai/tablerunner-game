@@ -1,11 +1,12 @@
 import { BaseParams } from '../base-params';
 import { ProcessRunner } from '../types';
 import { shardProcess } from './shards';
+import { winnerProcess } from './winner';
 import { zombies } from '../shared-processes/zombies';
 import { dragons } from '../shared-processes/dragons';
 import { npcs } from '../shared-processes/npcs';
 
-const allProcesses = [shardProcess, zombies, dragons, npcs];
+const allProcesses = [shardProcess, winnerProcess, zombies, dragons, npcs];
 
 export const raceOfFireProcesses: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
