@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import { act, render, screen } from '@testing-library/react';
 import GameTopic from './game-topic';
 import GameTopicService from './game-topic-service';
+import RaceTeamTopicService from './race-team-topic-service';
 import VideoTopicService from './video-topic-service';
 import StoreTopicService from './store-topic-service';
 import { GameTopicMessageType } from '../../lib/message-types';
@@ -182,6 +183,16 @@ describe('GameTopic', () => {
     expect(raiseGameStateUpdatedSpy).toHaveBeenCalledWith(topicId);
 
     raiseGameStateUpdatedSpy.mockRestore();
+  });
+
+  it('routes race team updates to open team selectors', () => {
+    const listener = jest.fn();
+    const unsubscribe = RaceTeamTopicService.subscribe(topicId, listener);
+    render(<GameTopic topicId={topicId} playerId={playerId} />);
+    const channelMessageCallback = mockChannel.subscribe.mock.calls[0][0];
+    channelMessageCallback({ name: GameTopicMessageType.RaceTeamUpdated });
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
   });
 
   it('routes shop updates without triggering a game refresh', () => {

@@ -9,7 +9,10 @@ import PlayHeaderMenu from './play-header-menu';
 import { makeGameState, makePlayerSnapshot } from './test-fixtures';
 import { setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
 
-jest.mock('@/lib/runner/race-of-fire/server-actions', () => ({ setPlayerRaceTeam: jest.fn() }));
+jest.mock('@/lib/runner/race-of-fire/server-actions', () => ({
+  getPlayerRaceTeams: jest.fn(async () => ({ success: true, data: {} })),
+  setPlayerRaceTeam: jest.fn(),
+}));
 
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }));
 jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn(), isLoading: jest.fn(), showValidationMessage: jest.fn() } }));

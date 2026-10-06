@@ -1,10 +1,13 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import { setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { getPlayerRaceTeams, setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
+import RaceTeamTopicService from '@/app/message-bus/race-team-topic-service';
 import type { PlayerSnapshot } from '@/lib/store/types';
-import { makeGameState, makePlayerSnapshot } from '../test-fixtures';
+import { makeGameState, makePlayer, makePlayerSnapshot } from '../test-fixtures';
 import TeamSelectionContent from './team-selection-content';
 
-jest.mock('@/lib/runner/race-of-fire/server-actions', () => ({ setPlayerRaceTeam: jest.fn() }));
+jest.mock('@/lib/runner/race-of-fire/server-actions', () => ({
+  getPlayerRaceTeams: jest.fn(), setPlayerRaceTeam: jest.fn(),
+}));
 
 const blueSnapshot = () => makePlayerSnapshot({ gameState: makeGameState({
   gameId: 'racefire', processState: { 'crystal-shard': { blueTeam: ['warrior'], redTeam: ['mage'] } },
@@ -19,9 +22,37 @@ describe('TeamSelectionContent', () => {
   };
 
   beforeEach(() => {
+    jest.mocked(getPlayerRaceTeams).mockReset().mockResolvedValue({ success: true, data: {} });
     jest.mocked(setPlayerRaceTeam).mockImplementation(async (_boardId, _mapId, _playerId, instructions) => ({
       success: true, data: instructions,
     }));
+  });
+
+  it('loads the latest selections for all players and refreshes on a team message', async () => {
+    const snapshot = makePlayerSnapshot({ gameState: makeGameState({
+      gameId: 'racefire', players: [makePlayer(), makePlayer({ id: 'mage', name: 'Test Mage' })],
+      processState: { 'crystal-shard': { blueTeam: ['warrior', 'mage'] } },
+    }) });
+    jest.mocked(getPlayerRaceTeams).mockResolvedValueOnce({
+      success: true, data: { warrior: 'red', mage: null },
+    });
+    const view = mount(snapshot);
+    await act(async () => {});
+    const row = (label: string) => teamButton(label).parentElement!;
+    expect(within(row('Red team')).getByRole('listitem', { name: 'Test Warrior' })).toBeInTheDocument();
+    expect(within(row('No team')).getByRole('listitem', { name: 'Test Mage' })).toBeInTheDocument();
+    expect(teamButton('Red team')).toHaveAttribute('aria-pressed', 'true');
+
+    jest.mocked(getPlayerRaceTeams).mockResolvedValue({ success: true, data: { warrior: 'red', mage: 'blue' } });
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('other-map'));
+    expect(getPlayerRaceTeams).toHaveBeenCalledTimes(1);
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('board-map'));
+    expect(within(row('Blue team')).getByRole('listitem', { name: 'Test Mage' })).toBeInTheDocument();
+    expect(within(row('No team')).queryByRole('listitem')).not.toBeInTheDocument();
+
+    view.unmount();
+    RaceTeamTopicService.raiseRaceTeamUpdated('board-map');
+    expect(getPlayerRaceTeams).toHaveBeenCalledTimes(2);
   });
 
   it.each([

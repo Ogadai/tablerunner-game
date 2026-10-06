@@ -7,6 +7,7 @@ export enum GameTopicMessageType {
   GameProcessingFailed = 'game_processing_failed',
   GameStateUpdated = 'game_state_updated',
   ReadyStateUpdated = 'ready_state_updated',
+  RaceTeamUpdated = 'race_team_updated',
   LocationUpdated = 'location_updated',
   StoreUpdated = 'store_updated',
   VideoPreload = 'video_preload',

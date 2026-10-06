@@ -61,8 +61,7 @@
 
 .teamPlayers {
   position: relative;
-  margin-left: 7.75rem;
-  margin-top: 4px;
+  margin: 4px 5px 0 7.75rem;
   min-width: 0;
   flex: 1;
   pointer-events: none;
