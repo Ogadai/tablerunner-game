@@ -56,6 +56,7 @@ it('reads a player snapshot in one batch and returns only the current location',
   const actions = { actions: [{ id: 1, type: 'respawn', description: 'Respawn' }] };
   const addedStats = { characterStats: { strength: 1 } };
   const messages = { messages: [{ text: 'Next turn' }] };
+  const instructions = { team: 'blue' };
   const npc = createNpc();
   const locations = createLocations({
     monsters: [{ id: 'rat', type: 'rat', location: 1, health: 2, team: 'monster' },
@@ -63,24 +64,25 @@ it('reads a player snapshot in one batch and returns only the current location',
     items: [{ id: 'here', type: 'swordRusty', location: 1 }, { id: 'there', type: 'swordRusty', location: 2 }],
     npcs: [npc, createNpc({ id: 'other-npc', location: { id: 2, description: '', move: [] } })],
   });
-  client.mget.mockResolvedValue([game, inventory, actions, addedStats, locations, messages]);
+  client.mget.mockResolvedValue([game, inventory, actions, addedStats, locations, messages, instructions]);
 
   await expect(store.getPlayerSnapshotFromRedis('b', 'm', 'hero')).resolves.toEqual({
-    playerId: 'hero', gameState: game, inventory, actions, addedStats, messages,
+    playerId: 'hero', gameState: game, inventory, actions, addedStats, messages, instructions,
     location: { monsters: [locations.monsters[0]], items: [locations.items[0]], npcs: [npc] },
   });
   expect(client.mget).toHaveBeenCalledTimes(1);
   expect(client.mget).toHaveBeenCalledWith('game:b:m', 'playerInventory:b:m:hero', 'playerActions:b:m:hero',
-    'playerStats:b:m:hero', 'monsters:b:m', 'playerMessages:b:m:hero');
+    'playerStats:b:m:hero', 'monsters:b:m', 'playerMessages:b:m:hero', 'playerInstructions:b:m:hero');
   expect(client.get).not.toHaveBeenCalled();
 });
 
 it.each([null, createGame(), createGame({ players: [] })])('supplies snapshot defaults for missing state', async gameState => {
-  client.mget.mockResolvedValue([gameState, null, null, null, null, null]);
+  client.mget.mockResolvedValue([gameState, null, null, null, null, null, null]);
   await expect(store.getPlayerSnapshotFromRedis('b', 'm', 'hero')).resolves.toEqual({
     playerId: 'hero', gameState,
     inventory: { equipped: null, equipment: null, hiredNpcIds: [] },
     actions: { actions: [] }, addedStats: { characterStats: null },
+    instructions: {},
     location: { monsters: [], items: [], npcs: [] }, messages: { messages: [] },
   });
 });
@@ -94,29 +96,32 @@ it('fetches four players in one batch and preserves each input and missing-state
   const inventory = { equipped: {}, equipment: [], coins: 0, hiredNpcIds: ['npc'] };
   const addedStats = { characterStats: { strength: 1 } };
   const actions = { actions: [{ id: 1, type: 'respawn', description: '' }] };
+  const instructions = { team: 'blue' };
+  const otherInstructions = { team: 'red', options: { ready: true } };
   client.mget.mockResolvedValue([
-    inventory, null, actions,
-    null, addedStats, null,
-    null, null, null,
-    inventory, addedStats, actions,
+    inventory, null, actions, instructions,
+    null, addedStats, null, null,
+    null, null, null, null,
+    inventory, addedStats, actions, otherInstructions,
   ]);
 
   const inputs = await store.getPlayerTurnInputsFromRedis('b', 'm', ['p1', 'p2', 'p3', 'p4']);
 
   expect(client.mget).toHaveBeenCalledTimes(1);
   expect(client.mget).toHaveBeenCalledWith(
-    'playerInventory:b:m:p1', 'playerStats:b:m:p1', 'playerActions:b:m:p1',
-    'playerInventory:b:m:p2', 'playerStats:b:m:p2', 'playerActions:b:m:p2',
-    'playerInventory:b:m:p3', 'playerStats:b:m:p3', 'playerActions:b:m:p3',
-    'playerInventory:b:m:p4', 'playerStats:b:m:p4', 'playerActions:b:m:p4',
+    'playerInventory:b:m:p1', 'playerStats:b:m:p1', 'playerActions:b:m:p1', 'playerInstructions:b:m:p1',
+    'playerInventory:b:m:p2', 'playerStats:b:m:p2', 'playerActions:b:m:p2', 'playerInstructions:b:m:p2',
+    'playerInventory:b:m:p3', 'playerStats:b:m:p3', 'playerActions:b:m:p3', 'playerInstructions:b:m:p3',
+    'playerInventory:b:m:p4', 'playerStats:b:m:p4', 'playerActions:b:m:p4', 'playerInstructions:b:m:p4',
   );
   expect(inputs).toEqual({
-    p1: { inventory, addedStats: { characterStats: null }, actions },
-    p2: { inventory: { equipped: null, equipment: null, hiredNpcIds: [] }, addedStats, actions: { actions: [] } },
-    p3: { inventory: { equipped: null, equipment: null, hiredNpcIds: [] }, addedStats: { characterStats: null }, actions: { actions: [] } },
-    p4: { inventory, addedStats, actions },
+    p1: { inventory, addedStats: { characterStats: null }, actions, instructions },
+    p2: { inventory: { equipped: null, equipment: null, hiredNpcIds: [] }, addedStats, actions: { actions: [] }, instructions: {} },
+    p3: { inventory: { equipped: null, equipment: null, hiredNpcIds: [] }, addedStats: { characterStats: null }, actions: { actions: [] }, instructions: {} },
+    p4: { inventory, addedStats, actions, instructions: otherInstructions },
   });
   expect(inputs.p2.actions.actions).not.toBe(inputs.p3.actions.actions);
+  expect(inputs.p2.instructions).not.toBe(inputs.p3.instructions);
   expect(client.get).not.toHaveBeenCalled();
 });
 
@@ -147,6 +152,7 @@ const reads = [
   ['playerStats', () => store.getPlayerStatsFromRedis('b', 'm', 'p'), { characterStats: null }],
   ['playerInventory', () => store.getPlayerInventoryFromRedis('b', 'm', 'p'), { equipped: null, equipment: null, hiredNpcIds: [] }],
   ['playerMessages', () => store.getPlayerMessagesFromRedis('b', 'm', 'p'), { messages: [] }],
+  ['playerInstructions', () => store.getPlayerInstructionsFromRedis('b', 'm', 'p'), {}],
   ['monsters', () => store.getLocationsStateFromRedis('b', 'm'), createLocations()],
   ['store', () => store.getStoreStateFromRedis('b', 'm', 1), { items: [] }],
   ['boardSettings', () => store.getBoardSettingsFromRedis('b', 'm'), { brightness: 50 }],
@@ -154,7 +160,7 @@ const reads = [
 ] as const;
 
 function key(type: string) {
-  return `${type}:b:m${['playerActions', 'npcActions', 'playerStats', 'playerInventory', 'playerMessages'].includes(type) ? ':p' : type === 'store' ? ':1' : ''}`;
+  return `${type}:b:m${['playerActions', 'npcActions', 'playerStats', 'playerInventory', 'playerMessages', 'playerInstructions'].includes(type) ? ':p' : type === 'store' ? ':1' : ''}`;
 }
 
 it.each(reads)('reads %s using its scoped key and supplies its missing-state default', async (type, read, fallback) => {
@@ -173,6 +179,7 @@ const writes = [
   ['playerStats', () => store.setPlayerStatsInRedis('b', 'm', 'p', { characterStats: null }), { characterStats: null }],
   ['playerInventory', () => store.setPlayerInventoryInRedis('b', 'm', 'p', { equipped: null, equipment: null }), { equipped: null, equipment: null }],
   ['playerMessages', () => store.setPlayerMessagesInRedis('b', 'm', 'p', { messages: [] }), { messages: [] }],
+  ['playerInstructions', () => store.setPlayerInstructionsInRedis('b', 'm', 'p', { team: 'blue' }), { team: 'blue' }],
   ['monsters', () => store.setLocationsStateInRedis('b', 'm', createLocations()), createLocations()],
   ['store', () => store.setStoreStateInRedis('b', 'm', 1, { items: [] }), { items: [] }],
   ['boardSettings', () => store.setBoardSettingsFromRedis('b', 'm', { brightness: 0 }), { brightness: 0 }],
@@ -194,6 +201,7 @@ it.each([
   ['playerStats', () => store.deletePlayerStatsFromRedis('b', 'm', 'p')],
   ['playerInventory', () => store.deletePlayerInventoryFromRedis('b', 'm', 'p')],
   ['playerMessages', () => store.deletePlayerMessagesFromRedis('b', 'm', 'p')],
+  ['playerInstructions', () => store.deletePlayerInstructionsFromRedis('b', 'm', 'p')],
   ['monsters', () => store.deleteLocationsStateFromRedis('b', 'm')],
   ['store', () => store.deleteStoreStateFromRedis('b', 'm', 1)],
   ['processingTurn', () => store.deleteProcessingTurnFromRedis('b', 'm')],
@@ -268,7 +276,8 @@ describe('turn transactions', () => {
       ['playerMessages:b:m:other', messages.other, expiry],
     ]);
     expect(transaction.del.mock.calls).toEqual([
-      ['playerInventory:b:m:hero'], ['playerInventory:b:m:other'], ['npcActions:b:m:boss'], ['store:b:m:5'],
+      ['playerInventory:b:m:hero'], ['playerInstructions:b:m:hero'],
+      ['playerInventory:b:m:other'], ['playerInstructions:b:m:other'], ['npcActions:b:m:boss'], ['store:b:m:5'],
     ]);
     expect(transaction.exec).toHaveBeenCalledTimes(1);
     expect(client.set).not.toHaveBeenCalled();
@@ -403,7 +412,7 @@ describe('game deletion', () => {
     await store.deleteGameStateFromRedis('b', 'm');
     expect(client.del.mock.calls.map(([key]) => key).sort()).toEqual([
       'game:b:m', 'playersReady:b:m', 'playerActions:b:m:hero', 'playerMessages:b:m:hero',
-      'playerStats:b:m:hero', 'playerInventory:b:m:hero', 'store:b:m:1', 'npcActions:b:m:boss',
+      'playerStats:b:m:hero', 'playerInventory:b:m:hero', 'playerInstructions:b:m:hero', 'store:b:m:1', 'npcActions:b:m:boss',
       'playerMessages:b:m:boss', 'monsters:b:m', 'processingTurn:b:m',
     ].sort());
     expect(publishMessage).toHaveBeenCalledWith('b', 'm', { type: 'game_state_updated' });

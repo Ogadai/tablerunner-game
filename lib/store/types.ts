@@ -242,6 +242,7 @@ export interface PlayerTurnInputs {
   inventory: PlayerInventoryState;
   addedStats: PlayerAddStatsState;
   actions: PlayerActionsState;
+  instructions: StorePlayerInstructions;
 }
 
 export interface PlayerSnapshot extends PlayerTurnInputs {
@@ -264,6 +265,8 @@ export interface StoreTransaction {
   buyItemTypes: string[],
   sellItemIds: string[]
 }
+
+export type StorePlayerInstructions = Record<string, unknown>;
 
 export interface LedState {
   location: number,

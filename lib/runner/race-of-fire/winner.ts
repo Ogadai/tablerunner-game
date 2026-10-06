@@ -59,6 +59,10 @@ export const winnerProcess: ProcessRunner = {
     }
   },
 
+  async initialiseForTurn(params: BaseParams): Promise<void> {
+
+  },
+
   async executeForTurn(params: BaseParams): Promise<void> {
     const state = getState(params.gameState);
     const getChosenTeam = (playerId: string): string | undefined => {

@@ -36,6 +36,7 @@ export function makePlayerSnapshot(overrides: Partial<PlayerSnapshot> = {}): Pla
     playerId: 'warrior', gameState: makeGameState({ players: [makePlayer()] }),
     inventory: { equipped: null, equipment: null, hiredNpcIds: [] },
     actions: { actions: [] }, addedStats: { characterStats: null },
+    instructions: {},
     location: { monsters: [], items: [], npcs: [] }, messages: { messages: [] },
     ...overrides,
   };

@@ -2,7 +2,7 @@
 import { checkAllPlayersReady, processGameTurn, runGameActionsBetweenTurns } from './game-runner';
 import * as redis from '../store/redis-access';
 import { runGameActions } from './game-actions';
-import { executeProcessesBetweenTurns, executeProcessesForTurn } from './game-processes';
+import { initialiseProcessesForTurn, executeProcessesBetweenTurns, executeProcessesForTurn } from './game-processes';
 import { populateMonsters } from './populate-monsters';
 import { createGame, createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 import { applyCharacterInventory, applyPlayerInventory } from './apply-inventory';
@@ -52,6 +52,7 @@ beforeEach(() => {
       inventory: { equipped: null, equipment: null, hiredNpcIds: [] },
       addedStats: { characterStats: null },
       actions: { actions: [] },
+      instructions: {},
     }])),
   );
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -192,14 +193,24 @@ it('applies batched inputs in player order before passing actions to combat', as
   const params = createParams();
   params.gameState.players.push(createPlayer({ id: 'second' }));
   const inputs = {
-    hero: { inventory: { equipped: null, equipment: null, coins: 0 }, addedStats: { characterStats: null }, actions: { actions: [] } },
-    second: { inventory: { equipped: null, equipment: [], coins: 7 }, addedStats: { characterStats: null }, actions: { actions: [] } },
+    hero: { inventory: { equipped: null, equipment: null, coins: 0 }, addedStats: { characterStats: null }, actions: { actions: [] }, instructions: { team: 'blue' } },
+    second: { inventory: { equipped: null, equipment: [], coins: 7 }, addedStats: { characterStats: null }, actions: { actions: [] }, instructions: { team: 'red' } },
   };
   jest.mocked(redis.getPlayerTurnInputsFromRedis).mockResolvedValue(inputs);
   const order: string[] = [];
+  const expectedInstructions = { hero: inputs.hero.instructions, second: inputs.second.instructions };
+  jest.mocked(initialiseProcessesForTurn).mockImplementation(async p => {
+    expect(p.playerInstructions).toEqual(expectedInstructions);
+  });
+  jest.mocked(executeProcessesForTurn).mockImplementation(async p => {
+    expect(p.playerInstructions).toEqual(expectedInstructions);
+  });
   jest.mocked(applyPlayerInventory).mockImplementation(async (_params, player) => { order.push(`inventory:${player.id}`); });
   jest.mocked(applyPlayerAddedStats).mockImplementation(async (_params, player) => { order.push(`stats:${player.id}`); });
-  jest.mocked(runGameActions).mockImplementation(async () => { order.push('actions'); });
+  jest.mocked(runGameActions).mockImplementation(async p => {
+    expect(p.playerInstructions).toEqual(expectedInstructions);
+    order.push('actions');
+  });
 
   await processGameTurn(params);
 
@@ -213,6 +224,16 @@ it('applies batched inputs in player order before passing actions to combat', as
   }
   expect(runGameActions).toHaveBeenCalledWith(params, { hero: inputs.hero.actions, second: inputs.second.actions });
   expect(redis.getActionsStateFromRedis).not.toHaveBeenCalled();
+});
+
+it('supplies empty instructions to game processes when none are queued', async () => {
+  const params = createParams({ playerInstructions: { formerPlayer: { team: 'red' } } });
+  jest.mocked(initialiseProcessesForTurn).mockImplementation(async p => {
+    expect(p.playerInstructions).toEqual({ hero: {} });
+  });
+  await processGameTurn(params);
+  expect(params.playerInstructions).toEqual({ hero: {} });
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledTimes(1);
 });
 
 it('recovers without committing when the batched input read fails', async () => {

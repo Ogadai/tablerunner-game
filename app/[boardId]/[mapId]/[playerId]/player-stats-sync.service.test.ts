@@ -12,6 +12,7 @@ describe('PlayerStatsSyncService', () => {
     inputs = {
       inventory: { equipment: null, equipped: null },
       actions: { actions: [] }, addedStats: { characterStats: null },
+      instructions: {},
     };
   });
 

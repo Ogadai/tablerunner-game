@@ -106,6 +106,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     mapId,
     gameState: newGameState,
     messages: {},
+    playerInstructions: {},
     ...locationsState
   });
 

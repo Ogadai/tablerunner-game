@@ -86,7 +86,7 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
       const locationsState = await getLocationsStateFromRedis(boardId, mapId);
       pendingNotification = notifyProcessingStarted(boardId, mapId);
       try {
-        await processGameTurn({ boardId, mapId, gameState, messages: {}, ...locationsState });
+        await processGameTurn({ boardId, mapId, gameState, messages: {}, ...locationsState, playerInstructions: {} });
         gameStateUpdated = true;
       } catch (error) {
         turnFailed = true;
@@ -169,6 +169,7 @@ export async function runGameActionsBetweenTurns(boardId: string, mapId: string)
         items: [],
         monsters: [],
         npcs: [],
+        playerInstructions: {},
       });
     }
   } finally {
@@ -192,7 +193,7 @@ async function processPausedGame(boardId: string, mapId: string, gameState: Game
     const actionsState = await getActionsStateFromRedis(boardId, mapId, player.id);
     if (actionsState.actions.some(action => action.type === PlayerActionType.Respawn)) {
       const locationsState = await getLocationsStateFromRedis(boardId, mapId);
-      actionRespawn({ boardId, mapId, gameState, messages: {}, ...locationsState }, player);
+      actionRespawn({ boardId, mapId, gameState, messages: {}, ...locationsState, playerInstructions: {} }, player);
       respawnedPlayerIds.push(player.id);
     }
   }
@@ -223,6 +224,13 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     };
     params.gameState = newGameState;
 
+    const playerInputs = await getPlayerTurnInputsFromRedis(
+      params.boardId, params.mapId, params.gameState.players.map(player => player.id),
+    );
+    params.playerInstructions = Object.fromEntries(
+      params.gameState.players.map(player => [player.id, playerInputs[player.id].instructions]),
+    );
+
     await initialiseProcessesForTurn(params);
 
     const npcInventoryIds = params.gameState.npcs.map(npc => npc.id);
@@ -231,9 +239,6 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       applyCharacterInventory(npc, npcInventories[npc.id]);
     }
 
-    const playerInputs = await getPlayerTurnInputsFromRedis(
-      params.boardId, params.mapId, params.gameState.players.map(player => player.id),
-    );
     const playerActions: Record<string, PlayerActionsState> = {};
     for(const player of params.gameState.players) {
       const { inventory, addedStats, actions } = playerInputs[player.id];

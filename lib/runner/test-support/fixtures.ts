@@ -7,7 +7,7 @@ export { createGame, createNpc, createPlayer } from '../../store/test-support/fi
 export function createParams(overrides: Partial<BaseParams> = {}): BaseParams {
   const params: BaseParams = {
     boardId: 'board', mapId: 'map', gameState: createGame(),
-    messages: {}, ...createLocations(), ...overrides,
+    messages: {}, playerInstructions: {}, ...createLocations(), ...overrides,
   };
   for (const player of params.gameState.players) {
     params.messages[player.id] ??= { messages: [] };

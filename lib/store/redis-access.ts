@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { GameTopicMessageType, GameStateUpdatedMessage, ReadyStateUpdatedMessage, GameTopicMessageBase } from "../message-types";
-import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings, ProcessingTurn } from "./types";
+import { GameState, gameStateOptions, PlayerReadyState, PlayerActionsState, AllLocationsState, PlayerMessagesState, PlayerAddStatsState, PlayerInventoryState, StoreInventoryState, StoreBoardSettings, storeBoardDefaultSettings, ProcessingTurn, StorePlayerInstructions } from "./types";
 import { publishMessage } from '../messages/message-publisher';
 import { PlayerSnapshot, PlayerTurnInputs } from './types';
 
@@ -33,6 +33,8 @@ const getLocationsLock = (boardId: string, mapId: string) => `monstersLock:${boa
 const getStoreInventoryKey = (boardId: string, mapId: string, location: number) => `store:${boardId}:${mapId}:${location}`;
 const getStoreInventoryLock = (boardId: string, mapId: string) => `storeLock:${boardId}:${mapId}`;
 
+const getPlayerInstructionsKey = (boardId: string, mapId: string, playerId: string) => `playerInstructions:${boardId}:${mapId}:${playerId}`;
+
 const getBoardSettingsKey = (boardId: string, mapId: string) => `boardSettings:${boardId}:${mapId}`;
 
 const getProcessingKey = (boardId: string, mapId: string) => `processingTurn:${boardId}:${mapId}`;
@@ -46,9 +48,10 @@ export async function getGameStateFromRedis(boardId: string, mapId: string): Pro
 
 export async function getPlayerSnapshotFromRedis(boardId: string, mapId: string, playerId: string): Promise<PlayerSnapshot> {
   // Read the game and pending inputs together so a turn commit cannot split the snapshot.
-  const [gameState, inventory, actions, addedStats, locations, messages] = await redis.mget<[
+  const [gameState, inventory, actions, addedStats, locations, messages, instructions] = await redis.mget<[
     GameState | null, PlayerInventoryState | null, PlayerActionsState | null,
     PlayerAddStatsState | null, AllLocationsState | null, PlayerMessagesState | null,
+    StorePlayerInstructions | null
   ]>(
     getGameKey(boardId, mapId),
     getPlayerInventoryKey(boardId, mapId, playerId),
@@ -56,6 +59,7 @@ export async function getPlayerSnapshotFromRedis(boardId: string, mapId: string,
     getPlayerStatsKey(boardId, mapId, playerId),
     getLocationsKey(boardId, mapId),
     getPlayerMessagesKey(boardId, mapId, playerId),
+    getPlayerInstructionsKey(boardId, mapId, playerId),
   );
   const locationId = gameState?.players.find(player => player.id === playerId)?.location.id;
 
@@ -71,6 +75,7 @@ export async function getPlayerSnapshotFromRedis(boardId: string, mapId: string,
       npcs: locations?.npcs?.filter(npc => npc.location.id === locationId) || [],
     },
     messages: messages || { messages: [] },
+    instructions: instructions || {},
   };
 }
 
@@ -117,6 +122,7 @@ export async function commitGameTurnInRedis(
     transaction.set(getPlayerActionsKey(boardId, mapId, player.id), { actions: [] }, gameStateOptions);
     transaction.set(getPlayerStatsKey(boardId, mapId, player.id), { characterStats: null }, gameStateOptions);
     transaction.set(getPlayerMessagesKey(boardId, mapId, player.id), messages[player.id], gameStateOptions);
+    transaction.del(getPlayerInstructionsKey(boardId, mapId, player.id));
   }
 
   for (const monster of locationsState.monsters.filter(m => m.scriptedActions)) {
@@ -151,6 +157,7 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
       await deletePlayerMessagesFromRedis(boardId, mapId, player.id);
       await deletePlayerStatsFromRedis(boardId, mapId, player.id);
       await deletePlayerInventoryFromRedis(boardId, mapId, player.id);
+      await deletePlayerInstructionsFromRedis(boardId, mapId, player.id);
     }
 
     for(const storeLocation of gameState.stores) {
@@ -239,15 +246,17 @@ export async function getPlayerTurnInputsFromRedis(
     getPlayerInventoryKey(boardId, mapId, playerId),
     getPlayerStatsKey(boardId, mapId, playerId),
     getPlayerActionsKey(boardId, mapId, playerId),
+    getPlayerInstructionsKey(boardId, mapId, playerId),
   ]);
-  const results = await redis.mget<(PlayerInventoryState | PlayerAddStatsState | PlayerActionsState | null)[]>(...keys);
+  const results = await redis.mget<(PlayerInventoryState | PlayerAddStatsState | PlayerActionsState | StorePlayerInstructions | null)[]>(...keys);
 
   return Object.fromEntries(playerIds.map((playerId, index) => {
-    const offset = index * 3;
+    const offset = index * 4;
     return [playerId, {
       inventory: (results[offset] as PlayerInventoryState | null) || { equipped: null, equipment: null, hiredNpcIds: [] },
       addedStats: (results[offset + 1] as PlayerAddStatsState | null) || { characterStats: null },
       actions: (results[offset + 2] as PlayerActionsState | null) || { actions: [] },
+      instructions: (results[offset + 3] as StorePlayerInstructions | null) || {},
     }];
   }));
 }
@@ -391,6 +400,21 @@ export async function setStoreStateInRedis(boardId: string, mapId: string, locat
 
 export async function deleteStoreStateFromRedis(boardId: string, mapId: string, location: number): Promise<void> {
   await redis.del(getStoreInventoryKey(boardId, mapId, location));
+}
+
+/* Player instructions (depends on game) */
+
+export async function getPlayerInstructionsFromRedis(boardId: string, mapId: string, playerId: string): Promise<StorePlayerInstructions> {
+  const result = await redis.get(getPlayerInstructionsKey(boardId, mapId, playerId)) as StorePlayerInstructions;
+  return result || {};
+}
+
+export async function setPlayerInstructionsInRedis(boardId: string, mapId: string, playerId: string, newInstructions: StorePlayerInstructions): Promise<void> {
+  await redis.set(getPlayerInstructionsKey(boardId, mapId, playerId), newInstructions, gameStateOptions);
+}
+
+export async function deletePlayerInstructionsFromRedis(boardId: string, mapId: string, playerId: string): Promise<void> {
+  await redis.del(getPlayerInstructionsKey(boardId, mapId, playerId));
 }
 
 /* Board Setting */

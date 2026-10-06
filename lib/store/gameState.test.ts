@@ -105,7 +105,7 @@ describe('createNewGameState', () => {
       counters: { itemId: 0, monsterId: 0 }, processState: { test: { initialized: true } },
     }) });
     expect(populateItemsForMap).toHaveBeenCalledWith(result.data, 'map');
-    expect(setupProcesses).toHaveBeenCalledWith(expect.objectContaining({ boardId: 'board', mapId: 'map', messages: {}, items }));
+    expect(setupProcesses).toHaveBeenCalledWith(expect.objectContaining({ boardId: 'board', mapId: 'map', messages: {}, playerInstructions: {}, items }));
     expect(mockRedis.setGameStateInRedis).toHaveBeenCalledWith('board', 'map', result.data);
     expect(mockRedis.setLocationsStateInRedis).toHaveBeenCalledWith('board', 'map', {
       items, monsters: [{ id: 'monster-1', type: 'rat', health: 5, location: starterPlayer.location, team: 'monster' }],
