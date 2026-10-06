@@ -8,6 +8,7 @@ import { VideoNames } from "@/lib/messages/video-list";
 import { getDisplayName, PlayerState } from "@/lib/store/types";
 import { getCellCoordinates } from "@/lib/games/monster-pack";
 import { cauldronOfFirePortals } from '@/lib/games/maps/cauldron-of-fire/portals';
+import { getState } from './race-state';
 
 const shardLocations: number[][] = [
   [7, 50, 13, 16, 20, 60, 61, 113, 111, 109, 106, 97, 100],
@@ -89,6 +90,7 @@ export const shardProcess: ProcessRunner = {
   },
 
   async executeForTurn(params: BaseParams): Promise<void> {
+    const state = getState(params.gameState);
     // Any found sharts (defeated monsters) should be split between players
     const locations = new Set<number>(params.gameState.players.map(p => p.location.id));
     const shardItem = allItems[SpecialIds.fireCrystalShard];
@@ -101,8 +103,22 @@ export const shardProcess: ProcessRunner = {
         const playerShardCount = (player: PlayerState) =>
             player.equipment.filter(i => i.type === SpecialIds.fireCrystalShard).length;
 
-        const mostShardCount = Math.min(2,
-          players.reduce((count, player) => Math.max(count, playerShardCount(player)), 0)
+        const collectedShardCount = (player: PlayerState) => {
+          const team = state.blueTeam?.includes(player.id) ? state.blueTeam
+            : state.redTeam?.includes(player.id) ? state.redTeam : undefined;
+          if (!team) {
+            return playerShardCount(player) + 1;
+          }
+
+          // Include every teammate's inventory and the shards about to be collected here.
+          return params.gameState.players
+            .filter(teammate => team.includes(teammate.id))
+            .reduce((total, teammate) => total + playerShardCount(teammate)
+              + (teammate.location.id === location ? 1 : 0), 0);
+        };
+
+        const mostShardCount = Math.min(shardVideos.length - 1,
+          players.reduce((count, player) => Math.max(count, collectedShardCount(player)), 0) - 1
         );
 
         const video = shardVideos[mostShardCount];

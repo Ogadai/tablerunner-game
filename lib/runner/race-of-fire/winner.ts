@@ -6,9 +6,10 @@ import { monsters } from "@/lib/games/monsters";
 import { playerMessageAtLocation, broadcastMessage } from "../game-messages";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
-import { GameState, getDisplayName, PlayerState } from "@/lib/store/types";
+import { getDisplayName, PlayerState } from "@/lib/store/types";
 import { joinWithAnd } from "@/lib/string-helpers";
 import { RaceInstructionTeam } from "./race-types";
+import { getState, saveState } from './race-state';
 
 const bossOptions: string[][] = [
   ['skeletaldragon', 'skeletaldragon', 'skeletaldragon'],
@@ -21,21 +22,6 @@ const preloadLocations: number[] = [217, 223];
 const FINISH_LOCATION = 224;
 const SHARDS_REQUIRED = 3;
 
-interface WinnerDef {
-  winner?: boolean;
-  blueTeam?: string[];
-  redTeam?: string[];
-}
-
-// Keep the existing state key so games already in progress retain their winner.
-const OWNER = 'crystal-shard';
-
-const getState = (gameState: GameState) =>
-  ({ ...(gameState.processState[OWNER] || { winner: false }) as WinnerDef });
-
-const saveState = (gameState: GameState, state: WinnerDef) => {
-  gameState.processState[OWNER] = state;
-}
 
 const winnerVideos: { [key: string]: VideoNames } = {
   barbarian: VideoNames.barbarianWins,
