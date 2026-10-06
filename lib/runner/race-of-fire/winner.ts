@@ -66,7 +66,7 @@ export const winnerProcess: ProcessRunner = {
 
       for(const playerId of Object.keys(params.playerInstructions)) {
         const instructions = params.playerInstructions[playerId] as RaceInstructionTeam;
-        if (instructions) {
+        if (instructions && instructions.team !== undefined) {
           const team = instructions.team;
           state.blueTeam = state.blueTeam?.filter(id => id !== playerId) || [];
           state.redTeam = state.redTeam?.filter(id => id !== playerId) || [];

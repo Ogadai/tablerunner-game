@@ -6,6 +6,10 @@ import { saveGameToBlob } from '@/lib/store/saveGameBlobs';
 import { storeBoardDefaultSettings } from '@/lib/store/types';
 import gameStateLightingService from './game-state-lighting-service';
 import PlayHeaderMenu from './play-header-menu';
+import { makeGameState, makePlayerSnapshot } from './test-fixtures';
+import { setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
+
+jest.mock('@/lib/runner/race-of-fire/server-actions', () => ({ setPlayerRaceTeam: jest.fn() }));
 
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }));
 jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn(), isLoading: jest.fn(), showValidationMessage: jest.fn() } }));
@@ -38,6 +42,50 @@ describe('PlayHeaderMenu', () => {
     jest.mocked(Swal.isLoading).mockReturnValue(false);
   });
   afterEach(() => jest.useRealTimers());
+
+  describe('team selection', () => {
+    const race = makeGameState({ gameId: 'racefire' });
+
+    it.each(['racefire', 'game-1'])('only shows Choose Team for Race of Fire (%s)', gameId => {
+      render(<PlayHeaderMenu boardId="board" mapId="map" gameState={makeGameState({ gameId })} />);
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
+      if (gameId === 'racefire') {
+        expect(screen.getByRole('menuitem', { name: /Choose Team/ })).toBeInTheDocument();
+      } else {
+        expect(screen.queryByRole('menuitem', { name: /Choose Team/ })).not.toBeInTheDocument();
+      }
+    });
+
+    it('disables team selection without a player snapshot', () => {
+      render(<PlayHeaderMenu boardId="board" mapId="map" gameState={race} onSnapshotChange={jest.fn()} />);
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
+      expect(screen.getByRole('menuitem', { name: /Choose Team/ })).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it.each(['click', 'keyboard'])('opens the selector via %s, saves and closes the popup', async interaction => {
+      const snapshot = makePlayerSnapshot({ gameState: race });
+      const onSnapshotChange = jest.fn();
+      jest.mocked(setPlayerRaceTeam).mockResolvedValue({ success: true, data: { team: 'blue' } });
+      const props = { boardId: 'board', mapId: 'map', gameState: race, snapshot, onSnapshotChange };
+      const view = render(<PlayHeaderMenu {...props} />);
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
+      await act(async () => {
+        const item = screen.getByRole('menuitem', { name: /Choose Team/ });
+        if (interaction === 'keyboard') fireEvent.keyDown(item, { key: 'Enter' });
+        else fireEvent.click(item);
+      });
+      expect(screen.getByRole('dialog', { name: 'Race of Fire Team' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Independent (no team)' })).toBeChecked();
+      expect(getBoardSettings).not.toHaveBeenCalled();
+      await act(async () => fireEvent.click(screen.getByRole('radio', { name: 'Blue team' })));
+      const updated = { ...snapshot, instructions: { team: 'blue' } };
+      expect(onSnapshotChange).toHaveBeenCalledWith(updated);
+      view.rerender(<PlayHeaderMenu {...props} snapshot={updated} />);
+      expect(screen.getByRole('radio', { name: 'Blue team' })).toBeChecked();
+      fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
 
   describe('fullscreen toggle', () => {
     let fullscreenElement: Element | null;

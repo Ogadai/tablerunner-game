@@ -12,8 +12,9 @@ import styles from "./play-header-menu.module.css";
 
 import { deleteGameState, getBoardSettings, setBoardSettings } from "@/lib/store/gameState";
 import { saveGameToBlob } from '@/lib/store/saveGameBlobs';
-import { storeBoardDefaultSettings } from "@/lib/store/types";
+import { storeBoardDefaultSettings, type GameState, type PlayerSnapshot } from "@/lib/store/types";
 import gameStateLightingService from './game-state-lighting-service';
+import TeamSelectionContent from './race-of-fire/team-selection-content';
 
 const subscribeFullscreen = (onChange: () => void) => {
   document.addEventListener('fullscreenchange', onChange);
@@ -24,11 +25,19 @@ const getFullscreenState = () => document.fullscreenElement
   ? 'fullscreen' : document.fullscreenEnabled ? 'normal' : 'unavailable';
 const getServerFullscreenState = () => 'unavailable';
 
-export default function PlayHeaderMenu(  { boardId, mapId }
-  : { boardId: string, mapId: string }
+export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, onSnapshotChange }
+  : {
+    boardId: string;
+    mapId: string;
+    gameState?: GameState;
+    snapshot?: PlayerSnapshot;
+    onSnapshotChange?: (snapshot: PlayerSnapshot) => void;
+  }
 ) {
   const router = useRouter();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeDialog, setActiveDialog] = useState<'settings' | 'team' | null>(null);
+  const settingsOpen = activeDialog === 'settings';
+  const isRaceOfFire = gameState?.gameId === 'racefire';
   const fullscreenState = useSyncExternalStore(subscribeFullscreen, getFullscreenState, getServerFullscreenState);
   const isFullscreen = fullscreenState === 'fullscreen';
   const [brightness, setBrightness] = useState(storeBoardDefaultSettings.brightness);
@@ -146,7 +155,9 @@ export default function PlayHeaderMenu(  { boardId, mapId }
   }
 
   return (
-    <Dialog.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
+    <Dialog.Root open={settingsOpen || (activeDialog === 'team' && isRaceOfFire && !!snapshot)} onOpenChange={open => {
+      if (!open) setActiveDialog(null);
+    }}>
       <DropdownMenu.Root>
 			<DropdownMenu.Trigger asChild>
 				<button className={`${styles.IconButton}`} aria-label="Settings">
@@ -162,7 +173,12 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 					<DropdownMenu.Item className={styles.Item} onClick={characterListAction}>
 						Player List <div className={`${styles.RightSlot} material-symbols-outlined`}>group</div>
 					</DropdownMenu.Item>
-          <DropdownMenu.Item className={styles.Item} onClick={() => setSettingsOpen(true)}>
+          {isRaceOfFire && (
+            <DropdownMenu.Item className={styles.Item} disabled={!snapshot || !onSnapshotChange} onSelect={() => setActiveDialog('team')}>
+              Choose Team <div className={`${styles.RightSlot} material-symbols-outlined`}>groups</div>
+            </DropdownMenu.Item>
+          )}
+          <DropdownMenu.Item className={styles.Item} onClick={() => setActiveDialog('settings')}>
             Board Settings <div className={`${styles.RightSlot} material-symbols-outlined`}>settings</div>
           </DropdownMenu.Item>
 
@@ -190,7 +206,16 @@ export default function PlayHeaderMenu(  { boardId, mapId }
 
       <Dialog.Portal>
           <Dialog.Overlay className="DialogOverlay" />
-          <Dialog.Content className={`DialogContent ${styles.settingsDialog}`}>
+          <Dialog.Content className={`DialogContent ${styles.settingsDialog} ${activeDialog === 'team' ? styles.teamDialog : ''}`}>
+            {activeDialog === 'team' && snapshot && onSnapshotChange ? <>
+              <Dialog.Title className="DialogTitle">Race of Fire Team</Dialog.Title>
+              <TeamSelectionContent
+                boardId={boardId}
+                mapId={mapId}
+                snapshot={snapshot}
+                onSnapshotChange={onSnapshotChange}
+              />
+            </> : <>
             <Dialog.Title className="DialogTitle">Settings</Dialog.Title>
             <div className={styles.brightnessRow}>
               <label htmlFor="board-brightness">Brightness</label>
@@ -204,6 +229,7 @@ export default function PlayHeaderMenu(  { boardId, mapId }
               value={brightness}
               onChange={event => brightnessChangeAction(Number(event.target.value))}
             />
+            </>}
           </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

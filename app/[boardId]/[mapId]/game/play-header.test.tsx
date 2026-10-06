@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getGameState } from '@/lib/store/gameState';
 import { fetchPlayerSnapshot } from './player-snapshot';
@@ -9,6 +10,7 @@ import PlayerReadyTopicService from '@/app/message-bus/playerReady-topic-service
 import gameStateSyncService from './game-state-sync-service';
 import readyStateSyncService from './ready-state-sync-service';
 import PlayHeader from './play-header';
+import PlayHeaderMenu from './play-header-menu';
 import { makeCharacter, makeGameState, makePlayer, makePlayerSnapshot } from './test-fixtures';
 
 jest.mock('next/navigation', () => ({ useParams: jest.fn(), useRouter: jest.fn() }));
@@ -19,7 +21,10 @@ jest.mock('@/app/message-bus/game-topic-service', () => ({ __esModule: true, def
 jest.mock('@/app/message-bus/playerReady-topic-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
 jest.mock('./game-state-sync-service', () => ({ __esModule: true, default: { set: jest.fn() } }));
 jest.mock('./ready-state-sync-service', () => ({ __esModule: true, default: { set: jest.fn() } }));
-jest.mock('./play-header-menu', () => ({ __esModule: true, default: () => <div>Game menu</div> }));
+jest.mock('./play-header-menu', () => ({
+  __esModule: true,
+  default: jest.fn<ReturnType<typeof PlayHeaderMenu>, [ComponentProps<typeof PlayHeaderMenu>]>(() => <div>Game menu</div>),
+}));
 jest.mock('./play-header-messages', () => ({
   __esModule: true, default: () => <div>Player messages</div>,
 }));
@@ -97,6 +102,39 @@ describe('PlayHeader', () => {
     expect(push).toHaveBeenLastCalledWith('/board/map');
     fireEvent.click(screen.getByRole('button', { name: /skull/ }));
     expect(push).toHaveBeenLastCalledWith('/board/map/mage');
+  });
+
+  it('passes the current game and snapshot to the menu and synchronizes team updates without refetching', async () => {
+    const race = makeGameState({ ...game, gameId: 'racefire' });
+    const snapshot = makePlayerSnapshot({ gameState: race });
+    jest.mocked(fetchPlayerSnapshot).mockResolvedValue(snapshot);
+    await mount();
+    const props = jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0];
+    expect(props).toEqual(expect.objectContaining({ boardId: 'board', mapId: 'map', gameState: race, snapshot }));
+    const updated = { ...snapshot, instructions: { team: 'red' } };
+    await act(async () => props.onSnapshotChange!(updated));
+    expect(gameStateSyncService.set).toHaveBeenLastCalledWith('board', 'map', race, updated);
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].snapshot).toBe(updated);
+    expect(fetchPlayerSnapshot).toHaveBeenCalledTimes(1);
+    expect(getGameState).not.toHaveBeenCalled();
+  });
+
+  it('does not pass a player snapshot to the menu on the player list page', async () => {
+    jest.mocked(useParams).mockReturnValue({});
+    await mount();
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].snapshot).toBeUndefined();
+  });
+
+  it('withholds the old snapshot from the menu while a new player is loading', async () => {
+    const view = await mount();
+    let resolve!: (snapshot: Awaited<ReturnType<typeof fetchPlayerSnapshot>>) => void;
+    jest.mocked(fetchPlayerSnapshot).mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    jest.mocked(useParams).mockReturnValue({ playerId: 'mage' });
+    await act(async () => view.rerender(<PlayHeader boardId="board" mapId="map" />));
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].snapshot).toBeUndefined();
+    const snapshot = makePlayerSnapshot({ playerId: 'mage', gameState: game });
+    await act(async () => resolve(snapshot));
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].snapshot).toBe(snapshot);
   });
 
   it('discards a refresh that completes after a newer refresh', async () => {

@@ -223,7 +223,18 @@ export default function PlayHeader(
           ))}
         </ul>
       </div>
-      <PlayHeaderMenu boardId={boardId} mapId={mapId} />
+      <PlayHeaderMenu
+        key={`menu:${boardId}:${mapId}:${playerId}`}
+        boardId={boardId}
+        mapId={mapId}
+        gameState={gameState}
+        snapshot={playerSnapshot?.playerId === playerId && playerSnapshot.gameState === gameState
+          ? playerSnapshot : undefined}
+        onSnapshotChange={snapshot => {
+          setPlayerSnapshot(snapshot);
+          gameStateSyncService.set(boardId, mapId, snapshot.gameState || undefined, snapshot);
+        }}
+      />
     </div>
   );
 }
