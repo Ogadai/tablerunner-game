@@ -8,6 +8,7 @@ import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-vi
 import { VideoNames } from "@/lib/messages/video-list";
 import { GameState, getDisplayName, PlayerState } from "@/lib/store/types";
 import { joinWithAnd } from "@/lib/string-helpers";
+import { RaceInstructionTeam } from "./race-types";
 
 const bossOptions: string[][] = [
   ['skeletaldragon', 'skeletaldragon', 'skeletaldragon'],
@@ -60,7 +61,29 @@ export const winnerProcess: ProcessRunner = {
   },
 
   async initialiseForTurn(params: BaseParams): Promise<void> {
+    if (params.playerInstructions && Object.keys(params.playerInstructions).length > 0) {
+      const state = getState(params.gameState);
 
+      for(const playerId of Object.keys(params.playerInstructions)) {
+        const instructions = params.playerInstructions[playerId] as RaceInstructionTeam;
+        if (instructions) {
+          const team = instructions.team;
+          state.blueTeam = state.blueTeam?.filter(id => id !== playerId) || [];
+          state.redTeam = state.redTeam?.filter(id => id !== playerId) || [];
+
+          switch(team) {
+            case 'blue':
+              state.blueTeam.push(playerId);
+              break;
+            case 'red':
+              state.redTeam.push(playerId);
+              break;
+          }
+        }
+      }
+    
+      saveState(params.gameState, state);
+    }
   },
 
   async executeForTurn(params: BaseParams): Promise<void> {
