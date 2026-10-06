@@ -6,7 +6,7 @@ import { characters } from '@/lib/games/characters';
 import type { PlayerSnapshot } from '@/lib/store/types';
 import type { RaceInstructionTeam, RaceTeamSelections } from '@/lib/runner/race-of-fire/race-types';
 import { getPlayerRaceTeams, setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
-import { getGameTopicId } from '@/lib/message-types';
+import { GameTopicMessageType, getGameTopicId } from '@/lib/message-types';
 import RaceTeamTopicService from '@/app/message-bus/race-team-topic-service';
 import styles from './team-selection-content.module.css';
 
@@ -35,7 +35,7 @@ export default function TeamSelectionContent({
   const [error, setError] = useState<string | null>(null);
   const [teamSelections, setTeamSelections] = useState<RaceTeamSelections>({});
   const [loadError, setLoadError] = useState<string | null>(null);
-  const refreshId = useRef(0);
+  const liveUpdates = useRef<RaceTeamSelections>({});
   const requestId = useRef(0);
   const saving = useRef(false);
   const instructions = snapshot.instructions as RaceInstructionTeam;
@@ -74,31 +74,32 @@ export default function TeamSelectionContent({
   useEffect(() => {
     if (!snapshot.gameState) return;
     let active = true;
+    liveUpdates.current = {};
     const refreshTeams = async () => {
-      const currentRefresh = ++refreshId.current;
       try {
         const result = await getPlayerRaceTeams(boardId, mapId);
-        if (!active || currentRefresh !== refreshId.current) return;
+        if (!active) return;
         if (result.success && result.data) {
-          setTeamSelections(result.data);
+          // Preserve messages received while the initial request was in flight.
+          setTeamSelections({ ...result.data, ...liveUpdates.current });
           setLoadError(null);
         } else {
           setLoadError(result.error || 'Unable to load team selections.');
         }
       } catch {
-        if (active && currentRefresh === refreshId.current) {
+        if (active) {
           setLoadError('Unable to load team selections.');
         }
       }
     };
 
-    const unsubscribe = RaceTeamTopicService.subscribe(getGameTopicId(boardId, mapId), () => {
-      void refreshTeams();
+    const unsubscribe = RaceTeamTopicService.subscribe(getGameTopicId(boardId, mapId), message => {
+      liveUpdates.current[message.playerId] = message.team;
+      setTeamSelections(previous => ({ ...previous, [message.playerId]: message.team }));
     });
     void refreshTeams();
     return () => {
       active = false;
-      refreshId.current += 1;
       unsubscribe();
     };
   }, [boardId, mapId, snapshot.gameState]);
@@ -117,12 +118,13 @@ export default function TeamSelectionContent({
         });
         if (currentRequest !== requestId.current) return;
         if (result.success && result.data) {
-          // Ignore any read started before this save completed.
-          refreshId.current += 1;
           const savedTeam = result.data.team ?? null;
-          setTeamSelections(previous => ({ ...previous, [snapshot.playerId]: savedTeam }));
           onSnapshotChange({ ...snapshot, instructions: result.data });
-          RaceTeamTopicService.raiseRaceTeamUpdated(getGameTopicId(boardId, mapId));
+          RaceTeamTopicService.raiseRaceTeamUpdated(getGameTopicId(boardId, mapId), {
+            type: GameTopicMessageType.RaceTeamUpdated,
+            playerId: snapshot.playerId,
+            team: savedTeam,
+          });
         } else {
           setError(result.error || 'Unable to change team. Please try again.');
         }

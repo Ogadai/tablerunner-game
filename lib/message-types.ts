@@ -1,5 +1,6 @@
 import { LocationMoveDirection } from "./games/types";
 import type { PlayerInventoryState, StoreInventoryState } from "./store/types";
+import type { RaceTeam } from "./runner/race-of-fire/race-types";
 
 export enum GameTopicMessageType {
   BleConnectedStatus = 'ble_connected',
@@ -38,6 +39,12 @@ export interface ReadyStateUpdatedMessage extends GameTopicMessageBase {
 export interface LocationUpdatedMessage extends GameTopicMessageBase {
   type: GameTopicMessageType.LocationUpdated;
   locationId: number;
+}
+
+export interface RaceTeamUpdatedMessage extends GameTopicMessageBase {
+  type: GameTopicMessageType.RaceTeamUpdated;
+  playerId: string;
+  team: RaceTeam;
 }
 
 export interface StoreUpdatedMessage extends GameTopicMessageBase {

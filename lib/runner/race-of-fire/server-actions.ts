@@ -3,7 +3,7 @@
 import { ApiResponse } from "@/lib/api-response";
 import { RaceInstructionTeam, RaceTeamSelections } from "./race-types";
 import { getGameStateFromRedis, getPlayerInstructionsFromRedis, lockPlayerActionsInRedis, setPlayerInstructionsInRedis } from "@/lib/store/redis-access";
-import { GameTopicMessageType } from "@/lib/message-types";
+import { GameTopicMessageType, type RaceTeamUpdatedMessage } from "@/lib/message-types";
 import { publishMessage } from "@/lib/messages/message-publisher";
 
 export async function getPlayerRaceTeams(boardId: string, mapId: string): Promise<ApiResponse<RaceTeamSelections>> {
@@ -38,7 +38,12 @@ export async function setPlayerRaceTeam(boardId: string, mapId: string, playerId
 
     // A notification failure must not turn a saved selection into a failed save.
     try {
-      await publishMessage(boardId, mapId, { type: GameTopicMessageType.RaceTeamUpdated });
+      const message: RaceTeamUpdatedMessage = {
+        type: GameTopicMessageType.RaceTeamUpdated,
+        playerId,
+        team: instructions.team ?? null,
+      };
+      await publishMessage(boardId, mapId, message);
     } catch (error) {
       console.error('Failed to publish race team update', error);
     }

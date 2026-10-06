@@ -45,7 +45,9 @@ it('publishes only after saving the team and releases the player lock', async ()
     success: true, data: instructions,
   });
   expect(setPlayerInstructionsInRedis).toHaveBeenCalledWith('board', 'map', 'warrior', instructions);
-  expect(publishMessage).toHaveBeenCalledWith('board', 'map', { type: GameTopicMessageType.RaceTeamUpdated });
+  expect(publishMessage).toHaveBeenCalledWith('board', 'map', {
+    type: GameTopicMessageType.RaceTeamUpdated, playerId: 'warrior', team: 'blue',
+  });
   expect(jest.mocked(setPlayerInstructionsInRedis).mock.invocationCallOrder[0])
     .toBeLessThan(jest.mocked(publishMessage).mock.invocationCallOrder[0]);
   expect(release).toHaveBeenCalledTimes(1);

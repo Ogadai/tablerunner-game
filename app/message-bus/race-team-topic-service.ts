@@ -1,4 +1,6 @@
-type RaceTeamUpdatedListener = () => void;
+import type { RaceTeamUpdatedMessage } from '@/lib/message-types';
+
+type RaceTeamUpdatedListener = (message: RaceTeamUpdatedMessage) => void;
 
 class RaceTeamTopicService {
   private static readonly listeners = new Map<string, Set<RaceTeamUpdatedListener>>();
@@ -16,8 +18,10 @@ class RaceTeamTopicService {
     };
   }
 
-  static raiseRaceTeamUpdated(topicId: string): void {
-    this.listeners.get(topicId)?.forEach(listener => listener());
+  static raiseRaceTeamUpdated(topicId: string, message: RaceTeamUpdatedMessage): void {
+    if (!message || typeof message.playerId !== 'string'
+      || (message.team !== 'blue' && message.team !== 'red' && message.team !== null)) return;
+    this.listeners.get(topicId)?.forEach(listener => listener(message));
   }
 }
 

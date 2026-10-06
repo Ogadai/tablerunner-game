@@ -96,7 +96,7 @@ export default function GameTopic({
       } else if (message.name === GameTopicMessageType.GameStateUpdated) {
         GameTopicService.raiseGameStateUpdated(topicId);
       } else if (message.name === GameTopicMessageType.RaceTeamUpdated) {
-        RaceTeamTopicService.raiseRaceTeamUpdated(topicId);
+        RaceTeamTopicService.raiseRaceTeamUpdated(topicId, message.data);
       } else if (message.name === GameTopicMessageType.StoreUpdated) {
         StoreTopicService.raiseStoreUpdated(topicId, message.data);
       } else if (message.name === GameTopicMessageType.ReadyStateUpdated) {

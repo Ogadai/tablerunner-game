@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { getPlayerRaceTeams, setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
 import RaceTeamTopicService from '@/app/message-bus/race-team-topic-service';
+import { GameTopicMessageType, type RaceTeamUpdatedMessage } from '@/lib/message-types';
 import type { PlayerSnapshot } from '@/lib/store/types';
 import { makeGameState, makePlayer, makePlayerSnapshot } from '../test-fixtures';
 import TeamSelectionContent from './team-selection-content';
@@ -28,7 +29,7 @@ describe('TeamSelectionContent', () => {
     }));
   });
 
-  it('loads the latest selections for all players and refreshes on a team message', async () => {
+  it('loads selections once and applies team messages without another request', async () => {
     const snapshot = makePlayerSnapshot({ gameState: makeGameState({
       gameId: 'racefire', players: [makePlayer(), makePlayer({ id: 'mage', name: 'Test Mage' })],
       processState: { 'crystal-shard': { blueTeam: ['warrior', 'mage'] } },
@@ -43,16 +44,33 @@ describe('TeamSelectionContent', () => {
     expect(within(row('No team')).getByRole('listitem', { name: 'Test Mage' })).toBeInTheDocument();
     expect(teamButton('Red team')).toHaveAttribute('aria-pressed', 'true');
 
-    jest.mocked(getPlayerRaceTeams).mockResolvedValue({ success: true, data: { warrior: 'red', mage: 'blue' } });
-    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('other-map'));
+    const message: RaceTeamUpdatedMessage = {
+      type: GameTopicMessageType.RaceTeamUpdated, playerId: 'mage', team: 'blue',
+    };
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('other-map', message));
     expect(getPlayerRaceTeams).toHaveBeenCalledTimes(1);
-    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('board-map'));
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('board-map', message));
     expect(within(row('Blue team')).getByRole('listitem', { name: 'Test Mage' })).toBeInTheDocument();
     expect(within(row('No team')).queryByRole('listitem')).not.toBeInTheDocument();
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('board-map', { ...message, team: null }));
+    expect(within(row('No team')).getByRole('listitem', { name: 'Test Mage' })).toBeInTheDocument();
 
     view.unmount();
-    RaceTeamTopicService.raiseRaceTeamUpdated('board-map');
-    expect(getPlayerRaceTeams).toHaveBeenCalledTimes(2);
+    RaceTeamTopicService.raiseRaceTeamUpdated('board-map', message);
+    expect(getPlayerRaceTeams).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves live updates received before the initial load finishes', async () => {
+    let resolve!: (result: Awaited<ReturnType<typeof getPlayerRaceTeams>>) => void;
+    jest.mocked(getPlayerRaceTeams).mockReturnValue(new Promise(done => { resolve = done; }));
+    mount();
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('board-map', {
+      type: GameTopicMessageType.RaceTeamUpdated, playerId: 'warrior', team: 'red',
+    }));
+    expect(teamButton('Red team')).toHaveAttribute('aria-pressed', 'true');
+    await act(async () => resolve({ success: true, data: { warrior: 'blue' } }));
+    expect(teamButton('Red team')).toHaveAttribute('aria-pressed', 'true');
+    expect(getPlayerRaceTeams).toHaveBeenCalledTimes(1);
   });
 
   it.each([

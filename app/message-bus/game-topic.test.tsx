@@ -190,8 +190,9 @@ describe('GameTopic', () => {
     const unsubscribe = RaceTeamTopicService.subscribe(topicId, listener);
     render(<GameTopic topicId={topicId} playerId={playerId} />);
     const channelMessageCallback = mockChannel.subscribe.mock.calls[0][0];
-    channelMessageCallback({ name: GameTopicMessageType.RaceTeamUpdated });
-    expect(listener).toHaveBeenCalledTimes(1);
+    const data = { type: GameTopicMessageType.RaceTeamUpdated, playerId: 'mage', team: 'red' };
+    channelMessageCallback({ name: GameTopicMessageType.RaceTeamUpdated, data });
+    expect(listener).toHaveBeenCalledWith(data);
     unsubscribe();
   });
 
