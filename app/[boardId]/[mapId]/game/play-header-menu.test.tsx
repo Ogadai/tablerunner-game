@@ -75,14 +75,14 @@ describe('PlayHeaderMenu', () => {
         else fireEvent.click(item);
       });
       expect(screen.getByRole('dialog', { name: 'Race of Fire Team' })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'Independent (no team)' })).toBeChecked();
+      expect(screen.getByRole('button', { name: 'No team' })).toHaveAttribute('aria-pressed', 'true');
       expect(getBoardSettings).not.toHaveBeenCalled();
-      await act(async () => fireEvent.click(screen.getByRole('radio', { name: 'Blue team' })));
+      await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Blue team' })));
       const updated = { ...snapshot, instructions: { team: 'blue' } };
       expect(onSnapshotChange).toHaveBeenCalledWith(updated);
       view.rerender(<PlayHeaderMenu {...props} snapshot={updated} />);
-      expect(screen.getByRole('radio', { name: 'Blue team' })).toBeChecked();
-      fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+      expect(screen.getByRole('button', { name: 'Blue team' })).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });

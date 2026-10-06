@@ -25,7 +25,7 @@ describe('TeamSelectionContent', () => {
   });
 
   it.each([
-    ['warrior', 'Blue team'], ['mage', 'Red team'], ['ranger', 'Independent (no team)'],
+    ['warrior', 'Blue team'], ['mage', 'Red team'], ['ranger', 'No team'],
   ])('loads the persisted team for %s', (playerId, label) => {
     mount({ ...blueSnapshot(), playerId });
     expect(teamButton(label)).toHaveAttribute('aria-pressed', 'true');
@@ -34,18 +34,18 @@ describe('TeamSelectionContent', () => {
 
   it('defaults to independent when the process state is missing', () => {
     mount(makePlayerSnapshot());
-    expect(teamButton('Independent (no team)')).toHaveAttribute('aria-pressed', 'true');
+    expect(teamButton('No team')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it.each([
-    ['red', 'Red team'], [null, 'Independent (no team)'],
+    ['red', 'Red team'], [null, 'No team'],
   ] as const)('prefers the pending instruction (%s) over the persisted blue team', (team, label) => {
     mount({ ...blueSnapshot(), instructions: { team } });
     expect(teamButton(label)).toHaveAttribute('aria-pressed', 'true');
   });
 
   it.each([
-    ['Red team', 'red'], ['Independent (no team)', null],
+    ['Red team', 'red'], ['No team', null],
   ] as const)('saves %s, preserves other instructions and updates the snapshot without mutating it', async (label, team) => {
     const snapshot = { ...blueSnapshot(), instructions: { other: 'keep' } };
     const view = mount(snapshot);
@@ -76,9 +76,9 @@ describe('TeamSelectionContent', () => {
     jest.mocked(setPlayerRaceTeam).mockReturnValue(new Promise(done => { resolve = done; }));
     mount();
     await act(async () => fireEvent.click(teamButton('Red team')));
-    expect(screen.getByRole('status')).toHaveTextContent('Saving team...');
+    expect(screen.getByRole('status')).toHaveTextContent('Saving...');
     expect(teamButton('Red team')).toBeDisabled();
-    fireEvent.click(teamButton('Independent (no team)'));
+    fireEvent.click(teamButton('No team'));
     expect(setPlayerRaceTeam).toHaveBeenCalledTimes(1);
     await act(async () => resolve({ success: true, data: { team: 'red' } }));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
