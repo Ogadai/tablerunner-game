@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import EntityList, { EntityItemClass, type EntityItemDetail } from '../../[playerId]/entity-list';
+import { characters } from '@/lib/games/characters';
 import type { PlayerSnapshot } from '@/lib/store/types';
 import type { RaceInstructionTeam } from '@/lib/runner/race-of-fire/race-types';
 import { setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
+import styles from './team-selection-content.module.css';
 
 interface TeamSelectionContentProps {
   boardId: string;
@@ -16,7 +19,7 @@ interface TeamSelectionContentProps {
 const teams = [
   { value: 'blue', label: 'Blue team' },
   { value: 'red', label: 'Red team' },
-  { value: null, label: 'Independent (no team)' },
+  { value: null, label: 'No team' },
 ] as const;
 
 export default function TeamSelectionContent({
@@ -26,7 +29,6 @@ export default function TeamSelectionContent({
   onSnapshotChange,
   disabled = false,
 }: TeamSelectionContentProps) {
-  const groupId = useId();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
@@ -39,6 +41,24 @@ export default function TeamSelectionContent({
   const currentTeam = state?.blueTeam?.includes(snapshot.playerId) ? 'blue'
     : state?.redTeam?.includes(snapshot.playerId) ? 'red' : null;
   const selectedTeam = Object.hasOwn(instructions, 'team') ? instructions.team ?? null : currentTeam;
+  const choicesDisabled = disabled || isPending || !snapshot.gameState;
+  const getPlayerTeam = (playerId: string) => playerId === snapshot.playerId ? selectedTeam
+    : state?.blueTeam?.includes(playerId) ? 'blue'
+    : state?.redTeam?.includes(playerId) ? 'red' : null;
+
+  const getTeamEntities = (team: RaceInstructionTeam['team']): EntityItemDetail[] =>
+    (snapshot.gameState?.players ?? [])
+      .filter(player => getPlayerTeam(player.id) === team)
+      .map(player => ({
+        id: player.id,
+        name: player.name,
+        iconXY: snapshot.gameState?.characters.find(character => character.id === player.id)?.iconXY
+          ?? characters[player.id].iconXY,
+        className: player.id === snapshot.playerId ? EntityItemClass.self
+          : team !== null && team === selectedTeam ? EntityItemClass.friendly : EntityItemClass.enemy,
+        health: player.health,
+        maxHealth: player.baseStats?.health || player.health,
+      }));
 
   useEffect(() => {
     return () => { requestId.current += 1; };
@@ -73,23 +93,27 @@ export default function TeamSelectionContent({
   };
 
   return (
-    <fieldset disabled={disabled || isPending || !snapshot.gameState} aria-busy={isPending}>
-      <legend>Choose your team</legend>
-      {teams.map(team => (
-        <label key={team.value ?? 'independent'}>
-          <input
-            type="radio"
-            name={groupId}
-            value={team.value ?? 'independent'}
-            checked={selectedTeam === team.value}
-            onChange={() => changeTeam(team.value)}
-          />
-          {team.label}
-        </label>
-      ))}
-      <p>Team changes take effect when the turn is processed.</p>
-      {isPending && <p role="status">Saving team...</p>}
-      {error && <p role="alert">{error}</p>}
-    </fieldset>
+    <div aria-busy={isPending} className={styles.teamSelectionContent}>
+      <div className={styles.teamList}>
+        {teams.map(team => (
+          <div key={team.value ?? 'independent'} className={styles.teamRow}>
+            <button
+              type="button"
+              className={`${styles.teamButton} ${team.value ? styles[team.value] : ''}`}
+              disabled={choicesDisabled}
+              aria-pressed={selectedTeam === team.value}
+              onClick={() => changeTeam(team.value)}
+            >
+              <span>{team.label}</span>
+            </button>
+            <div className={styles.teamPlayers}>
+              <EntityList entities={getTeamEntities(team.value)} />
+            </div>
+          </div>
+        ))}
+      </div>
+      {isPending && <p className={styles.statusMessage} role="status">Saving...</p>}
+      {error && <p className={styles.statusMessage} role="alert">{error}</p>}
+    </div>
   );
 }

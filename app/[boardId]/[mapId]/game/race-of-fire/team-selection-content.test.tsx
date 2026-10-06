@@ -9,7 +9,7 @@ jest.mock('@/lib/runner/race-of-fire/server-actions', () => ({ setPlayerRaceTeam
 const blueSnapshot = () => makePlayerSnapshot({ gameState: makeGameState({
   gameId: 'racefire', processState: { 'crystal-shard': { blueTeam: ['warrior'], redTeam: ['mage'] } },
 }) });
-const radio = (label: string) => screen.getByRole('radio', { name: label });
+const teamButton = (label: string) => screen.getByRole('button', { name: label });
 
 describe('TeamSelectionContent', () => {
   const onSnapshotChange = jest.fn();
@@ -28,20 +28,20 @@ describe('TeamSelectionContent', () => {
     ['warrior', 'Blue team'], ['mage', 'Red team'], ['ranger', 'Independent (no team)'],
   ])('loads the persisted team for %s', (playerId, label) => {
     mount({ ...blueSnapshot(), playerId });
-    expect(radio(label)).toBeChecked();
+    expect(teamButton(label)).toHaveAttribute('aria-pressed', 'true');
     expect(setPlayerRaceTeam).not.toHaveBeenCalled();
   });
 
   it('defaults to independent when the process state is missing', () => {
     mount(makePlayerSnapshot());
-    expect(radio('Independent (no team)')).toBeChecked();
+    expect(teamButton('Independent (no team)')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it.each([
     ['red', 'Red team'], [null, 'Independent (no team)'],
   ] as const)('prefers the pending instruction (%s) over the persisted blue team', (team, label) => {
     mount({ ...blueSnapshot(), instructions: { team } });
-    expect(radio(label)).toBeChecked();
+    expect(teamButton(label)).toHaveAttribute('aria-pressed', 'true');
   });
 
   it.each([
@@ -49,25 +49,25 @@ describe('TeamSelectionContent', () => {
   ] as const)('saves %s, preserves other instructions and updates the snapshot without mutating it', async (label, team) => {
     const snapshot = { ...blueSnapshot(), instructions: { other: 'keep' } };
     const view = mount(snapshot);
-    await act(async () => fireEvent.click(radio(label)));
+    await act(async () => fireEvent.click(teamButton(label)));
     const instructions = { other: 'keep', team };
     expect(setPlayerRaceTeam).toHaveBeenCalledWith('board', 'map', 'warrior', instructions);
     expect(onSnapshotChange).toHaveBeenCalledWith({ ...snapshot, instructions });
     expect(snapshot.instructions).toEqual({ other: 'keep' });
     view.rerender(<TeamSelectionContent {...view.props} snapshot={{ ...snapshot, instructions }} />);
-    expect(radio(label)).toBeChecked();
+    expect(teamButton(label)).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('does not save when the selected team is clicked again', async () => {
     mount();
-    await act(async () => fireEvent.click(radio('Blue team')));
+    await act(async () => fireEvent.click(teamButton('Blue team')));
     expect(setPlayerRaceTeam).not.toHaveBeenCalled();
   });
 
   it.each(['disabled', 'no game'])('disables choices when %s', reason => {
     mount(reason === 'no game' ? makePlayerSnapshot({ gameState: null }) : blueSnapshot(), reason === 'disabled');
-    for (const input of screen.getAllByRole('radio')) expect(input).toBeDisabled();
-    fireEvent.click(radio('Red team'));
+    for (const input of screen.getAllByRole('button')) expect(input).toBeDisabled();
+    fireEvent.click(teamButton('Red team'));
     expect(setPlayerRaceTeam).not.toHaveBeenCalled();
   });
 
@@ -75,14 +75,14 @@ describe('TeamSelectionContent', () => {
     let resolve!: (result: Awaited<ReturnType<typeof setPlayerRaceTeam>>) => void;
     jest.mocked(setPlayerRaceTeam).mockReturnValue(new Promise(done => { resolve = done; }));
     mount();
-    await act(async () => fireEvent.click(radio('Red team')));
+    await act(async () => fireEvent.click(teamButton('Red team')));
     expect(screen.getByRole('status')).toHaveTextContent('Saving team...');
-    expect(radio('Red team')).toBeDisabled();
-    fireEvent.click(radio('Independent (no team)'));
+    expect(teamButton('Red team')).toBeDisabled();
+    fireEvent.click(teamButton('Independent (no team)'));
     expect(setPlayerRaceTeam).toHaveBeenCalledTimes(1);
     await act(async () => resolve({ success: true, data: { team: 'red' } }));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    expect(radio('Red team')).toBeEnabled();
+    expect(teamButton('Red team')).toBeEnabled();
     expect(onSnapshotChange).toHaveBeenCalledTimes(1);
   });
 
@@ -92,12 +92,12 @@ describe('TeamSelectionContent', () => {
       success: false, error: failure === 'server error' ? 'Team could not be saved' : undefined,
     });
     mount();
-    await act(async () => fireEvent.click(radio('Red team')));
+    await act(async () => fireEvent.click(teamButton('Red team')));
     expect(screen.getByRole('alert')).toHaveTextContent(failure === 'server error'
       ? 'Team could not be saved' : 'Unable to change team. Please try again.');
-    expect(radio('Blue team')).toBeChecked();
+    expect(teamButton('Blue team')).toHaveAttribute('aria-pressed', 'true');
     expect(onSnapshotChange).not.toHaveBeenCalled();
-    await act(async () => fireEvent.click(radio('Red team')));
+    await act(async () => fireEvent.click(teamButton('Red team')));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(onSnapshotChange).toHaveBeenCalledTimes(1);
   });
@@ -106,7 +106,7 @@ describe('TeamSelectionContent', () => {
     let resolve!: (result: Awaited<ReturnType<typeof setPlayerRaceTeam>>) => void;
     jest.mocked(setPlayerRaceTeam).mockReturnValue(new Promise(done => { resolve = done; }));
     const view = mount();
-    await act(async () => fireEvent.click(radio('Red team')));
+    await act(async () => fireEvent.click(teamButton('Red team')));
     if (change === 'unmount') view.unmount();
     else {
       const snapshot: PlayerSnapshot = change === 'new player'
