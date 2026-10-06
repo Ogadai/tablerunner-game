@@ -25,6 +25,7 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
       .replaceAll('{player}', self ? 'You' : name)
       .replaceAll('{playerNoun}', self ? 'are' : 'is')
       .replaceAll('{ownership}', self ? 'have' : 'has')
+      .replaceAll('{self}', self ? 'yourself' : 'themself')
       .replaceAll('{possessive}', self ? 'r' : name.endsWith('s') ? "'" : "'s")
     });
   }

@@ -97,7 +97,7 @@ function applySpellEffects(
         const targetName = 'type' in target ? monsters[(target as MonsterState).type].name : (target as INamedTarget).name;
         playerMessageAtLocation(params, player.id,
           player.id === target.id
-            ? `**{player}** healed themselves for **${addedHealth}** health!`
+            ? `**{player}** healed {self} for **${addedHealth}** health!`
             : `**{player}** healed **${targetName}** for **${addedHealth}** health!`);
 
       }
