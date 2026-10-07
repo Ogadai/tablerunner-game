@@ -6,7 +6,7 @@ import { broadcastMessage } from "../game-messages";
 import { publishPreloadVideo, publishPlayVideo } from '@/lib/messages/message-videos';
 import { VideoNames } from "@/lib/messages/video-list";
 import { getDisplayName, PlayerState } from "@/lib/store/types";
-import { getCellCoordinates } from "@/lib/games/monster-pack";
+import { getCellCoordinates } from "@/lib/games/gridCells";
 import { cauldronOfFirePortals } from '@/lib/games/maps/cauldron-of-fire/portals';
 import { getState } from './race-state';
 

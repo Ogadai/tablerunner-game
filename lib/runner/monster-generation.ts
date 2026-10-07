@@ -1,9 +1,9 @@
 import { GameState, MonsterState } from '../store/types';
 import { monsters } from '../games/monsters';
-import { GRID_CELL_COUNT } from '../games/gridCells';
+import { getCellCoordinates, GRID_CELL_COUNT } from '../games/gridCells';
 import { sharedLocations as locations } from '../games/maps/shared-locations';
 import { Location } from '../games/types';
-import { getCellCoordinates, generateMonster, getAvailableMonstersByStrength } from '../games/monster-pack';
+import { generateMonster, getAvailableMonstersByStrength } from '../games/monster-pack';
 
 const MONSTER_DISTANCE_SCALE = 0.1;
 const PLAYER_COUNT_SCALE = 0.25;

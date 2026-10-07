@@ -141,9 +141,12 @@ describe('player creation and deletion', () => {
     const state = createState();
     state.gameId = game.id;
     state.characters = game.characters;
-    const starterPlayer = gameRunners[game.id].gameCreation.createStarterPlayer(characters.mage, state.players);
+    const createStarter = jest.spyOn(gameRunners[game.id].gameCreation, 'createStarterPlayer');
     mockRedis.getGameStateFromRedis.mockResolvedValue(state);
     await expect(createPlayerForGame('board', 'map', 'mage')).resolves.toEqual({ success: true });
+    expect(createStarter).toHaveBeenCalledTimes(1);
+    expect(createStarter).toHaveBeenCalledWith(characters.mage, state.players);
+    const starterPlayer = createStarter.mock.results[0].value;
     const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
     const player = saved.players[0];
     expect(player).toMatchObject({ id: 'mage', name: 'Test Hero',

@@ -1,5 +1,4 @@
-import { GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from './gridCells';
-import { getCellAtCoordinates, getCellCoordinates } from './monster-pack';
+import { getCellAtCoordinates, getCellCoordinates, GRID_CELLS, MAP_COLUMNS, MAP_ROWS } from './gridCells';
 
 it.each([
   { cell: 1, row: 0, col: 0 },

@@ -1,5 +1,4 @@
-import { lootItems, scrollItems, consumableItems, equipableItems, allItems } from '../../items';
-import { PlayerItemType } from '../../types';
+import { scrollItems, consumableItems, equipableItems, allItems } from '../../items';
 
 const starterStores: string[] = [
   ...Object.keys(consumableItems).filter(id => (allItems[id].value || 0) < 150),
@@ -20,8 +19,8 @@ export const warlordsOfFireStoreItems: { [locationId: number]: string[] } = {
   100: starterStores,
   128: largeStores,
   24: largeStores,
-  203: largeStores,
+  235: largeStores,
   135: largeStores,
 };
 
-export const visitedLocations: number[] = [10, 231, 121, 100, 110, 24, 203];
+export const visitedLocations: number[] = [10, 231, 121, 100, 128, 24, 235, 135];

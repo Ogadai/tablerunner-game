@@ -3,7 +3,7 @@ import { populateItemsForMap } from './populate-items';
 import { createGame } from './test-support/fixtures';
 
 jest.mock('../store/redis-access', () => ({}));
-jest.mock('../games/games', () => ({ games: [{ map: 'test-map', itemLocations: [
+jest.mock('../games/games', () => ({ games: [{ map: 'test-map', id: 'test-game', itemLocations: [
   { locations: [1, 2], itemIds: ['healingPotion', 'manaPotion'] },
   { locations: [3], itemIds: ['healingPotion'] },
 ] }] }));
