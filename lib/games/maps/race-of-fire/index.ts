@@ -21,5 +21,5 @@ export const raceOfFire: GameListEntry = {
   locations: sharedLocations,
   itemLocations: cauldronOfFireItems,
   storeItems: cauldronOfFireStoreItems,
-  portalLocations: cauldronOfFirePortals,
+  portalLocations: cauldronOfFirePortals.filter(p => p !== 184), // Not the castle gates
 };
