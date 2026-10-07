@@ -6,7 +6,6 @@ interface WinnerDef {
   redTeam?: string[];
 }
 
-// Keep the existing state key so games already in progress retain their winner.
 const OWNER = 'crystal-shard';
 
 export const getState = (gameState: GameState) =>
