@@ -113,8 +113,8 @@ export const shardProcess: ProcessRunner = {
           // Include every teammate's inventory and the shards about to be collected here.
           return params.gameState.players
             .filter(teammate => team.includes(teammate.id))
-            .reduce((total, teammate) => total + playerShardCount(teammate)
-              + (teammate.location.id === location ? 1 : 0), 0);
+            .reduce((total, teammate) => total + playerShardCount(teammate), 0)
+            + 1;
         };
 
         const mostShardCount = Math.min(shardVideos.length - 1,
@@ -126,8 +126,23 @@ export const shardProcess: ProcessRunner = {
         if (monstersHere.length > 0) {
           await publishPreloadVideo(params.boardId, params.mapId, video);
         } else {
-          // Each player gets a shard
-          for(const player of players) {
+          const independentPlayers = players.filter(player =>
+            !state.blueTeam?.includes(player.id) && !state.redTeam?.includes(player.id)
+          );
+          const teamPlayers = [state.blueTeam, state.redTeam]
+            .filter((team): team is string[] => team !== undefined)
+            .map(team => players.filter(player => team.includes(player.id)))
+            .filter(team => team.length > 0);
+          const shardRecipients = [
+            ...independentPlayers,
+            ...teamPlayers.map(team => {
+              const fewestShards = Math.min(...team.map(playerShardCount));
+              const candidates = team.filter(player => playerShardCount(player) === fewestShards);
+              return candidates[Math.floor(Math.random() * candidates.length)];
+            })
+          ];
+
+          for(const player of shardRecipients) {
             player.equipment.push(createItemForInventory(params.gameState, shardItem));
             const shardCount = playerShardCount(player);
 

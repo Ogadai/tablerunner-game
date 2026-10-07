@@ -113,9 +113,10 @@ export const winnerProcess: ProcessRunner = {
         && finishPlayers.every(player => getChosenTeam(player.id) === chosenTeam);
 
       if (finishPlayers.length === 1 || sharedTeam) {
-        const winVideo = finishPlayers.length === 1
-          ? winnerVideos[finishPlayers[0].id] || VideoNames.fireCrystalShardWin
-          : VideoNames.fireCrystalShardWin;
+        const winVideo = (finishPlayers.length === 1
+          ? winnerVideos[finishPlayers[0].id]
+          : winnerVideos[finishPlayers[Math.floor(Math.random() * finishPlayers.length)].id]
+        ) || VideoNames.fireCrystalShardWin;
 
         for(const winner of finishPlayers) {
           const team = getChosenTeam(winner.id);
