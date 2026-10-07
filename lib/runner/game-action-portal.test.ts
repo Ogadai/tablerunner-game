@@ -1,6 +1,7 @@
 /** @jest-environment node */
 import { actionFastTravel, actionPortal, updatePortalAndShopLeds } from './game-action-portal';
 import { PlayerActionType } from '../store/types';
+import { characters } from '../games/characters';
 import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 
 jest.mock('../games/games', () => ({ games: [{ id: 'test-game', locations: Array.from({ length: 7 }, (_, i) => ({
@@ -71,6 +72,22 @@ it('does not fast travel through undiscovered locations', () => {
   player.location.move = [{ id: 2, direction: 'e' }];
   actionFastTravel(params, player, { id: 1, type: PlayerActionType.FastTravel, targetLocation: 3, description: '' });
   expect(player.location.id).toBe(1);
+});
+
+it.each([
+  ['99733A', true], ['9E008B', false],
+] as const)('validates territory colour %s when executing fast travel', (rgb, allowed) => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  const params = createParams();
+  const player = params.gameState.players[0];
+  player.location.move = [{ id: 2, direction: 'e' }];
+  params.gameState.characters = [{ ...characters.barbarian, id: player.id }];
+  params.gameState.visited = [1, 2, 3];
+  params.gameState.leds = [2, 3].map(location => ({ location, owner: 'territory', rgb }));
+
+  actionFastTravel(params, player, { id: 1, type: PlayerActionType.FastTravel, targetLocation: 3, description: '' });
+
+  expect(player.location.id).toBe(allowed ? 3 : 1);
 });
 
 it('rebuilds discovered portal and shop LEDs while preserving other owners', () => {

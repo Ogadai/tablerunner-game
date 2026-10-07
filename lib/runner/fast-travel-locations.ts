@@ -8,6 +8,7 @@ export function getFastTravelLocations(
   player: INamedTarget,
   steps = 5,
 ): number[] {
+  const characterDef = params.gameState.characters.find(character => character.id === player.id);
   const available = new Set<number>();
   const remainingSteps = new Map<number, number>();
   const visit = (location: Location, remaining: number) => {
@@ -24,7 +25,8 @@ export function getFastTravelLocations(
       if (!params.gameState.visited.includes(move.id)) continue;
       // Monster markers describe occupants, whose teams are checked above.
       const blocked = params.gameState.leds.some(led => led.location === move.id
-        && !['monster', 'portal', 'shop'].includes(led.owner));
+        && !['monster', 'portal', 'shop'].includes(led.owner)
+        && !(led.owner === 'territory' && characterDef && led.rgb === characterDef.rgbColour));
       const destination = locations.find(candidate => candidate.id === move.id);
       if (!blocked && destination) visit(destination, remaining - 1);
     }

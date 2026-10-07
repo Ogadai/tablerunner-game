@@ -3,7 +3,7 @@ import { ProcessRunner } from "../types";
 import { getState, saveState } from "./territory-state";
 import { games } from "@/lib/games/games";
 
-const OWNER = 'war-territory';
+const OWNER = 'territory';
 
 export const territoryProcesses: ProcessRunner = {
   executeForTurn: async (params) => {
