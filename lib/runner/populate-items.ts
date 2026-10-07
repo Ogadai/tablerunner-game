@@ -4,7 +4,7 @@ import { allItems } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
 
 export async function populateItemsForMap(gameState: GameState, mapId: string): Promise<ItemLocationState[]> {
-  const game = games.find(g => g.map === mapId);
+  const game = games.find(g => g.map === mapId && g.id === gameState.gameId);
 
   const itemLocations = game?.itemLocations || [];
 

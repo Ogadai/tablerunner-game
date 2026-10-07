@@ -10,34 +10,37 @@ const PLAYER_COUNT_SCALE = 0.25;
 const MONSTER_COUNT_SCALE = 2;
 const MONSTER_COUNT_MAX = 8;
 
-const startXY = getCellCoordinates(10);
-function getDistanceFromStart(cell: number): number {
+function getDistanceFromStart(cell: number, startCells: number[]): number {
   const cellXY = getCellCoordinates(cell);
 
-  const vector = {
-    x: cellXY.col - startXY.col,
-    y: cellXY.row - startXY.row,
-  };
+  return Math.min(...startCells.map(startCell => {
+    const startXY = getCellCoordinates(startCell);
+    const vector = {
+      x: cellXY.col - startXY.col,
+      y: cellXY.row - startXY.row,
+    };
 
-  return 0.3 * Math.abs(vector.x) + 1.5 * Math.abs(vector.y);
+    return 0.3 * Math.abs(vector.x) + 1.5 * Math.abs(vector.y);
+  }));
 }
 
 export async function generateMonsters(
   gameState: GameState,
   playerCount: number = 1,
-  excludeLocations: number[] = []
+  excludeLocations: number[] = [],
+  startCells: number[] = [10]
 ): Promise<MonsterState[]> {
   const newMonsters: MonsterState[] = [];
   for(let n = 1 ; n <= GRID_CELL_COUNT; n++) {
     if (!excludeLocations.includes(n)) {
-      newMonsters.push(...getCellMonsters(gameState, n, playerCount));
+      newMonsters.push(...getCellMonsters(gameState, n, playerCount, startCells));
     }
   }
   return newMonsters;
 }
 
-function getCellMonsters(gameState: GameState, cell: number, playerCount: number): MonsterState[] {
-  const avgStrength = getCellStrength(cell, playerCount);
+function getCellMonsters(gameState: GameState, cell: number, playerCount: number, startCells: number[]): MonsterState[] {
+  const avgStrength = getCellStrength(cell, playerCount, startCells);
   if (avgStrength < 0.02) {
     return [];
   }
@@ -85,7 +88,7 @@ function pickMonster(maxStrength: number): { id: string, strength: number } | nu
   return top4[Math.floor(Math.random() * top4.length)];
 }
 
-function getCellStrength(cell: number, playerCount: number): number {
+function getCellStrength(cell: number, playerCount: number, startCells: number[]): number {
   const location = locations.find(l => l.id === cell)!;
 
   const chance = getMonsterChance(location);
@@ -95,7 +98,7 @@ function getCellStrength(cell: number, playerCount: number): number {
 
   const playerFactor = 0.5 + playerCount * PLAYER_COUNT_SCALE;
   const typeFactor = location.underground ? 1 : 0.5;
-  const distance = getDistanceFromStart(cell);
+  const distance = getDistanceFromStart(cell, startCells);
   return distance * typeFactor * playerFactor * MONSTER_DISTANCE_SCALE;
 }
 

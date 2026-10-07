@@ -2,6 +2,7 @@ import { sharedLocations } from '../shared-locations';
 
 import { GameListEntry } from '../../types';
 import { characters } from '../../characters';
+import { warlordsOfFireStoreItems, visitedLocations } from './stores';
 
 export const warlordsOfFire: GameListEntry = {
   id: 'warlordsfire',
@@ -17,6 +18,7 @@ export const warlordsOfFire: GameListEntry = {
   ],
   locations: sharedLocations,
   itemLocations: [],
-  storeItems: [],
-  portalLocations: []
+  storeItems: warlordsOfFireStoreItems,
+  portalLocations: [],
+  visitedLocations: visitedLocations,
 };

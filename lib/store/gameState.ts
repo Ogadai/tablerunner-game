@@ -77,7 +77,7 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
     characters: gameDef.characters,
     players: [],
     npcs: [],
-    visited: [],
+    visited: gameDef.visitedLocations || [],
     stores: Object.keys(gameDef.storeItems).map(i => parseInt(i, 10)),
     portals: gameDef.portalLocations ? [...gameDef.portalLocations] : [],
     visitedPortals: [],

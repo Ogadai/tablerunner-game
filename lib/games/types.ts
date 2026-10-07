@@ -11,6 +11,7 @@ export interface GameListEntry {
   itemLocations: GameItemLocation[];
   storeItems: { [locationId: number]: string[] };
   portalLocations?: number[];
+  visitedLocations?: number[];
 }
 
 export interface GameItemLocation {

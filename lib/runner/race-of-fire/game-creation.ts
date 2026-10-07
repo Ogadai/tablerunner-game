@@ -2,7 +2,7 @@ import { CharacterListEntry } from '@/lib/games/types';
 import { GameCreation, StarterPlayer } from '../types';
 import { PlayerState } from '@/lib/store/types';
 
-// TODO: Define Race of Fire starting values.
+// Define Race of Fire starting values.
 const INITIAL_AVAILABLE_STATS = 12;
 const INITIAL_COINS = 200;
 const START_LOCATION = 10;
