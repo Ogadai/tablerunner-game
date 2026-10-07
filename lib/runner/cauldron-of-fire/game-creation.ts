@@ -1,11 +1,13 @@
 import { allItems } from "@/lib/games/items";
 import { GameCreation, StarterPlayer } from "../types";
+import { CharacterListEntry } from "@/lib/games/types";
+import { PlayerState } from "@/lib/store/types";
 
 const INITIAL_AVAILABLE_STATS = 5;
 const INITIAL_COINS = 20;
 const START_LOCATION = 10;
 
-export function createStarterPlayer(): StarterPlayer {
+export function createStarterPlayer(characterDef: CharacterListEntry, players: PlayerState[]): StarterPlayer {
   return {
     location: START_LOCATION,
     level: 1,

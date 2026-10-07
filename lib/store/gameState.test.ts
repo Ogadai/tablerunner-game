@@ -26,7 +26,7 @@ jest.mock('../games/character-names', () => ({ pickCharacterName: jest.fn() }));
 
 const mockRedis = jest.mocked(redis);
 const game = games[0];
-const starterPlayer = gameRunners[game.id].gameCreation.createStarterPlayer();
+const starterPlayer = gameRunners[game.id].gameCreation.createStarterPlayer(characters.mage, []);
 function createState(): GameState {
   return {
     gameId: game.id, turn: 0, name: 'Test game', characters: game.characters,
@@ -138,10 +138,10 @@ describe('createNewGameState', () => {
 
 describe('player creation and deletion', () => {
   it.each(games)('creates a character with equipment, full health/magic and starting resources for $id', async game => {
-    const starterPlayer = gameRunners[game.id].gameCreation.createStarterPlayer();
     const state = createState();
     state.gameId = game.id;
     state.characters = game.characters;
+    const starterPlayer = gameRunners[game.id].gameCreation.createStarterPlayer(characters.mage, state.players);
     mockRedis.getGameStateFromRedis.mockResolvedValue(state);
     await expect(createPlayerForGame('board', 'map', 'mage')).resolves.toEqual({ success: true });
     const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
@@ -188,6 +188,7 @@ describe('player creation and deletion', () => {
 
     const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
     expect(createStarter).toHaveBeenCalledTimes(1);
+    expect(createStarter).toHaveBeenCalledWith(characters.mage, state.players);
     expect(saved.players[0]).toMatchObject({
       startLocation: location, location: game.locations.find(l => l.id === location),
       level: 3, availableStats: 8, coins: 50, team: 'red',

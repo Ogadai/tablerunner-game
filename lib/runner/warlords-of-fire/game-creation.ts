@@ -18,6 +18,6 @@ export function createStarterPlayer(characterDef: CharacterListEntry, players: P
   };
 }
 
-export const raceOfFireGameCreation: GameCreation = {
+export const warlordsOfFireGameCreation: GameCreation = {
   createStarterPlayer
 };

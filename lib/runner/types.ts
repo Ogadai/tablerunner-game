@@ -1,6 +1,6 @@
 import { BaseParams } from "./base-params";
-import { GameState, MonsterState } from "../store/types";
-import { ItemDef } from "../games/types";
+import { GameState, MonsterState, PlayerState } from "../store/types";
+import { CharacterListEntry, ItemDef } from "../games/types";
 
 export interface GameRunnerDefinition {
   gameCreation: GameCreation;
@@ -25,5 +25,5 @@ export interface StarterPlayer {
 };
 
 export interface GameCreation {
-  createStarterPlayer: () => StarterPlayer;
+  createStarterPlayer: (characterDef: CharacterListEntry, players: PlayerState[]) => StarterPlayer;
 }
