@@ -13,7 +13,7 @@ export function updateMonsterLeds(gameState: GameState, monsters: { location: nu
     location,
     rgb: MONSTER_LED_RGB,
     owner: MONSTER_LED_OWNER,
-  })).filter(ml => !gameState.leds.some(l => l.location === ml.location));
+  })).filter(ml => !gameState.leds.some(l => l.owner !== MONSTER_LED_OWNER && l.location === ml.location));
 
   gameState.leds = [
     ...gameState.leds.filter(l => l.owner !== MONSTER_LED_OWNER),
