@@ -4,6 +4,7 @@ interface TeamStateDef {
   territory: number[];
   colour: string;
   coins: number;
+  monsters: string[];
 }
 
 interface TerritoryStateDef {
@@ -16,6 +17,7 @@ export const DEFAULT_TEAM_STATE: TeamStateDef = {
   territory: [],
   colour: '',
   coins: 0,
+  monsters: [],
 };
 
 const DEFAULT_STATE: TerritoryStateDef = {

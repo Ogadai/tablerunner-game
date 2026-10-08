@@ -173,7 +173,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       };
     }
 
-    const starterPlayer = gameRunners[gameDef.id].gameCreation.createStarterPlayer(characterDef, gameState.players);
+    const starterPlayer = gameRunners[gameDef.id].gameCreation.createStarterPlayer(characterDef, gameState);
 
     const equipment = [
       ...characterDef.equipment,
