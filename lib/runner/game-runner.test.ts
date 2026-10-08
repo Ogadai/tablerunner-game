@@ -7,6 +7,9 @@ import { populateMonsters } from './populate-monsters';
 import { createGame, createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 import { applyCharacterInventory, applyPlayerInventory } from './apply-inventory';
 import { applyPlayerAddedStats } from './level-up';
+import { recruitProcesses } from './warlords-of-fire/recruit';
+import { getMonsterCost } from './warlords-of-fire/recruit-helper';
+import { DEFAULT_TEAM_STATE, saveState } from './warlords-of-fire/territory-state';
 
 jest.mock('../store/redis-access', () => ({
   getGameStateFromRedis: jest.fn(), commitGameTurnInRedis: jest.fn(), commitPausedGameInRedis: jest.fn(),
@@ -157,7 +160,7 @@ it('expires effects and summons, records portals, and commits destroyed shops wi
   expect(params.monsters).toContainEqual(expect.objectContaining({ id: 'undead', health: 0, type: 'rat' }));
   expect(params.gameState.visitedPortals).toEqual([1]);
   expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
-    expect.objectContaining({ monsters: params.monsters, npcs: [] }), params.messages, [1], ['summon', 'undead']);
+    expect.objectContaining({ monsters: params.monsters, npcs: [] }), params.messages, [1], ['summon', 'undead'], undefined);
 });
 
 it('applies pending NPC inventory before combat and consumes it even if the NPC expires', async () => {
@@ -175,7 +178,7 @@ it('applies pending NPC inventory before combat and consumes it even if the NPC 
   await processGameTurn(params);
   expect(params.gameState.npcs).toEqual([]);
   expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
-    expect.objectContaining({ npcs: [] }), params.messages, [], ['follower']);
+    expect.objectContaining({ npcs: [] }), params.messages, [], ['follower'], undefined);
 });
 
 it('preserves the original processing error even if recovery also fails', async () => {
@@ -233,6 +236,45 @@ it('supplies empty instructions to game processes when none are queued', async (
   });
   await processGameTurn(params);
   expect(params.playerInstructions).toEqual({ hero: {} });
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledTimes(1);
+});
+
+it.each([0, 1, 2])('commits the remaining Warlords queue after affording %s recruits', async affordableCount => {
+  const cost = getMonsterCost('rat');
+  const params = createParams({ gameState: createGame({
+    gameId: 'warlordsfire', players: [createPlayer({ coins: cost * affordableCount })],
+  }) });
+  saveState(params.gameState, { teams: { hero: { ...DEFAULT_TEAM_STATE, monsters: ['rat'] } } });
+  const recruits = [{ recruitId: 1, monster: 'rat' }, { recruitId: 2, monster: 'rat' }];
+  jest.mocked(redis.getPlayerTurnInputsFromRedis).mockResolvedValue({ hero: {
+    inventory: { equipped: null, equipment: null }, addedStats: { characterStats: null },
+    actions: { actions: [] }, instructions: { recruit: [...recruits] },
+  } });
+  jest.mocked(initialiseProcessesForTurn).mockImplementation(async p => {
+    await recruitProcesses.initialiseForTurn!(p);
+  });
+
+  await processGameTurn(params);
+
+  expect(params.monsters).toHaveLength(affordableCount);
+  expect(params.gameState.players[0].coins).toBe(0);
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
+    expect.objectContaining({ monsters: params.monsters }), params.messages, [], [],
+    { hero: { recruit: recruits.slice(affordableCount) } });
+
+  params.gameState.players[0].coins = cost * (2 - affordableCount);
+  await recruitProcesses.initialiseForTurn!(params);
+  expect(params.monsters).toHaveLength(2);
+  expect(params.playerInstructions.hero).toEqual({ recruit: [] });
+});
+
+it('processes a Warlords turn without recruitment instructions', async () => {
+  const params = createParams({ gameState: createGame({ gameId: 'warlordsfire' }) });
+  jest.mocked(initialiseProcessesForTurn).mockImplementation(async p => {
+    await recruitProcesses.initialiseForTurn!(p);
+  });
+  await processGameTurn(params);
+  expect(params.monsters).toEqual([]);
   expect(redis.commitGameTurnInRedis).toHaveBeenCalledTimes(1);
 });
 

@@ -111,6 +111,7 @@ export async function commitGameTurnInRedis(
   messages: Record<string, PlayerMessagesState>,
   removedStoreLocations: number[],
   consumedNpcInventoryIds: string[] = gameState.npcs.map(npc => npc.id),
+  remainingPlayerInstructions: Record<string, StorePlayerInstructions> = {},
 ): Promise<void> {
   const transaction = redis.multi();
   transaction.set(getGameKey(boardId, mapId), gameState, gameStateOptions);
@@ -122,7 +123,12 @@ export async function commitGameTurnInRedis(
     transaction.set(getPlayerActionsKey(boardId, mapId, player.id), { actions: [] }, gameStateOptions);
     transaction.set(getPlayerStatsKey(boardId, mapId, player.id), { characterStats: null }, gameStateOptions);
     transaction.set(getPlayerMessagesKey(boardId, mapId, player.id), messages[player.id], gameStateOptions);
-    transaction.del(getPlayerInstructionsKey(boardId, mapId, player.id));
+    const instructions = remainingPlayerInstructions[player.id];
+    if (instructions) {
+      transaction.set(getPlayerInstructionsKey(boardId, mapId, player.id), instructions, gameStateOptions);
+    } else {
+      transaction.del(getPlayerInstructionsKey(boardId, mapId, player.id));
+    }
   }
 
   for (const monster of locationsState.monsters.filter(m => m.scriptedActions)) {

@@ -305,6 +305,19 @@ describe('turn transactions', () => {
     expect(publishMessage).not.toHaveBeenCalled();
   });
 
+  it('retains remaining player instructions in the same transaction as the turn results', async () => {
+    const game = createGame({ players: [createPlayer(), createPlayer({ id: 'other' })] });
+    const instructions = { recruit: [{ recruitId: 2, monster: 'rat' }] };
+    await store.commitGameTurnInRedis('b', 'm', game, createLocations(),
+      { hero: { messages: [] }, other: { messages: [] } }, [], [], { hero: instructions });
+    expect(transaction.set).toHaveBeenCalledWith('playerInstructions:b:m:hero', instructions, expiry);
+    expect(transaction.del).not.toHaveBeenCalledWith('playerInstructions:b:m:hero');
+    expect(transaction.del).toHaveBeenCalledWith('playerInstructions:b:m:other');
+    expect(transaction.exec).toHaveBeenCalledTimes(1);
+    expect(client.set).not.toHaveBeenCalled();
+    expect(client.del).not.toHaveBeenCalled();
+  });
+
   it.each([
     () => store.commitPausedGameInRedis('b', 'm', createGame(), []),
     () => store.commitGameTurnInRedis('b', 'm', createGame(), createLocations(), { hero: { messages: [] } }, []),
