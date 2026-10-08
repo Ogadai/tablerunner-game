@@ -24,6 +24,7 @@ import FastTravel from './fast-travel';
 import PlayerVideo from './player-video';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 import { getCombatStats, getPlayerActionsCosts, getPlayerActionsMagic } from '@/lib/store/playerStats';
+import WarlordRecruitment from './warlord-recruitment';
 
 export default function PlayerLocation(
   {
@@ -316,6 +317,15 @@ export default function PlayerLocation(
         addNewAction={addNewAction}
       />
     
+      { gameState.gameId === 'warlordsfire' && <WarlordRecruitment
+        key={`${boardId}/${mapId}/${playerId}`}
+        boardId={boardId}
+        mapId={mapId}
+        playerId={playerId}
+        gameState={gameState}
+        processing={processing}
+      /> }
+
       { actionsState.actions.length > 0 && <div className={`${styles.actionsList}`}>
         <div className={styles.actionsHeader}>
           <h4>Actions</h4>

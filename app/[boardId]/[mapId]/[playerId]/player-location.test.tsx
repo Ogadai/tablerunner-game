@@ -10,6 +10,7 @@ import PlayerLocation from './player-location';
 import PlayerLocationList from './player-location-list';
 import PlayerPortal from './player-portal';
 import FastTravel from './fast-travel';
+import WarlordRecruitment from './warlord-recruitment';
 import { createMonster, createNpc } from '@/lib/runner/test-support/fixtures';
 import sync from './player-stats-sync.service';
 import { makeGameState, makePlayer as makeTestPlayer, makeStats } from './test-fixtures';
@@ -33,6 +34,9 @@ jest.mock('./player-store', () => ({ __esModule: true, default: () => <span>Stor
 jest.mock('./player-portal', () => ({ __esModule: true, default: jest.fn(() => <span>Portal available</span>) }));
 jest.mock('./fast-travel', () => ({ __esModule: true, default: jest.fn(() => null) }));
 jest.mock('./player-video', () => ({ __esModule: true, default: () => null }));
+jest.mock('./warlord-recruitment', () => ({ __esModule: true, default: jest.fn(() =>
+  <section aria-label="Recruitment queue" />
+) }));
 
 describe('PlayerLocation', () => {
   const push = jest.fn();
@@ -69,6 +73,36 @@ describe('PlayerLocation', () => {
       isPlayerReady={false} processing={false} endTurnAction={jest.fn()} />);
     expect(push).toHaveBeenCalledWith('/board/map');
     expect(getLocationState).not.toHaveBeenCalled();
+  });
+
+  it.each(['cauldronfire', 'racefire'])('hides recruitment in %s games', async gameId => {
+    await setup({ gameState: makeGameState({ gameId, players: [makePlayer()] }) });
+    expect(screen.queryByRole('region', { name: 'Recruitment queue' })).not.toBeInTheDocument();
+    expect(WarlordRecruitment).not.toHaveBeenCalled();
+  });
+
+  it('shows recruitment in warlordsfire even when no actions are queued', async () => {
+    await setup({ gameState: makeGameState({ gameId: 'warlordsfire', players: [makePlayer()] }) });
+    expect(screen.getByRole('region', { name: 'Recruitment queue' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Actions' })).not.toBeInTheDocument();
+  });
+
+  it.each([false, true])('places recruitment before Actions and passes its context (processing: %s)', async processing => {
+    const gameState = makeGameState({ gameId: 'warlordsfire', players: [makePlayer({ id: 'ranger' })] });
+    const { props } = await setup({ boardId: 'warlord-board', mapId: 'warlord-map', playerId: 'ranger', gameState, processing }, {
+      actions: [{ id: 4, type: PlayerActionType.Attack, description: 'Attack Goblin' }],
+    });
+    expect(jest.mocked(WarlordRecruitment).mock.calls.at(-1)![0]).toEqual({
+      boardId: props.boardId,
+      mapId: props.mapId,
+      playerId: props.playerId,
+      gameState,
+      processing,
+    });
+    const recruitment = screen.getByRole('region', { name: 'Recruitment queue' });
+    const actions = screen.getByRole('heading', { name: 'Actions' });
+    expect(recruitment.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it('queues a move with the next action ID and ends the turn after saving', async () => {

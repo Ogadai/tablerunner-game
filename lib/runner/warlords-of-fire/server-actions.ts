@@ -23,6 +23,9 @@ export async function warlordRecruitMonster(boardId: string, mapId: string, play
     playerActionLock = await lockPlayerActionsInRedis(boardId, mapId, playerId);
     const data = await getPlayerInstructionsFromRedis(boardId, mapId, playerId) as WarlordInstruction;
     const instructions = data || DEFAULT_INSTRUCTIONS;
+    if (!instructions.recruit) {
+      instructions.recruit = [];
+    }
 
     const nextId = Math.max(0, ...instructions.recruit.map(r => r.recruitId || 0)) + 1;
 

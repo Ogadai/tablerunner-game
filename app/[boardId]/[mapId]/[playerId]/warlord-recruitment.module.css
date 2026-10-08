@@ -1,0 +1,17 @@
+.recruitment {
+  margin-top: 20px;
+
+  h4 {
+    margin: 0;
+  }
+}
+
+.recruitContent {
+  position: relative;
+}
+
+.statusMessage {
+  position: absolute;
+  right: 10px;
+  top: -35px;
+}
