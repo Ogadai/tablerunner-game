@@ -2,8 +2,10 @@ import { LedState, NPCState, PlayerState } from "@/lib/store/types";
 import { ProcessRunner } from "../types";
 import { getState, saveState } from "./territory-state";
 import { games } from "@/lib/games/games";
+import { soloMessageAtLocation } from "../game-messages";
 
 const OWNER = 'territory';
+const INCOME_PER_LOCATION = 10;
 
 export const territoryProcesses: ProcessRunner = {
   executeForTurn: async (params) => {
@@ -41,6 +43,23 @@ export const territoryProcesses: ProcessRunner = {
           ...state.teamTerritory[team]?.filter(l => l !== location) || [],
           location
         ];
+      }
+    }
+
+    // Assign funds to players and NPCs
+    for(const warlord of warlords) {
+      const team = warlord.id;
+      const locationCount = state.teamTerritory[team].length;
+      const coins = locationCount * INCOME_PER_LOCATION;
+
+      const player = params.gameState.players.find(p => p.id === warlord.id);
+      if (player) {
+        player.coins += coins;
+        soloMessageAtLocation(params, player.id,
+          `*You* earned **${coins} coins** from ${locationCount} locations${locationCount === 1 ? '' : 's'}`
+        );
+      } else {
+        state.teamCoins[team] = (state.teamCoins[team] || 0) + coins;
       }
     }
 
