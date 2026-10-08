@@ -56,7 +56,7 @@ export const territoryProcesses: ProcessRunner = {
       if (player) {
         player.coins += coins;
         soloMessageAtLocation(params, player.id,
-          `*You* earned **${coins} coins** from ${locationCount} locations${locationCount === 1 ? '' : 's'}`
+          `*You* earned **${coins} coins** from ${locationCount} location${locationCount === 1 ? '' : 's'}`
         );
       } else {
         state.teamCoins[team] = (state.teamCoins[team] || 0) + coins;
