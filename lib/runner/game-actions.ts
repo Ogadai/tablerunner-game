@@ -62,6 +62,10 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
   const playerFought: Record<string, boolean> = {};
   const playerFastTravels: Record<string, PlayerActionFastTravel[]> = {};
   const playerRespawns: Record<string, PlayerAction[]> = {};
+  const masterIsMoving = (masterId: string | null | undefined): boolean => !!masterId
+    && params.gameState.players.some(p => p.id === masterId
+      && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0
+        || playerFastTravels[p.id].length > 0 || playerRespawns[p.id].length > 0));
 
   try {
     // First gather all the player actions per location
@@ -121,11 +125,7 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
       const locId = `${npc.location.id}`;
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
-        const masterIsMoving = !!npc.masterId && !!params.gameState.players.find(p => p.id === npc.masterId
-              && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0
-                || playerFastTravels[p.id].length > 0 || playerRespawns[p.id].length > 0));
-
-        const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving);
+        const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving(npc.masterId));
 
         entityActionsForLocations[locId].entities.push({
           entityType: EntityActionEntityTypes.npc,
@@ -147,7 +147,9 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
           const combatant = getMonsterCombatant(monster);
           const targetsAtLocation = getEnemies(params, combatant).filter(target => target.health > 0);
           let actions: PlayerAction[];
-          if (monster.scriptedActions) {
+          if (masterIsMoving(monster.masterId)) {
+            actions = [];
+          } else if (monster.scriptedActions) {
             const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
             actions = queued?.actions ?? getNpcActions(params, combatant).actions;
           } else if (combatant.spells.length > 0) {
@@ -253,6 +255,12 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
 
         if (player.respawnTurns !== undefined && player.respawnTurns > 0) {
           player.respawnTurns--;
+        }
+      }
+
+      if (player.health > 0) {
+        for (const monster of params.monsters.filter(m => m.health > 0 && m.masterId === player.id)) {
+          monster.location = player.location.id;
         }
       }
     }

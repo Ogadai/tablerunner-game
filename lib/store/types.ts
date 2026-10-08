@@ -190,6 +190,7 @@ export interface MonsterState extends ITarget {
   equipped?: PlayerInventoryEquipSlots;
   /** Scripted bosses can supply actions even when no players are nearby. */
   scriptedActions?: boolean;
+  masterId?: string;
 }
 
 export interface ItemLocationState extends PlayerItem {

@@ -3,15 +3,18 @@ import { runGameActions } from './game-actions';
 import { getMonsterActionsStateFromRedis } from '../store/redis-access';
 import { actionAttack, monsterAttack } from './game-action-attack';
 import { actionMove, actionRespawn } from './game-action-move';
+import { actionFastTravel, actionPortal } from './game-action-portal';
 import { actionCastSpell, actionReadScroll } from './game-action-spell';
 import { actionUseItem } from './game-action-use';
 import { getNpcActions } from './game-npc-actions';
+import { SpellIds } from '../games/spells';
 import { PlayerActionsState, PlayerActionAttack, PlayerActionCast, PlayerActionMove, PlayerActionReadScroll, PlayerActionType, PlayerActionUseItem } from '../store/types';
 import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 
 jest.mock('../store/redis-access', () => ({ getMonsterActionsStateFromRedis: jest.fn() }));
 jest.mock('./game-action-attack', () => ({ actionAttack: jest.fn(), monsterAttack: jest.fn() }));
 jest.mock('./game-action-move', () => ({ actionMove: jest.fn(), actionRespawn: jest.fn() }));
+jest.mock('./game-action-portal', () => ({ actionFastTravel: jest.fn(), actionPortal: jest.fn() }));
 jest.mock('./game-action-spell', () => ({ actionCastSpell: jest.fn(), actionReadScroll: jest.fn() }));
 jest.mock('./game-action-use', () => ({ actionUseItem: jest.fn() }));
 jest.mock('./game-npc-actions', () => ({ getNpcActions: jest.fn() }));
@@ -100,6 +103,64 @@ it('recovers followers using equipment-enhanced health and magic, capped at thei
   await runGameActions(params, playerActions);
   expect(npc).toMatchObject({ health: 30, magic: 20 });
   expect(npc.baseStats).toMatchObject({ health: 20, magic: 10 });
+});
+
+it.each([PlayerActionType.Move, PlayerActionType.Portal, PlayerActionType.FastTravel, PlayerActionType.Respawn])(
+  'suppresses all monster follower actions and follows a player using %s', async type => {
+    const followers = [
+      createMonster({ id: 'fighter', masterId: 'hero' }),
+      createMonster({ id: 'caster', masterId: 'hero', spells: [SpellIds.spiritArrow] }),
+      createMonster({ id: 'scripted', masterId: 'hero', scriptedActions: true }),
+    ];
+    const params = createParams({ monsters: followers });
+    const player = params.gameState.players[0];
+    if (type === PlayerActionType.Respawn) player.health = 0;
+    const travelAction = type === PlayerActionType.Move ? move
+      : { id: 1, type, description: '', targetLocation: 2 };
+    playerActions.hero = { actions: [travelAction] };
+    for (const travel of [actionMove, actionPortal, actionFastTravel, actionRespawn]) {
+      jest.mocked(travel).mockImplementation((_params, target) => {
+        target.location = { id: 2, description: 'Road', move: [] };
+        target.health = 20;
+      });
+    }
+    jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [attack(1), move] });
+    jest.mocked(getNpcActions).mockReturnValue({ actions: [
+      { id: 1, type: PlayerActionType.Cast, description: '', spellId: 'spiritArrow' } as PlayerActionCast,
+      { id: 2, type: PlayerActionType.UseItem, description: '', itemId: 'potion' } as PlayerActionUseItem,
+    ] });
+
+    await runGameActions(params, playerActions);
+
+    expect(followers.map(monster => monster.location)).toEqual([2, 2, 2]);
+    expect(monsterAttack).not.toHaveBeenCalled();
+    expect(actionCastSpell).not.toHaveBeenCalled();
+    expect(actionUseItem).not.toHaveBeenCalled();
+    expect(getNpcActions).not.toHaveBeenCalled();
+    expect(getMonsterActionsStateFromRedis).not.toHaveBeenCalled();
+  },
+);
+
+it('keeps monster followers with their master when travel fails, leaving dead followers in place', async () => {
+  const follower = createMonster({ masterId: 'hero' });
+  const deadFollower = createMonster({ id: 'dead', masterId: 'hero', health: 0, location: 2 });
+  const params = createParams({ monsters: [follower, deadFollower] });
+  playerActions.hero = { actions: [move] };
+
+  await runGameActions(params, playerActions);
+
+  expect(follower.location).toBe(params.gameState.players[0].location.id);
+  expect(deadFollower.location).toBe(2);
+  expect(monsterAttack).not.toHaveBeenCalled();
+});
+
+it.each([undefined, 'hero', 'missing'])('allows monster actions with a stationary or absent player master (%s)', async masterId => {
+  const follower = createMonster({ masterId });
+  const params = createParams({ monsters: [follower] });
+
+  await runGameActions(params, playerActions);
+
+  expect(monsterAttack).toHaveBeenCalledWith(params, follower, params.gameState.players[0]);
 });
 
 it('completes combat before movement and suppresses passive healing during combat', async () => {
