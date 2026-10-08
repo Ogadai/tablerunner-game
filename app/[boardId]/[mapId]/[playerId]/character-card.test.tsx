@@ -38,7 +38,7 @@ describe('CharacterCard', () => {
       actionPointsLeft={20} playerStats={null} onUseItem={jest.fn()} onLearnScroll={jest.fn()}
       usedItemIds={[]} onHired={jest.fn()} />);
     expect(screen.getByText('NPC stats')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText('Loading inventory...')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
   });
 
   it('shows pending inventory for another player, including an empty replacement list', async () => {
@@ -48,7 +48,7 @@ describe('CharacterCard', () => {
       viewer={makePlayer()} isSelf={false} actionPointsLeft={20} playerStats={null}
       onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
-    await waitFor(() => expect(screen.queryByText('Loading inventory...')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
     expect(getPlayerInventory).toHaveBeenCalledWith('board', 'map', 'other');
     expect(screen.queryByRole('button', { name: 'Rusty Sword' })).not.toBeInTheDocument();
     expect(sync.updateInventory).not.toHaveBeenCalled();

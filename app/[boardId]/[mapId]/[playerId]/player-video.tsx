@@ -25,11 +25,7 @@ export default function PlayerVideo({ topicId, turn }: { topicId: string; turn: 
     }
   }), [topicId]);
 
-  if (playingUrl) {
-    console.log('playing video', playingUrl);
-  }
-
-return <>
+  return <>
     {preloadedUrls.map(url => (
       <video key={url} src={url} preload="auto" hidden aria-hidden="true" />
     ))}
