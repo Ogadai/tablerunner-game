@@ -133,11 +133,13 @@ export default function WarlordRecruitment({
         clickDisabled={processing || isRecruiting}
         showDeleteIcon={true}
       />
-      {queue === null && !error && <p>Loading recruitment queue...</p>}
       {!isOpen && error && <p role="alert">{error}</p>}
       <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
         <Dialog.Trigger asChild>
-          <button type="button" disabled={processing || isRecruiting}>Recruit</button>
+          {(queue === null && !error) 
+          ? <p>Loading recruitment queue...</p>
+          : <button type="button" disabled={processing || isRecruiting}>Recruit</button>
+          }
         </Dialog.Trigger>
         <Dialog.Portal>
           <Dialog.Overlay className="DialogOverlay" />
