@@ -50,6 +50,42 @@
   background-size: 500px 400px;
 }
 
+.cost {
+  position: absolute;
+  z-index: 11;
+  bottom: 0;
+  left: 0;
+  padding: 2px;
+  border-radius: 3px;
+  background-color: var(--bg-main);
+  font-size: 18px;
+
+  > div {
+    margin: 0;
+  }
+
+  > div span {
+    line-height: 16px;
+    padding-top: 0;
+    margin-right: 2px;
+  }
+
+  img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.deleteIcon {
+  position: absolute;
+  z-index: 11;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  color: var(--color-error);
+}
+
 .levelUp {
   position: relative;
 }

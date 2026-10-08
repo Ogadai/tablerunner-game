@@ -1,4 +1,5 @@
 import styles from './entity-list.module.css';
+import CoinDisplay from './coin-display';
 
 export enum EntityItemClass {
   self = 'self',
@@ -15,16 +16,20 @@ export interface EntityItemDetail {
   health: number;
   maxHealth: number;
   levelUp?: boolean;
+  cost?: number;
 }
 
 export default function EntityList({
   entities,
-  onClickEntity
+  onClickEntity,
+  clickDisabled = false,
+  showDeleteIcon = false,
 }: {
   entities: EntityItemDetail[],
-  onClickEntity?: (entity: EntityItemDetail) => void
+  onClickEntity?: (entity: EntityItemDetail) => void,
+  clickDisabled?: boolean,
+  showDeleteIcon?: boolean,
 }) {
-
   const getHealthClass = (iconDetail: EntityItemDetail) => {
     if (iconDetail.health < iconDetail.maxHealth * 0.2) {
       return styles.critical;
@@ -45,9 +50,9 @@ export default function EntityList({
           tabIndex={onClickEntity ? 0 : undefined}
           className={`${styles.entityListItem} ${i === entities.length - 1 ? styles.main : ''}`}
             style={{ zIndex: entities.length - i }}
-          onClick={() => onClickEntity?.(entity)}
+          onClick={() => !clickDisabled && onClickEntity?.(entity)}
           onKeyDown={event => {
-            if (onClickEntity && (event.key === 'Enter' || event.key === ' ')) {
+            if (event.target === event.currentTarget && onClickEntity && (event.key === 'Enter' || event.key === ' ')) {
               event.preventDefault();
               onClickEntity(entity);
             }
@@ -71,6 +76,16 @@ export default function EntityList({
 
             { entity.health <= 0 &&
               <div className={`${styles.playerDead} material-symbols-outlined`}>skull</div>
+            }
+
+            { entity.cost !== undefined &&
+              <div className={styles.cost}>
+                <CoinDisplay coins={entity.cost} />
+              </div>
+            }
+
+            { showDeleteIcon &&
+              <div className={`${styles.deleteIcon} material-symbols-outlined`}>delete_forever</div>
             }
           </div>
         </li>

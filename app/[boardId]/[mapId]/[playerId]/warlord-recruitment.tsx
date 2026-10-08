@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { monsters } from '@/lib/games/monsters';
 import { GameState } from '@/lib/store/types';
-import { getWarlordAvailableMonsters } from '@/lib/runner/warlords-of-fire/recruit-helper';
-import { getPlayerWarlordInstructions, warlordRecruitMonster } from '@/lib/runner/warlords-of-fire/server-actions';
+import { getMonsterCost, getWarlordAvailableMonsters } from '@/lib/runner/warlords-of-fire/recruit-helper';
+import { getPlayerWarlordInstructions, warlordRecruitCancel, warlordRecruitMonster } from '@/lib/runner/warlords-of-fire/server-actions';
 import { WarlordInstructionRecruit } from '@/lib/runner/warlords-of-fire/warlords-types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import styles from './warlord-recruitment.module.css';
@@ -19,6 +19,7 @@ function getMonsterEntity(monsterType: string, id: string): EntityItemDetail {
     className: EntityItemClass.friendly,
     health: monster.baseStats.health,
     maxHealth: monster.baseStats.health,
+    cost: getMonsterCost(monsterType),
   };
 }
 
@@ -86,12 +87,39 @@ export default function WarlordRecruitment({
     }
   };
 
+  const cancelRecruit = async (entity: EntityItemDetail) => {
+    if (processing || recruitmentPending.current) return;
+    const recruit = queue?.find(entry => `recruit-${entry.recruitId}` === entity.id);
+    if (recruit?.recruitId === undefined) return;
+    recruitmentPending.current = true;
+    const currentRequest = ++requestId.current;
+    setIsRecruiting(true);
+    setError(null);
+
+    try {
+      const result = await warlordRecruitCancel(boardId, mapId, playerId, recruit.recruitId);
+      if (currentRequest !== requestId.current) return;
+      if (!result.success || !result.data) throw new Error(result.error || 'Unable to cancel recruitment.');
+      setQueue(result.data.recruit);
+    } catch (error) {
+      if (currentRequest === requestId.current) setError((error as Error).message);
+    } finally {
+      recruitmentPending.current = false;
+      setIsRecruiting(false);
+    }
+  };
+
   return (
     <section className={styles.recruitment} aria-label="Recruitment queue">
       { (queue?.length || 0) > 0 && <h4>Recruitment queue</h4> }
-      <EntityList entities={(queue ?? []).map((recruit, index) =>
-        getMonsterEntity(recruit.monster, `recruit-${recruit.recruitId ?? index}`)
-      )} />
+      <EntityList
+        entities={(queue ?? []).map((recruit, index) =>
+          getMonsterEntity(recruit.monster, `recruit-${recruit.recruitId ?? index}`)
+        )}
+        onClickEntity={entity => startTransition(() => cancelRecruit(entity))}
+        clickDisabled={processing || isRecruiting}
+        showDeleteIcon={true}
+      />
       {queue === null && !error && <p>Loading recruitment queue...</p>}
       {!isOpen && error && <p role="alert">{error}</p>}
       <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
