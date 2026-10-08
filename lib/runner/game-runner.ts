@@ -282,8 +282,7 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       params.boardId, params.mapId, params.gameState, newLocationsState, params.messages,
       originalStores.filter(location => !params.gameState.stores.includes(location)),
       npcInventoryIds,
-      // Carry unfulfilled Warlords recruitment instructions into the next turn.
-      params.gameState.gameId === 'warlordsfire' ? params.playerInstructions : undefined,
+      params.playerInstructions,
     );
   } catch (error) {
     // Recover state under the lock; the caller notifies after releasing it.

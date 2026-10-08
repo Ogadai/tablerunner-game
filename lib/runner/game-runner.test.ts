@@ -160,7 +160,7 @@ it('expires effects and summons, records portals, and commits destroyed shops wi
   expect(params.monsters).toContainEqual(expect.objectContaining({ id: 'undead', health: 0, type: 'rat' }));
   expect(params.gameState.visitedPortals).toEqual([1]);
   expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
-    expect.objectContaining({ monsters: params.monsters, npcs: [] }), params.messages, [1], ['summon', 'undead'], undefined);
+    expect.objectContaining({ monsters: params.monsters, npcs: [] }), params.messages, [1], ['summon', 'undead'], params.playerInstructions);
 });
 
 it('applies pending NPC inventory before combat and consumes it even if the NPC expires', async () => {
@@ -178,7 +178,7 @@ it('applies pending NPC inventory before combat and consumes it even if the NPC 
   await processGameTurn(params);
   expect(params.gameState.npcs).toEqual([]);
   expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
-    expect.objectContaining({ npcs: [] }), params.messages, [], ['follower'], undefined);
+    expect.objectContaining({ npcs: [] }), params.messages, [], ['follower'], params.playerInstructions);
 });
 
 it('preserves the original processing error even if recovery also fails', async () => {
@@ -226,6 +226,7 @@ it('applies batched inputs in player order before passing actions to combat', as
     expect(applyPlayerAddedStats).toHaveBeenCalledWith(params, player, input.addedStats);
   }
   expect(runGameActions).toHaveBeenCalledWith(params, { hero: inputs.hero.actions, second: inputs.second.actions });
+  expect(jest.mocked(redis.commitGameTurnInRedis).mock.calls[0][7]).toEqual(expectedInstructions);
   expect(redis.getActionsStateFromRedis).not.toHaveBeenCalled();
 });
 

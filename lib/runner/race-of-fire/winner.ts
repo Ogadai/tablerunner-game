@@ -65,6 +65,10 @@ export const winnerProcess: ProcessRunner = {
               state.redTeam.push(playerId);
               break;
           }
+          delete instructions.team;
+          if (Object.keys(instructions).length === 0) {
+            delete params.playerInstructions[playerId];
+          }
         }
       }
     
