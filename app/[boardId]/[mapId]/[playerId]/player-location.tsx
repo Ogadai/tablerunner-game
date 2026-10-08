@@ -323,6 +323,7 @@ export default function PlayerLocation(
         mapId={mapId}
         playerId={playerId}
         gameState={gameState}
+        availableCoins={playerState.coins}
         processing={processing}
       /> }
 

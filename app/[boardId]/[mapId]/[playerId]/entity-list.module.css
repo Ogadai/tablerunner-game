@@ -76,6 +76,10 @@
   }
 }
 
+.costUnaffordable > div span {
+  color: var(--color-error);
+}
+
 .deleteIcon {
   position: absolute;
   z-index: 11;

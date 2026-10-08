@@ -10,8 +10,9 @@ import { WarlordInstructionRecruit } from '@/lib/runner/warlords-of-fire/warlord
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import styles from './warlord-recruitment.module.css';
 
-function getMonsterEntity(monsterType: string, id: string): EntityItemDetail {
+function getMonsterEntity(monsterType: string, id: string, availableCoins: number): EntityItemDetail {
   const monster = monsters[monsterType];
+  const cost = getMonsterCost(monsterType);
   return {
     id,
     name: monster.name,
@@ -19,7 +20,8 @@ function getMonsterEntity(monsterType: string, id: string): EntityItemDetail {
     className: EntityItemClass.friendly,
     health: monster.baseStats.health,
     maxHealth: monster.baseStats.health,
-    cost: getMonsterCost(monsterType),
+    cost,
+    costUnaffordable: cost > availableCoins,
   };
 }
 
@@ -28,12 +30,14 @@ export default function WarlordRecruitment({
   mapId,
   playerId,
   gameState,
+  availableCoins,
   processing,
 }: {
   boardId: string;
   mapId: string;
   playerId: string;
   gameState: GameState;
+  availableCoins: number;
   processing: boolean;
 }) {
   const [queue, setQueue] = useState<WarlordInstructionRecruit[] | null>(null);
@@ -43,6 +47,17 @@ export default function WarlordRecruitment({
   const recruitmentPending = useRef(false);
   const requestId = useRef(0);
   const availableMonsters = [...new Set(getWarlordAvailableMonsters(gameState, playerId))];
+  const queueEntities = (queue ?? []).reduce<{ entities: EntityItemDetail[]; cost: number }>(
+    (result, recruit, index) => {
+      const entity = getMonsterEntity(recruit.monster, `recruit-${recruit.recruitId ?? index}`, availableCoins);
+      const cost = result.cost + (entity.cost ?? 0);
+      return {
+        entities: [...result.entities, { ...entity, costUnaffordable: cost > availableCoins }],
+        cost,
+      };
+    },
+    { entities: [], cost: 0 },
+  ).entities;
 
   useEffect(() => {
     let active = true;
@@ -113,9 +128,7 @@ export default function WarlordRecruitment({
     <section className={styles.recruitment} aria-label="Recruitment queue">
       { (queue?.length || 0) > 0 && <h4>Recruitment queue</h4> }
       <EntityList
-        entities={(queue ?? []).map((recruit, index) =>
-          getMonsterEntity(recruit.monster, `recruit-${recruit.recruitId ?? index}`)
-        )}
+        entities={queueEntities}
         onClickEntity={entity => startTransition(() => cancelRecruit(entity))}
         clickDisabled={processing || isRecruiting}
         showDeleteIcon={true}
@@ -132,7 +145,7 @@ export default function WarlordRecruitment({
             <Dialog.Title className="DialogTitle">Recruit</Dialog.Title>
             <div className={styles.recruitContent}>
               <EntityList
-                entities={availableMonsters.map(monster => getMonsterEntity(monster, monster))}
+                entities={availableMonsters.map(monster => getMonsterEntity(monster, monster, availableCoins))}
                 onClickEntity={processing || isRecruiting ? undefined : recruitMonster}
               />
               {availableMonsters.length === 0 && <p>No monsters available to recruit.</p>}

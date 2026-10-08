@@ -97,6 +97,7 @@ describe('PlayerLocation', () => {
       mapId: props.mapId,
       playerId: props.playerId,
       gameState,
+      availableCoins: gameState.players[0].coins,
       processing,
     });
     const recruitment = screen.getByRole('region', { name: 'Recruitment queue' });

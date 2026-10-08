@@ -17,6 +17,7 @@ export interface EntityItemDetail {
   maxHealth: number;
   levelUp?: boolean;
   cost?: number;
+  costUnaffordable?: boolean;
 }
 
 export default function EntityList({
@@ -79,7 +80,7 @@ export default function EntityList({
             }
 
             { entity.cost !== undefined &&
-              <div className={styles.cost}>
+              <div className={`${styles.cost} ${entity.costUnaffordable ? styles.costUnaffordable : ''}`}>
                 <CoinDisplay coins={entity.cost} />
               </div>
             }
