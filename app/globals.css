@@ -16,6 +16,7 @@
 :root:root {
   /* Color Palette - Weathered Parchment & Gold */
   --bg-main: #f2ebd9;
+  --bg-main-50: rgba(242, 235, 217, 0.7);
   --bg-card: #eadeca;
   --bg-card-hover: #e0d1b8;
   --bg-card-active: #e0d1b8;
@@ -70,6 +71,7 @@
   :root:root {
     /* Color Palette - Deep Nocturnal & Gold */
     --bg-main: #120f0d;
+    --bg-main-50: rgba(18, 15, 13, 0.5);
     --bg-card: #1c1612;
     --bg-card-hover: #261f1a;
     --bg-card-active: #261f1a;
