@@ -2,7 +2,7 @@
 
 import { ApiResponse } from "@/lib/api-response";
 import { RaceInstructionTeam, RaceTeamSelections } from "./race-types";
-import { getGameStateFromRedis, getPlayerInstructionsFromRedis, lockPlayerActionsInRedis, setPlayerInstructionsInRedis } from "@/lib/store/redis-access";
+import { getGameStateFromRedis, getPlayersInstructionsFromRedis, lockPlayerActionsInRedis, setPlayerInstructionsInRedis } from "@/lib/store/redis-access";
 import { GameTopicMessageType, type RaceTeamUpdatedMessage } from "@/lib/message-types";
 import { publishMessage } from "@/lib/messages/message-publisher";
 
@@ -16,13 +16,14 @@ export async function getPlayerRaceTeams(boardId: string, mapId: string): Promis
       blueTeam?: string[];
       redTeam?: string[];
     } | undefined;
-    const selections = await Promise.all(gameState.players.map(async player => {
-      const instructions = await getPlayerInstructionsFromRedis(boardId, mapId, player.id) as RaceInstructionTeam;
+    const playerInstructions = await getPlayersInstructionsFromRedis(boardId, mapId, gameState.players.map(player => player.id));
+    const selections = gameState.players.map(player => {
+      const instructions = playerInstructions[player.id] as RaceInstructionTeam;
       const team = Object.hasOwn(instructions, 'team') ? instructions.team ?? null
         : state?.blueTeam?.includes(player.id) ? 'blue'
         : state?.redTeam?.includes(player.id) ? 'red' : null;
       return [player.id, team] as const;
-    }));
+    });
     return { success: true, data: Object.fromEntries(selections) };
   } catch (error) {
     return { success: false, error: (error as Error).message };

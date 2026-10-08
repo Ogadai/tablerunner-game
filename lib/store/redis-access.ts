@@ -409,6 +409,15 @@ export async function getPlayerInstructionsFromRedis(boardId: string, mapId: str
   return result || {};
 }
 
+export async function getPlayersInstructionsFromRedis(boardId: string, mapId: string, playerIds: string[]): Promise<Record<string, StorePlayerInstructions>> {
+  if (playerIds.length === 0) return {};
+
+  const instructions = await redis.mget<(StorePlayerInstructions | null)[]>(
+    ...playerIds.map(playerId => getPlayerInstructionsKey(boardId, mapId, playerId)),
+  );
+  return Object.fromEntries(playerIds.map((playerId, index) => [playerId, instructions[index] || {}]));
+}
+
 export async function setPlayerInstructionsInRedis(boardId: string, mapId: string, playerId: string, newInstructions: StorePlayerInstructions): Promise<void> {
   await redis.set(getPlayerInstructionsKey(boardId, mapId, playerId), newInstructions, gameStateOptions);
 }

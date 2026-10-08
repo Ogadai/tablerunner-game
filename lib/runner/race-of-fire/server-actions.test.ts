@@ -1,11 +1,11 @@
 import { getPlayerRaceTeams, setPlayerRaceTeam } from './server-actions';
-import { getGameStateFromRedis, getPlayerInstructionsFromRedis, lockPlayerActionsInRedis, setPlayerInstructionsInRedis } from '@/lib/store/redis-access';
+import { getGameStateFromRedis, getPlayersInstructionsFromRedis, lockPlayerActionsInRedis, setPlayerInstructionsInRedis } from '@/lib/store/redis-access';
 import { publishMessage } from '@/lib/messages/message-publisher';
 import { GameTopicMessageType } from '@/lib/message-types';
 import { makeGameState, makePlayer } from '@/app/[boardId]/[mapId]/game/test-fixtures';
 
 jest.mock('@/lib/store/redis-access', () => ({
-  getGameStateFromRedis: jest.fn(), getPlayerInstructionsFromRedis: jest.fn(),
+  getGameStateFromRedis: jest.fn(), getPlayersInstructionsFromRedis: jest.fn(),
   lockPlayerActionsInRedis: jest.fn(), setPlayerInstructionsInRedis: jest.fn(),
 }));
 jest.mock('@/lib/messages/message-publisher', () => ({ publishMessage: jest.fn() }));
@@ -16,7 +16,7 @@ beforeEach(() => {
   jest.resetAllMocks();
   release.mockResolvedValue();
   jest.mocked(lockPlayerActionsInRedis).mockResolvedValue(release);
-  jest.mocked(getPlayerInstructionsFromRedis).mockResolvedValue({});
+  jest.mocked(getPlayersInstructionsFromRedis).mockResolvedValue({});
 });
 
 it('returns saved selections, including explicit no team, with persisted teams as a fallback', async () => {
@@ -25,13 +25,15 @@ it('returns saved selections, including explicit no team, with persisted teams a
     players: ['warrior', 'mage', 'ranger', 'witch'].map(id => makePlayer({ id })),
     processState: { 'crystal-shard': { blueTeam: ['warrior', 'mage'], redTeam: ['ranger'] } },
   }));
-  jest.mocked(getPlayerInstructionsFromRedis).mockImplementation(async (_board, _map, id) =>
-    id === 'warrior' ? { team: 'red' } : id === 'mage' ? { team: null } : {});
+  jest.mocked(getPlayersInstructionsFromRedis).mockResolvedValue({
+    warrior: { team: 'red' }, mage: { team: null }, ranger: {}, witch: {},
+  });
 
   await expect(getPlayerRaceTeams('board', 'map')).resolves.toEqual({
     success: true, data: { warrior: 'red', mage: null, ranger: 'red', witch: null },
   });
-  expect(getPlayerInstructionsFromRedis).toHaveBeenCalledTimes(4);
+  expect(getPlayersInstructionsFromRedis).toHaveBeenCalledTimes(1);
+  expect(getPlayersInstructionsFromRedis).toHaveBeenCalledWith('board', 'map', ['warrior', 'mage', 'ranger', 'witch']);
 });
 
 it('reports read failures', async () => {

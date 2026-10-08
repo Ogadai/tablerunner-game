@@ -231,8 +231,6 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       params.gameState.players.map(player => [player.id, playerInputs[player.id].instructions]),
     );
 
-    await initialiseProcessesForTurn(params);
-
     const npcInventoryIds = params.gameState.npcs.map(npc => npc.id);
     const npcInventories = await getCharacterInventoriesFromRedis(params.boardId, params.mapId, npcInventoryIds);
     for (const npc of params.gameState.npcs) {
@@ -246,6 +244,8 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       await applyPlayerAddedStats(params, player, addedStats);
       playerActions[player.id] = actions;
     }
+
+    await initialiseProcessesForTurn(params);
 
     // Run the game turn
     await runGameTurn(params, playerActions);

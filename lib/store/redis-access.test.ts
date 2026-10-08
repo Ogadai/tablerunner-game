@@ -32,6 +32,26 @@ it('reads player and NPC inventories together, preserving empty pending inventor
   expect(client.mget).toHaveBeenCalledWith('playerInventory:b:m:hero', 'playerInventory:b:m:npc');
 });
 
+it('reads player instructions in one request, preserving explicit no-team selections and defaulting missing entries', async () => {
+  client.mget.mockResolvedValue([{ team: 'red' }, { team: null }, null]);
+  await expect(store.getPlayersInstructionsFromRedis('b', 'm', ['p1', 'p2', 'p3'])).resolves.toEqual({
+    p1: { team: 'red' }, p2: { team: null }, p3: {},
+  });
+  expect(client.mget).toHaveBeenCalledTimes(1);
+  expect(client.mget).toHaveBeenCalledWith('playerInstructions:b:m:p1', 'playerInstructions:b:m:p2', 'playerInstructions:b:m:p3');
+  expect(client.get).not.toHaveBeenCalled();
+});
+
+it('skips Redis when there are no player instructions to fetch', async () => {
+  await expect(store.getPlayersInstructionsFromRedis('b', 'm', [])).resolves.toEqual({});
+  expect(client.mget).not.toHaveBeenCalled();
+});
+
+it('propagates a failed batched instruction read', async () => {
+  client.mget.mockRejectedValue(new Error('Read failed'));
+  await expect(store.getPlayersInstructionsFromRedis('b', 'm', ['p'])).rejects.toThrow('Read failed');
+});
+
 it('saves both sides of a transfer in one transaction', async () => {
   const playerInventory = { equipment: [], equipped: {} };
   const npcInventory = { equipment: [{ id: 'sword', type: 'swordRusty' }], equipped: { weapon: 'sword' } };

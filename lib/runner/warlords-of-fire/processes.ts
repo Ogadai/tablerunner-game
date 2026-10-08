@@ -1,8 +1,9 @@
 import { BaseParams } from '../base-params';
 import { ProcessRunner } from '../types';
 import { territoryProcesses } from './territory';
+import { recruitProcesses } from './recruit';
 
-const allProcesses: ProcessRunner[] = [territoryProcesses];
+const allProcesses: ProcessRunner[] = [recruitProcesses, territoryProcesses];
 
 export const warlordsOfFireProcesses: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
