@@ -1,17 +1,25 @@
 import { GameState } from "@/lib/store/types";
 
+interface TeamStateDef {
+  territory: number[];
+  colour: string;
+  coins: number;
+}
+
 interface TerritoryStateDef {
-  teamTerritory: Record<string, number[]>;
-  teamColours: Record<string, string>;
-  teamCoins: Record<string, number>;
+  teams: Record<string, TeamStateDef>;
 }
 
 const OWNER = 'war-territory';
 
+export const DEFAULT_TEAM_STATE: TeamStateDef = {
+  territory: [],
+  colour: '',
+  coins: 0,
+};
+
 const DEFAULT_STATE: TerritoryStateDef = {
-  teamTerritory: {},
-  teamColours: {},
-  teamCoins: {},
+  teams: {},
 };
 
 export const getState = (gameState: GameState) =>
