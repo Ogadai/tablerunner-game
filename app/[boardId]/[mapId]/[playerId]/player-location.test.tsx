@@ -10,7 +10,7 @@ import PlayerLocation from './player-location';
 import PlayerLocationList from './player-location-list';
 import PlayerPortal from './player-portal';
 import FastTravel from './fast-travel';
-import WarlordRecruitment from './warlord-recruitment';
+import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
 import { createMonster, createNpc } from '@/lib/runner/test-support/fixtures';
 import sync from './player-stats-sync.service';
 import { makeGameState, makePlayer as makeTestPlayer, makeStats } from './test-fixtures';
@@ -34,7 +34,7 @@ jest.mock('./player-store', () => ({ __esModule: true, default: () => <span>Stor
 jest.mock('./player-portal', () => ({ __esModule: true, default: jest.fn(() => <span>Portal available</span>) }));
 jest.mock('./fast-travel', () => ({ __esModule: true, default: jest.fn(() => null) }));
 jest.mock('./player-video', () => ({ __esModule: true, default: () => null }));
-jest.mock('./warlord-recruitment', () => ({ __esModule: true, default: jest.fn(() =>
+jest.mock('./warlords-of-fire/warlord-recruitment', () => ({ __esModule: true, default: jest.fn(() =>
   <section aria-label="Recruitment queue" />
 ) }));
 

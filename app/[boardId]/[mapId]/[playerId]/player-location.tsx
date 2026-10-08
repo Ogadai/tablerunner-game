@@ -24,7 +24,7 @@ import FastTravel from './fast-travel';
 import PlayerVideo from './player-video';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 import { getCombatStats, getPlayerActionsCosts, getPlayerActionsMagic } from '@/lib/store/playerStats';
-import WarlordRecruitment from './warlord-recruitment';
+import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
 
 export default function PlayerLocation(
   {

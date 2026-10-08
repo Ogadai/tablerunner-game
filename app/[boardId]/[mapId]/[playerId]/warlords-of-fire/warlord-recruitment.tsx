@@ -7,7 +7,7 @@ import { GameState } from '@/lib/store/types';
 import { getMonsterCost, getWarlordAvailableMonsters } from '@/lib/runner/warlords-of-fire/recruit-helper';
 import { getPlayerWarlordInstructions, warlordRecruitCancel, warlordRecruitMonster } from '@/lib/runner/warlords-of-fire/server-actions';
 import { WarlordInstructionRecruit } from '@/lib/runner/warlords-of-fire/warlords-types';
-import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
+import EntityList, { EntityItemClass, EntityItemDetail } from '../entity-list';
 import styles from './warlord-recruitment.module.css';
 
 function getMonsterEntity(monsterType: string, id: string, availableCoins: number): EntityItemDetail {
