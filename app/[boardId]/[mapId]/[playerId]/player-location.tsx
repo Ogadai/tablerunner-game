@@ -315,6 +315,20 @@ export default function PlayerLocation(
         actionsState={actionsState}
         playerStats={playerStats}
         addNewAction={addNewAction}
+        processing={processing}
+        onPartyChanged={(monsterId, inParty) => {
+          setLocationUpdate(current => {
+            const state = current?.snapshot === snapshot ? current.state : snapshot.location;
+            return {
+              snapshot,
+              state: {
+                ...state,
+                monsters: state.monsters.map(monster => monster.id === monsterId
+                  ? { ...monster, masterId: inParty ? playerState.id : undefined } : monster),
+              },
+            };
+          });
+        }}
       />
     
       { gameState.gameId === 'warlordsfire' && <WarlordRecruitment

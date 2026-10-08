@@ -2,6 +2,52 @@
   margin-bottom: 10px;
 }
 
+.partyOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 10px auto;
+  max-width: 160px;
+
+  label {
+    margin: 0
+  }
+}
+
+.partySwitch,
+.partySwitch:hover,
+.partySwitch:active {
+  display: block;
+  width: 48px;
+  height: 28px;
+  padding: 2px;
+  margin: 0;
+  border: 2px solid var(--border-stone-light);
+  border-radius: 999px;
+  background: var(--bg-disabled);
+  box-shadow: none;
+  transform: none;
+}
+
+.partySwitch[data-state='checked'] {
+  background: var(--color-friendly);
+  border-color: var(--color-friendly);
+}
+
+.partyThumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  transition: transform 0.2s ease;
+}
+
+.partyThumb[data-state='checked'] {
+  transform: translateX(20px);
+}
+
 .monsterIcon {
   display: inline-block;
   width: 100px;

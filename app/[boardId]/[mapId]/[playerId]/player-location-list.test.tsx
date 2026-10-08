@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import Swal from 'sweetalert2';
 import { takeItemAtLocation } from '@/lib/store/playerInventory';
+import { warlordEditParty } from '@/lib/runner/warlords-of-fire/server-actions';
 import { PlayerActionType } from '@/lib/store/types';
 import PlayerLocationList from './player-location-list';
 import CharacterCard from './character-card';
@@ -14,6 +15,7 @@ jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() }
 jest.mock('@/lib/store/playerInventory', () => ({ takeItemAtLocation: jest.fn() }));
 jest.mock('./player-stats-sync.service', () => ({ __esModule: true, default: { updateInventory: jest.fn() } }));
 jest.mock('./character-card', () => ({ __esModule: true, default: jest.fn() }));
+jest.mock('@/lib/runner/warlords-of-fire/server-actions', () => ({ warlordEditParty: jest.fn() }));
 
 const sword = { id: 'sword-1', type: 'swordRusty' };
 const monster = { id: 'enemy-1', type: 'goblin', health: 10, location: 1, team: 'monster' };
@@ -23,6 +25,7 @@ function setup(overrides: Partial<ComponentProps<typeof PlayerLocationList>> = {
     boardId: 'board', mapId: 'map', player: makePlayer(), otherPlayers: [], monsters: [], npcs: [],
     entities: [makeEntity({ id: 'warrior', className: EntityItemClass.self })], items: [sword],
     playerStats: makeStats(), actionsState: { actions: [] }, addNewAction: jest.fn().mockResolvedValue(undefined),
+    onPartyChanged: jest.fn(),
     ...overrides,
   };
   const view = render(<PlayerLocationList {...props} />);
@@ -68,6 +71,21 @@ describe('PlayerLocationList', () => {
     setup({ otherPlayers: [enemy], entities: [makeEntity()] });
     fireEvent.click(screen.getByRole('listitem'));
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Rival Level 1');
+  });
+
+  it('reflects saved party membership in an open card and when reopening it', async () => {
+    jest.mocked(warlordEditParty).mockResolvedValue({ success: true });
+    const ally = { ...monster, team: 'good' };
+    const { props, rerender } = setup({ monsters: [ally], entities: [makeEntity({ className: EntityItemClass.npc })] });
+    fireEvent.click(screen.getByRole('listitem'));
+    fireEvent.click(screen.getByRole('switch', { name: 'In party' }));
+    await waitFor(() => expect(props.onPartyChanged).toHaveBeenCalledWith(ally.id, true));
+
+    rerender(<PlayerLocationList {...props} monsters={[{ ...ally, masterId: props.player.id }]} />);
+    expect(screen.getByRole('switch', { name: 'In party' })).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('listitem'));
+    expect(screen.getByRole('switch', { name: 'In party' })).toBeChecked();
   });
 
   it.each(['dead', 'enemies'])('blocks item pickup when %s', async reason => {

@@ -27,6 +27,8 @@ export interface PlayerLocationListProps {
   playerStats: PlayerStats;
   actionsState: PlayerActionsState;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
+  onPartyChanged: (monsterId: string, inParty: boolean) => void;
+  processing?: boolean;
 }
 
 export default function PlayerLocationList({
@@ -40,11 +42,16 @@ export default function PlayerLocationList({
   items: locationItems,
   playerStats,
   actionsState,
-  addNewAction
+  addNewAction,
+  onPartyChanged,
+  processing = false,
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
   const [npcOpen, setNpcOpen] = useState<NPCState | null>(null);
+  const openMonster = monsterOpen
+    ? locationMonsters.find(monster => monster.id === monsterOpen.id) || monsterOpen
+    : null;
   const openCharacter = characterOpen
     ? characterOpen.id === player.id
       ? player
@@ -170,11 +177,17 @@ export default function PlayerLocationList({
             { dialogSubTitle && <span className="DialogSubTitle">{dialogSubTitle}</span> }
             </Dialog.Title>
           <div className={`${displayCharacter ? styles.dialogContent : ''} DialogContentBody`}>
-            { monsterOpen &&
+            { openMonster &&
               <MonsterCard
-                monster={monsterOpen}
-                canAttack={canAttack && player.health > 0 && isEnemy(player, monsterOpen)}
-                onAttack={() => onAttackMonster(monsterOpen)}
+                key={`${boardId}:${mapId}:${player.id}:${openMonster.id}`}
+                boardId={boardId}
+                mapId={mapId}
+                player={player}
+                monster={openMonster}
+                canAttack={canAttack && player.health > 0 && isEnemy(player, openMonster)}
+                onAttack={() => onAttackMonster(openMonster)}
+                onPartyChanged={inParty => onPartyChanged(openMonster.id, inParty)}
+                processing={processing}
               ></MonsterCard>
             }
             { displayCharacter &&
