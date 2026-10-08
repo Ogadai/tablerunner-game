@@ -24,7 +24,39 @@ export async function warlordRecruitMonster(boardId: string, mapId: string, play
     const data = await getPlayerInstructionsFromRedis(boardId, mapId, playerId) as WarlordInstruction;
     const instructions = data || DEFAULT_INSTRUCTIONS;
 
-    instructions.recruit.push(recruit);
+    const nextId = Math.max(0, ...instructions.recruit.map(r => r.recruitId || 0)) + 1;
+
+    instructions.recruit.push({
+      ...recruit,
+      recruitId: nextId,
+  });
+
+    await setPlayerInstructionsInRedis(boardId, mapId, playerId, instructions);
+
+    return {
+      success: true,
+      data: instructions
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: (error as Error).message
+    };
+  } finally {
+    if (playerActionLock) {
+      await playerActionLock();
+    }
+  }
+}
+
+export async function warlordRecruitCancel(boardId: string, mapId: string, playerId: string, recruitId: number): Promise<ApiResponse<WarlordInstruction>> {
+  let playerActionLock: (() => Promise<void>) | null = null;
+  try {
+    playerActionLock = await lockPlayerActionsInRedis(boardId, mapId, playerId);
+    const data = await getPlayerInstructionsFromRedis(boardId, mapId, playerId) as WarlordInstruction;
+    const instructions = data || DEFAULT_INSTRUCTIONS;
+
+    instructions.recruit = instructions.recruit.filter(r => r.recruitId !== recruitId);
 
     await setPlayerInstructionsInRedis(boardId, mapId, playerId, instructions);
 
