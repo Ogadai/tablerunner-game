@@ -7,6 +7,7 @@ import {
   PlayerActionUseItem,
   PlayerActionCast,
   PlayerActionReadScroll,
+  PlayerActionRecruit,
   PlayerActionPortal,
   INamedTarget,
   PlayerActionFastTravel,
@@ -32,6 +33,7 @@ import { getMonsterCombatant } from './monster-combatant';
 import { games } from '../games/games';
 import { playerMessageAtLocation } from './game-messages';
 import { getEnemies } from './game-friends-or-enemies';
+import { actionNpcRecruit, actionNpcTravel } from './warlords-of-fire/npc-actions';
 
 enum EntityActionEntityTypes {
   player,
@@ -57,17 +59,28 @@ const HEAL_SCALING = 0.1;
 export async function runGameActions(params: BaseParams, playerActions: Record<string, PlayerActionsState>): Promise<void> {
   const entityActionsForLocations: Record<string, EntityActionsForLocation> = {};
   const monsterMoves: { monster: MonsterState; action: PlayerActionMove }[] = [];
+  const npcTravel: Record<string, (PlayerActionMove | PlayerActionFastTravel)[]> = {};
+  const npcFought: Record<string, boolean> = {};
   const playerMoves: Record<string, PlayerActionMove[]> = {};
   const playerPortals: Record<string, PlayerActionPortal[]> = {};
   const playerFought: Record<string, boolean> = {};
   const playerFastTravels: Record<string, PlayerActionFastTravel[]> = {};
   const playerRespawns: Record<string, PlayerAction[]> = {};
-  const masterIsMoving = (masterId: string | null | undefined): boolean => !!masterId
-    && params.gameState.players.some(p => p.id === masterId
-      && (playerMoves[p.id].length > 0 || playerPortals[p.id].length > 0
-        || playerFastTravels[p.id].length > 0 || playerRespawns[p.id].length > 0));
+  const playerIsMoving = (id: string): boolean => !!(playerMoves[id]?.length || playerPortals[id]?.length
+    || playerFastTravels[id]?.length || playerRespawns[id]?.length);
+  const masterIsMoving = (masterId: string | null | undefined): boolean => {
+    if (!masterId) return false;
+    const npcMaster = params.gameState.npcs.find(npc => npc.id === masterId);
+    return playerIsMoving(masterId) || !!npcTravel[masterId]?.length
+      || (!!npcMaster?.masterId && playerIsMoving(npcMaster.masterId));
+  };
 
   try {
+    // A captured or dead warlord no longer commands its former invasion party.
+    for (const monster of params.monsters.filter(monster => monster.masterId)) {
+      const master = params.gameState.npcs.find(npc => npc.id === monster.masterId);
+      if (master && (master.health <= 0 || master.team !== monster.team)) delete monster.masterId;
+    }
     // First gather all the player actions per location
     for(const player of params.gameState.players) {
       const locId = `${player.location.id}`;
@@ -129,12 +142,16 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
         const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving(npc.masterId));
+        limitPlayerActionsToCost({ ...npc, baseStats: getCombatStats(npc) }, npcActions);
+        npcFought[npc.id] = getEnemies(params, npc).some(enemy => enemy.health > 0);
+        npcTravel[npc.id] = npcActions.actions.filter((action): action is PlayerActionMove | PlayerActionFastTravel =>
+          action.type === PlayerActionType.Move || action.type === PlayerActionType.FastTravel);
 
         entityActionsForLocations[locId].entities.push({
           entityType: EntityActionEntityTypes.npc,
           entityId: npc.id,
           entitySpeed: npc.baseStats!.speed * Math.random(),
-          actions: npcActions.actions,
+          actions: npcActions.actions.filter(action => action.type !== PlayerActionType.Move && action.type !== PlayerActionType.FastTravel),
           random: Math.random(),
         });
       }
@@ -228,6 +245,14 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
       }
     }
 
+    // NPC orders use the same combat-then-movement timing as players.
+    for (const npc of params.gameState.npcs.filter(npc => npc.health > 0 && npc.scriptedActions && !npc.masterId)) {
+      characterRecovery(npc, npcFought[npc.id] ?? false);
+      for (const action of npcTravel[npc.id] ?? []) {
+        actionNpcTravel(params, npc, action);
+      }
+    }
+
     // Process player moves and healing (if still alive)
     for(const player of params.gameState.players) {
       if (player.health > 0) {
@@ -260,12 +285,11 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
           player.respawnTurns--;
         }
       }
-
-      if (player.health > 0) {
-        for (const monster of params.monsters.filter(m => m.health > 0 && m.masterId === player.id)) {
-          monster.location = player.location.id;
-        }
-      }
+    }
+    for (const monster of params.monsters.filter(monster => monster.health > 0 && monster.masterId)) {
+      const master = params.gameState.players.find(player => player.id === monster.masterId)
+        ?? params.gameState.npcs.find(npc => npc.id === monster.masterId);
+      if (master && master.health > 0) monster.location = master.location.id;
     }
   } catch(error) {
     console.error('Error: runGameActions');
@@ -274,7 +298,18 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
 }
 
 async function retrieveActionsForNpc(params: BaseParams, npc: NPCState, masterIsMoving: boolean): Promise<PlayerActionsState> {
-  return !masterIsMoving ? getNpcActions(params, npc) : { actions: [] };
+  if (masterIsMoving) return { actions: [] };
+  if (npc.scriptedActions && !npc.masterId) {
+    // NPCs and scripted monsters share the existing npcActions queue.
+    const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, npc.id);
+    if (queued) {
+      if (!getEnemies(params, npc).some(enemy => enemy.health > 0)) return queued;
+      const retreat = queued.actions.filter(action => action.type === PlayerActionType.Move
+        && (action as PlayerActionMove).direction === npc.retreatDirection);
+      if (retreat.length > 0) return { actions: retreat };
+    }
+  }
+  return getNpcActions(params, npc);
 }
 
 function characterRecovery(character: INamedTarget, playerFought: boolean) {
@@ -329,6 +364,11 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
             break;
           case PlayerActionType.ReadScroll:
             actionReadScroll(params, character, nextAction as PlayerActionReadScroll);
+            break;
+          case PlayerActionType.Recruit:
+            if (entityActions.entityType === EntityActionEntityTypes.npc) {
+              actionNpcRecruit(params, character as NPCState, nextAction as PlayerActionRecruit);
+            }
             break;
         }
       }

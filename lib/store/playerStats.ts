@@ -71,6 +71,8 @@ export function getPlayerActionsCosts(playerState: INamedTarget, actionsState: P
         return total + getSpellActionCost(spell, playerState.baseStats!.magic);
       case PlayerActionType.ReadScroll:
         return total + LEARN_SCROLL_ACTION_COST;
+      case PlayerActionType.Recruit:
+        return total + BASE_ACTIONS_PER_TURN;
       default:
         return total;
     }

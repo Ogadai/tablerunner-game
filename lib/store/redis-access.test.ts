@@ -66,6 +66,7 @@ it('saves both sides of a transfer in one transaction', async () => {
 it('clears consumed NPC inventories with the turn even when the NPC no longer exists', async () => {
   await store.commitGameTurnInRedis('b', 'm', createGame(), createLocations(), { hero: { messages: [] } }, [], ['expired-npc']);
   expect(transaction.del).toHaveBeenCalledWith('playerInventory:b:m:expired-npc');
+  expect(transaction.del).toHaveBeenCalledWith('npcActions:b:m:expired-npc');
   expect(transaction.exec).toHaveBeenCalledTimes(1);
   expect(client.del).not.toHaveBeenCalled();
 });
@@ -94,6 +95,18 @@ it('reads a player snapshot in one batch and returns only the current location',
   expect(client.mget).toHaveBeenCalledWith('game:b:m', 'playerInventory:b:m:hero', 'playerActions:b:m:hero',
     'playerStats:b:m:hero', 'monsters:b:m', 'playerMessages:b:m:hero', 'playerInstructions:b:m:hero');
   expect(client.get).not.toHaveBeenCalled();
+});
+
+it('commits NPC decisions, party assignments and orders together without clearing player inputs', async () => {
+  const game = createGame();
+  const locations = createLocations();
+  const orders = { npc: { actions: [] }, fighting: null };
+  await store.commitNpcPlansInRedis('b', 'm', game, locations, orders);
+  expect(transaction.set.mock.calls).toEqual([
+    ['game:b:m', game, expiry], ['monsters:b:m', locations, expiry], ['npcActions:b:m:npc', orders.npc, expiry],
+  ]);
+  expect(transaction.del.mock.calls).toEqual([['npcActions:b:m:fighting']]);
+  expect(transaction.exec).toHaveBeenCalledTimes(1);
 });
 
 it.each([null, createGame(), createGame({ players: [] })])('supplies snapshot defaults for missing state', async gameState => {

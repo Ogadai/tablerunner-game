@@ -102,6 +102,27 @@ export async function commitPausedGameInRedis(
   await transaction.exec();
 }
 
+// Persist strategic orders and party assignments together, without consuming player inputs.
+export async function commitNpcPlansInRedis(
+  boardId: string,
+  mapId: string,
+  gameState: GameState,
+  locationsState: AllLocationsState,
+  orders: Record<string, PlayerActionsState | null>,
+): Promise<void> {
+  const transaction = redis.multi();
+  transaction.set(getGameKey(boardId, mapId), gameState, gameStateOptions);
+  transaction.set(getLocationsKey(boardId, mapId), locationsState, gameStateOptions);
+  for (const [npcId, actions] of Object.entries(orders)) {
+    if (actions) {
+      transaction.set(getMonsterActionsKey(boardId, mapId, npcId), actions, gameStateOptions);
+    } else {
+      transaction.del(getMonsterActionsKey(boardId, mapId, npcId));
+    }
+  }
+  await transaction.exec();
+}
+
 // Save the entire turn before consuming any of its pending inputs or notifying clients.
 export async function commitGameTurnInRedis(
   boardId: string,
@@ -136,6 +157,7 @@ export async function commitGameTurnInRedis(
   }
   for (const npcId of consumedNpcInventoryIds) {
     transaction.del(getPlayerInventoryKey(boardId, mapId, npcId));
+    transaction.del(getMonsterActionsKey(boardId, mapId, npcId));
   }
   for (const location of removedStoreLocations) {
     transaction.del(getStoreInventoryKey(boardId, mapId, location));
@@ -173,6 +195,7 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
     const locations = await getLocationsStateFromRedis(boardId, mapId);
     for (const npcId of new Set([...gameState.npcs, ...locations.npcs].map(npc => npc.id))) {
       await deletePlayerInventoryFromRedis(boardId, mapId, npcId);
+      await deleteMonsterActionsStateFromRedis(boardId, mapId, npcId);
     }
     for (const monster of locations.monsters.filter(m => m.scriptedActions)) {
       await deleteMonsterActionsStateFromRedis(boardId, mapId, monster.id);
@@ -286,7 +309,7 @@ export async function deleteActionsStateFromRedis(boardId: string, mapId: string
   await redis.del(getPlayerActionsKey(boardId, mapId, playerId));
 }
 
-/* Scripted Monster Actions State */
+/* Scripted NPC and Monster Actions State (shared queue) */
 
 export async function getMonsterActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<PlayerActionsState | null> {
   const result = await redis.get(getMonsterActionsKey(boardId, mapId, npcId)) as PlayerActionsState;

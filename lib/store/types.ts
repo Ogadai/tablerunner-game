@@ -89,6 +89,7 @@ export interface NPCState extends INamedTarget {
   characterType?: 'barbarian' | 'witch' | 'ranger' | 'mage';
   /** Include this NPC's location in turn processing even without players. */
   scriptedActions?: boolean;
+  retreatDirection?: string;
   masterId: string | null;
   hireCost: number;
   iconXY: { x: number, y: number };
@@ -126,6 +127,7 @@ export enum PlayerActionType {
   Portal = 'portal',
   FastTravel = 'fastTravel',
   Respawn = 'respawn',
+  Recruit = 'recruit',
 }
 
 export interface PlayerAction {
@@ -168,6 +170,11 @@ export interface PlayerActionPortal extends PlayerAction {
 export interface PlayerActionFastTravel extends PlayerAction {
   type: PlayerActionType.FastTravel;
   targetLocation: number;
+}
+
+export interface PlayerActionRecruit extends PlayerAction {
+  type: PlayerActionType.Recruit;
+  monsters: string[];
 }
 
 export interface PlayerActionsState {

@@ -1,10 +1,16 @@
 import { GameState } from "@/lib/store/types";
 
-interface TeamStateDef {
+export type NpcDecision =
+  | { type: 'reinforce'; location: number; recruits: string[] }
+  | { type: 'expand'; from: number; location: number }
+  | { type: 'retreat'; location: number };
+
+export interface TeamStateDef {
   territory: number[];
   colour: string;
   coins: number;
   monsters: string[];
+  npcDecision?: NpcDecision;
 }
 
 interface TerritoryStateDef {

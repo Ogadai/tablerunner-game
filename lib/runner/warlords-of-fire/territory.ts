@@ -2,6 +2,7 @@ import { LedState, NPCState, PlayerState } from "@/lib/store/types";
 import { ProcessRunner } from "../types";
 import { getState, saveState, DEFAULT_TEAM_STATE } from "./territory-state";
 import { soloMessageAtLocation } from "../game-messages";
+import { getEnemies } from "../game-friends-or-enemies";
 
 const OWNER = 'territory';
 const INCOME_PER_LOCATION = 10;
@@ -13,15 +14,11 @@ export const territoryProcesses: ProcessRunner = {
     const warlords: (PlayerState | NPCState)[] = [
       ...params.gameState.players,
       ...params.gameState.npcs,
-    ];
+    ].filter(warlord => warlord.health > 0);
 
     for(const warlord of warlords) {
       const location = warlord.location.id;
-      if (!warlords.some(w =>
-        w.id !== warlord.id &&
-        w.location.id === location &&
-        w.team !== warlord.team
-      )) {
+      if (!getEnemies(params, warlord).some(enemy => enemy.health > 0)) {
         // This warlord has taken over this territory
         const team = warlord.team || warlord.id;
         state.teams[team] ||= { ...DEFAULT_TEAM_STATE };
