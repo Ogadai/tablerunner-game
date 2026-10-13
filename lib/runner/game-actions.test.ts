@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { runGameActions } from './game-actions';
-import { getMonsterActionsStateFromRedis } from '../store/redis-access';
+import { getMonsterActionsForTurnFromRedis } from '../store/redis-access';
 import { actionAttack, monsterAttack } from './game-action-attack';
 import { actionMove, actionRespawn } from './game-action-move';
 import { actionFastTravel, actionPortal } from './game-action-portal';
@@ -12,7 +12,7 @@ import { PlayerActionsState, PlayerActionAttack, PlayerActionCast, PlayerActionM
 import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 import { gameRunners } from './games';
 
-jest.mock('../store/redis-access', () => ({ getMonsterActionsStateFromRedis: jest.fn() }));
+jest.mock('../store/redis-access', () => ({ getMonsterActionsForTurnFromRedis: jest.fn() }));
 jest.mock('./game-action-attack', () => ({ actionAttack: jest.fn(), monsterAttack: jest.fn() }));
 jest.mock('./game-action-move', () => ({ actionMove: jest.fn(), actionRespawn: jest.fn() }));
 jest.mock('./game-action-portal', () => ({ actionFastTravel: jest.fn(), actionPortal: jest.fn() }));
@@ -26,11 +26,16 @@ const attack = (id: number): PlayerActionAttack => ({ id, type: PlayerActionType
 const move: PlayerActionMove = { id: 1, type: PlayerActionType.Move, direction: 'e', description: '' };
 const executeNpcAction = jest.mocked(gameRunners['test-game'].executeNpcAction!);
 let playerActions: Record<string, PlayerActionsState>;
+function mockQueuedActions(queued: PlayerActionsState | null) {
+  jest.mocked(getMonsterActionsForTurnFromRedis).mockImplementation(async (_boardId, _mapId, ids) =>
+    Object.fromEntries(ids.map(id => [id, queued ? { actions: queued.actions.map(action => ({ ...action })) } : null])));
+}
 beforeEach(() => {
   jest.resetAllMocks();
   jest.spyOn(Math, 'random').mockReturnValue(0.5);
   playerActions = { hero: { actions: [] }, enemy: { actions: [] } };
   jest.mocked(getNpcActions).mockReturnValue({ actions: [] });
+  mockQueuedActions(null);
 });
 afterEach(() => jest.restoreAllMocks());
 
@@ -39,7 +44,7 @@ it.each([null, { actions: [] }])('runs an NPC combat fallback without a player, 
   const params = createParams({ monsters: [createMonster()] });
   params.gameState.players = [];
   params.gameState.npcs = [npc];
-  jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue(queued);
+  mockQueuedActions(queued);
   jest.mocked(getNpcActions).mockReturnValue({ actions: [attack(1)] });
   await runGameActions(params, {});
   expect(getNpcActions).toHaveBeenCalledWith(params, npc);
@@ -51,7 +56,7 @@ it('lets an NPC retreat after opponents finish their combat actions', async () =
   const params = createParams({ monsters: [createMonster()] });
   params.gameState.players = [];
   params.gameState.npcs = [npc];
-  jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [move] });
+  mockQueuedActions({ actions: [move] });
   await runGameActions(params, {});
   expect(executeNpcAction).toHaveBeenCalledWith(params, npc, move);
   expect(getNpcActions).not.toHaveBeenCalled();
@@ -61,16 +66,18 @@ it('lets an NPC retreat after opponents finish their combat actions', async () =
 
 it('moves a scripted NPC and its living party together after combat', async () => {
   const npc = createNpc({ scriptedActions: true, team: 'npc' });
-  const ally = createMonster({ team: npc.team, masterId: npc.id });
+  const ally = createMonster({ team: npc.team, masterId: npc.id, scriptedActions: true });
   const params = createParams({ monsters: [ally] });
   params.gameState.players = [];
   params.gameState.npcs = [npc];
-  jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [move] });
+  mockQueuedActions({ actions: [move] });
   executeNpcAction.mockImplementation((_params, target) => { target.location.id = 2; });
   await runGameActions(params, {});
   expect(executeNpcAction).toHaveBeenCalledWith(params, npc, move);
   expect(ally.location).toBe(2);
   expect(monsterAttack).not.toHaveBeenCalled();
+  expect(getMonsterActionsForTurnFromRedis).toHaveBeenCalledTimes(1);
+  expect(getMonsterActionsForTurnFromRedis).toHaveBeenCalledWith('board', 'map', [npc.id]);
 });
 
 it('leaves a defeated NPC for game processes without recovering it or executing its queued travel', async () => {
@@ -80,7 +87,7 @@ it('leaves a defeated NPC for game processes without recovering it or executing 
   const params = createParams({ monsters: [createMonster(), ally] });
   params.gameState.players = [];
   params.gameState.npcs = [npc];
-  jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [move] });
+  mockQueuedActions({ actions: [move] });
   jest.mocked(monsterAttack).mockImplementation((_turn, _monster, target) => {
     target.health = 0;
   });
@@ -96,18 +103,33 @@ it('does not run monster combat without a player or scripted monster present', a
     createMonster({ id: 'blue', team: 'blue', location: 2 })] });
   await runGameActions(params, playerActions);
   expect(monsterAttack).not.toHaveBeenCalled();
-  expect(getMonsterActionsStateFromRedis).not.toHaveBeenCalled();
+  expect(getMonsterActionsForTurnFromRedis).not.toHaveBeenCalled();
 });
 
 it('runs combat between opposing teams without a player when a scripted monster is present', async () => {
   const params = createParams({ monsters: [createMonster({ id: 'red', team: 'red', location: 2, scriptedActions: true }),
     createMonster({ id: 'blue', team: 'blue', location: 2 })] });
   const monsterAction: PlayerActionAttack = { ...attack(1), target: 'blue' };
-  jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [monsterAction] });
+  mockQueuedActions({ actions: [monsterAction] });
   await runGameActions(params, playerActions);
-  expect(getMonsterActionsStateFromRedis).toHaveBeenCalledWith('board', 'map', 'red');
+  expect(getMonsterActionsForTurnFromRedis).toHaveBeenCalledWith('board', 'map', ['red']);
   expect(jest.mocked(monsterAttack).mock.calls.map(call => [call[1].id, call[2].id]).sort())
     .toEqual([['blue', 'red'], ['red', 'blue']]);
+});
+
+it('fetches scripted garrison queues together while excluding dead units', async () => {
+  const garrison = Array.from({ length: 40 }, (_, index) => createMonster({
+    id: `garrison-${index}`, location: 2, team: 'good', scriptedActions: true,
+  }));
+  const params = createParams({ monsters: [...garrison,
+    createMonster({ id: 'dead', health: 0, scriptedActions: true }),
+  ] });
+  mockQueuedActions({ actions: [] });
+  await runGameActions(params, playerActions);
+  expect(getMonsterActionsForTurnFromRedis).toHaveBeenCalledTimes(1);
+  expect(getMonsterActionsForTurnFromRedis).toHaveBeenCalledWith('board', 'map', garrison.map(monster => monster.id));
+  expect(monsterAttack).not.toHaveBeenCalled();
+  expect(getNpcActions).not.toHaveBeenCalled();
 });
 
 it('allows recovery among allied monsters but suppresses it around enemy players', async () => {
@@ -184,7 +206,7 @@ it.each([PlayerActionType.Move, PlayerActionType.Portal, PlayerActionType.FastTr
         target.health = 20;
       });
     }
-    jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [attack(1), move] });
+    mockQueuedActions({ actions: [attack(1), move] });
     jest.mocked(getNpcActions).mockReturnValue({ actions: [
       { id: 1, type: PlayerActionType.Cast, description: '', spellId: 'spiritArrow' } as PlayerActionCast,
       { id: 2, type: PlayerActionType.UseItem, description: '', itemId: 'potion' } as PlayerActionUseItem,
@@ -197,7 +219,7 @@ it.each([PlayerActionType.Move, PlayerActionType.Portal, PlayerActionType.FastTr
     expect(actionCastSpell).not.toHaveBeenCalled();
     expect(actionUseItem).not.toHaveBeenCalled();
     expect(getNpcActions).not.toHaveBeenCalled();
-    expect(getMonsterActionsStateFromRedis).not.toHaveBeenCalled();
+    expect(getMonsterActionsForTurnFromRedis).not.toHaveBeenCalled();
   },
 );
 
@@ -272,7 +294,7 @@ it.each([false, true])('moves a scripted monster in an empty location unless blo
   const params = createParams({ monsters: [monster] });
   params.gameState.players = [];
   if (blocked) params.blockedMoves = [{ location: 1, direction: 'e', description: 'Locked' }];
-  jest.mocked(getMonsterActionsStateFromRedis).mockResolvedValue({ actions: [move] });
+  mockQueuedActions({ actions: [move] });
   await runGameActions(params, playerActions);
   expect(monster.location).toBe(blocked ? 1 : 2);
 });

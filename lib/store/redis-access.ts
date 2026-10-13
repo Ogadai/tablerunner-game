@@ -311,6 +311,16 @@ export async function deleteActionsStateFromRedis(boardId: string, mapId: string
 
 /* Scripted NPC and Monster Actions State (shared queue) */
 
+export async function getMonsterActionsForTurnFromRedis(
+  boardId: string, mapId: string, entityIds: string[],
+): Promise<Record<string, PlayerActionsState | null>> {
+  if (entityIds.length === 0) return {};
+  const actions = await redis.mget<(PlayerActionsState | null)[]>(
+    ...entityIds.map(id => getMonsterActionsKey(boardId, mapId, id)),
+  );
+  return Object.fromEntries(entityIds.map((id, index) => [id, actions[index] || null]));
+}
+
 export async function getMonsterActionsStateFromRedis(boardId: string, mapId: string, npcId: string): Promise<PlayerActionsState | null> {
   const result = await redis.get(getMonsterActionsKey(boardId, mapId, npcId)) as PlayerActionsState;
   return result || null;

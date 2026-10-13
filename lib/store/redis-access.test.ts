@@ -19,11 +19,32 @@ beforeEach(() => {
   client.get.mockResolvedValue(null);
   client.set.mockResolvedValue('OK');
 });
+
 afterEach(() => {
   jest.useRealTimers();
   jest.restoreAllMocks();
 });
 
+it('reads NPC and monster queues in one request, preserving idle queues and missing orders', async () => {
+  const move = { actions: [{ id: 1, type: 'move', direction: 'e', description: 'Move east' }] };
+  client.mget.mockResolvedValue([move, { actions: [] }, null]);
+  await expect(store.getMonsterActionsForTurnFromRedis('b', 'm', ['npc', 'garrison', 'missing'])).resolves.toEqual({
+    npc: move, garrison: { actions: [] }, missing: null,
+  });
+  expect(client.mget).toHaveBeenCalledTimes(1);
+  expect(client.mget).toHaveBeenCalledWith('npcActions:b:m:npc', 'npcActions:b:m:garrison', 'npcActions:b:m:missing');
+  expect(client.get).not.toHaveBeenCalled();
+});
+
+it('skips Redis when there are no scripted queues to fetch', async () => {
+  await expect(store.getMonsterActionsForTurnFromRedis('b', 'm', [])).resolves.toEqual({});
+  expect(client.mget).not.toHaveBeenCalled();
+});
+
+it('propagates a failed batched queue read', async () => {
+  client.mget.mockRejectedValue(new Error('Queue read failed'));
+  await expect(store.getMonsterActionsForTurnFromRedis('b', 'm', ['npc'])).rejects.toThrow('Queue read failed');
+});
 it('reads player and NPC inventories together, preserving empty pending inventories', async () => {
   client.mget.mockResolvedValue([null, { equipment: [], equipped: {} }]);
   await expect(store.getCharacterInventoriesFromRedis('b', 'm', ['hero', 'npc'])).resolves.toEqual({

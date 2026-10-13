@@ -14,7 +14,7 @@ import {
   MonsterState,
 } from "../store/types";
 import {
-  getMonsterActionsStateFromRedis,
+  getMonsterActionsForTurnFromRedis,
 } from '../store/redis-access';
 import { EquipableItemDef, PlayerItem } from '@/lib/games/types';
 import { BaseParams } from './base-params';
@@ -132,6 +132,12 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
       entityActionsForLocations[monster.location] ??= { entities: [] };
     }
 
+    const npcActionIds = params.gameState.npcs
+      .filter(npc => npc.scriptedActions && npc.health > 0 && !!npc.team && !npc.masterId)
+      .map(npc => npc.id);
+    const npcQueues = npcActionIds.length > 0
+      ? await getMonsterActionsForTurnFromRedis(params.boardId, params.mapId, npcActionIds) : {};
+
     // Get the NPCs at these locations
     for(const npc of params.gameState.npcs.filter(npc => npc.health > 0 && !!npc.team)) {
       const locId = `${npc.location.id}`;
@@ -140,7 +146,7 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
       }
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
-        const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving(npc.masterId));
+        const npcActions = retrieveActionsForNpc(params, npc, masterIsMoving(npc.masterId), npcQueues[npc.id]);
         limitPlayerActionsToCost({ ...npc, baseStats: getCombatStats(npc) }, npcActions);
         npcFought[npc.id] = getEnemies(params, npc).some(enemy => enemy.health > 0);
         npcTravel[npc.id] = npcActions.actions.filter((action): action is PlayerActionMove | PlayerActionFastTravel =>
@@ -156,6 +162,14 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
       }
     }
 
+    // NPC travel orders must be known before fetching queues for their followers.
+    const monsterActionIds = params.monsters
+      .filter(monster => monster.scriptedActions && monster.health > 0 && !masterIsMoving(monster.masterId)
+        && !!entityActionsForLocations[monster.location])
+      .map(monster => monster.id);
+    const monsterQueues = monsterActionIds.length > 0
+      ? await getMonsterActionsForTurnFromRedis(params.boardId, params.mapId, monsterActionIds) : {};
+
     // Now get the monsters at those locations and assign them actions
     for(const locId of Object.keys(entityActionsForLocations)) {
       const locationId = parseInt(locId);
@@ -169,7 +183,7 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
           if (masterIsMoving(monster.masterId)) {
             actions = [];
           } else if (monster.scriptedActions) {
-            const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, monster.id);
+            const queued = monsterQueues[monster.id];
             actions = queued?.actions ?? getNpcActions(params, combatant).actions;
           } else if (combatant.spells.length > 0) {
             actions = getNpcActions(params, combatant).actions;
@@ -296,11 +310,11 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
   }
 }
 
-async function retrieveActionsForNpc(params: BaseParams, npc: NPCState, masterIsMoving: boolean): Promise<PlayerActionsState> {
+function retrieveActionsForNpc(params: BaseParams, npc: NPCState, masterIsMoving: boolean,
+  queued: PlayerActionsState | null | undefined): PlayerActionsState {
   if (masterIsMoving) return { actions: [] };
   if (npc.scriptedActions && !npc.masterId) {
     // NPCs and scripted monsters share the existing npcActions queue.
-    const queued = await getMonsterActionsStateFromRedis(params.boardId, params.mapId, npc.id);
     if (queued) {
       if (!getEnemies(params, npc).some(enemy => enemy.health > 0)) return queued;
       const retreat = queued.actions.filter(action => action.type === PlayerActionType.Move
