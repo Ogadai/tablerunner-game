@@ -93,7 +93,6 @@ export default function WarlordRecruitment({
       if (currentRequest !== requestId.current) return;
       if (!result.success || !result.data) throw new Error(result.error || 'Unable to recruit monster.');
       setQueue(result.data.recruit);
-//      setIsOpen(false);
     } catch (error) {
       if (currentRequest === requestId.current) setError((error as Error).message);
     } finally {
