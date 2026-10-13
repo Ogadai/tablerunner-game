@@ -7,7 +7,7 @@ import { playerMonsters } from './monsters';
 // Define Warlords of Fire starting values.
 const INITIAL_AVAILABLE_STATS = 12;
 const INITIAL_COINS = 200;
-const START_LOCATIONS = [10, 231, 121, 100];
+export const START_LOCATIONS = [10, 231, 121, 100];
 
 export function createStarterPlayer(characterDef: CharacterListEntry, gameState: GameState): StarterPlayer {
   const state = getState(gameState);

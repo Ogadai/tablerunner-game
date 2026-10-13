@@ -79,7 +79,7 @@ const generateStat = (cost: number, importance: number): number => {
   return Math.ceil(min + Math.random() * (max - min));
 };
 
-const getNpcStats: { [type: string]: ((cost: number) => BaseStats) } = {
+export const getNpcStats: { [type: string]: ((cost: number) => BaseStats) } = {
   'barbarian': (cost: number) => {
     return {
       attack: generateStat(cost, 1),
@@ -166,7 +166,7 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
   };
 }
 
-function getNpcEquipment(npcId: string, type: string): PlayerItem[] {
+export function getNpcEquipment(npcId: string, type: string): PlayerItem[] {
   switch(type) {
     case 'barbarian':
       return [{
@@ -206,7 +206,7 @@ function getNpcEquipment(npcId: string, type: string): PlayerItem[] {
   return [];
 }
 
-function getNpcSpells(type: string): SpellIds[] {
+export function getNpcSpells(type: string): SpellIds[] {
   switch(type) {
     case 'barbarian':
     case 'ranger':

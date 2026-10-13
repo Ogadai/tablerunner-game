@@ -123,6 +123,9 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
     // Get the NPCs at these locations
     for(const npc of params.gameState.npcs.filter(npc => npc.health > 0 && !!npc.team)) {
       const locId = `${npc.location.id}`;
+      if (npc.scriptedActions) {
+        entityActionsForLocations[locId] ??= { entities: [] };
+      }
       if (entityActionsForLocations[locId]) {
         // automatically figure out NPC's actions (if master isn't moving)
         const npcActions = await retrieveActionsForNpc(params, npc, masterIsMoving(npc.masterId));

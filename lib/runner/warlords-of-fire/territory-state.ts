@@ -24,8 +24,10 @@ const DEFAULT_STATE: TerritoryStateDef = {
   teams: {},
 };
 
-export const getState = (gameState: GameState) =>
-  ({ ...(gameState.processState[OWNER] || DEFAULT_STATE) as TerritoryStateDef });
+export const getState = (gameState: GameState): TerritoryStateDef => {
+  const state = (gameState.processState[OWNER] || DEFAULT_STATE) as TerritoryStateDef;
+  return { ...state, teams: { ...state.teams } };
+};
 
 export const saveState = (gameState: GameState, state: TerritoryStateDef) => {
   gameState.processState[OWNER] = state;
