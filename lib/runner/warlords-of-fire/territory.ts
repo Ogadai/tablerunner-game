@@ -1,15 +1,66 @@
 import { LedState, NPCState, PlayerState } from "@/lib/store/types";
 import { ProcessRunner } from "../types";
-import { getState, saveState, DEFAULT_TEAM_STATE } from "./territory-state";
+import { getState, getTeamOwner, saveState, DEFAULT_TEAM_STATE, TerritoryStateDef } from "./territory-state";
 import { soloMessageAtLocation } from "../game-messages";
 import { getEnemies } from "../game-friends-or-enemies";
+import { BaseParams } from "../base-params";
 
 const OWNER = 'territory';
 const INCOME_PER_LOCATION = 10;
 
+function getTeam(params: BaseParams, state: TerritoryStateDef, team: string) {
+  return state.teams[team] ??= {
+    ...DEFAULT_TEAM_STATE, territory: [], monsters: [],
+    colour: params.gameState.players.find(player => player.team === team)?.rgbColour ?? '',
+  };
+}
+
+function assignTerritory(params: BaseParams, state: TerritoryStateDef, team: string, locations: number[]) {
+  const owner = getTeam(params, state, team);
+  for (const [id, faction] of Object.entries(state.teams)) {
+    if (id !== team) faction.territory = faction.territory.filter(location => !locations.includes(location));
+  }
+  owner.territory = [...new Set([...owner.territory, ...locations])];
+}
+
+function creditTeam(params: BaseParams, state: TerritoryStateDef, team: string, coins: number) {
+  const player = params.gameState.players.find(player => (player.team || player.id) === team);
+  if (player) player.coins += coins;
+  else getTeam(params, state, team).coins += coins;
+  return player;
+}
+
 export const territoryProcesses: ProcessRunner = {
   executeForTurn: async (params) => {
     const state = getState(params.gameState);
+
+    // Resolve all conquests first, including chains of leaders defeated this turn.
+    const owners = Object.fromEntries(Object.keys(state.teams).map(team => [team, getTeamOwner(state, team)]));
+    for (const [team, owner] of Object.entries(owners)) {
+      delete state.teams[team].conqueredBy;
+      if (team === owner) continue;
+      const conquered = state.teams[team];
+      const winner = getTeam(params, state, owner);
+      assignTerritory(params, state, owner, conquered.territory);
+      winner.monsters = [...new Set([...winner.monsters, ...conquered.monsters])];
+      creditTeam(params, state, owner, conquered.coins);
+      conquered.territory = [];
+      conquered.monsters = [];
+      conquered.coins = 0;
+      delete conquered.npcDecision;
+    }
+    for (const npc of params.gameState.npcs) {
+      const owner = npc.team ? owners[npc.team] : undefined;
+      if (owner && owner !== npc.team) {
+        npc.team = owner;
+        if (npc.scriptedActions) npc.masterId = null;
+        const command = state.teams[npc.id];
+        if (command) delete command.npcDecision;
+      }
+    }
+    for (const monster of params.monsters) {
+      if (monster.team && owners[monster.team]) monster.team = owners[monster.team];
+    }
 
     const warlords: (PlayerState | NPCState)[] = [
       ...params.gameState.players,
@@ -19,32 +70,21 @@ export const territoryProcesses: ProcessRunner = {
     for(const warlord of warlords) {
       const location = warlord.location.id;
       if (!getEnemies(params, warlord).some(enemy => enemy.health > 0)) {
-        // This warlord has taken over this territory
         const team = warlord.team || warlord.id;
-        state.teams[team] ||= { ...DEFAULT_TEAM_STATE };
-
-        for(const t of Object.keys(state.teams)) {
-          state.teams[t].territory = state.teams[t].territory.filter(l => l !== location);
-        }
-        state.teams[team].territory.push(location);
+        assignTerritory(params, state, team, [location]);
       }
     }
 
-    // Assign funds to players and NPCs
-    for(const warlord of warlords) {
-      const team = warlord.id;
-      state.teams[team] ||= { ...DEFAULT_TEAM_STATE };
-      const locationCount = state.teams[team].territory.length;
+    // Pay each faction once, regardless of how many sub-commanders it has.
+    for (const team of new Set(warlords.map(warlord => warlord.team || warlord.id))) {
+      const locationCount = getTeam(params, state, team).territory.length;
       const coins = locationCount * INCOME_PER_LOCATION;
 
-      const player = params.gameState.players.find(p => p.id === warlord.id);
+      const player = creditTeam(params, state, team, coins);
       if (player) {
-        player.coins += coins;
         soloMessageAtLocation(params, player.id,
           `*You* earned **${coins} coins** from ${locationCount} location${locationCount === 1 ? '' : 's'}`
         );
-      } else {
-        state.teams[team].coins += coins;
       }
     }
 

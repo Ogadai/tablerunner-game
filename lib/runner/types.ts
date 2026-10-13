@@ -1,11 +1,12 @@
 import { BaseParams } from "./base-params";
-import { GameState, MonsterState } from "../store/types";
+import { GameState, MonsterState, NPCState, PlayerAction } from "../store/types";
 import { CharacterListEntry, ItemDef } from "../games/types";
 
 export interface GameRunnerDefinition {
   gameCreation: GameCreation;
   getMonsters(gameState: GameState, playerCount?: number): Promise<MonsterState[]>;
   processes: ProcessRunner;
+  executeNpcAction?(params: BaseParams, npc: NPCState, action: PlayerAction): void;
 }
 
 export interface ProcessRunner {

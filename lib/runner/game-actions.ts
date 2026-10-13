@@ -7,7 +7,6 @@ import {
   PlayerActionUseItem,
   PlayerActionCast,
   PlayerActionReadScroll,
-  PlayerActionRecruit,
   PlayerActionPortal,
   INamedTarget,
   PlayerActionFastTravel,
@@ -33,7 +32,7 @@ import { getMonsterCombatant } from './monster-combatant';
 import { games } from '../games/games';
 import { playerMessageAtLocation } from './game-messages';
 import { getEnemies } from './game-friends-or-enemies';
-import { actionNpcRecruit, actionNpcTravel } from './warlords-of-fire/npc-actions';
+import { gameRunners } from './games';
 
 enum EntityActionEntityTypes {
   player,
@@ -76,7 +75,7 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
   };
 
   try {
-    // A captured or dead warlord no longer commands its former invasion party.
+    // Release followers whose NPC master is defeated or belongs to another team.
     for (const monster of params.monsters.filter(monster => monster.masterId)) {
       const master = params.gameState.npcs.find(npc => npc.id === monster.masterId);
       if (master && (master.health <= 0 || master.team !== monster.team)) delete monster.masterId;
@@ -249,7 +248,7 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
     for (const npc of params.gameState.npcs.filter(npc => npc.health > 0 && npc.scriptedActions && !npc.masterId)) {
       characterRecovery(npc, npcFought[npc.id] ?? false);
       for (const action of npcTravel[npc.id] ?? []) {
-        actionNpcTravel(params, npc, action);
+        gameRunners[params.gameState.gameId]?.executeNpcAction?.(params, npc, action);
       }
     }
 
@@ -367,7 +366,7 @@ async function processNextAction(params: BaseParams, entityActions: EntityAction
             break;
           case PlayerActionType.Recruit:
             if (entityActions.entityType === EntityActionEntityTypes.npc) {
-              actionNpcRecruit(params, character as NPCState, nextAction as PlayerActionRecruit);
+              gameRunners[params.gameState.gameId]?.executeNpcAction?.(params, character as NPCState, nextAction);
             }
             break;
         }

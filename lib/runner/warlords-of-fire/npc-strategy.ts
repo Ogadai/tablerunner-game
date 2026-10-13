@@ -93,7 +93,7 @@ function gatherParty(params: BaseParams, npc: NPCState, enemyPower: number): voi
 }
 
 function eligibleRecruits(params: BaseParams, npc: NPCState): string[] {
-  return [...new Set(getWarlordAvailableMonsters(params.gameState, npc.id))]
+  return [...new Set(getWarlordAvailableMonsters(params.gameState, npc.team ?? npc.id))]
     .filter(type => monsters[type] && !playerMonsters.includes(type) && !mostersExcludeFromAutoPopulate.includes(type));
 }
 

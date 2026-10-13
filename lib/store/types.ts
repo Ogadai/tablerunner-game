@@ -87,8 +87,11 @@ export interface PlayerState extends INamedTarget {
 
 export interface NPCState extends INamedTarget {
   characterType?: 'barbarian' | 'witch' | 'ranger' | 'mage';
+  startLocation?: number;
   /** Include this NPC's location in turn processing even without players. */
   scriptedActions?: boolean;
+  /** Let the game's turn processes resolve defeat instead of normal death rules. */
+  deferDefeat?: boolean;
   retreatDirection?: string;
   masterId: string | null;
   hireCost: number;

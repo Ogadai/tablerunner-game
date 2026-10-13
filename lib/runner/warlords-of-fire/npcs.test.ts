@@ -21,6 +21,16 @@ beforeEach(() => {
   jest.mocked(store.lockLocationsStateInRedis).mockResolvedValue(releaseLocations);
 });
 
+it('enables deferred defeat for warlords in older saves without changing ordinary NPC death rules', async () => {
+  const warlord = createNpc({ id: 'warlord', scriptedActions: true });
+  const ordinary = createNpc({ id: 'ordinary' });
+  const params = createParams();
+  params.gameState.npcs = [warlord, ordinary];
+  await npcProcesses.initialiseForTurn!(params);
+  expect(warlord.deferDefeat).toBe(true);
+  expect(ordinary.deferDefeat).toBeUndefined();
+});
+
 it('loads fresh locations and persists multi-turn goals with party assignments and orders', async () => {
   const npc = createNpc({ scriptedActions: true, team: 'npc' });
   const game = createGame({ gameId: 'warlordsfire', npcs: [npc] });
@@ -57,4 +67,28 @@ it('preserves a pending hire in location state and clears independent warlord or
   expect(locations.npcs[0].masterId).toBe('hero');
   expect(party.masterId).toBeUndefined();
   expect(store.commitNpcPlansInRedis).toHaveBeenCalledWith('board', 'map', game, locations, { npc: null });
+});
+
+it('keeps separate plans for captured sub-commanders using their faction territory and funds', async () => {
+  const leader = createNpc({ id: 'leader', team: 'leader', scriptedActions: true });
+  const sub = createNpc({ id: 'sub', team: 'leader', scriptedActions: true, masterId: null });
+  const game = createGame({ gameId: 'warlordsfire', npcs: [leader, sub] });
+  saveState(game, { teams: {
+    leader: { ...DEFAULT_TEAM_STATE, territory: [1, 2, 3], monsters: ['orc'], coins: 90 },
+    sub: { ...DEFAULT_TEAM_STATE, territory: [], monsters: [], coins: 0 },
+  } });
+  const locations = createLocations({ npcs: [leader, sub] });
+  jest.mocked(store.getGameStateFromRedis).mockResolvedValue(game);
+  jest.mocked(store.getLocationsStateFromRedis).mockResolvedValue(locations);
+  jest.mocked(planNpcTurn).mockImplementation((_params, npc, command) => {
+    expect(command.territory).toEqual([1, 2, 3]);
+    expect(command.coins).toBe(90);
+    command.npcDecision = { type: 'expand', from: 1, location: npc.id === leader.id ? 4 : 5 };
+    return { actions: [] };
+  });
+  await npcProcesses.executeBetweenTurns!(createParams());
+  const state = getState(game);
+  expect(state.teams.leader.npcDecision).toEqual({ type: 'expand', from: 1, location: 4 });
+  expect(state.teams.sub.npcDecision).toEqual({ type: 'expand', from: 1, location: 5 });
+  expect(planNpcTurn).toHaveBeenCalledTimes(2);
 });

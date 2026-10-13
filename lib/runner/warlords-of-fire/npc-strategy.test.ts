@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { PlayerActionFastTravel, PlayerActionMove, PlayerActionRecruit, PlayerActionType } from '@/lib/store/types';
-import { createMonster, createNpc, createParams } from '../test-support/fixtures';
+import { createMonster, createNpc, createParams, createPlayer } from '../test-support/fixtures';
 import { getNpcActions } from '../game-npc-actions';
 import { actionNpcRecruit, actionNpcTravel } from './npc-actions';
 import { getNpcOptions, planNpcTurn } from './npc-strategy';
@@ -117,4 +117,22 @@ it('cannot recruit past the available funds or recruit during combat', () => {
   actionNpcRecruit(params, npc, recruit);
   expect(params.monsters).toHaveLength(2);
   expect(team.coins).toBe(100);
+});
+
+it('lets an independent sub-commander recruit using the player-led faction pool and available funds', () => {
+  const { params, npc, team } = scenario();
+  npc.team = 'leader';
+  const leader = createPlayer({ id: 'leader', team: 'leader', coins: getMonsterCost('orc') });
+  params.gameState.players = [leader];
+  const state = getState(params.gameState);
+  state.teams.leader = { ...DEFAULT_TEAM_STATE, territory: [1], monsters: ['orc'], coins: 0 };
+  team.territory = [];
+  team.monsters = [];
+  team.npcDecision = { type: 'reinforce', location: 1, recruits: ['orc', 'orc'] };
+  saveState(params.gameState, state);
+  actionNpcRecruit(params, npc, { id: 1, type: PlayerActionType.Recruit, monsters: ['orc', 'orc'], description: '' });
+  expect(params.monsters).toHaveLength(1);
+  expect(params.monsters[0].team).toBe(leader.team);
+  expect(leader.coins).toBe(0);
+  expect(team.npcDecision).toBeUndefined();
 });

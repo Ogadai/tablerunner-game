@@ -11,9 +11,11 @@ export interface TeamStateDef {
   coins: number;
   monsters: string[];
   npcDecision?: NpcDecision;
+  /** Pending faction transfer, applied by territory processing this turn. */
+  conqueredBy?: string;
 }
 
-interface TerritoryStateDef {
+export interface TerritoryStateDef {
   teams: Record<string, TeamStateDef>;
 }
 
@@ -37,4 +39,17 @@ export const getState = (gameState: GameState): TerritoryStateDef => {
 
 export const saveState = (gameState: GameState, state: TerritoryStateDef) => {
   gameState.processState[OWNER] = state;
+}
+
+/** Resolve simultaneous conquests before moving any faction's assets. */
+export function getTeamOwner(state: TerritoryStateDef, team: string): string {
+  const visited: string[] = [];
+  while (state.teams[team]?.conqueredBy) {
+    const cycleStart = visited.indexOf(team);
+    // Simultaneous mutual conquests must agree on one owner for every asset.
+    if (cycleStart >= 0) return visited.slice(cycleStart).sort()[0];
+    visited.push(team);
+    team = state.teams[team].conqueredBy!;
+  }
+  return team;
 }

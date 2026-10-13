@@ -12,7 +12,7 @@ import { getMonsterCost, getWarlordAvailableMonsters } from './recruit-helper';
 import { getState, saveState } from './territory-state';
 
 export function actionNpcTravel(params: BaseParams, npc: NPCState, action: PlayerActionMove | PlayerActionFastTravel): void {
-  if (npc.health <= 0 || npc.masterId || npc.team !== npc.id) return;
+  if (npc.health <= 0 || npc.masterId || !npc.team) return;
   const current = warlordsOfFire.locations.find(location => location.id === npc.location.id);
   const fighting = getEnemies(params, npc).some(enemy => enemy.health > 0);
   let destination: number | undefined;
@@ -23,7 +23,7 @@ export function actionNpcTravel(params: BaseParams, npc: NPCState, action: Playe
     destination = move.id;
   } else {
     if (fighting) return;
-    const team = getState(params.gameState).teams[npc.id];
+    const team = getState(params.gameState).teams[npc.team];
     if (!team?.territory.includes(action.targetLocation)) return;
     const route = getNpcTerritoryRoutes(params, npc, team).get(action.targetLocation);
     if (!route?.length || route.length > NPC_RUN_STEPS) return;
@@ -39,24 +39,27 @@ export function actionNpcTravel(params: BaseParams, npc: NPCState, action: Playe
 
 export function actionNpcRecruit(params: BaseParams, npc: NPCState, action: PlayerActionRecruit): void {
   const state = getState(params.gameState);
-  const team = state.teams[npc.id];
-  if (!team || npc.health <= 0 || npc.team !== npc.id || npc.masterId || !team.territory.includes(npc.location.id)
+  const team = npc.team ? state.teams[npc.team] : undefined;
+  if (!team || npc.health <= 0 || npc.masterId || !team.territory.includes(npc.location.id)
       || getEnemies(params, npc).some(enemy => enemy.health > 0)) return;
-  const eligible = getWarlordAvailableMonsters(params.gameState, npc.id);
+  const player = params.gameState.players.find(player => player.team === npc.team);
+  const eligible = getWarlordAvailableMonsters(params.gameState, npc.team!);
   for (const type of action.monsters) {
     if (!eligible.includes(type) || !monsters[type] || playerMonsters.includes(type)
         || mostersExcludeFromAutoPopulate.includes(type)) continue;
     const cost = getMonsterCost(type);
-    if (cost > team.coins) break;
+    if (cost > (player?.coins ?? team.coins)) break;
     params.monsters.push(generateMonster(params.gameState, {
       type, location: npc.location.id, team: npc.team, health: monsters[type].baseStats.health,
       scriptedActions: true,
     }));
-    team.coins -= cost;
+    if (player) player.coins -= cost;
+    else team.coins -= cost;
   }
   // Recruitment is a single batch; future defence needs are evaluated afresh.
-  if (team.npcDecision?.type === 'reinforce' && team.npcDecision.location === npc.location.id) {
-    delete team.npcDecision;
+  const command = state.teams[npc.id];
+  if (command?.npcDecision?.type === 'reinforce' && command.npcDecision.location === npc.location.id) {
+    delete command.npcDecision;
   }
   saveState(params.gameState, state);
 }

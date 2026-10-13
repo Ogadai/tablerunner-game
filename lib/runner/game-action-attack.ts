@@ -117,17 +117,20 @@ export function monsterAttack(
 }
 
 export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, message?: string) {
-  playerMessageAtLocation(params, target.id, message || '***{player} {playerNoun} dead!***');
-  target.respawnTurns = 3;
+  const npc = params.gameState.npcs.find(npc => npc.id === target.id);
+  if (!npc?.deferDefeat) {
+    playerMessageAtLocation(params, target.id, message || '***{player} {playerNoun} dead!***');
+    target.respawnTurns = 3;
 
-  // auto drop special items if they have them
-  const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));
-  target.equipment = target.equipment.filter(i => !AUTO_DROP_ITEMS.includes(i.type as ItemIds));
+    // auto drop special items if they have them
+    const drops = target.equipment.filter(i => AUTO_DROP_ITEMS.includes(i.type as ItemIds));
+    target.equipment = target.equipment.filter(i => !AUTO_DROP_ITEMS.includes(i.type as ItemIds));
 
-  params.items.push(...drops.map(i => ({
-    ...i,
-    location: target.location.id
-  })));  
+    params.items.push(...drops.map(i => ({
+      ...i,
+      location: target.location.id
+    })));
+  }
 
   // A player or NPC may be the last enemy guarding coins dropped by monsters.
   const collector = params.gameState.players.find(player => player.health > 0

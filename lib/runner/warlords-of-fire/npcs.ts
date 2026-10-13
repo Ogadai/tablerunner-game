@@ -8,11 +8,12 @@ import { PlayerActionsState } from "@/lib/store/types";
 import { commitNpcPlansInRedis, getGameStateFromRedis, getLocationsStateFromRedis, lockGameStateInRedis, lockLocationsStateInRedis, processingLockTTL } from "@/lib/store/redis-access";
 import { BaseParams } from "../base-params";
 import { getPlayerLocation } from "../game-location";
+import { playerMessageAtLocation } from "../game-messages";
 import { getNpcEquipment, getNpcSpells, getNpcStats } from "../shared-processes/npcs";
 import { ProcessRunner } from "../types";
 import { START_LOCATIONS } from "./game-creation";
 import { playerMonsters } from "./monsters";
-import { DEFAULT_TEAM_STATE, getState, saveState } from "./territory-state";
+import { DEFAULT_TEAM_STATE, getState, getTeamOwner, saveState } from "./territory-state";
 import { planNpcTurn } from "./npc-strategy";
 
 const NPC_COUNT = 16;
@@ -120,6 +121,7 @@ export const npcProcesses: ProcessRunner = {
         characterType: npcDef.type,
         masterId: null,
         name,
+        startLocation: location.id,
         location: getPlayerLocation(params, location),
         magic: stats.magic,
         spells: getNpcSpells(npcDef.type),
@@ -131,6 +133,7 @@ export const npcProcesses: ProcessRunner = {
         health: stats.health,
         team: npcId,
         scriptedActions: true,
+        deferDefeat: true,
       });
 
       state.teams[npcId] = {
@@ -140,6 +143,65 @@ export const npcProcesses: ProcessRunner = {
         coins: INITIAL_COINS,
         monsters: [npcMonsters[index].id],
       };
+    }
+    saveState(params.gameState, state);
+  },
+
+  initialiseForTurn: async (params) => {
+    // Also enable deferred defeat for warlords created before this field existed.
+    for (const npc of params.gameState.npcs.filter(npc => npc.scriptedActions)) {
+      npc.deferDefeat = true;
+    }
+  },
+
+  executeForTurn: async (params) => {
+    const state = getState(params.gameState);
+    // Snapshot survivors before reviving anyone, so results do not depend on NPC order.
+    const survivors = [...params.gameState.players, ...params.gameState.npcs]
+      .filter(warlord => warlord.health > 0 && warlord.team !== null);
+    const defeats = params.gameState.npcs.filter(npc => npc.scriptedActions && npc.health <= 0)
+      .map(npc => {
+        const command = state.teams[npc.id];
+        npc.startLocation ??= command?.territory[0] ?? npc.location.id;
+        delete npc.respawnTurns;
+        delete npc.retreatDirection;
+        if (command) delete command.npcDecision;
+        const localSurvivors = survivors.filter(warlord => warlord.location.id === npc.location.id);
+        const teams = new Set(localSurvivors.map(warlord => warlord.team || warlord.id));
+        return { npc, teams, winner: localSurvivors[0], previousTeam: npc.team };
+      });
+
+    // Territory processing will transfer defeated leaders' assets and funds together.
+    for (const { npc, teams, winner, previousTeam } of defeats) {
+      if (teams.size === 1 && winner && previousTeam === npc.id) {
+        const winningTeam = winner.team || winner.id;
+        if (winningTeam !== previousTeam && state.teams[previousTeam]) {
+          state.teams[previousTeam].conqueredBy = winningTeam;
+        }
+      }
+    }
+
+    for (const { npc, teams, winner, previousTeam } of defeats) {
+      // Leave the warlord defeated until only one surviving faction remains.
+      if (teams.size > 1) continue;
+      const winningTeam = winner ? winner.team || winner.id : undefined;
+      const captured = winningTeam && winningTeam !== previousTeam;
+      if (captured) {
+        npc.team = getTeamOwner(state, winningTeam);
+        // Captured warlords continue choosing independent strategic orders.
+        npc.masterId = null;
+        playerMessageAtLocation(params, npc.id,
+          `**{player}** was defeated and joined **${winner.name}** as a sub-commander`);
+      } else {
+        playerMessageAtLocation(params, npc.id, '**{player}** was defeated and returned to their starting location');
+        const start = warlordsOfFire.locations.find(location => location.id === npc.startLocation);
+        if (start) npc.location = getPlayerLocation(params, start);
+      }
+      npc.health = 1;
+      for (const monster of params.monsters.filter(monster => monster.masterId === npc.id)) {
+        // A leader's army changes faction in territory processing; retain that party.
+        if (!captured || (previousTeam !== npc.id && monster.team !== npc.team)) delete monster.masterId;
+      }
     }
     saveState(params.gameState, state);
   },
@@ -161,8 +223,9 @@ export const npcProcesses: ProcessRunner = {
       const orders: Record<string, PlayerActionsState | null> = {};
       for (const npc of gameState.npcs.filter(npc => npc.scriptedActions)) {
         const team = state.teams[npc.id];
+        const faction = npc.team ? state.teams[npc.team] : undefined;
         const pendingHire = locations.npcs.find(candidate => candidate.id === npc.id)?.masterId;
-        if (!team || npc.health <= 0 || npc.masterId || pendingHire || npc.team !== npc.id) {
+        if (!team || !faction || npc.health <= 0 || npc.masterId || pendingHire) {
           orders[npc.id] = null;
           if (team) delete team.npcDecision;
           for (const monster of locations.monsters.filter(monster => monster.masterId === npc.id)) {
@@ -170,7 +233,14 @@ export const npcProcesses: ProcessRunner = {
           }
           continue;
         }
-        orders[npc.id] = planNpcTurn(turnParams, npc, team);
+        // Each commander keeps its own goal while sharing the faction's resources.
+        const command = {
+          ...faction,
+          coins: gameState.players.find(player => player.team === npc.team)?.coins ?? faction.coins,
+          npcDecision: team.npcDecision,
+        };
+        orders[npc.id] = planNpcTurn(turnParams, npc, command);
+        team.npcDecision = command.npcDecision;
       }
       saveState(gameState, state);
       await commitNpcPlansInRedis(params.boardId, params.mapId, gameState, locations, orders);

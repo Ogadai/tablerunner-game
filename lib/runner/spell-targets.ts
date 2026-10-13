@@ -11,8 +11,10 @@ export function isMonsterCaster(params: BaseParams, caster: INamedTarget): boole
 export function getAvailableSpellTargets(params: BaseParams, caster: INamedTarget, spell: SpellDef): (INamedTarget | MonsterState)[] {
   const alive = spell.targetType !== SpellTargetType.corpse;
   const monsterTargets = params.monsters.filter(m => m.location === caster.location.id && (m.health > 0) === alive);
-  const characterTargets = [...params.gameState.players, ...params.gameState.npcs]
-    .filter(t => t.location.id === caster.location.id && (t.health > 0) === alive);
+  const characterTargets = [
+    ...params.gameState.players,
+    ...params.gameState.npcs.filter(npc => alive || !npc.deferDefeat),
+  ].filter(t => t.location.id === caster.location.id && (t.health > 0) === alive);
   if (!alive) return [...monsterTargets, ...characterTargets];
   // Keep the stored targets so damage, healing and effects update the original state.
   return [...monsterTargets, ...characterTargets].filter(target =>
