@@ -11,6 +11,10 @@ export enum VideoNames {
   witchWins = 'witch-wins',
   rangerWins = 'ranger-wins',
   mageWins = 'mage-wins',
+  barbarianWarlordsWin = 'barbarian-warlords-win',
+  witchWarlordsWin = 'witch-warlords-win',
+  rangerWarlordsWin = 'ranger-warlords-win',
+  mageWarlordsWin = 'mage-warlords-win',
 }
 
 export const videoList: { [id: string]: string } = {
@@ -26,4 +30,8 @@ export const videoList: { [id: string]: string } = {
   'witch-wins': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/witch-wins.mp4',
   'ranger-wins': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/ranger-wins.mp4',
   'mage-wins': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/mage-wins.mp4',
+  'barbarian-warlords-win': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/barbarian-warlords-win.mp4',
+  'witch-warlords-win': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/witch-warlords-win.mp4',
+  'ranger-warlords-win': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/ranger-warlords-win.mp4',
+  'mage-warlords-win': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/mage-warlords-win.mp4',
 };
