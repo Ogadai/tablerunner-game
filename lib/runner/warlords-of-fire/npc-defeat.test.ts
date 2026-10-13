@@ -61,10 +61,15 @@ it.each(['player', 'npc', 'army', 'wild monster', 'spell'])('transfers a defeate
   const { params, npc, winner } = scenario();
   const subordinate = createNpc({ id: 'sub', team: npc.team, scriptedActions: true,
     location: { id: 5, description: '', move: [] } });
+  const secondSubordinate = createNpc({ id: 'second-sub', team: npc.team, scriptedActions: true,
+    location: { id: 5, description: '', move: [] } });
   const army = createMonster({ id: 'army', team: npc.team, masterId: npc.id });
   const remote = createMonster({ id: 'remote', team: npc.team, location: 20, health: 0 });
-  params.gameState.npcs.push(subordinate);
-  params.monsters = [army, remote];
+  const subordinateArmy = createMonster({ id: 'sub-army', team: npc.team, masterId: subordinate.id, location: 5 });
+  const garrison = createMonster({ id: 'garrison', team: npc.team, location: 20 });
+  const unrelatedArmy = createMonster({ id: 'unrelated', team: 'other-team', location: 30 });
+  params.gameState.npcs.push(subordinate, secondSubordinate);
+  params.monsters = [army, remote, subordinateArmy, garrison, unrelatedArmy];
   if (attackerKind === 'army' || attackerKind === 'wild monster') {
     const attacker = createMonster({ id: 'attacker', team: attackerKind === 'army' ? winner.team : 'monster', type: 'dragon', health: 60 });
     params.monsters.push(attacker);
@@ -84,9 +89,13 @@ it.each(['player', 'npc', 'army', 'wild monster', 'spell'])('transfers a defeate
   expect(army.team).toBe('loser');
   await finishTurn(params);
   expect(npc).toMatchObject({ health: 1, team: winner.team, masterId: null, location: { id: 1 } });
-  expect(subordinate.team).toBe(winner.team);
+  expect(subordinate).toMatchObject({ team: winner.team, masterId: null, health: 20 });
+  expect(secondSubordinate).toMatchObject({ team: winner.team, masterId: null, health: 20 });
   expect(army).toMatchObject({ team: winner.team, masterId: npc.id });
   expect(remote.team).toBe(winner.team);
+  expect(subordinateArmy).toMatchObject({ team: winner.team, masterId: subordinate.id, location: 5 });
+  expect(garrison.team).toBe(winner.team);
+  expect(unrelatedArmy.team).toBe('other-team');
   const state = getState(params.gameState);
   expect(state.teams.winner.territory).toEqual([6, 4, 5, 1]);
   expect(state.teams.winner.monsters).toEqual(['rat', 'orc']);
@@ -126,9 +135,13 @@ it('reassigns a defeated sub-commander without transferring the former faction a
   npc.team = 'old-leader';
   const leader = createNpc({ id: 'old-leader', team: 'old-leader', scriptedActions: true,
     location: { id: 3, description: '', move: [] } });
-  params.gameState.npcs.push(leader);
+  const otherSubordinate = createNpc({ id: 'other-sub', team: leader.team, scriptedActions: true,
+    location: { id: 3, description: '', move: [] } });
+  params.gameState.npcs.push(leader, otherSubordinate);
   const army = createMonster({ team: 'old-leader', masterId: npc.id });
-  params.monsters = [army];
+  const leaderArmy = createMonster({ id: 'leader-army', team: leader.team, masterId: leader.id, location: 3 });
+  const otherSubordinateArmy = createMonster({ id: 'other-sub-army', team: leader.team, masterId: otherSubordinate.id, location: 3 });
+  params.monsters = [army, leaderArmy, otherSubordinateArmy];
   const state = getState(params.gameState);
   state.teams['old-leader'] = { ...DEFAULT_TEAM_STATE, territory: [2, 3], monsters: ['troll'], coins: 70 };
   state.teams.loser.territory = [];
@@ -137,8 +150,11 @@ it('reassigns a defeated sub-commander without transferring the former faction a
   await finishTurn(params);
   expect(npc).toMatchObject({ health: 1, team: winner.team, masterId: null });
   expect(leader.team).toBe('old-leader');
+  expect(otherSubordinate.team).toBe('old-leader');
   expect(army.team).toBe('old-leader');
   expect(army.masterId).toBeUndefined();
+  expect(leaderArmy).toMatchObject({ team: 'old-leader', masterId: leader.id });
+  expect(otherSubordinateArmy).toMatchObject({ team: 'old-leader', masterId: otherSubordinate.id });
   expect(getState(params.gameState).teams['old-leader']).toMatchObject({ territory: [2, 3], coins: 90 });
   expect(getState(params.gameState).teams.winner.territory).toEqual([6]);
   expect(winner.coins).toBe(210);

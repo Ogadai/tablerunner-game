@@ -6,7 +6,7 @@ import { getEnemies } from "../game-friends-or-enemies";
 import { BaseParams } from "../base-params";
 
 const OWNER = 'territory';
-const INCOME_PER_LOCATION = 10;
+const INCOME_PER_LOCATION = 1;
 
 function getTeam(params: BaseParams, state: TerritoryStateDef, team: string) {
   return state.teams[team] ??= {
@@ -40,12 +40,9 @@ export const territoryProcesses: ProcessRunner = {
       delete state.teams[team].conqueredBy;
       if (team === owner) continue;
       const conquered = state.teams[team];
-      const winner = getTeam(params, state, owner);
       assignTerritory(params, state, owner, conquered.territory);
-      winner.monsters = [...new Set([...winner.monsters, ...conquered.monsters])];
       creditTeam(params, state, owner, conquered.coins);
       conquered.territory = [];
-      conquered.monsters = [];
       conquered.coins = 0;
       delete conquered.npcDecision;
     }
@@ -87,6 +84,9 @@ export const territoryProcesses: ProcessRunner = {
         );
       }
     }
+
+    params.gameState.visited = 
+      [...new Set(Object.keys(state.teams).map(t => state.teams[t].territory).flat())];
 
     saveState(params.gameState, state);
 

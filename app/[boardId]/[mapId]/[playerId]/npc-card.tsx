@@ -37,7 +37,7 @@ export default function NpcCard({
     <div className={`card ${styles.statsCard}`}>
       <EntityBaseStats current={{health: npc.health}} baseStats={npcStats} />
     </div>
-    {npc.masterId === null && <div className={styles.npcButtons}>
+    {npc.masterId === null && !npc.team && <div className={styles.npcButtons}>
       <button type="button" className="btn" disabled={!canHire} onClick={onHire}>Hire</button>
     </div>}
   </>;
