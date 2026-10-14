@@ -117,6 +117,13 @@ export function monsterAttack(
 }
 
 export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, message?: string) {
+  if (params.gameState.players.some(player => player.id === target.id)) {
+    // Leave the player's monsters behind when they respawn.
+    for (const monster of params.monsters.filter(monster => monster.masterId === target.id)) {
+      delete monster.masterId;
+    }
+  }
+
   const npc = params.gameState.npcs.find(npc => npc.id === target.id);
   if (!npc?.deferDefeat) {
     playerMessageAtLocation(params, target.id, message || '***{player} {playerNoun} dead!***');

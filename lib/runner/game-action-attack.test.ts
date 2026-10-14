@@ -311,11 +311,14 @@ describe('actionAttack', () => {
     const target = createPlayer('p2', 1);
     target.team = 'enemy';
     const npc: NPCState = { ...target, masterId: null, hireCost: 0, iconXY: { x: 0, y: 0 } };
-    const params = createParams([], kind === 'player' ? [player, target] : [player]);
+    const follower = { ...createMonster('follower', 'rat'), team: target.team, masterId: target.id };
+    const params = createParams([follower], kind === 'player' ? [player, target] : [player]);
     params.gameState.npcs = kind === 'npc' ? [npc] : [];
     hit();
     actionAttack(params, player, attack('p2'));
     expect(kind === 'npc' ? npc : target).toMatchObject({ health: 0, respawnTurns: 3 });
+    expect(follower.masterId).toBe(kind === 'player' ? undefined : target.id);
+    expect(follower).toMatchObject({ team: target.team, location: target.location.id, health: 1 });
   });
 
   it('ignores unknown targets', () => {
@@ -362,6 +365,23 @@ describe('monsterAttack and player death', () => {
     monsterAttack(params, monster, player);
     expect(player.health).toBe(0);
     expect(player.respawnTurns).toBe(3);
+  });
+
+  it('leaves a defeated player\'s monsters at their locations and preserves other parties', () => {
+    const player = createPlayer('p1', 1);
+    const monster = createMonster('attacker', 'rat');
+    const follower = { ...createMonster('follower', 'rat'), team: player.team, masterId: player.id };
+    const deadFollower = { ...createMonster('dead', 'rat', 0), team: player.team, masterId: player.id, location: 2 };
+    const otherFollower = { ...createMonster('other', 'rat'), team: player.team, masterId: 'p2' };
+    const params = createParams([monster, follower, deadFollower, otherFollower], [player]);
+    hit(0.9);
+
+    monsterAttack(params, monster, player);
+
+    expect(player).toMatchObject({ health: 0, respawnTurns: 3 });
+    expect(follower).toEqual({ id: 'follower', type: 'rat', team: player.team, location: 1, health: 1 });
+    expect(deadFollower).toEqual({ id: 'dead', type: 'rat', team: player.team, location: 2, health: 0 });
+    expect(otherFollower.masterId).toBe('p2');
   });
 
   it.each([[0.09, 3], [0.1, undefined]] as const)('applies zombie infection at roll %s', (roll, infected) => {
