@@ -4,7 +4,7 @@ import { getMonsterStrength, monsters, mostersExcludeFromAutoPopulate } from "@/
 import { NPC_DATA, NPC_NAMES } from "@/lib/games/npc-details";
 import { Location } from "@/lib/games/types";
 import { getNamedTargetStats } from "@/lib/store/playerStats";
-import { PlayerActionsState } from "@/lib/store/types";
+import { PlayerActionRecruit, PlayerActionsState, PlayerActionType } from "@/lib/store/types";
 import { commitNpcPlansInRedis, getGameStateFromRedis, getLocationsStateFromRedis, lockGameStateInRedis, lockLocationsStateInRedis, processingLockTTL } from "@/lib/store/redis-access";
 import { BaseParams } from "../base-params";
 import { getPlayerLocation } from "../game-location";
@@ -15,6 +15,7 @@ import { START_LOCATIONS } from "./game-creation";
 import { playerMonsters } from "./monsters";
 import { DEFAULT_TEAM_STATE, getState, getTeamOwner, saveState } from "./territory-state";
 import { planNpcTurn } from "./npc-strategy";
+import { getMonsterCost } from "./recruit-helper";
 
 const NPC_COUNT = 16;
 const REGIONS_PER_AXIS = 4;
@@ -227,6 +228,8 @@ export const npcProcesses: ProcessRunner = {
       const turnParams: BaseParams = { ...params, ...locations, gameState };
       const state = getState(gameState);
       const orders: Record<string, PlayerActionsState | null> = {};
+      const reservedCoins = new Map<string, number>();
+      const reservedLocations = new Map<string, Set<number>>();
       for (const npc of gameState.npcs.filter(npc => npc.scriptedActions)) {
         const team = state.teams[npc.id];
         const faction = npc.team ? state.teams[npc.team] : undefined;
@@ -240,12 +243,23 @@ export const npcProcesses: ProcessRunner = {
           continue;
         }
         // Each commander keeps its own goal while sharing the faction's resources.
+        const destinations = reservedLocations.get(npc.team!) ?? new Set<number>();
+        reservedLocations.set(npc.team!, destinations);
         const command = {
           ...faction,
+          coins: Math.max(0, faction.coins - (reservedCoins.get(npc.team!) ?? 0)),
           npcDecision: team.npcDecision,
         };
-        orders[npc.id] = planNpcTurn(turnParams, npc, command);
+        const order = planNpcTurn(turnParams, npc, command, destinations);
+        orders[npc.id] = order;
         team.npcDecision = command.npcDecision;
+        if (command.npcDecision && command.npcDecision.type !== 'retreat') {
+          destinations.add(command.npcDecision.location);
+        }
+        const recruitmentCost = order?.actions
+          .filter((action): action is PlayerActionRecruit => action.type === PlayerActionType.Recruit)
+          .reduce((total, action) => total + action.monsters.reduce((cost, type) => cost + getMonsterCost(type), 0), 0) ?? 0;
+        reservedCoins.set(npc.team!, (reservedCoins.get(npc.team!) ?? 0) + recruitmentCost);
       }
       saveState(gameState, state);
       await commitNpcPlansInRedis(params.boardId, params.mapId, gameState, locations, orders);

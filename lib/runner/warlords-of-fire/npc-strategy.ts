@@ -12,6 +12,8 @@ import { NpcDecision, TeamStateDef } from './territory-state';
 
 export const NPC_RUN_STEPS = 5;
 const OVERWHELMING_ODDS = 1.8;
+const EXPANSION_ADVANTAGE = 1.4;
+const DEFENCE_ADVANTAGE = 1.2;
 const MAX_RECRUITS = 3;
 const locationsById = new Map(warlordsOfFire.locations.map(location => [location.id, location]));
 
@@ -20,6 +22,7 @@ interface NpcOption {
   actions?: PlayerActionsState;
   cost: number;
   benefit: number;
+  priority?: number;
 }
 
 function combatPower(target: INamedTarget): number {
@@ -35,11 +38,13 @@ interface NpcPlanningContext {
   enemyPowerAt: (location: number) => number;
   monsterPower: (monster: MonsterState) => number;
   blocked: (location: number, direction: string) => boolean;
+  reservedLocations: Set<number>;
   routes?: Map<number, number[]>;
 }
 
 /** One commander's planning snapshot; party membership is still read from live monsters. */
-function createPlanningContext(params: BaseParams, npc: NPCState, team: TeamStateDef): NpcPlanningContext {
+function createPlanningContext(params: BaseParams, npc: NPCState, team: TeamStateDef,
+  reservedLocations = new Set<number>()): NpcPlanningContext {
   const locations = new Map<number, RelationshipParams>();
   const atLocation = (location: number): RelationshipParams => {
     let local = locations.get(location);
@@ -76,6 +81,7 @@ function createPlanningContext(params: BaseParams, npc: NPCState, team: TeamStat
   };
   return {
     territory: new Set(team.territory),
+    reservedLocations,
     monstersAt: location => locations.get(location)?.monsters ?? [],
     enemiesAt,
     enemyPowerAt: location => {
@@ -138,15 +144,58 @@ function releaseParty(params: BaseParams, npc: NPCState): void {
   }
 }
 
-function gatherParty(npc: NPCState, enemyPower: number, context: NpcPlanningContext): void {
-  const localMonsters = context.monstersAt(npc.location.id);
-  let force = combatPower(npc) + localMonsters
-    .filter(monster => monster.masterId === npc.id)
+function nearbyThreat(location: number, context: NpcPlanningContext, destination?: number): number {
+  return Math.max(0, ...(locationsById.get(location)?.move ?? []).map(move => {
+    if (move.id === destination) return 0;
+    const incoming = locationsById.get(move.id)?.move.find(incoming => incoming.id === location);
+    return incoming && !context.blocked(move.id, incoming.direction) ? context.enemyPowerAt(move.id) : 0;
+  }));
+}
+
+function garrisonPower(npc: NPCState, location: number, context: NpcPlanningContext): number {
+  return context.monstersAt(location).filter(monster => monster.team === npc.team && !monster.masterId)
     .reduce((total, monster) => total + context.monsterPower(monster), 0);
-  const available = localMonsters.filter(monster => monster.team === npc.team && !monster.masterId)
-    .sort((a, b) => context.monsterPower(b) - context.monsterPower(a));
-  for (const monster of available) {
-    if (force >= enemyPower * 1.4) break;
+}
+
+function partyPower(npc: NPCState, context: NpcPlanningContext): number {
+  return context.monstersAt(npc.location.id).filter(monster => monster.team === npc.team && monster.masterId === npc.id)
+    .reduce((total, monster) => total + context.monsterPower(monster), 0);
+}
+
+/** Keep a garrison for enemies other than the intended invasion target. */
+function availableParty(npc: NPCState, location: number, context: NpcPlanningContext, destination?: number): MonsterState[] {
+  let garrison = garrisonPower(npc, location, context);
+  const reserve = nearbyThreat(location, context, destination) * DEFENCE_ADVANTAGE;
+  return context.monstersAt(location).filter(monster => monster.team === npc.team && !monster.masterId)
+    .sort((a, b) => context.monsterPower(b) - context.monsterPower(a))
+    .filter(monster => {
+      const power = context.monsterPower(monster);
+      if (garrison - power < reserve) return false;
+      garrison -= power;
+      return true;
+    });
+}
+
+function expansionForce(npc: NPCState, from: number, destination: number, context: NpcPlanningContext): number {
+  const sources = from === npc.location.id ? [from] : [npc.location.id, from];
+  return combatPower(npc) + partyPower(npc, context) + sources.reduce((total, location) => total
+    + availableParty(npc, location, context, destination).reduce((power, monster) => power + context.monsterPower(monster), 0), 0);
+}
+
+function canCounterAttack(npc: NPCState, context: NpcPlanningContext): boolean {
+  return (locationsById.get(npc.location.id)?.move ?? []).some(move => {
+    const threat = context.enemyPowerAt(move.id);
+    return threat > 0 && !context.blocked(npc.location.id, move.direction) && !context.reservedLocations.has(move.id)
+      && expansionForce(npc, npc.location.id, move.id, context) >= threat * EXPANSION_ADVANTAGE;
+  });
+}
+
+function gatherParty(npc: NPCState, enemyPower: number, context: NpcPlanningContext, destination?: number,
+  minimumPartyPower = combatPower(npc) * 0.5): void {
+  const npcPower = combatPower(npc);
+  let force = npcPower + partyPower(npc, context);
+  for (const monster of availableParty(npc, npc.location.id, context, destination)) {
+    if (force >= Math.max(npcPower + minimumPartyPower, enemyPower * EXPANSION_ADVANTAGE)) break;
     monster.masterId = npc.id;
     force += context.monsterPower(monster);
   }
@@ -157,9 +206,42 @@ function eligibleRecruits(params: BaseParams, npc: NPCState): string[] {
     .filter(type => monsters[type] && !playerMonsters.includes(type) && !mostersExcludeFromAutoPopulate.includes(type));
 }
 
+function recruitPower(type: string): number {
+  return combatPower(getMonsterCombatant({
+    id: 'recruit', type, health: monsters[type].baseStats.health, location: 0, team: null,
+  }));
+}
+
+function getRecruitTypes(params: BaseParams, npc: NPCState, team: TeamStateDef) {
+  return eligibleRecruits(params, npc).map(type => ({
+    type, cost: getMonsterCost(type), power: recruitPower(type),
+  })).filter(type => type.cost <= team.coins);
+}
+
+function recruitOrder(recruits: string[]): PlayerActionsState {
+  const action: PlayerActionRecruit = {
+    id: 1, type: PlayerActionType.Recruit, monsters: recruits, description: `Recruit ${recruits.length} monsters`,
+  };
+  return { actions: [action] };
+}
+
+function affordableRecruits(params: BaseParams, npc: NPCState, team: TeamStateDef, recruits: string[]): string[] {
+  const eligible = eligibleRecruits(params, npc);
+  let coins = team.coins;
+  return recruits.filter(type => {
+    if (!eligible.includes(type) || getMonsterCost(type) > coins) return false;
+    coins -= getMonsterCost(type);
+    return true;
+  });
+}
+
 function continueDecision(params: BaseParams, npc: NPCState, team: TeamStateDef, context: NpcPlanningContext): PlayerActionsState | undefined {
   const decision = team.npcDecision;
   if (!decision) return;
+  if (decision.type !== 'retreat' && context.reservedLocations.has(decision.location)) {
+    delete team.npcDecision;
+    return;
+  }
   const routes = getNpcTerritoryRoutes(params, npc, team, context);
   if (decision.type === 'retreat') {
     if (npc.location.id === decision.location) {
@@ -169,42 +251,65 @@ function continueDecision(params: BaseParams, npc: NPCState, team: TeamStateDef,
         .find(move => move.id === decision.location && !context.blocked(npc.location.id, move.direction));
       if (move) return moveOrder(move.direction);
     }
-  } else if (decision.type === 'expand') {
+  } else if (decision.type === 'expand' || decision.type === 'prepare') {
     if (npc.location.id !== decision.location
         && (!context.territory.has(decision.location) || context.enemiesAt(decision.location).length > 0)) {
       const route = routes.get(decision.from);
       const move = locationsById.get(decision.from)?.move
         .find(move => move.id === decision.location && !context.blocked(decision.from, move.direction));
       if (route && move) {
-        if (route.length > 0) return runOrder(route);
         const threat = context.enemyPowerAt(decision.location);
-        const force = combatPower(npc) + getFriends(params, npc).filter(friend => friend.health > 0)
-          .reduce((total, friend) => total + combatPower(friend), 0);
-        if (threat >= force * OVERWHELMING_ODDS) {
+        const force = expansionForce(npc, decision.from, decision.location, context);
+        const firstRecruit = decision.type === 'prepare' ? decision.recruits[0] : undefined;
+        let deficit = Math.max(threat * EXPANSION_ADVANTAGE, combatPower(npc)
+          + (firstRecruit && monsters[firstRecruit] ? recruitPower(firstRecruit) : 0)) - force;
+        if (decision.type === 'prepare' && deficit <= 0) {
+          team.npcDecision = { type: 'expand', from: decision.from, location: decision.location };
+          return continueDecision(params, npc, team, context);
+        }
+        const recruits = decision.type === 'prepare' ? affordableRecruits(params, npc, team, decision.recruits).filter(type => {
+          if (deficit <= 0) return false;
+          deficit -= recruitPower(type);
+          return true;
+        }) : [];
+        if ((decision.type === 'expand' && force < threat * EXPANSION_ADVANTAGE)
+            || (decision.type === 'prepare' && (!context.territory.has(decision.from) || recruits.length === 0))) {
           delete team.npcDecision;
           return;
         }
-        gatherParty(npc, threat, context);
+        gatherParty(npc, threat, context, decision.location);
+        if (route.length > 0) return runOrder(route);
+        if (decision.type === 'prepare') return recruitOrder(recruits);
         return moveOrder(move.direction);
       }
     }
   } else if (context.territory.has(decision.location)) {
+    if (nearbyThreat(decision.location, context) * DEFENCE_ADVANTAGE <= garrisonPower(npc, decision.location, context)) {
+      delete team.npcDecision;
+      return;
+    }
     const route = routes.get(decision.location);
-    if (route?.length) return runOrder(route);
+    if (route?.length) {
+      const deficit = nearbyThreat(decision.location, context) * DEFENCE_ADVANTAGE - garrisonPower(npc, decision.location, context);
+      gatherParty(npc, 0, context, undefined, Math.max(0, deficit));
+      return runOrder(route);
+    }
     if (route) {
       releaseParty(params, npc);
-      const eligible = eligibleRecruits(params, npc);
-      let coins = team.coins;
-      const recruits = decision.recruits.filter(type => {
-        if (!eligible.includes(type) || getMonsterCost(type) > coins) return false;
-        coins -= getMonsterCost(type);
-        return true;
-      });
-      if (recruits.length > 0) {
-        const action: PlayerActionRecruit = {
-          id: 1, type: PlayerActionType.Recruit, monsters: recruits, description: `Recruit ${recruits.length} monsters`,
-        };
-        return { actions: [action] };
+      const deficit = nearbyThreat(decision.location, context) * DEFENCE_ADVANTAGE - garrisonPower(npc, decision.location, context);
+      if (decision.type === 'defend' && deficit > 0 && combatPower(npc) >= deficit
+          && !canCounterAttack(npc, context)
+          && !eligibleRecruits(params, npc).some(type => getMonsterCost(type) <= team.coins)) {
+        return getNpcActions(params, npc);
+      }
+      if (decision.type === 'reinforce') {
+        let remainingDeficit = deficit;
+        const recruits = affordableRecruits(params, npc, team, decision.recruits).filter(type => {
+          if (remainingDeficit <= 0) return false;
+          remainingDeficit -= recruitPower(type);
+          return true;
+        });
+        if (recruits.length > 0) return recruitOrder(recruits);
       }
     }
   }
@@ -213,28 +318,31 @@ function continueDecision(params: BaseParams, npc: NPCState, team: TeamStateDef,
 }
 
 function reinforcementOptions(params: BaseParams, npc: NPCState, team: TeamStateDef, routes: Map<number, number[]>, context: NpcPlanningContext): NpcOption[] {
-  const types = eligibleRecruits(params, npc).map(type => ({
-    type, cost: getMonsterCost(type),
-    power: context.monsterPower({
-      id: 'recruit', type, health: monsters[type].baseStats.health, location: npc.location.id, team: npc.team,
-    }),
-  })).filter(type => type.cost <= team.coins);
+  const types = getRecruitTypes(params, npc, team);
   const options: NpcOption[] = [];
   for (const [location, route] of routes) {
-    if (!context.territory.has(location)) continue;
-    const garrison = context.monstersAt(location).filter(monster => monster.team === npc.team && !monster.masterId)
+    if (!context.territory.has(location) || context.reservedLocations.has(location)) continue;
+    const threat = nearbyThreat(location, context);
+    const deficit = threat * DEFENCE_ADVANTAGE - garrisonPower(npc, location, context);
+    if (deficit <= 0) continue;
+    const mobilePower = partyPower(npc, context) + availableParty(npc, npc.location.id, context)
       .reduce((total, monster) => total + context.monsterPower(monster), 0);
-    const nearbyThreat = Math.max(0, ...(
-      locationsById.get(location)?.move ?? []
-    ).map(move => context.enemyPowerAt(move.id)));
+    const defencePower = combatPower(npc) + mobilePower;
+    if (defencePower >= deficit && (route.length > 0 || partyPower(npc, context) > 0
+        || (types.length === 0 && !canCounterAttack(npc, context)))) {
+      options.push({
+        decision: { type: 'defend', location },
+        cost: 1 + Math.ceil(route.length / NPC_RUN_STEPS),
+        benefit: 24, priority: 1,
+      });
+    }
     for (const { type, cost, power: unitPower } of types) {
-      const deficit = Math.max(unitPower, nearbyThreat * 0.75) - garrison;
-      if (deficit <= 0) continue;
       const count = Math.min(MAX_RECRUITS, Math.ceil(deficit / Math.max(1, unitPower)), Math.floor(team.coins / cost));
       options.push({
         decision: { type: 'reinforce', location, recruits: Array.from({ length: count }, () => type) },
         cost: 1 + Math.ceil(route.length / NPC_RUN_STEPS) + count * cost / Math.max(20, team.coins),
-        benefit: 12 * Math.min(deficit, count * unitPower) / Math.max(1, unitPower) + nearbyThreat / Math.max(1, unitPower),
+        benefit: 12 * Math.min(deficit, count * unitPower) / Math.max(1, unitPower) + threat / Math.max(1, unitPower),
+        priority: 1,
       });
     }
   }
@@ -248,22 +356,36 @@ export function getNpcOptions(params: BaseParams, npc: NPCState, team: TeamState
   const options: NpcOption[] = [];
   const expansionBias = 1 + 3 * Math.exp(-params.gameState.turn / 20);
   const npcPower = combatPower(npc);
+  const recruitTypes = getRecruitTypes(params, npc, team);
   for (const [from, route] of routes) {
-    const localForce = npcPower + context.monstersAt(from)
-      .filter(monster => monster.team === npc.team && (!monster.masterId || monster.masterId === npc.id))
-      .reduce((total, monster) => total + context.monsterPower(monster), 0);
     for (const move of locationsById.get(from)?.move ?? []) {
       const threat = context.enemyPowerAt(move.id);
       const owned = context.territory.has(move.id);
-      if ((owned && threat === 0) || context.blocked(from, move.direction)) continue;
+      if ((owned && threat === 0) || context.blocked(from, move.direction) || context.reservedLocations.has(move.id)) continue;
+      const localForce = expansionForce(npc, from, move.id, context);
       const odds = threat / Math.max(1, localForce);
-      // Avoid knowingly hopeless invasions; unexpected reinforcements can still force a retreat.
-      if (odds >= OVERWHELMING_ODDS) continue;
-      options.push({
-        decision: { type: 'expand', from, location: move.id },
-        cost: 1 + Math.ceil(route.length / NPC_RUN_STEPS) + odds * 2,
-        benefit: (owned ? 15 : 10 * expansionBias) / (1 + odds * odds),
-      });
+      if (localForce >= threat * EXPANSION_ADVANTAGE) {
+        options.push({
+          decision: { type: 'expand', from, location: move.id },
+          cost: 1 + Math.ceil(route.length / NPC_RUN_STEPS) + odds * 2,
+          benefit: (owned ? 30 : 10 * expansionBias) / (1 + odds * odds),
+          priority: owned || threat > 0 ? 1 : 0,
+        });
+      }
+      if (!context.territory.has(from)) continue;
+      for (const { type, cost, power } of recruitTypes) {
+        const deficit = Math.max(npcPower + power, threat * EXPANSION_ADVANTAGE) - localForce;
+        if (deficit <= 0) continue;
+        const count = Math.min(MAX_RECRUITS, Math.ceil(deficit / Math.max(1, power)), Math.floor(team.coins / cost));
+        const preparedOdds = threat / Math.max(1, localForce + count * power);
+        if (preparedOdds >= OVERWHELMING_ODDS) continue;
+        options.push({
+          decision: { type: 'prepare', from, location: move.id, recruits: Array.from({ length: count }, () => type) },
+          cost: 2 + Math.ceil(route.length / NPC_RUN_STEPS) + count * cost / Math.max(20, team.coins) + preparedOdds * 2,
+          benefit: (owned ? 30 : 10 * expansionBias) / (1 + preparedOdds * preparedOdds),
+          priority: owned || threat > 0 ? 1 : 0,
+        });
+      }
     }
   }
   options.push(...reinforcementOptions(params, npc, team, routes, context));
@@ -273,13 +395,15 @@ export function getNpcOptions(params: BaseParams, npc: NPCState, team: TeamState
     actions: recovery,
     cost: 1 + getPlayerActionsCosts(npc, recovery) / 20,
     benefit: 1 + 20 * (1 - npc.health / Math.max(1, stats.health))
-      + 5 * (1 - npc.magic / Math.max(1, stats.magic)) + (recovery.actions.length > 0 ? 3 : 0),
+      + (stats.magic > 0 ? 5 * (1 - npc.magic / stats.magic) : 0) + (recovery.actions.length > 0 ? 3 : 0),
+    priority: npc.health < stats.health * 0.35 ? 2 : 0,
   });
   return options;
 }
 
-export function planNpcTurn(params: BaseParams, npc: NPCState, team: TeamStateDef): PlayerActionsState | null {
-  const context = createPlanningContext(params, npc, team);
+export function planNpcTurn(params: BaseParams, npc: NPCState, team: TeamStateDef,
+  reservedLocations = new Set<number>()): PlayerActionsState | null {
+  const context = createPlanningContext(params, npc, team, reservedLocations);
   const enemies = context.enemiesAt(npc.location.id);
   if (enemies.length > 0) {
     const friendlyPower = combatPower(npc) + getFriends(params, npc).filter(friend => friend.health > 0)
@@ -299,9 +423,13 @@ export function planNpcTurn(params: BaseParams, npc: NPCState, team: TeamStateDe
     return null;
   }
 
+  // Captured and badly wounded commanders recover before resuming strategic travel.
+  if (npc.health < getCombatStats(npc).health * 0.35) return getNpcActions(params, npc);
   const continuing = continueDecision(params, npc, team, context);
   if (continuing) return continuing;
-  const options = getNpcOptions(params, npc, team, context);
+  const candidates = getNpcOptions(params, npc, team, context);
+  const priority = Math.max(...candidates.map(option => option.priority ?? 0));
+  const options = candidates.filter(option => (option.priority ?? 0) === priority);
   const weight = (option: NpcOption) => Math.max(0.01, option.benefit / option.cost);
   let choice = Math.random() * options.reduce((total, option) => total + weight(option), 0);
   let selected = options[options.length - 1];

@@ -42,6 +42,9 @@ export function actionNpcRecruit(params: BaseParams, npc: NPCState, action: Play
   const team = npc.team ? state.teams[npc.team] : undefined;
   if (!team || npc.health <= 0 || npc.masterId || !team.territory.includes(npc.location.id)
       || getEnemies(params, npc).some(enemy => enemy.health > 0)) return;
+  const command = state.teams[npc.id];
+  const preparation = command?.npcDecision?.type === 'prepare' && command.npcDecision.from === npc.location.id
+    ? command.npcDecision : undefined;
   const eligible = getWarlordAvailableMonsters(params.gameState, npc.team!);
   for (const type of action.monsters) {
     if (!eligible.includes(type) || !monsters[type] || playerMonsters.includes(type)
@@ -51,12 +54,14 @@ export function actionNpcRecruit(params: BaseParams, npc: NPCState, action: Play
     params.monsters.push(generateMonster(params.gameState, {
       type, location: npc.location.id, team: npc.team, health: monsters[type].baseStats.health,
       scriptedActions: true,
+      ...(preparation ? { masterId: npc.id } : {}),
     }));
     team.coins -= cost;
   }
-  // Recruitment is a single batch; future defence needs are evaluated afresh.
-  const command = state.teams[npc.id];
-  if (command?.npcDecision?.type === 'reinforce' && command.npcDecision.location === npc.location.id) {
+  // Invasion recruits travel with the commander; defence recruits remain as a garrison.
+  if (preparation) {
+    command.npcDecision = { type: 'expand', from: preparation.from, location: preparation.location };
+  } else if (command?.npcDecision?.type === 'reinforce' && command.npcDecision.location === npc.location.id) {
     delete command.npcDecision;
   }
   saveState(params.gameState, state);

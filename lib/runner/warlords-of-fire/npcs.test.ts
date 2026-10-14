@@ -5,6 +5,8 @@ import { createLocations } from '@/lib/store/test-support/fixtures';
 import { npcProcesses } from './npcs';
 import { planNpcTurn } from './npc-strategy';
 import { DEFAULT_TEAM_STATE, getState, saveState } from './territory-state';
+import { PlayerActionType } from '@/lib/store/types';
+import { getMonsterCost } from './recruit-helper';
 
 jest.mock('@/lib/store/redis-access', () => ({
   commitNpcPlansInRedis: jest.fn(), getGameStateFromRedis: jest.fn(), getLocationsStateFromRedis: jest.fn(),
@@ -104,6 +106,40 @@ it('plans sub-commander recruitment with team coins and excludes the player\'s p
   jest.mocked(store.getGameStateFromRedis).mockResolvedValue(game);
   jest.mocked(store.getLocationsStateFromRedis).mockResolvedValue(createLocations({ npcs: [npc] }));
   await npcProcesses.executeBetweenTurns!(createParams());
-  expect(planNpcTurn).toHaveBeenCalledWith(expect.anything(), npc, expect.objectContaining({ coins: 25 }));
+  expect(planNpcTurn).toHaveBeenCalledWith(expect.anything(), npc, expect.objectContaining({ coins: 25 }), expect.any(Set));
   expect(player.coins).toBe(200);
+});
+
+it('reserves recruitment funds and destinations for other sub-commanders without spending coins during planning', async () => {
+  const player = createPlayer({ id: 'leader', team: 'leader', coins: 200 });
+  const first = createNpc({ id: 'first', team: player.team, scriptedActions: true });
+  const second = createNpc({ id: 'second', team: player.team, scriptedActions: true });
+  const game = createGame({ gameId: 'warlordsfire', players: [player], npcs: [first, second] });
+  const coins = getMonsterCost('orc');
+  saveState(game, { teams: {
+    leader: { ...DEFAULT_TEAM_STATE, territory: [1, 2], coins },
+    first: { ...DEFAULT_TEAM_STATE, monsters: ['orc'] },
+    second: { ...DEFAULT_TEAM_STATE, monsters: ['orc'] },
+  } });
+  jest.mocked(store.getGameStateFromRedis).mockResolvedValue(game);
+  jest.mocked(store.getLocationsStateFromRedis).mockResolvedValue(createLocations({ npcs: [first, second] }));
+  jest.mocked(planNpcTurn).mockImplementation((_params, npc, command, destinations) => {
+    if (npc.id === first.id) {
+      expect(command.coins).toBe(coins);
+      command.npcDecision = { type: 'prepare', from: 1, location: 3, recruits: ['orc'] };
+      return { actions: [{ id: 1, type: PlayerActionType.Recruit, monsters: ['orc'], description: '' }] };
+    }
+    expect(command.coins).toBe(0);
+    expect(destinations).toEqual(new Set([3]));
+    command.npcDecision = { type: 'expand', from: 1, location: 4 };
+    return { actions: [] };
+  });
+  await npcProcesses.executeBetweenTurns!(createParams());
+  expect(planNpcTurn).toHaveBeenCalledTimes(2);
+  expect(getState(game).teams.leader.coins).toBe(coins);
+  expect(player.coins).toBe(200);
+  expect(store.commitNpcPlansInRedis).toHaveBeenCalledWith('board', 'map', game, expect.anything(), {
+    first: { actions: [{ id: 1, type: PlayerActionType.Recruit, monsters: ['orc'], description: '' }] },
+    second: { actions: [] },
+  });
 });

@@ -2,6 +2,8 @@ import { GameState } from "@/lib/store/types";
 
 export type NpcDecision =
   | { type: 'reinforce'; location: number; recruits: string[] }
+  | { type: 'prepare'; from: number; location: number; recruits: string[] }
+  | { type: 'defend'; location: number }
   | { type: 'expand'; from: number; location: number }
   | { type: 'retreat'; location: number };
 
