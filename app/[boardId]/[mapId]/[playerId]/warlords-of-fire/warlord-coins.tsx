@@ -16,7 +16,7 @@ export default function WarlordCoins({
   isSelf = true,
   inventory,
   processing = false,
-  reservedCoins = 0,
+  showHint = false,
 }: {
   boardId: string;
   mapId: string;
@@ -25,7 +25,7 @@ export default function WarlordCoins({
   isSelf?: boolean;
   inventory?: PlayerInventoryState;
   processing?: boolean;
-  reservedCoins?: number;
+  showHint?: boolean;
 }) {
   const [liveInventory, setLiveInventory] = useState<PlayerInventoryState | null>(null);
   const [draftTeamCoins, setDraftTeamCoins] = useState<number | null>(null);
@@ -106,7 +106,7 @@ export default function WarlordCoins({
         onBlur={saveAllocation}
         onPointerCancel={() => setDraftTeamCoins(null)}
       />
-      <p className={styles.hint}>Team coins fund sub-commanders.</p>
+      {showHint && <p className={styles.hint}>Team coins fund sub-commanders.</p>}
       {saving && <p className={styles.statusMessage} role="status">Saving...</p>}
       {error && <p className={styles.statusMessage} role="alert">{error}</p>}
     </>}

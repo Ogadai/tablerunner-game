@@ -85,7 +85,7 @@ export default function CharacterStats({
   };
 
   return <>
-    <div className={styles.characterHeader}>
+    <div className={`${styles.characterHeader} ${gameState?.gameId ? styles.warlordsfireHeader : ''}`}>
       {gameState?.gameId === 'warlordsfire'
         ? <WarlordCoins key={`${player.id}:${gameState.turn}`} boardId={boardId} mapId={mapId} gameState={gameState} player={player}
             isSelf={isSelf} inventory={inventory} processing={processing} />

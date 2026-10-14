@@ -8,7 +8,7 @@
 .balances {
   display: flex;
   justify-content: space-between;
-  gap: 15px;
+  gap: 10px;
 }
 
 .balance {
@@ -20,7 +20,7 @@
 
 .slider {
   width: 100%;
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   accent-color: var(--gold-bright);
 }
 

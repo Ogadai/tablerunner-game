@@ -10,13 +10,27 @@
   margin: auto 15px 0 0;
 }
 
+.warlordsfireHeader {
+  flex-direction: column;
+  margin-bottom: 5px;
+
+  .availablePointsPrompt {
+    margin: -6px auto -21px auto;
+    padding: 0 5px;
+    border-radius: 6px;
+    border: 1px solid var(--color-success);
+    z-index: 10;
+    background-color: var(--bg-card);
+  }
+}
+
 .availablePoints {
   font-weight: bold;
   color: var(--color-success);
 }
 
 .statsCard {
-  margin: 10px 0 0 0;
+  margin: 5px 0 0 0;
 }
 
 td.statActions {

@@ -74,7 +74,9 @@ export default function WarlordParty({
   return (
     <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
-        <button type="button" disabled={processing || player.health <= 0}>Party</button>
+        {availableMonsters.length > 0 &&
+          <button type="button" disabled={processing || player.health <= 0}>Party</button>
+        }
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
@@ -84,7 +86,7 @@ export default function WarlordParty({
             {[true, false].map(inParty => (
               <section key={String(inParty)} className={styles.partyRow} aria-label={inParty ? 'Party' : 'Garrison'}>
                 <div className={styles.rowLabel}>
-                  <h4>{inParty ? 'Party' : 'Garrison'}</h4>
+                  <h4>{inParty ? 'In party' : `At location ${player.location.id}`}</h4>
                 </div>
                 <div className={styles.monsters}>
                   <EntityList entities={getEntities(inParty)} onClickEntity={disabled ? undefined : editParty} />

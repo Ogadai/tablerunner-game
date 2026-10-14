@@ -230,6 +230,7 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
               onChange={event => brightnessChangeAction(Number(event.target.value))}
             />
             </>}
+          <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">close</Dialog.Close>
           </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

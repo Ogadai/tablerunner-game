@@ -155,7 +155,7 @@ export default function WarlordRecruitment({
               <div className={styles.recruitContent}>
                 {player && <div className={styles.recruitCoins}>
                   <WarlordCoins key={`${player.id}:${gameState.turn}`} boardId={boardId} mapId={mapId} gameState={gameState}
-                    player={player} processing={processing} reservedCoins={queueCost} />
+                    player={player} processing={processing} showHint={true} />
                 </div>}
                 <div className={styles.coinBudget}>
                   <span className={styles.coinBudgetQueue}>Queued: {queue?.length || 0}</span>

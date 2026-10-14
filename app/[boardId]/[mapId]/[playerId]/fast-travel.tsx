@@ -92,6 +92,7 @@ export default function FastTravel({
             availableLocations={availableLocations}
             onCircleClick={handleTravel}
           />}
+          <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">close</Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
