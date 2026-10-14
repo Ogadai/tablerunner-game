@@ -1,0 +1,42 @@
+.partyContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.partyRow {
+  display: flex;
+  align-items: center;
+  min-height: 112px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-stone);
+  border-radius: 4px;
+  background: var(--bg-main);
+}
+
+.rowLabel {
+  flex: 0 0 6.5rem;
+
+  h4 {
+    margin: 0;
+  }
+
+  span {
+    font-size: 0.8rem;
+  }
+}
+
+.monsters {
+  min-width: 0;
+  flex: 1;
+  margin: 4px 0 0 0.5rem;
+
+  ul {
+    margin: 0;
+    overflow-x: auto;
+  }
+
+  li {
+    flex-shrink: 0;
+  }
+}

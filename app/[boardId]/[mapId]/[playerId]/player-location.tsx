@@ -25,6 +25,7 @@ import PlayerVideo from './player-video';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 import { getCombatStats, getPlayerActionsCosts, getPlayerActionsMagic } from '@/lib/store/playerStats';
 import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
+import WarlordParty from './warlords-of-fire/warlord-party';
 
 export default function PlayerLocation(
   {
@@ -295,6 +296,20 @@ export default function PlayerLocation(
   const locationDescription = locationOverride
     ? locationOverride.description : playerState.location?.description;
 
+  const onPartyChanged = (monsterId: string, inParty: boolean) => {
+    setLocationUpdate(current => {
+      const state = current?.snapshot === snapshot ? current.state : snapshot.location;
+      return {
+        snapshot,
+        state: {
+          ...state,
+          monsters: state.monsters.map(monster => monster.id === monsterId
+            ? { ...monster, masterId: inParty ? playerState.id : undefined } : monster),
+        },
+      };
+    });
+  }
+
   return (<>
     <div className={styles.playerLocationScreen}>
       <PlayerVideo topicId={topicId} turn={gameState.turn} />
@@ -315,20 +330,6 @@ export default function PlayerLocation(
         actionsState={actionsState}
         playerStats={playerStats}
         addNewAction={addNewAction}
-        processing={processing}
-        onPartyChanged={(monsterId, inParty) => {
-          setLocationUpdate(current => {
-            const state = current?.snapshot === snapshot ? current.state : snapshot.location;
-            return {
-              snapshot,
-              state: {
-                ...state,
-                monsters: state.monsters.map(monster => monster.id === monsterId
-                  ? { ...monster, masterId: inParty ? playerState.id : undefined } : monster),
-              },
-            };
-          });
-        }}
       />
     
       { gameState.gameId === 'warlordsfire' && <WarlordRecruitment
@@ -339,7 +340,16 @@ export default function PlayerLocation(
         gameState={gameState}
         availableCoins={playerState.coins}
         processing={processing}
-      /> }
+      >
+        <WarlordParty
+          boardId={boardId}
+          mapId={mapId}
+          player={playerState}
+          locationMonsters={locationState.monsters}
+          processing={processing}
+          onPartyChanged={onPartyChanged}
+        />
+      </WarlordRecruitment> }
 
       { actionsState.actions.length > 0 && <div className={`${styles.actionsList}`}>
         <div className={styles.actionsHeader}>

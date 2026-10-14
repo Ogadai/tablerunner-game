@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Dialog } from 'radix-ui';
 import { monsters } from '@/lib/games/monsters';
 import { GameState } from '@/lib/store/types';
@@ -32,6 +32,7 @@ export default function WarlordRecruitment({
   gameState,
   availableCoins,
   processing,
+  children,
 }: {
   boardId: string;
   mapId: string;
@@ -39,6 +40,7 @@ export default function WarlordRecruitment({
   gameState: GameState;
   availableCoins: number;
   processing: boolean;
+  children?: ReactNode;
 }) {
   const [queue, setQueue] = useState<WarlordInstructionRecruit[] | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -133,29 +135,32 @@ export default function WarlordRecruitment({
         showDeleteIcon={true}
       />
       {!isOpen && error && <p role="alert">{error}</p>}
-      <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
-        <Dialog.Trigger asChild>
-          {(queue === null && !error) 
-          ? <p>Loading recruitment queue...</p>
-          : <button type="button" disabled={processing || isRecruiting}>Recruit</button>
-          }
-        </Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay className="DialogOverlay" />
-          <Dialog.Content className="DialogContent">
-            <Dialog.Title className="DialogTitle">Recruit</Dialog.Title>
-            <div className={styles.recruitContent}>
-              <EntityList
-                entities={availableMonsters.map(monster => getMonsterEntity(monster, monster, availableCoins))}
-                onClickEntity={processing || isRecruiting ? undefined : recruitMonster}
-              />
-              {availableMonsters.length === 0 && <p>No monsters available to recruit.</p>}
-              {isRecruiting && <p role="status" className={styles.statusMessage}>Recruiting...</p>}
-              {error && <p role="alert" className={styles.statusMessage}>{error}</p>}
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <div className={styles.buttons}>
+        <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+          <Dialog.Trigger asChild>
+            {(queue === null && !error)
+            ? <p>Loading recruitment queue...</p>
+            : <button type="button" disabled={processing || isRecruiting}>Recruit</button>
+            }
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="DialogOverlay" />
+            <Dialog.Content className="DialogContent">
+              <Dialog.Title className="DialogTitle">Recruit</Dialog.Title>
+              <div className={styles.recruitContent}>
+                <EntityList
+                  entities={availableMonsters.map(monster => getMonsterEntity(monster, monster, availableCoins))}
+                  onClickEntity={processing || isRecruiting ? undefined : recruitMonster}
+                />
+                {availableMonsters.length === 0 && <p>No monsters available to recruit.</p>}
+                {isRecruiting && <p role="status" className={styles.statusMessage}>Recruiting...</p>}
+                {error && <p role="alert" className={styles.statusMessage}>{error}</p>}
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+        {children}
+      </div>
     </section>
   );
 }

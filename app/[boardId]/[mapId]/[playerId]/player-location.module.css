@@ -235,3 +235,7 @@
   left: 50px;
   z-index: 10;
 }
+
+.warlordButtons {
+  display: flex;
+}

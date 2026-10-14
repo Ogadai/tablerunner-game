@@ -27,8 +27,6 @@ export interface PlayerLocationListProps {
   playerStats: PlayerStats;
   actionsState: PlayerActionsState;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
-  onPartyChanged: (monsterId: string, inParty: boolean) => void;
-  processing?: boolean;
 }
 
 export default function PlayerLocationList({
@@ -43,8 +41,6 @@ export default function PlayerLocationList({
   playerStats,
   actionsState,
   addNewAction,
-  onPartyChanged,
-  processing = false,
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
@@ -180,14 +176,9 @@ export default function PlayerLocationList({
             { openMonster &&
               <MonsterCard
                 key={`${boardId}:${mapId}:${player.id}:${openMonster.id}`}
-                boardId={boardId}
-                mapId={mapId}
-                player={player}
                 monster={openMonster}
                 canAttack={canAttack && player.health > 0 && isEnemy(player, openMonster)}
                 onAttack={() => onAttackMonster(openMonster)}
-                onPartyChanged={inParty => onPartyChanged(openMonster.id, inParty)}
-                processing={processing}
               ></MonsterCard>
             }
             { displayCharacter &&

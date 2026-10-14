@@ -82,3 +82,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+// Force the route to always opt into dynamic SSR instead of static optimization
+export const dynamic = "force-dynamic"; 

@@ -11,6 +11,7 @@ import PlayerLocationList from './player-location-list';
 import PlayerPortal from './player-portal';
 import FastTravel from './fast-travel';
 import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
+import WarlordParty from './warlords-of-fire/warlord-party';
 import { createMonster, createNpc } from '@/lib/runner/test-support/fixtures';
 import sync from './player-stats-sync.service';
 import { makeGameState, makePlayer as makeTestPlayer, makeStats } from './test-fixtures';
@@ -34,9 +35,10 @@ jest.mock('./player-store', () => ({ __esModule: true, default: () => <span>Stor
 jest.mock('./player-portal', () => ({ __esModule: true, default: jest.fn(() => <span>Portal available</span>) }));
 jest.mock('./fast-travel', () => ({ __esModule: true, default: jest.fn(() => null) }));
 jest.mock('./player-video', () => ({ __esModule: true, default: () => null }));
-jest.mock('./warlords-of-fire/warlord-recruitment', () => ({ __esModule: true, default: jest.fn(() =>
-  <section aria-label="Recruitment queue" />
+jest.mock('./warlords-of-fire/warlord-recruitment', () => ({ __esModule: true, default: jest.fn(({ children }: ComponentProps<typeof WarlordRecruitment>) =>
+  <section aria-label="Recruitment queue">{children}</section>
 ) }));
+jest.mock('./warlords-of-fire/warlord-party', () => ({ __esModule: true, default: jest.fn(() => null) }));
 
 describe('PlayerLocation', () => {
   const push = jest.fn();
@@ -79,6 +81,7 @@ describe('PlayerLocation', () => {
     await setup({ gameState: makeGameState({ gameId, players: [makePlayer()] }) });
     expect(screen.queryByRole('region', { name: 'Recruitment queue' })).not.toBeInTheDocument();
     expect(WarlordRecruitment).not.toHaveBeenCalled();
+    expect(WarlordParty).not.toHaveBeenCalled();
   });
 
   it('shows recruitment in warlordsfire even when no actions are queued', async () => {
@@ -99,6 +102,10 @@ describe('PlayerLocation', () => {
       gameState,
       availableCoins: gameState.players[0].coins,
       processing,
+      children: expect.anything(),
+    });
+    expect(jest.mocked(WarlordParty).mock.calls.at(-1)![0]).toMatchObject({
+      boardId: props.boardId, mapId: props.mapId, player: gameState.players[0], processing,
     });
     const recruitment = screen.getByRole('region', { name: 'Recruitment queue' });
     const actions = screen.getByRole('heading', { name: 'Actions' });
@@ -219,11 +226,12 @@ describe('PlayerLocation', () => {
   it('updates party membership locally without fetching location state or changing the snapshot', async () => {
     const monster = createMonster({ team: 'good' });
     location = { monsters: [monster], items: [], npcs: [] };
-    const { player } = await setup();
-    const editParty = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].onPartyChanged;
+    const { player } = await setup({ gameState: makeGameState({ gameId: 'warlordsfire', players: [makePlayer()] }) });
+    const editParty = jest.mocked(WarlordParty).mock.calls.at(-1)![0].onPartyChanged;
 
     await act(async () => editParty(monster.id, true));
     expect(jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].monsters[0].masterId).toBe(player.id);
+    expect(jest.mocked(WarlordParty).mock.calls.at(-1)![0].locationMonsters[0].masterId).toBe(player.id);
     expect(monster.masterId).toBeUndefined();
 
     await act(async () => editParty(monster.id, false));
