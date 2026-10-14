@@ -12,7 +12,7 @@ describe('NpcCard', () => {
     const data = { equipment: [], equipped: {}, coins: 0 };
     jest.mocked(hireNpc).mockResolvedValue({ success, data });
     const onHired = jest.fn();
-    render(<NpcCard boardId="board" mapId="map" npc={makeNpc()} player={makePlayer({ coins: 10 })} onHired={onHired} />);
+    render(<NpcCard boardId="board" mapId="map" npc={makeNpc({ team: null })} player={makePlayer({ coins: 10 })} onHired={onHired} />);
     fireEvent.click(screen.getByRole('button', { name: 'Hire' }));
     await waitFor(() => expect(hireNpc).toHaveBeenCalledWith('board', 'map', 'warrior', 'npc-1'));
     if (success) {
@@ -26,13 +26,13 @@ describe('NpcCard', () => {
 
   it.each([{ coins: 9, health: 10, npcHealth: 10 }, { coins: 10, health: 0, npcHealth: 10 },
     { coins: 10, health: 10, npcHealth: 0 }])('blocks hiring with %o', ({ coins, health, npcHealth }) => {
-    render(<NpcCard boardId="board" mapId="map" npc={makeNpc({ health: npcHealth })}
+    render(<NpcCard boardId="board" mapId="map" npc={makeNpc({ health: npcHealth, team: null })}
       player={makePlayer({ coins, health })} onHired={jest.fn()} />);
     expect(screen.getByRole('button', { name: 'Hire' })).toBeDisabled();
   });
 
-  it('does not offer already hired NPCs', () => {
-    render(<NpcCard boardId="board" mapId="map" npc={makeNpc({ masterId: 'warrior' })}
+  it.each([{ masterId: 'warrior', team: null }, { masterId: null, team: 'good' }])('does not offer unavailable NPCs (%o)', overrides => {
+    render(<NpcCard boardId="board" mapId="map" npc={makeNpc(overrides)}
       player={makePlayer({ coins: 100 })} onHired={jest.fn()} />);
     expect(screen.queryByRole('button', { name: 'Hire' })).not.toBeInTheDocument();
   });

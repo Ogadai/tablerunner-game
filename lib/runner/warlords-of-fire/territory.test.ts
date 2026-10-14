@@ -4,6 +4,7 @@ import { VideoNames } from '@/lib/messages/video-list';
 import { createGame, createMonster, createNpc, createParams, createPlayer } from '../test-support/fixtures';
 import { DEFAULT_TEAM_STATE, getState, saveState } from './territory-state';
 import { territoryProcesses } from './territory';
+import { getWarlordAvailableMonsters } from './recruit-helper';
 
 jest.mock('@/lib/messages/message-videos', () => ({ publishPlayVideo: jest.fn() }));
 
@@ -42,9 +43,10 @@ it('transfers simultaneous conquests to the final faction and pays its income on
   } });
   await territoryProcesses.executeForTurn!(params);
   const state = getState(params.gameState);
-  expect(state.teams.winner).toMatchObject({ territory: [4, 2, 3, 1], monsters: ['rat', 'orc', 'troll'], coins: 220 });
-  expect(state.teams.first).toMatchObject({ territory: [], monsters: [], coins: 0 });
-  expect(state.teams.second).toMatchObject({ territory: [], monsters: [], coins: 0 });
+  expect(state.teams.winner).toMatchObject({ territory: [4, 2, 3, 1], monsters: ['rat'], coins: 184 });
+  expect(state.teams.first).toMatchObject({ territory: [], monsters: ['orc'], coins: 0 });
+  expect(state.teams.second).toMatchObject({ territory: [], monsters: ['troll'], coins: 0 });
+  expect(getWarlordAvailableMonsters(params.gameState, 'winner')).toEqual(expect.arrayContaining(['rat', 'orc', 'troll']));
   expect(params.gameState.npcs.map(npc => npc.team)).toEqual(['winner', 'winner', 'winner']);
   expect(army).toMatchObject({ team: 'winner', masterId: 'first' });
 
@@ -52,7 +54,7 @@ it('transfers simultaneous conquests to the final faction and pays its income on
   state.teams.first.npcDecision = { type: 'expand', from: 1, location: 5 };
   await territoryProcesses.executeForTurn!(params);
   expect(getState(params.gameState).teams.first.npcDecision).toEqual({ type: 'expand', from: 1, location: 5 });
-  expect(getState(params.gameState).teams.winner.coins).toBe(260);
+  expect(getState(params.gameState).teams.winner.coins).toBe(188);
 });
 
 function createVictoryParams(playerId = 'witch', territoryCount = 4) {

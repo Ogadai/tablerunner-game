@@ -20,7 +20,7 @@ function setup(inventory: PlayerInventoryState = { equipment: null, equipped: nu
 
 it('previews the split, saves on release and synchronizes both instances for deposits and withdrawals', async () => {
   const props = setup();
-  render(<><WarlordCoins {...props} /><WarlordCoins {...props} reservedCoins={20} /></>);
+  render(<><WarlordCoins {...props} /><WarlordCoins {...props} showHint /></>);
   await act(async () => {});
   const [slider, otherSlider] = screen.getAllByRole('slider');
   jest.mocked(warlordAllocateCoins).mockResolvedValueOnce({
@@ -32,7 +32,9 @@ it('previews the split, saves on release and synchronizes both instances for dep
   fireEvent.pointerUp(slider);
   await waitFor(() => expect(otherSlider).toHaveValue('140'));
   expect(warlordAllocateCoins).toHaveBeenLastCalledWith('board', 'map', props.player.id, 140);
-  expect(screen.getByText('Available to recruit: 40 coins')).toBeInTheDocument();
+  expect(screen.getAllByLabelText('Personal coins: 60')).toHaveLength(2);
+  expect(screen.getAllByLabelText('Team coins: 140')).toHaveLength(2);
+  expect(screen.getAllByText('Team coins fund sub-commanders.')).toHaveLength(1);
 
   jest.mocked(warlordAllocateCoins).mockResolvedValueOnce({
     success: true, data: { equipment: null, equipped: null, coins: 160, teamCoinTransfer: -40 },
@@ -40,7 +42,8 @@ it('previews the split, saves on release and synchronizes both instances for dep
   fireEvent.change(otherSlider, { target: { value: '40' } });
   fireEvent.keyUp(otherSlider, { key: 'ArrowLeft' });
   await waitFor(() => expect(slider).toHaveValue('40'));
-  expect(screen.getByText('Available to recruit: 140 coins')).toBeInTheDocument();
+  expect(screen.getAllByLabelText('Personal coins: 160')).toHaveLength(2);
+  expect(screen.getAllByLabelText('Team coins: 40')).toHaveLength(2);
 });
 
 it('loads pending balances on mount and restores them if saving fails', async () => {

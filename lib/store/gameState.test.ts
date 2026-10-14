@@ -12,6 +12,7 @@ import { setupProcesses } from '../runner/game-processes';
 import { createStoreInventoryState } from './playerInventory';
 import { pickCharacterName } from '../games/character-names';
 import { gameRunners } from '../runner/games';
+import type { StarterPlayer } from '../runner/types';
 
 jest.mock('./redis-access', () => ({
   getGameStateFromRedis: jest.fn(), setGameStateInRedis: jest.fn(),
@@ -146,7 +147,7 @@ describe('player creation and deletion', () => {
     await expect(createPlayerForGame('board', 'map', 'mage')).resolves.toEqual({ success: true });
     expect(createStarter).toHaveBeenCalledTimes(1);
     expect(createStarter).toHaveBeenCalledWith(characters.mage, state);
-    const starterPlayer = createStarter.mock.results[0].value;
+    const starterPlayer: StarterPlayer = createStarter.mock.results[0].value;
     const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
     const player = saved.players[0];
     expect(player).toMatchObject({ id: 'mage', name: 'Test Hero',

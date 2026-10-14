@@ -8,6 +8,7 @@ import { getAvailableSpellTargets } from '../spell-targets';
 import { npcProcesses } from './npcs';
 import { territoryProcesses } from './territory';
 import { DEFAULT_TEAM_STATE, getState, saveState } from './territory-state';
+import { getWarlordAvailableMonsters } from './recruit-helper';
 
 jest.mock('@/lib/messages/message-videos', () => ({ publishPlayVideo: jest.fn() }));
 
@@ -100,12 +101,13 @@ it.each(['player', 'npc', 'army', 'wild monster', 'spell'])('transfers a defeate
   expect(unrelatedArmy.team).toBe('other-team');
   const state = getState(params.gameState);
   expect(state.teams.winner.territory).toEqual([6, 4, 5, 1]);
-  expect(state.teams.winner.monsters).toEqual(['rat', 'orc']);
-  expect(state.teams.loser).toMatchObject({ territory: [], monsters: [], coins: 0 });
+  expect(state.teams.winner.monsters).toEqual(['rat']);
+  expect(state.teams.loser).toMatchObject({ territory: [], monsters: ['orc'], coins: 0 });
+  expect(getWarlordAvailableMonsters(params.gameState, winner.team!)).toEqual(expect.arrayContaining(['rat', 'orc']));
   expect(state.teams.loser.npcDecision).toBeUndefined();
   expect(state.teams.loser.conqueredBy).toBeUndefined();
   // Conquered treasury plus one income payment, despite multiple commanders.
-  expect(winner.coins).toBe(340);
+  expect(winner.coins).toBe(304);
 });
 
 it('waits while multiple factions survive and captures the warlord once combat is settled', async () => {
@@ -157,9 +159,9 @@ it('reassigns a defeated sub-commander without transferring the former faction a
   expect(army.masterId).toBeUndefined();
   expect(leaderArmy).toMatchObject({ team: 'old-leader', masterId: leader.id });
   expect(otherSubordinateArmy).toMatchObject({ team: 'old-leader', masterId: otherSubordinate.id });
-  expect(getState(params.gameState).teams['old-leader']).toMatchObject({ territory: [2, 3], coins: 90 });
+  expect(getState(params.gameState).teams['old-leader']).toMatchObject({ territory: [2, 3], coins: 72 });
   expect(getState(params.gameState).teams.winner.territory).toEqual([6]);
-  expect(winner.coins).toBe(210);
+  expect(winner.coins).toBe(201);
 });
 
 it.each(['player', 'sub-commander'])('notifies a remote previous master when their sub-commander is captured by a %s', async captorKind => {
@@ -205,7 +207,9 @@ it('adds conquered assets and income to an NPC-led winning faction', async () =>
   actionAttack(params, captor, { id: 1, type: PlayerActionType.Attack, target: npc.id, description: '' });
   await finishTurn(params);
   expect(npc).toMatchObject({ health: 1, team: captor.team, masterId: null });
-  expect(getState(params.gameState).teams.captor).toMatchObject({ territory: [6, 4, 5, 1], monsters: ['troll', 'orc'], coins: 170 });
+  expect(getState(params.gameState).teams.captor).toMatchObject({ territory: [6, 4, 5, 1], monsters: ['troll'], coins: 134 });
+  expect(getState(params.gameState).teams.loser).toMatchObject({ territory: [], monsters: ['orc'], coins: 0 });
+  expect(getWarlordAvailableMonsters(params.gameState, captor.team!)).toEqual(expect.arrayContaining(['troll', 'orc']));
 });
 
 it('finishes damaging spell targets before deciding whether a faction has won', async () => {

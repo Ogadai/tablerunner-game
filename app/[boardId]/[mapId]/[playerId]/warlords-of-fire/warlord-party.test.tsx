@@ -59,8 +59,17 @@ describe('WarlordParty', () => {
     { team: 'enemy' }, { team: null }, { masterId: 'another-player' }, { health: 0 }, { location: player.location.id + 1 },
   ])('excludes an unavailable monster (%o)', overrides => {
     render(<Party initialMonsters={[{ ...monster, ...overrides }]} />);
+    expect(screen.queryByRole('button', { name: 'Party' })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { team: 'enemy' }, { team: null }, { masterId: 'another-player' }, { health: 0 }, { location: player.location.id + 1 },
+  ])('shows only available monsters when opening the party (%o)', overrides => {
+    render(<Party initialMonsters={[monster, { ...monster, id: 'unavailable', type: 'orc', ...overrides }]} />);
     openParty();
-    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByRole('listitem', { name: 'Goblin' })).toBeInTheDocument();
+    expect(screen.queryByRole('listitem', { name: 'Orc' })).not.toBeInTheDocument();
   });
 
   it.each([{ processing: true }, { player: { ...player, health: 0 } }])('disables party editing (%o)', overrides => {
