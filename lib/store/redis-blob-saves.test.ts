@@ -43,6 +43,20 @@ it('escapes Redis glob metacharacters in scope identifiers', async () => {
   expect(client.scan).toHaveBeenCalledWith('0', { match: '*:b\\*\\?\\[x\\]\\\\:map*', count: 100 });
 });
 
+it.each([
+  { team: 'blue' },
+  { recruit: [{ recruitId: 1, monster: 'rat' }] },
+])('includes pending player instructions in saves (%o)', async instructions => {
+  const game = createGame();
+  client.scan.mockResolvedValue(['0', ['playerInstructions:board:map:hero']]);
+  client.mget.mockResolvedValue([game, instructions]);
+
+  await expect(getGameSnapshotFromRedis('board', 'map')).resolves.toEqual({
+    gameState: game,
+    redisState: { 'game:board:map': game, 'playerInstructions:board:map:hero': instructions },
+  });
+});
+
 it('rejects an absent game even if other state remains', async () => {
   client.mget.mockResolvedValue([null]);
   await expect(getGameSnapshotFromRedis('board', 'map')).rejects.toThrow('No game exists for this board and map');
@@ -64,6 +78,26 @@ it('replaces old state in one transaction and publishes only after it commits', 
   expect(transaction.exec).toHaveBeenCalledTimes(1);
   expect(publishGameStateUpdated).toHaveBeenCalledWith('board', 'map');
   expect(publishReadyStateUpdated).toHaveBeenCalledWith('board', 'map', snapshot['playersReady:board:map']);
+});
+
+it.each([
+  undefined,
+  { team: 'blue' },
+  { recruit: [{ recruitId: 1, monster: 'rat' }] },
+])('replaces stale player instructions when loading a save (%o)', async instructions => {
+  const snapshot: Record<string, Record<string, unknown>> = { 'game:board:map': { ...createGame() } };
+  if (instructions) snapshot['playerInstructions:board:map:hero'] = instructions;
+  client.scan.mockResolvedValue(['0', [
+    'playerInstructions:board:map:hero', 'playerInstructions:board:map:removed',
+    'playerInstructions:board:map-other:hero',
+  ]]);
+
+  await restoreGameSnapshotInRedis('board', 'map', snapshot);
+
+  expect(transaction.del).toHaveBeenCalledWith('game:board:map',
+    'playerInstructions:board:map:hero', 'playerInstructions:board:map:removed');
+  expect(transaction.set.mock.calls).toEqual(Object.entries(snapshot).map(([key, value]) =>
+    [key, value, { ex: 604800 }]));
 });
 
 it('publishes empty readiness when a save has no ready state', async () => {

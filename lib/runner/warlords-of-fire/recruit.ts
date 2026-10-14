@@ -8,6 +8,7 @@ import { getEnemies } from "../game-friends-or-enemies";
 export const recruitProcesses: ProcessRunner = {
   initialiseForTurn: async (params) => {
     for(const player of params.gameState.players) {
+      if (player.health <= 0) continue;
       const instructions = params.playerInstructions[player.id] as WarlordInstruction | undefined;
       if (!instructions?.recruit?.length) continue;
       if (getEnemies(params, player).some(enemy => enemy.health > 0)) continue;

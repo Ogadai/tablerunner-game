@@ -6,7 +6,7 @@ import { getGameKey, getPlayersReadyKey, publishGameStateUpdated, publishReadySt
 const redis = Redis.fromEnv();
 
 const singletonStateTypes = new Set(['game', 'playersReady', 'monsters', 'boardSettings', 'processingTurn']);
-const entityStateTypes = new Set(['playerActions', 'npcActions', 'playerStats', 'playerInventory', 'playerMessages', 'store']);
+const entityStateTypes = new Set(['playerActions', 'npcActions', 'playerStats', 'playerInventory', 'playerMessages', 'playerInstructions', 'store']);
 
 function isGameStateKey(key: string, boardId: string, mapId: string): boolean {
   const separator = key.indexOf(':');

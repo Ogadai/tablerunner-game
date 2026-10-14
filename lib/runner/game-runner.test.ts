@@ -269,6 +269,41 @@ it.each([0, 1, 2])('commits the remaining Warlords queue after affording %s recr
   expect(params.playerInstructions.hero).toEqual({ recruit: [] });
 });
 
+it('preserves a dead Warlord\'s recruitment queue and funds until recruiting after respawn', async () => {
+  const cost = getMonsterCost('rat');
+  const recruits = [{ recruitId: 1, monster: 'rat' }];
+  const params = createParams({ gameState: createGame({
+    gameId: 'warlordsfire', players: [createPlayer({ health: 0, coins: cost }), createPlayer({ id: 'friend' })],
+  }) });
+  saveState(params.gameState, { teams: { hero: { ...DEFAULT_TEAM_STATE, monsters: ['rat'] } } });
+  jest.mocked(redis.getPlayerTurnInputsFromRedis).mockImplementation(async (_board, _map, ids) =>
+    Object.fromEntries(ids.map(id => [id, {
+      inventory: { equipped: null, equipment: null }, addedStats: { characterStats: null },
+      actions: { actions: [] }, instructions: id === 'hero' ? { recruit: [...recruits] } : {},
+    }])),
+  );
+  jest.mocked(initialiseProcessesForTurn).mockImplementation(async p => {
+    await recruitProcesses.initialiseForTurn!(p);
+  });
+
+  await processGameTurn(params);
+
+  expect(params.monsters).toEqual([]);
+  expect(params.gameState.players[0].coins).toBe(cost);
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledWith('board', 'map', params.gameState,
+    expect.objectContaining({ monsters: [] }), params.messages, [], [],
+    { hero: { recruit: recruits }, friend: {} });
+
+  const player = params.gameState.players[0];
+  player.health = 1;
+  player.location = { id: player.startLocation, description: 'Start', move: [] };
+  await recruitProcesses.initialiseForTurn!(params);
+
+  expect(params.monsters).toEqual([expect.objectContaining({ type: 'rat', location: player.startLocation })]);
+  expect(player.coins).toBe(0);
+  expect(params.playerInstructions.hero).toEqual({ recruit: [] });
+});
+
 it('processes a Warlords turn without recruitment instructions', async () => {
   const params = createParams({ gameState: createGame({ gameId: 'warlordsfire' }) });
   jest.mocked(initialiseProcessesForTurn).mockImplementation(async p => {

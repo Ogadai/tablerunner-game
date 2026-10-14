@@ -24,7 +24,7 @@ let store: StoreInventoryState;
 beforeEach(() => {
   jest.resetAllMocks();
   game = createGame();
-  locations = createLocations({ npcs: [createNpc()], items: [{ id: 'potion', type: 'healingPotion', location: 1 }] });
+  locations = createLocations({ npcs: [createNpc({ team: null })], items: [{ id: 'potion', type: 'healingPotion', location: 1 }] });
   inventory = { equipped: null, equipment: null };
   store = { items: [{ itemId: 'healingPotion', count: 2 }] };
   storage.getGameStateFromRedis.mockResolvedValue(game);
@@ -231,6 +231,24 @@ describe('hiring NPCs', () => {
     expect(storage.setPlayerInventoryInRedis).toHaveBeenCalledWith('board', 'map', 'hero', inventory);
     expect(storage.setLocationsStateInRedis).toHaveBeenCalledWith('board', 'map', locations);
     expect(publishMessage).toHaveBeenCalledWith('board', 'map', { type: 'location_updated', locationId: 1 });
+    expect(releaseLocations).toHaveBeenCalledTimes(1);
+    expect(releaseGame).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['warlord-1', 'good'])('rejects an unhired faction NPC on team %s without charging or changing allegiance', async team => {
+    game.gameId = 'warlordsfire';
+    const npc = locations.npcs[0];
+    npc.team = team;
+    npc.scriptedActions = true;
+    inventory.coins = 100;
+
+    await expect(hireNpc('board', 'map', 'hero', 'npc')).resolves.toEqual({
+      success: false, error: 'Only neutral NPCs can be hired',
+    });
+
+    expect(npc).toMatchObject({ team, masterId: null });
+    expect(inventory.coins).toBe(100);
+    expectNoWrites();
     expect(releaseLocations).toHaveBeenCalledTimes(1);
     expect(releaseGame).toHaveBeenCalledTimes(1);
   });

@@ -64,6 +64,9 @@ export async function hireNpc(
     if (npc.masterId !== null) {
       throw new Error('NPC has already been hired');
     }
+    if (npc.team !== null) {
+      throw new Error('Only neutral NPCs can be hired');
+    }
 
     if (playerInventory.coins === undefined) {
       playerInventory.coins = player.coins;
