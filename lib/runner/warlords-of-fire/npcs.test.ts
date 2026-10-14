@@ -4,7 +4,6 @@ import { createGame, createMonster, createNpc, createParams, createPlayer } from
 import { createLocations } from '@/lib/store/test-support/fixtures';
 import { npcProcesses } from './npcs';
 import { planNpcTurn } from './npc-strategy';
-import { requestWarlordAiOrders, validateWarlordAiOrders } from './npc-ai';
 import { DEFAULT_TEAM_STATE, getState, saveState } from './territory-state';
 
 jest.mock('@/lib/store/redis-access', () => ({
@@ -12,10 +11,6 @@ jest.mock('@/lib/store/redis-access', () => ({
   lockGameStateInRedis: jest.fn(), lockLocationsStateInRedis: jest.fn(), processingLockTTL: 30000,
 }));
 jest.mock('./npc-strategy', () => ({ planNpcTurn: jest.fn() }));
-jest.mock('./npc-ai', () => ({
-  requestWarlordAiOrders: jest.fn(),
-  validateWarlordAiOrders: jest.fn(),
-}));
 
 const releaseGame = jest.fn(async () => {});
 const releaseLocations = jest.fn(async () => {});
@@ -24,8 +19,6 @@ beforeEach(() => {
   jest.resetAllMocks();
   jest.mocked(store.lockGameStateInRedis).mockResolvedValue(releaseGame);
   jest.mocked(store.lockLocationsStateInRedis).mockResolvedValue(releaseLocations);
-  jest.mocked(requestWarlordAiOrders).mockRejectedValue(new Error('AI unavailable'));
-  jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 it('enables deferred defeat for warlords in older saves without changing ordinary NPC death rules', async () => {
@@ -56,35 +49,8 @@ it('loads fresh locations and persists multi-turn goals with party assignments a
   expect(getState(game).teams.npc.npcDecision).toEqual({ type: 'expand', from: 1, location: 2 });
   expect(monster.masterId).toBe(npc.id);
   expect(store.commitNpcPlansInRedis).toHaveBeenCalledWith('board', 'map', game, locations, { npc: { actions: [] } });
-  expect(releaseLocations).toHaveBeenCalledTimes(2);
-  expect(releaseGame).toHaveBeenCalledTimes(2);
-});
-
-it('releases state locks during the AI request and queues validated orders afterward', async () => {
-  const npc = createNpc({ scriptedActions: true, team: 'npc' });
-  const game = createGame({ gameId: 'warlordsfire', npcs: [npc] });
-  saveState(game, { teams: { npc: { ...DEFAULT_TEAM_STATE, territory: [1], coins: 100 } } });
-  const locations = createLocations({ npcs: [npc] });
-  jest.mocked(store.getGameStateFromRedis).mockResolvedValue(game);
-  jest.mocked(store.getLocationsStateFromRedis).mockResolvedValue(locations);
-  jest.mocked(requestWarlordAiOrders).mockImplementation(async () => {
-    expect(releaseGame).toHaveBeenCalledTimes(1);
-    expect(releaseLocations).toHaveBeenCalledTimes(1);
-    return new Map([[npc.id, null]]);
-  });
-  jest.mocked(validateWarlordAiOrders).mockReturnValue({
-    [npc.id]: { actions: [] },
-  });
-
-  await npcProcesses.executeBetweenTurns!(createParams());
-
-  expect(planNpcTurn).not.toHaveBeenCalled();
-  expect(validateWarlordAiOrders).toHaveBeenCalledTimes(1);
-  expect(store.commitNpcPlansInRedis).toHaveBeenCalledWith(
-    'board', 'map', game, locations, { [npc.id]: { actions: [] } },
-  );
-  expect(releaseLocations).toHaveBeenCalledTimes(2);
-  expect(releaseGame).toHaveBeenCalledTimes(2);
+  expect(releaseLocations).toHaveBeenCalledTimes(1);
+  expect(releaseGame).toHaveBeenCalledTimes(1);
 });
 
 it('preserves a pending hire in location state and clears independent warlord orders', async () => {

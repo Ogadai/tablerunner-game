@@ -15,8 +15,6 @@ import { START_LOCATIONS } from "./game-creation";
 import { playerMonsters } from "./monsters";
 import { DEFAULT_TEAM_STATE, getState, getTeamOwner, saveState } from "./territory-state";
 import { planNpcTurn } from "./npc-strategy";
-import { requestWarlordAiOrders, validateWarlordAiOrders } from "./npc-ai";
-import type { NpcAiOrders } from "./npc-ai";
 
 const NPC_COUNT = 16;
 const REGIONS_PER_AXIS = 4;
@@ -83,51 +81,6 @@ function getNpcLocations(params: BaseParams, distances: Map<number, number>): Lo
     }
     return locations[Math.floor(Math.random() * locations.length)];
   }).sort((a, b) => distances.get(a.id)! - distances.get(b.id)!);
-}
-
-async function withLockedTurnState<T>(
-  params: BaseParams,
-  action: (turnParams: BaseParams) => Promise<T> | T,
-): Promise<T | undefined> {
-  const releaseGame = await lockGameStateInRedis(params.boardId, params.mapId, processingLockTTL);
-  let releaseLocations: (() => Promise<void>) | undefined;
-  try {
-    releaseLocations = await lockLocationsStateInRedis(params.boardId, params.mapId);
-    const [gameState, locations] = await Promise.all([
-      getGameStateFromRedis(params.boardId, params.mapId),
-      getLocationsStateFromRedis(params.boardId, params.mapId),
-    ]);
-    if (!gameState || gameState.gameId !== warlordsOfFire.id) return undefined;
-    return await action({ ...params, ...locations, gameState });
-  } finally {
-    try {
-      if (releaseLocations) await releaseLocations();
-    } finally {
-      await releaseGame();
-    }
-  }
-}
-
-function planNpcOrders(params: BaseParams): Record<string, PlayerActionsState | null> {
-  const state = getState(params.gameState);
-  const orders: Record<string, PlayerActionsState | null> = {};
-  for (const npc of params.gameState.npcs.filter(npc => npc.scriptedActions)) {
-    const team = state.teams[npc.id];
-    const faction = npc.team ? state.teams[npc.team] : undefined;
-    const pendingHire = params.npcs.find(candidate => candidate.id === npc.id)?.masterId;
-    if (!team || !faction || npc.health <= 0 || npc.masterId || pendingHire) {
-      orders[npc.id] = null;
-      if (team) delete team.npcDecision;
-      for (const monster of params.monsters.filter(monster => monster.masterId === npc.id)) {
-        delete monster.masterId;
-      }
-      continue;
-    }
-    const command = { ...faction, npcDecision: team.npcDecision };
-    orders[npc.id] = planNpcTurn(params, npc, command);
-    team.npcDecision = command.npcDecision;
-  }
-  return orders;
 }
 
 export const npcProcesses: ProcessRunner = {
@@ -260,50 +213,49 @@ export const npcProcesses: ProcessRunner = {
   },
 
   executeBetweenTurns: async (params) => {
-    // The processing lock remains held by the caller, but state locks are only
-    // held while taking snapshots or persisting orders, never during the AI call.
-    const snapshot = await withLockedTurnState(params, turnParams => turnParams);
-    if (!snapshot) return;
-
-    let aiOrders: NpcAiOrders | undefined;
+    // Between-turn params have no location state. Read a fresh snapshot under the
+    // same locks as inventory changes, then save plans, parties and queues atomically.
+    const releaseGame = await lockGameStateInRedis(params.boardId, params.mapId, processingLockTTL);
+    let releaseLocations: (() => Promise<void>) | undefined;
     try {
-      aiOrders = await requestWarlordAiOrders(snapshot);
-    } catch (error) {
-      console.error('Error getting Warlords NPC AI orders; using existing planner', error);
-    }
-
-    await withLockedTurnState(params, async turnParams => {
-      const orders = aiOrders && turnParams.gameState.turn === snapshot.gameState.turn
-        ? validateWarlordAiOrders(turnParams, aiOrders)
-        : planNpcOrders(turnParams);
-
-      if (aiOrders && turnParams.gameState.turn !== snapshot.gameState.turn) {
-        console.warn('Warlords turn changed during NPC AI request; using existing planner');
-      }
-
-      const state = getState(turnParams.gameState);
-      for (const npc of turnParams.gameState.npcs.filter(npc => npc.scriptedActions)) {
+      releaseLocations = await lockLocationsStateInRedis(params.boardId, params.mapId);
+      const [gameState, locations] = await Promise.all([
+        getGameStateFromRedis(params.boardId, params.mapId),
+        getLocationsStateFromRedis(params.boardId, params.mapId),
+      ]);
+      if (!gameState || gameState.gameId !== warlordsOfFire.id) return;
+      const turnParams: BaseParams = { ...params, ...locations, gameState };
+      const state = getState(gameState);
+      const orders: Record<string, PlayerActionsState | null> = {};
+      for (const npc of gameState.npcs.filter(npc => npc.scriptedActions)) {
         const team = state.teams[npc.id];
-        if (team && aiOrders && turnParams.gameState.turn === snapshot.gameState.turn) {
-          delete team.npcDecision;
-          const faction = npc.team ? state.teams[npc.team] : undefined;
-          const pendingHire = turnParams.npcs.find(candidate => candidate.id === npc.id)?.masterId;
-          if (!faction || npc.health <= 0 || npc.masterId || pendingHire) {
-            for (const monster of turnParams.monsters.filter(monster => monster.masterId === npc.id)) {
-              delete monster.masterId;
-            }
+        const faction = npc.team ? state.teams[npc.team] : undefined;
+        const pendingHire = locations.npcs.find(candidate => candidate.id === npc.id)?.masterId;
+        if (!team || !faction || npc.health <= 0 || npc.masterId || pendingHire) {
+          orders[npc.id] = null;
+          if (team) delete team.npcDecision;
+          for (const monster of locations.monsters.filter(monster => monster.masterId === npc.id)) {
+            delete monster.masterId;
           }
+          continue;
         }
+        // Each commander keeps its own goal while sharing the faction's resources.
+        const command = {
+          ...faction,
+          npcDecision: team.npcDecision,
+        };
+        orders[npc.id] = planNpcTurn(turnParams, npc, command);
+        team.npcDecision = command.npcDecision;
       }
-      saveState(turnParams.gameState, state);
-      await commitNpcPlansInRedis(params.boardId, params.mapId, turnParams.gameState, {
-        monsters: turnParams.monsters,
-        items: turnParams.items,
-        coins: turnParams.coins,
-        blockedMoves: turnParams.blockedMoves,
-        npcs: turnParams.npcs,
-      }, orders);
+      saveState(gameState, state);
+      await commitNpcPlansInRedis(params.boardId, params.mapId, gameState, locations, orders);
       Object.assign(params, turnParams);
-    });
+    } finally {
+      try {
+        if (releaseLocations) await releaseLocations();
+      } finally {
+        await releaseGame();
+      }
+    }
   }
 }
