@@ -160,6 +160,38 @@ it('reassigns a defeated sub-commander without transferring the former faction a
   expect(winner.coins).toBe(210);
 });
 
+it.each(['player', 'sub-commander'])('notifies a remote previous master when their sub-commander is captured by a %s', async captorKind => {
+  const { params, npc, winner } = scenario();
+  const previousMaster = createPlayer({ id: 'previous-master', team: 'old-team',
+    location: { id: 3, description: '', move: [] } });
+  params.gameState.players.push(previousMaster);
+  params.messages[previousMaster.id] = { messages: [] };
+  npc.team = previousMaster.team;
+  npc.name = 'Captured Warlord';
+  winner.name = 'New Master';
+  if (captorKind === 'sub-commander') {
+    params.gameState.npcs.push(createNpc({ id: 'captor', team: winner.team, name: 'Capturing Commander', scriptedActions: true }));
+    winner.location.id = 6;
+  }
+  npc.health = 0;
+  const contender = createPlayer({ id: 'contender', team: 'third' });
+  params.gameState.players.push(contender);
+
+  await npcProcesses.executeForTurn!(params);
+  expect(params.messages[previousMaster.id].messages).toEqual([]);
+  expect(npc.team).toBe(previousMaster.team);
+
+  contender.health = 0;
+  await npcProcesses.executeForTurn!(params);
+  expect(npc.team).toBe(winner.team);
+  expect(params.messages[previousMaster.id].messages).toEqual([
+    { text: '*Your* sub-commander **Captured Warlord** was defeated by **New Master** and joined their faction' },
+  ]);
+
+  await npcProcesses.executeForTurn!(params);
+  expect(params.messages[previousMaster.id].messages).toHaveLength(1);
+});
+
 it('adds conquered assets and income to an NPC-led winning faction', async () => {
   const { params, npc, winner } = scenario();
   const captor = createNpc({ id: 'captor', team: 'captor', scriptedActions: true, baseStats: winner.baseStats });

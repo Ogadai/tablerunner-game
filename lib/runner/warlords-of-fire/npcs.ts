@@ -8,7 +8,7 @@ import { PlayerActionsState } from "@/lib/store/types";
 import { commitNpcPlansInRedis, getGameStateFromRedis, getLocationsStateFromRedis, lockGameStateInRedis, lockLocationsStateInRedis, processingLockTTL } from "@/lib/store/redis-access";
 import { BaseParams } from "../base-params";
 import { getPlayerLocation } from "../game-location";
-import { playerMessageAtLocation } from "../game-messages";
+import { playerMessageAtLocation, soloMessageAtLocation } from "../game-messages";
 import { getNpcEquipment, getNpcSpells, getNpcStats } from "../shared-processes/npcs";
 import { ProcessRunner } from "../types";
 import { START_LOCATIONS } from "./game-creation";
@@ -192,6 +192,12 @@ export const npcProcesses: ProcessRunner = {
         npc.masterId = null;
         playerMessageAtLocation(params, npc.id,
           `**{player}** was defeated and joined **${winner.name}** as a sub-commander`);
+        const previousMaster = params.gameState.players.find(player => (player.team || player.id) === previousTeam);
+        if (previousMaster && previousTeam !== npc.id) {
+          const captor = params.gameState.players.find(player => (player.team || player.id) === npc.team) ?? winner;
+          soloMessageAtLocation(params, previousMaster.id,
+            `*Your* sub-commander **${npc.name}** was defeated by **${captor.name}** and joined their faction`);
+        }
       } else {
         playerMessageAtLocation(params, npc.id, '**{player}** was defeated and returned to their starting location');
         const start = warlordsOfFire.locations.find(location => location.id === npc.startLocation);
