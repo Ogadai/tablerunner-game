@@ -81,7 +81,7 @@ export default function WarlordParty({
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className="DialogContent">
-          <Dialog.Title className="DialogTitle">Warlord's party</Dialog.Title>
+          <Dialog.Title className="DialogTitle">Warlord&apos;s party</Dialog.Title>
           <div className={styles.partyContent} aria-busy={isPending}>
             {[true, false].map(inParty => (
               <section key={String(inParty)} className={styles.partyRow} aria-label={inParty ? 'Party' : 'Garrison'}>
