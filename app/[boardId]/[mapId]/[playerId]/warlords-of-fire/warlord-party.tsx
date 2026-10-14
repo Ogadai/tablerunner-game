@@ -79,22 +79,20 @@ export default function WarlordParty({
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className="DialogContent">
-          <Dialog.Title className="DialogTitle">Party</Dialog.Title>
-          <Dialog.Description className="DialogDescription">Click a monster to move it between your party and the garrison.</Dialog.Description>
+          <Dialog.Title className="DialogTitle">Warlord's party</Dialog.Title>
           <div className={styles.partyContent} aria-busy={isPending}>
             {[true, false].map(inParty => (
               <section key={String(inParty)} className={styles.partyRow} aria-label={inParty ? 'Party' : 'Garrison'}>
                 <div className={styles.rowLabel}>
                   <h4>{inParty ? 'Party' : 'Garrison'}</h4>
-                  <span>{inParty ? 'Moves with you' : 'Stays here'}</span>
                 </div>
                 <div className={styles.monsters}>
                   <EntityList entities={getEntities(inParty)} onClickEntity={disabled ? undefined : editParty} />
                 </div>
               </section>
             ))}
-            {isPending && <p role="status">Saving...</p>}
-            {error && <p role="alert">{error}</p>}
+            {isPending && <p role="status" className={styles.statusMessage}>Saving...</p>}
+            {error && <p role="alert" className={styles.statusMessage}>{error}</p>}
           </div>
           <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">close</Dialog.Close>
         </Dialog.Content>

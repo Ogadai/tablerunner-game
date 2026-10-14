@@ -9,6 +9,7 @@ import { getPlayerWarlordInstructions, warlordRecruitCancel, warlordRecruitMonst
 import { WarlordInstructionRecruit } from '@/lib/runner/warlords-of-fire/warlords-types';
 import EntityList, { EntityItemClass, EntityItemDetail } from '../entity-list';
 import styles from './warlord-recruitment.module.css';
+import CoinDisplay from '../coin-display';
 
 function getMonsterEntity(monsterType: string, id: string, availableCoins: number): EntityItemDetail {
   const monster = monsters[monsterType];
@@ -46,6 +47,7 @@ export default function WarlordRecruitment({
   const [isOpen, setIsOpen] = useState(false);
   const [isRecruiting, setIsRecruiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remainCoins, setRemainCoins] = useState<number>(availableCoins);
   const recruitmentPending = useRef(false);
   const requestId = useRef(0);
   const availableMonsters = [...new Set(getWarlordAvailableMonsters(gameState, playerId))];
@@ -82,6 +84,13 @@ export default function WarlordRecruitment({
     void loadQueue();
     return () => { active = false; };
   }, [boardId, mapId, playerId, gameState]);
+
+  useEffect(()=> {
+    const queueCost = queue
+    ? queue.reduce((totalCost, m) => totalCost + getMonsterCost(m.monster), 0)
+    : 0;
+    setRemainCoins(availableCoins - queueCost);
+  }, [queue]);
 
   const recruitMonster = async (entity: EntityItemDetail) => {
     if (processing || recruitmentPending.current || !availableMonsters.includes(entity.id)) return;
@@ -148,14 +157,16 @@ export default function WarlordRecruitment({
             <Dialog.Content className="DialogContent">
               <Dialog.Title className="DialogTitle">Recruit</Dialog.Title>
               <div className={styles.recruitContent}>
+                <div className={styles.recruitCoins}><CoinDisplay coins={remainCoins} /></div>
                 <EntityList
-                  entities={availableMonsters.map(monster => getMonsterEntity(monster, monster, availableCoins))}
+                  entities={availableMonsters.map(monster => getMonsterEntity(monster, monster, remainCoins))}
                   onClickEntity={processing || isRecruiting ? undefined : recruitMonster}
                 />
                 {availableMonsters.length === 0 && <p>No monsters available to recruit.</p>}
                 {isRecruiting && <p role="status" className={styles.statusMessage}>Recruiting...</p>}
                 {error && <p role="alert" className={styles.statusMessage}>{error}</p>}
               </div>
+              <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">close</Dialog.Close>
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
