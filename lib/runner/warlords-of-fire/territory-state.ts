@@ -17,6 +17,7 @@ export interface TeamStateDef {
 
 export interface TerritoryStateDef {
   teams: Record<string, TeamStateDef>;
+  winner?: string;
 }
 
 const OWNER = 'war-territory';

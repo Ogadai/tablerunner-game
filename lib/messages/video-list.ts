@@ -15,6 +15,7 @@ export enum VideoNames {
   witchWarlordsWin = 'witch-warlords-win',
   rangerWarlordsWin = 'ranger-warlords-win',
   mageWarlordsWin = 'mage-warlords-win',
+  warlordsDefeat = 'warlords-defeat',
 }
 
 export const videoList: { [id: string]: string } = {
@@ -34,4 +35,5 @@ export const videoList: { [id: string]: string } = {
   'witch-warlords-win': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/witch-warlords-win.mp4',
   'ranger-warlords-win': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/ranger-warlords-win.mp4',
   'mage-warlords-win': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/mage-warlords-win.mp4',
+  'warlords-defeat': 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/warlords-defeat.mp4',
 };

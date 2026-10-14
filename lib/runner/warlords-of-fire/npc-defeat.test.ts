@@ -9,6 +9,8 @@ import { npcProcesses } from './npcs';
 import { territoryProcesses } from './territory';
 import { DEFAULT_TEAM_STATE, getState, saveState } from './territory-state';
 
+jest.mock('@/lib/messages/message-videos', () => ({ publishPlayVideo: jest.fn() }));
+
 function scenario() {
   const npc = createNpc({
     id: 'loser', team: 'loser', scriptedActions: true, deferDefeat: true, health: 1, startLocation: 4,

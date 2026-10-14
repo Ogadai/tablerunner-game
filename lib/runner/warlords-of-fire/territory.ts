@@ -1,4 +1,6 @@
-import { LedState, NPCState, PlayerState } from "@/lib/store/types";
+import { getDisplayName, LedState, NPCState, PlayerState } from "@/lib/store/types";
+import { publishPlayVideo } from "@/lib/messages/message-videos";
+import { VideoNames } from "@/lib/messages/video-list";
 import { ProcessRunner } from "../types";
 import { getState, getTeamOwner, saveState, DEFAULT_TEAM_STATE, TerritoryStateDef } from "./territory-state";
 import { soloMessageAtLocation } from "../game-messages";
@@ -7,6 +9,13 @@ import { BaseParams } from "../base-params";
 
 const OWNER = 'territory';
 const INCOME_PER_LOCATION = 1;
+
+const winnerVideos: { [id: string]: VideoNames } = {
+  barbarian: VideoNames.barbarianWarlordsWin,
+  witch: VideoNames.witchWarlordsWin,
+  ranger: VideoNames.rangerWarlordsWin,
+  mage: VideoNames.mageWarlordsWin,
+};
 
 function getTeam(params: BaseParams, state: TerritoryStateDef, team: string) {
   return state.teams[team] ??= {
@@ -102,5 +111,28 @@ export const territoryProcesses: ProcessRunner = {
       ...params.gameState.leds.filter(l => l.owner !== OWNER),
       ...territoryLEDs,
     ];
+
+    if (!state.winner) {
+      const teams = Object.entries(state.teams);
+      const totalTerritory = teams.reduce((total, [, team]) => total + team.territory.length, 0);
+      const winningTeam = teams.find(([, team]) => team.territory.length > 0
+        && team.territory.length >= 2 * (totalTerritory - team.territory.length))?.[0];
+      const winningPlayer = params.gameState.players.find(player => (player.team || player.id) === winningTeam);
+      const winner = winningPlayer ?? params.gameState.npcs.find(npc => npc.id === winningTeam);
+
+      if (winningTeam && winner) {
+        state.winner = winningTeam;
+        saveState(params.gameState, state);
+
+        for (const player of params.gameState.players) {
+          soloMessageAtLocation(params, player.id, (player.team || player.id) === winningTeam
+            ? '***You have won the game!*** Your team controls at least twice as much territory as all other teams combined.'
+            : `***You have lost the game!*** **${getDisplayName(winner)}** has won with at least twice as much territory as all other teams combined.`);
+        }
+
+        await publishPlayVideo(params.boardId, params.mapId,
+          winningPlayer ? winnerVideos[winningPlayer.id] : VideoNames.warlordsDefeat);
+      }
+    }
   }
 }
