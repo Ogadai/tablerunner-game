@@ -9,6 +9,7 @@ import { getPlayerWarlordInstructions, warlordRecruitCancel, warlordRecruitMonst
 import { WarlordInstructionRecruit } from '@/lib/runner/warlords-of-fire/warlords-types';
 import EntityList, { EntityItemClass, EntityItemDetail } from '../entity-list';
 import styles from './warlord-recruitment.module.css';
+import WarlordCoins from './warlord-coins';
 import CoinDisplay from '../coin-display';
 
 function getMonsterEntity(monsterType: string, id: string, availableCoins: number): EntityItemDetail {
@@ -47,10 +48,12 @@ export default function WarlordRecruitment({
   const [isOpen, setIsOpen] = useState(false);
   const [isRecruiting, setIsRecruiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [remainCoins, setRemainCoins] = useState<number>(availableCoins);
   const recruitmentPending = useRef(false);
   const requestId = useRef(0);
   const availableMonsters = [...new Set(getWarlordAvailableMonsters(gameState, playerId))];
+  const player = gameState.players.find(player => player.id === playerId);
+  const queueCost = (queue ?? []).reduce((total, recruit) => total + getMonsterCost(recruit.monster), 0);
+  const remainCoins = availableCoins - queueCost;
   const queueEntities = (queue ?? []).reduce<{ entities: EntityItemDetail[]; cost: number }>(
     (result, recruit, index) => {
       const entity = getMonsterEntity(recruit.monster, `recruit-${recruit.recruitId ?? index}`, availableCoins);
@@ -84,13 +87,6 @@ export default function WarlordRecruitment({
     void loadQueue();
     return () => { active = false; };
   }, [boardId, mapId, playerId, gameState]);
-
-  useEffect(()=> {
-    const queueCost = queue
-    ? queue.reduce((totalCost, m) => totalCost + getMonsterCost(m.monster), 0)
-    : 0;
-    setRemainCoins(availableCoins - queueCost);
-  }, [queue]);
 
   const recruitMonster = async (entity: EntityItemDetail) => {
     if (processing || recruitmentPending.current || !availableMonsters.includes(entity.id)) return;
@@ -157,7 +153,15 @@ export default function WarlordRecruitment({
             <Dialog.Content className="DialogContent">
               <Dialog.Title className="DialogTitle">Recruit</Dialog.Title>
               <div className={styles.recruitContent}>
-                <div className={styles.recruitCoins}><CoinDisplay coins={remainCoins} /></div>
+                {player && <div className={styles.recruitCoins}>
+                  <WarlordCoins key={`${player.id}:${gameState.turn}`} boardId={boardId} mapId={mapId} gameState={gameState}
+                    player={player} processing={processing} reservedCoins={queueCost} />
+                </div>}
+                <div className={styles.coinBudget}>
+                  <span className={styles.coinBudgetQueue}>Queued: {queue?.length || 0}</span>
+                  <span className={styles.coinBudgetLabel}>Budget: </span>
+                  <CoinDisplay coins={remainCoins} />
+                </div>
                 <EntityList
                   entities={availableMonsters.map(monster => getMonsterEntity(monster, monster, remainCoins))}
                   onClickEntity={processing || isRecruiting ? undefined : recruitMonster}

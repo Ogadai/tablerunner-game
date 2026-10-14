@@ -1,0 +1,39 @@
+.allocation {
+  flex: 1;
+  min-width: 0;
+  margin: 0 15px;
+  position: relative;
+}
+
+.balances {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.balance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 0.9em;
+}
+
+.slider {
+  width: 100%;
+  margin: 8px 0 0;
+  accent-color: var(--gold-bright);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8em;
+  text-align: center;
+}
+
+.statusMessage {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  margin: 0 0 0 -5px;
+  font-size: 0.8em;
+}

@@ -42,19 +42,17 @@ export function actionNpcRecruit(params: BaseParams, npc: NPCState, action: Play
   const team = npc.team ? state.teams[npc.team] : undefined;
   if (!team || npc.health <= 0 || npc.masterId || !team.territory.includes(npc.location.id)
       || getEnemies(params, npc).some(enemy => enemy.health > 0)) return;
-  const player = params.gameState.players.find(player => player.team === npc.team);
   const eligible = getWarlordAvailableMonsters(params.gameState, npc.team!);
   for (const type of action.monsters) {
     if (!eligible.includes(type) || !monsters[type] || playerMonsters.includes(type)
         || mostersExcludeFromAutoPopulate.includes(type)) continue;
     const cost = getMonsterCost(type);
-    if (cost > (player?.coins ?? team.coins)) break;
+    if (cost > team.coins) break;
     params.monsters.push(generateMonster(params.gameState, {
       type, location: npc.location.id, team: npc.team, health: monsters[type].baseStats.health,
       scriptedActions: true,
     }));
-    if (player) player.coins -= cost;
-    else team.coins -= cost;
+    team.coins -= cost;
   }
   // Recruitment is a single batch; future defence needs are evaluated afresh.
   const command = state.teams[npc.id];

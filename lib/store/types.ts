@@ -243,6 +243,8 @@ export interface PlayerInventoryState {
   equipped: PlayerInventoryEquipSlots | null
   equipment: PlayerItem[] | null;
   coins?: number;
+  /** Coins moved from the player to their Warlords team; negative values withdraw. */
+  teamCoinTransfer?: number;
   hiredNpcIds?: string[];
 }
 

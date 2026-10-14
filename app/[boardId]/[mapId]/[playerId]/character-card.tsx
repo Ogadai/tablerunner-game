@@ -3,7 +3,7 @@ import { Dialog } from 'radix-ui';
 
 import tabStyles from './tabs.module.css';
 
-import { getDisplayName, INamedTarget, NPCState, PlayerInventoryState, PlayerState } from '@/lib/store/types';
+import { GameState, getDisplayName, INamedTarget, NPCState, PlayerInventoryState, PlayerState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import Inventory from './inventory';
 import { dropItemAtLocation, getPlayerInventory, giveItemToNpc, playerEquipItem, takeItemFromNpc } from '@/lib/store/playerInventory';
@@ -27,6 +27,8 @@ export default function CharacterCard({
   usedItemIds,
   onHired,
   followerNPCs,
+  gameState,
+  processing,
 }: {
   boardId: string;
   mapId: string;
@@ -40,6 +42,8 @@ export default function CharacterCard({
   usedItemIds: string[];
   onHired: () => void;
   followerNPCs?: NPCState[];
+  gameState?: GameState;
+  processing?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
   const [inventoryResult, setInventoryResult] = useState<{
@@ -175,6 +179,9 @@ export default function CharacterCard({
             player={displayedPlayerState}
             playerStats={playerStats}
             isSelf={isSelf}
+            gameState={gameState}
+            inventory={pendingInventory}
+            processing={processing}
           />
           :
           <NpcCard

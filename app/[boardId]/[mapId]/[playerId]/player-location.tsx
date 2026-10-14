@@ -330,6 +330,8 @@ export default function PlayerLocation(
         actionsState={actionsState}
         playerStats={playerStats}
         addNewAction={addNewAction}
+        gameState={gameState}
+        processing={processing}
       />
     
       { gameState.gameId === 'warlordsfire' && <WarlordRecruitment

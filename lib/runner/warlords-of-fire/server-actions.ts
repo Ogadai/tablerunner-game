@@ -2,11 +2,50 @@
 
 import { ApiResponse } from "@/lib/api-response";
 import { WarlordInstruction, WarlordInstructionRecruit } from "./warlords-types";
-import { getGameStateFromRedis, getLocationsStateFromRedis, getPlayerInstructionsFromRedis, lockGameStateInRedis, lockLocationsStateInRedis, lockPlayerActionsInRedis, setLocationsStateInRedis, setPlayerInstructionsInRedis } from "@/lib/store/redis-access";
+import { getGameStateFromRedis, getLocationsStateFromRedis, getPlayerInstructionsFromRedis, getPlayerInventoryFromRedis, lockGameStateInRedis, lockLocationsStateInRedis, lockPlayerActionsInRedis, setLocationsStateInRedis, setPlayerInstructionsInRedis, setPlayerInventoryInRedis } from "@/lib/store/redis-access";
+import { PlayerInventoryState } from "@/lib/store/types";
+import { getState } from './territory-state';
 
 const DEFAULT_INSTRUCTIONS: WarlordInstruction = {
   recruit: [],
 };
+
+export async function warlordAllocateCoins(boardId: string, mapId: string, playerId: string, teamCoins: number): Promise<ApiResponse<PlayerInventoryState>> {
+  let gameStateLock: (() => Promise<void>) | null = null;
+  try {
+    gameStateLock = await lockGameStateInRedis(boardId, mapId);
+    const gameState = await getGameStateFromRedis(boardId, mapId);
+    const player = gameState?.players.find(player => player.id === playerId);
+    if (gameState?.gameId !== 'warlordsfire' || !player) {
+      throw new Error('Coin allocation is only available to Warlords players');
+    }
+    if (player.health <= 0) {
+      throw new Error('Cannot allocate coins while dead');
+    }
+
+    const team = getState(gameState).teams[player.team || player.id];
+    if (!team) throw new Error('Team is not available');
+    const inventory = await getPlayerInventoryFromRedis(boardId, mapId, playerId);
+    const personalCoins = inventory.coins ?? player.coins;
+    const previousTransfer = inventory.teamCoinTransfer ?? 0;
+    const change = teamCoins - (team.coins + previousTransfer);
+    if (!Number.isSafeInteger(teamCoins) || teamCoins < 0 || change > personalCoins) {
+      throw new Error('Coin allocation must be within the available balance');
+    }
+
+    const updatedInventory: PlayerInventoryState = {
+      ...inventory,
+      coins: personalCoins - change,
+      teamCoinTransfer: previousTransfer + change,
+    };
+    await setPlayerInventoryInRedis(boardId, mapId, playerId, updatedInventory);
+    return { success: true, data: updatedInventory };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  } finally {
+    if (gameStateLock) await gameStateLock();
+  }
+}
 
 export async function getPlayerWarlordInstructions(boardId: string, mapId: string, playerId: string): Promise<ApiResponse<WarlordInstruction>> {
   try {

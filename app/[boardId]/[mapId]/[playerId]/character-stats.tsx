@@ -4,12 +4,13 @@ import { CharacterStats as CharacterStatsType } from '@/lib/games/types';
 import styles from './character-stats.module.css';
 import statsStyles from './entity-base-stats.module.css';
 
-import { PlayerState, PlayerAddStatsState } from '@/lib/store/types';
+import { GameState, PlayerState, PlayerAddStatsState, PlayerInventoryState } from '@/lib/store/types';
 import EntityBaseStats from './entity-base-stats';
 
 import { setPlayerAddStatsState } from '@/lib/store/playerStatsState';
 import CoinDisplay from './coin-display';
 import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
+import WarlordCoins from './warlords-of-fire/warlord-coins';
 
 const emptyStats: CharacterStatsType = {
   strength: 0,
@@ -25,12 +26,18 @@ export default function CharacterStats({
   player,
   playerStats,
   isSelf,
+  gameState,
+  inventory,
+  processing,
 }: {
   boardId: string;
   mapId: string;
   player: PlayerState;
   playerStats: PlayerStats | null;
   isSelf: boolean;
+  gameState?: GameState;
+  inventory?: PlayerInventoryState;
+  processing?: boolean;
 }) {
   const [playerAddStats, setPlayerAddStats] = useState<PlayerAddStatsState>({ characterStats: emptyStats });
 
@@ -79,7 +86,10 @@ export default function CharacterStats({
 
   return <>
     <div className={styles.characterHeader}>
-      <CoinDisplay coins={player.coins} />
+      {gameState?.gameId === 'warlordsfire'
+        ? <WarlordCoins key={`${player.id}:${gameState.turn}`} boardId={boardId} mapId={mapId} gameState={gameState} player={player}
+            isSelf={isSelf} inventory={inventory} processing={processing} />
+        : <CoinDisplay coins={player.coins} />}
       { player.availableStats > 0 && <div className={ styles.availablePointsPrompt }>
         Assign points: <span className={ styles.availablePoints }>{ availablePoints }</span>
       </div> }

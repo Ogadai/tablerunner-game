@@ -40,7 +40,7 @@ describe('PlayerStatsSyncService', () => {
     await service.getStats();
     expect(listener).toHaveBeenLastCalledWith(stats, { actions: [] }, { characterStats: added },
       expect.objectContaining({ coins: 0, characterStats: original.characterStats,
-        equipment: [{ id: 'sword', type: 'swordRusty' }] }));
+        equipment: [{ id: 'sword', type: 'swordRusty' }] }), inputs.inventory);
     expect(player).toEqual(original);
     dispose();
   });
@@ -81,7 +81,7 @@ describe('PlayerStatsSyncService', () => {
     service.subscribe(listener);
     await service.getStats();
     expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, { characterStats: null },
-      expect.objectContaining({ equipment: player.equipment, equipped: player.equipped }));
+      expect.objectContaining({ equipment: player.equipment, equipped: player.equipped }), inputs.inventory);
   });
 
   it('preserves pending inventory when an action returns no data and accepts an explicitly empty inventory', async () => {
@@ -104,12 +104,26 @@ describe('PlayerStatsSyncService', () => {
     service.updateActionsState({ actions: [] });
     await service.getStats();
     expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, inputs.addedStats,
-      expect.objectContaining(inventory));
+      expect.objectContaining(inventory), inventory);
 
     service.updateInventory({ equipment: [], equipped: {}, coins: 0 });
     await service.getStats();
     expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, inputs.addedStats,
-      expect.objectContaining({ equipment: [], coins: 0 }));
+      expect.objectContaining({ equipment: [], coins: 0 }), { equipment: [], equipped: {}, coins: 0 });
+    dispose();
+  });
+
+  it('ignores a coin-allocation response from an earlier turn snapshot', async () => {
+    const oldPlayer = makePlayer({ coins: 120 });
+    service.updatePlayer(oldPlayer, inputs);
+    const currentPlayer = { ...oldPlayer, coins: 150 };
+    service.updatePlayer(currentPlayer, inputs);
+    service.updateInventory({ equipment: null, equipped: null, coins: 60, teamCoinTransfer: 60 }, oldPlayer);
+    const listener = jest.fn();
+    const dispose = service.subscribe(listener);
+    await service.getStats();
+    expect(listener.mock.calls.at(-1)?.[3].coins).toBe(150);
+    expect(listener.mock.calls.at(-1)?.[4]).toEqual(inputs.inventory);
     dispose();
   });
 });

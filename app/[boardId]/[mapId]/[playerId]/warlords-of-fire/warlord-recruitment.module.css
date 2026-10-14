@@ -11,9 +11,20 @@
 }
 
 .recruitCoins {
-  position: absolute;
-  left: 80px;
-  top: -38px;
+  margin-bottom: 15px;
+}
+
+.coinBudget {
+  margin: 0 15px 10px 15px;
+  display: flex;
+  font-size: 0.9em;
+}
+.coinBudgetQueue {
+  padding-top: 2px;
+  flex: 1 1 auto;
+}
+.coinBudgetLabel {
+  padding-top: 2px;
 }
 
 .buttons {

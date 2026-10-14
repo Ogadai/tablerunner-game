@@ -3,9 +3,11 @@ import { setPlayerAddStatsState } from '@/lib/store/playerStatsState';
 import type { PlayerAddStatsState } from '@/lib/store/types';
 import CharacterStats from './character-stats';
 import sync from './player-stats-sync.service';
-import { makePlayer, makeStats } from './test-fixtures';
+import { makeGameState, makePlayer, makeStats } from './test-fixtures';
+import WarlordCoins from './warlords-of-fire/warlord-coins';
 
 jest.mock('@/lib/store/playerStatsState', () => ({ setPlayerAddStatsState: jest.fn() }));
+jest.mock('./warlords-of-fire/warlord-coins', () => ({ __esModule: true, default: jest.fn(() => <p>Team coins</p>) }));
 jest.mock('./player-stats-sync.service', () => ({ __esModule: true, default: {
   subscribe: jest.fn(), getAddStateState: jest.fn(), updateAddStatsState: jest.fn(),
 } }));
@@ -55,4 +57,18 @@ describe('CharacterStats', () => {
       expect(screen.queryByRole('button', { name: /Increase/ })).not.toBeInTheDocument();
     },
   );
+
+  it.each(['warlordsfire', 'racefire'])('uses the shared allocation display only for Warlords (%s)', async gameId => {
+    const player = makePlayer();
+    const gameState = makeGameState({ gameId, players: [player] });
+    render(<CharacterStats boardId="board" mapId="map" player={player} playerStats={null} isSelf gameState={gameState} />);
+    await act(async () => {});
+    if (gameId === 'warlordsfire') {
+      expect(jest.mocked(WarlordCoins).mock.calls.at(-1)?.[0]).toMatchObject({ player, gameState, isSelf: true });
+      expect(screen.queryByAltText('Coins')).not.toBeInTheDocument();
+    } else {
+      expect(WarlordCoins).not.toHaveBeenCalled();
+      expect(screen.getByAltText('Coins')).toBeInTheDocument();
+    }
+  });
 });

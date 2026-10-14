@@ -43,7 +43,8 @@ type PlayerStatsListener = (
   playerStats: PlayerStats,
   actionsState: PlayerActionsState,
   addStatsState: PlayerAddStatsState | null,
-  activePlayer: PlayerState | null
+  activePlayer: PlayerState | null,
+  inventoryState?: PlayerInventoryState | null
 ) => void;
 
 class PlayerStatsSyncService {
@@ -81,9 +82,9 @@ class PlayerStatsSyncService {
     this.statsPromise = this.getUpdatedStats();
   }
 
-  updateInventory(inventoryState: PlayerInventoryState | undefined): void {
+  updateInventory(inventoryState: PlayerInventoryState | undefined, sourcePlayer?: PlayerState): void {
     // Missing data from a failed action must not clear the current inventory.
-    if (!inventoryState) return;
+    if (!inventoryState || (sourcePlayer && sourcePlayer !== this.player)) return;
     this.inventoryState = inventoryState;
     this.statsPromise = this.getUpdatedStats();
   }
@@ -103,7 +104,7 @@ class PlayerStatsSyncService {
 
     this.statsPromise.then(() => {
       if (this.listeners.has(listener)) {
-        listener(this.currentStats, this.actionsState || { actions: [] }, this.addStatsState, this.activePlayer);
+        listener(this.currentStats, this.actionsState || { actions: [] }, this.addStatsState, this.activePlayer, this.inventoryState);
       }
     });
 
@@ -185,7 +186,8 @@ class PlayerStatsSyncService {
         playerStats,
         actionsState || { actions: [] },
         addStatsState || null,
-        activePlayer
+        activePlayer,
+        inventoryState
       );
     }
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
-import { getDisplayName, getMonsterName, INamedTarget, MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
+import { GameState, getDisplayName, getMonsterName, INamedTarget, MonsterState, NPCState, PlayerAction, PlayerActionAttack, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from '@/lib/store/types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import MonsterCard from './monster-card';
 import CharacterCard from './character-card';
@@ -27,6 +27,8 @@ export interface PlayerLocationListProps {
   playerStats: PlayerStats;
   actionsState: PlayerActionsState;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
+  gameState?: GameState;
+  processing?: boolean;
 }
 
 export default function PlayerLocationList({
@@ -41,6 +43,8 @@ export default function PlayerLocationList({
   playerStats,
   actionsState,
   addNewAction,
+  gameState,
+  processing,
 }: PlayerLocationListProps) {
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
@@ -196,6 +200,8 @@ export default function PlayerLocationList({
                 onLearnScroll={onLearnScroll}
                 onHired={onHired}
                 followerNPCs={followerNPCs}
+                gameState={gameState}
+                processing={processing}
               ></CharacterCard>
             }
           </div>

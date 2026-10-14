@@ -125,7 +125,7 @@ it('lets an independent sub-commander recruit using the player-led faction pool 
   const leader = createPlayer({ id: 'leader', team: 'leader', coins: getMonsterCost('orc') });
   params.gameState.players = [leader];
   const state = getState(params.gameState);
-  state.teams.leader = { ...DEFAULT_TEAM_STATE, territory: [1], monsters: ['orc'], coins: 0 };
+  state.teams.leader = { ...DEFAULT_TEAM_STATE, territory: [1], monsters: ['orc'], coins: getMonsterCost('orc') };
   team.territory = [];
   team.monsters = [];
   team.npcDecision = { type: 'reinforce', location: 1, recruits: ['orc', 'orc'] };
@@ -133,6 +133,10 @@ it('lets an independent sub-commander recruit using the player-led faction pool 
   actionNpcRecruit(params, npc, { id: 1, type: PlayerActionType.Recruit, monsters: ['orc', 'orc'], description: '' });
   expect(params.monsters).toHaveLength(1);
   expect(params.monsters[0].team).toBe(leader.team);
-  expect(leader.coins).toBe(0);
+  expect(leader.coins).toBe(getMonsterCost('orc'));
+  expect(state.teams.leader.coins).toBe(0);
   expect(team.npcDecision).toBeUndefined();
+  actionNpcRecruit(params, npc, { id: 2, type: PlayerActionType.Recruit, monsters: ['orc'], description: '' });
+  expect(params.monsters).toHaveLength(1);
+  expect(leader.coins).toBe(getMonsterCost('orc'));
 });

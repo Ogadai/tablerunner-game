@@ -242,7 +242,6 @@ export const npcProcesses: ProcessRunner = {
         // Each commander keeps its own goal while sharing the faction's resources.
         const command = {
           ...faction,
-          coins: gameState.players.find(player => player.team === npc.team)?.coins ?? faction.coins,
           npcDecision: team.npcDecision,
         };
         orders[npc.id] = planNpcTurn(turnParams, npc, command);

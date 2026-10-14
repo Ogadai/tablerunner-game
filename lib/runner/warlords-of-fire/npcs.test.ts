@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import * as store from '@/lib/store/redis-access';
-import { createGame, createMonster, createNpc, createParams } from '../test-support/fixtures';
+import { createGame, createMonster, createNpc, createParams, createPlayer } from '../test-support/fixtures';
 import { createLocations } from '@/lib/store/test-support/fixtures';
 import { npcProcesses } from './npcs';
 import { planNpcTurn } from './npc-strategy';
@@ -91,4 +91,19 @@ it('keeps separate plans for captured sub-commanders using their faction territo
   expect(state.teams.leader.npcDecision).toEqual({ type: 'expand', from: 1, location: 4 });
   expect(state.teams.sub.npcDecision).toEqual({ type: 'expand', from: 1, location: 5 });
   expect(planNpcTurn).toHaveBeenCalledTimes(2);
+});
+
+it('plans sub-commander recruitment with team coins and excludes the player\'s personal balance', async () => {
+  const player = createPlayer({ id: 'leader', team: 'leader', coins: 200 });
+  const npc = createNpc({ scriptedActions: true, team: player.team, masterId: null });
+  const game = createGame({ gameId: 'warlordsfire', players: [player], npcs: [npc] });
+  saveState(game, { teams: {
+    leader: { ...DEFAULT_TEAM_STATE, territory: [1, 2], coins: 25 },
+    npc: { ...DEFAULT_TEAM_STATE },
+  } });
+  jest.mocked(store.getGameStateFromRedis).mockResolvedValue(game);
+  jest.mocked(store.getLocationsStateFromRedis).mockResolvedValue(createLocations({ npcs: [npc] }));
+  await npcProcesses.executeBetweenTurns!(createParams());
+  expect(planNpcTurn).toHaveBeenCalledWith(expect.anything(), npc, expect.objectContaining({ coins: 25 }));
+  expect(player.coins).toBe(200);
 });

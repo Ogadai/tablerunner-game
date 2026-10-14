@@ -1,6 +1,7 @@
 import { GameState, INamedTarget, NOTHING_EQUPPED, PlayerInventoryEquipSlots, PlayerInventoryState, PlayerState } from "../store/types";
 import { BaseParams } from "./base-params";
 import { ItemDef, PlayerItem } from "../games/types";
+import { getState, saveState } from './warlords-of-fire/territory-state';
 
 export function applyCharacterInventory(player: INamedTarget, result: PlayerInventoryState): void {
   if (result.equipped) {
@@ -23,6 +24,17 @@ export async function applyPlayerInventory(params: BaseParams, player: PlayerSta
 
   if (result.coins !== undefined) {
     player.coins = result.coins;
+  }
+
+  if (params.gameState.gameId === 'warlordsfire' && result.teamCoinTransfer) {
+    const state = getState(params.gameState);
+    const teamId = player.team || player.id;
+    const team = state.teams[teamId];
+    if (!team || !Number.isSafeInteger(result.teamCoinTransfer) || team.coins + result.teamCoinTransfer < 0) {
+      throw new Error('Invalid pending team coin transfer');
+    }
+    state.teams[teamId] = { ...team, coins: team.coins + result.teamCoinTransfer };
+    saveState(params.gameState, state);
   }
 
   for (const npcId of result.hiredNpcIds || []) {
