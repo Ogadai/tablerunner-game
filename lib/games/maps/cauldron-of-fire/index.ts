@@ -22,5 +22,23 @@ export const cauldronOfFire: GameListEntry = {
   itemLocations: cauldronOfFireItems,
   storeItems: cauldronOfFireStoreItems,
   portalLocations: cauldronOfFirePortals,
+  gameTips: [
+    {
+      turn: 1,
+      markDownMessage: 'Try to travel *North* to the village at **91** where there are shops.'
+    },
+    {
+      turn: 2,
+      markDownMessage: 'Monsters are more dangerous away from roads, further north and underground.'
+    },
+    {
+      turn: 4,
+      markDownMessage: 'You need to have a strong party. Stick together or hire an NPC at the shops.'
+    },
+    {
+      turn: 6,
+      markDownMessage: 'You can sell your Resurrection Stone to get Coins to hire an NPC or buy equipment.'
+    }
+  ]
 };
 

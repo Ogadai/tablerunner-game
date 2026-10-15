@@ -15,6 +15,8 @@ import { saveGameToBlob } from '@/lib/store/saveGameBlobs';
 import { storeBoardDefaultSettings, type GameState, type PlayerSnapshot } from "@/lib/store/types";
 import gameStateLightingService from './game-state-lighting-service';
 import TeamSelectionContent from './race-of-fire/team-selection-content';
+import { games } from '@/lib/games/games';
+import GameTips from './game-tips';
 
 const subscribeFullscreen = (onChange: () => void) => {
   document.addEventListener('fullscreenchange', onChange);
@@ -35,9 +37,11 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
   }
 ) {
   const router = useRouter();
-  const [activeDialog, setActiveDialog] = useState<'settings' | 'team' | null>(null);
+  const [activeDialog, setActiveDialog] = useState<'settings' | 'team' | 'tips' | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const settingsOpen = activeDialog === 'settings';
   const isRaceOfFire = gameState?.gameId === 'racefire';
+  const gameTips = games.find(game => game.id === gameState?.gameId)?.gameTips;
   const fullscreenState = useSyncExternalStore(subscribeFullscreen, getFullscreenState, getServerFullscreenState);
   const isFullscreen = fullscreenState === 'fullscreen';
   const [brightness, setBrightness] = useState(storeBoardDefaultSettings.brightness);
@@ -154,11 +158,11 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
     router.push(`/${boardId}/${mapId}/load`);
   }
 
-  return (
+  return (<>
     <Dialog.Root open={settingsOpen || (activeDialog === 'team' && isRaceOfFire && !!snapshot)} onOpenChange={open => {
       if (!open) setActiveDialog(null);
     }}>
-      <DropdownMenu.Root>
+      <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
 			<DropdownMenu.Trigger asChild>
 				<button className={`${styles.IconButton}`} aria-label="Settings">
 					<HamburgerMenuIcon />
@@ -176,6 +180,11 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
           {isRaceOfFire && (
             <DropdownMenu.Item className={styles.Item} disabled={!snapshot || !onSnapshotChange} onSelect={() => setActiveDialog('team')}>
               Choose Team <div className={`${styles.RightSlot} material-symbols-outlined`}>groups</div>
+            </DropdownMenu.Item>
+          )}
+          {!!gameTips?.length && (
+            <DropdownMenu.Item className={styles.Item} onSelect={() => setActiveDialog('tips')}>
+              Game Tips <div className={`${styles.RightSlot} material-symbols-outlined`}>lightbulb</div>
             </DropdownMenu.Item>
           )}
           <DropdownMenu.Item className={styles.Item} onClick={() => setActiveDialog('settings')}>
@@ -234,5 +243,14 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
           </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
+    {gameState && !!gameTips?.length && <GameTips
+      key={gameState.gameId}
+      gameId={gameState.gameId}
+      turn={gameState.turn}
+      tips={gameTips}
+      reviewOpen={activeDialog === 'tips'}
+      allowPopup={!!snapshot && !menuOpen && activeDialog === null}
+      onReviewClose={() => setActiveDialog(null)}
+    />}
+  </>);
 }

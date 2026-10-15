@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Swal, { type SweetAlertOptions } from 'sweetalert2';
 import { deleteGameState, getBoardSettings, setBoardSettings } from '@/lib/store/gameState';
@@ -20,6 +21,7 @@ jest.mock('@/app/swal', () => ({ getSwalDefaultOptions: () => ({}) }));
 jest.mock('@/lib/store/gameState', () => ({ deleteGameState: jest.fn(), getBoardSettings: jest.fn(), setBoardSettings: jest.fn() }));
 jest.mock('@/lib/store/saveGameBlobs', () => ({ saveGameToBlob: jest.fn() }));
 jest.mock('./game-state-lighting-service', () => ({ __esModule: true, default: { applySettings: jest.fn() } }));
+jest.mock('react-markdown', () => ({ __esModule: true, default: ({ children }: { children: ReactNode }) => <p>{children}</p> }));
 
 describe('PlayHeaderMenu', () => {
   const originalResizeObserver = global.ResizeObserver;
@@ -45,6 +47,33 @@ describe('PlayHeaderMenu', () => {
     jest.mocked(Swal.isLoading).mockReturnValue(false);
   });
   afterEach(() => jest.useRealTimers());
+
+  describe('game tips', () => {
+    it.each(['click', 'keyboard'])('opens tips through this turn via %s', async interaction => {
+      render(<PlayHeaderMenu boardId="board" mapId="map" gameState={makeGameState({ gameId: 'cauldronfire', turn: 2 })} />);
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
+      await act(async () => {
+        const item = screen.getByRole('menuitem', { name: /Game Tips/ });
+        if (interaction === 'keyboard') fireEvent.keyDown(item, { key: 'Enter' });
+        else fireEvent.click(item);
+      });
+      expect(screen.getByRole('dialog', { name: 'Game Tips' })).toBeInTheDocument();
+      expect(screen.getByText(/Try to travel/)).toBeInTheDocument();
+      expect(screen.getByText(/Monsters are more dangerous/)).toBeInTheDocument();
+      expect(screen.queryByText(/You need to have a strong party/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/^Turn \d+$/)).not.toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: 'Show tips' })).toBeChecked();
+      expect(getBoardSettings).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Close tips' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('hides the tips menu for games without tips', () => {
+      render(<PlayHeaderMenu boardId="board" mapId="map" gameState={makeGameState({ gameId: 'racefire' })} />);
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
+      expect(screen.queryByRole('menuitem', { name: /Game Tips/ })).not.toBeInTheDocument();
+    });
+  });
 
   describe('team selection', () => {
     const race = makeGameState({ gameId: 'racefire' });

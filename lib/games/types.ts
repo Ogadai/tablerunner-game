@@ -12,6 +12,12 @@ export interface GameListEntry {
   storeItems: { [locationId: number]: string[] };
   portalLocations?: number[];
   visitedLocations?: number[];
+  gameTips?: GameTip[];
+}
+
+export interface GameTip {
+  turn: number;
+  markDownMessage: string;
 }
 
 export interface GameItemLocation {
