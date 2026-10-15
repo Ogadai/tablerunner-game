@@ -69,8 +69,8 @@ describe('PlayHeaderMenu', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('hides the tips menu for games without tips', () => {
-      render(<PlayHeaderMenu boardId="board" mapId="map" gameState={makeGameState({ gameId: 'racefire' })} />);
+    it('hides the tips menu when no tips are defined', () => {
+      render(<PlayHeaderMenu boardId="board" mapId="map" gameState={makeGameState()} />);
       fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
       expect(screen.queryByRole('menuitem', { name: /Game Tips/ })).not.toBeInTheDocument();
     });
