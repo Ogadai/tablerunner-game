@@ -16,6 +16,8 @@ import { storeBoardDefaultSettings, type GameState, type PlayerSnapshot } from "
 import gameStateLightingService from './game-state-lighting-service';
 import TeamSelectionContent from './race-of-fire/team-selection-content';
 import { games } from '@/lib/games/games';
+import { getGameTopicId } from '@/lib/message-types';
+import GameTopicService from '@/app/message-bus/game-topic-service';
 import GameTips from './game-tips';
 
 const subscribeFullscreen = (onChange: () => void) => {
@@ -145,7 +147,17 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
     })
 
     if (result.isConfirmed) {
-      await deleteGameState(boardId, mapId);
+      const response = await deleteGameState(boardId, mapId);
+      if (!response.success) {
+        await Swal.fire({
+          ...getSwalDefaultOptions(),
+          title: 'Unable to delete game',
+          text: 'Please try again.',
+          icon: 'error',
+        });
+        return;
+      }
+      GameTopicService.raiseGameStateUpdated(getGameTopicId(boardId, mapId));
       router.push(`/${boardId}/${mapId}`);
     }
   };

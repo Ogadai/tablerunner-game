@@ -464,10 +464,10 @@ describe('locks', () => {
 });
 
 describe('game deletion', () => {
-  it('does nothing when the game is absent', async () => {
+  it('notifies subscribers even when the game is already absent', async () => {
     await store.deleteGameStateFromRedis('b', 'm');
     expect(client.del).not.toHaveBeenCalled();
-    expect(publishMessage).not.toHaveBeenCalled();
+    expect(publishMessage).toHaveBeenCalledWith('b', 'm', { type: 'game_state_updated' });
   });
 
   it('removes player, store, scripted monster and processing data before notifying subscribers', async () => {
@@ -477,11 +477,37 @@ describe('game deletion', () => {
       { id: 'normal', type: 'rat', health: 1, location: 1, team: 'monster' },
     ] }));
     await store.deleteGameStateFromRedis('b', 'm');
-    expect(client.del.mock.calls.map(([key]) => key).sort()).toEqual([
+    expect(client.del).toHaveBeenCalledTimes(1);
+    expect([...client.del.mock.calls[0]].sort()).toEqual([
       'game:b:m', 'playersReady:b:m', 'playerActions:b:m:hero', 'playerMessages:b:m:hero',
       'playerStats:b:m:hero', 'playerInventory:b:m:hero', 'playerInstructions:b:m:hero', 'store:b:m:1', 'npcActions:b:m:boss',
       'playerMessages:b:m:boss', 'monsters:b:m', 'processingTurn:b:m',
     ].sort());
     expect(publishMessage).toHaveBeenCalledWith('b', 'm', { type: 'game_state_updated' });
+  });
+
+  it('deletes older game data without NPC collections before notifying subscribers', async () => {
+    client.get.mockResolvedValueOnce(createGame({ npcs: undefined }))
+      .mockResolvedValueOnce(createLocations({ npcs: undefined }));
+    await store.deleteGameStateFromRedis('b', 'm');
+    expect(client.del.mock.calls[0]).toContain('game:b:m');
+    expect(publishMessage).toHaveBeenCalledWith('b', 'm', { type: 'game_state_updated' });
+  });
+
+  it('keeps the game when reading related state fails', async () => {
+    client.get.mockResolvedValueOnce(createGame()).mockRejectedValueOnce(new Error('Read failed'));
+    await expect(store.deleteGameStateFromRedis('b', 'm')).rejects.toThrow('Read failed');
+    expect(client.del).not.toHaveBeenCalled();
+    expect(publishMessage).not.toHaveBeenCalled();
+  });
+
+  it('retries notifying subscribers after deletion succeeds but publishing fails', async () => {
+    client.get.mockResolvedValueOnce(createGame()).mockResolvedValueOnce(createLocations());
+    jest.mocked(publishMessage).mockRejectedValueOnce(new Error('Publish failed')).mockResolvedValueOnce(undefined);
+    await expect(store.deleteGameStateFromRedis('b', 'm')).rejects.toThrow('Publish failed');
+    await store.deleteGameStateFromRedis('b', 'm');
+    expect(client.del).toHaveBeenCalledTimes(1);
+    expect(publishMessage).toHaveBeenCalledTimes(2);
+    expect(publishMessage).toHaveBeenLastCalledWith('b', 'm', { type: 'game_state_updated' });
   });
 });

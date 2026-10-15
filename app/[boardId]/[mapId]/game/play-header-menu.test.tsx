@@ -43,6 +43,7 @@ describe('PlayHeaderMenu', () => {
     jest.useFakeTimers();
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     jest.mocked(Swal.fire).mockResolvedValue({ isConfirmed: false, isDenied: false, isDismissed: true });
+    jest.mocked(deleteGameState).mockResolvedValue({ success: true });
     jest.mocked(getBoardSettings).mockResolvedValue({ success: true, data: { brightness: 75 } });
     jest.mocked(Swal.isLoading).mockReturnValue(false);
   });
@@ -242,6 +243,15 @@ describe('PlayHeaderMenu', () => {
       expect(deleteGameState).not.toHaveBeenCalled();
       expect(push).not.toHaveBeenCalled();
     }
+  });
+
+  it('shows deletion failures without navigating away', async () => {
+    jest.mocked(Swal.fire).mockResolvedValueOnce({ isConfirmed: true, isDenied: false, isDismissed: false });
+    jest.mocked(deleteGameState).mockResolvedValue({ success: false, error: 'Publish failed' });
+    mount();
+    await select(/Delete Game/);
+    expect(Swal.fire).toHaveBeenNthCalledWith(2, expect.objectContaining({ title: 'Unable to delete game', icon: 'error' }));
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('loads settings on demand and debounces persistence and hardware updates', async () => {

@@ -174,40 +174,41 @@ export async function deleteGameStateFromRedis(boardId: string, mapId: string): 
   const gameState = await redis.get(getGameKey(boardId, mapId)) as GameState;
 
   if (gameState) {
-    // Delete data from Redis
-    await redis.del(getGameKey(boardId, mapId));
-
-    // Also delete any related game state in Redis
-    await deleteReadyStateFromRedis(boardId, mapId);
+    const locations = await getLocationsStateFromRedis(boardId, mapId);
+    const keys = [
+      getGameKey(boardId, mapId),
+      getPlayersReadyKey(boardId, mapId),
+      getLocationsKey(boardId, mapId),
+      getProcessingKey(boardId, mapId),
+    ];
 
     for(const player of gameState.players) {
-      await deleteActionsStateFromRedis(boardId, mapId, player.id);
-      await deletePlayerMessagesFromRedis(boardId, mapId, player.id);
-      await deletePlayerStatsFromRedis(boardId, mapId, player.id);
-      await deletePlayerInventoryFromRedis(boardId, mapId, player.id);
-      await deletePlayerInstructionsFromRedis(boardId, mapId, player.id);
+      keys.push(
+        getPlayerActionsKey(boardId, mapId, player.id),
+        getPlayerMessagesKey(boardId, mapId, player.id),
+        getPlayerStatsKey(boardId, mapId, player.id),
+        getPlayerInventoryKey(boardId, mapId, player.id),
+        getPlayerInstructionsKey(boardId, mapId, player.id),
+      );
     }
 
     for(const storeLocation of gameState.stores) {
-      deleteStoreStateFromRedis(boardId, mapId, storeLocation);
+      keys.push(getStoreInventoryKey(boardId, mapId, storeLocation));
     }
 
-    const locations = await getLocationsStateFromRedis(boardId, mapId);
-    for (const npcId of new Set([...gameState.npcs, ...locations.npcs].map(npc => npc.id))) {
-      await deletePlayerInventoryFromRedis(boardId, mapId, npcId);
-      await deleteMonsterActionsStateFromRedis(boardId, mapId, npcId);
+    for (const npcId of new Set([...(gameState.npcs ?? []), ...(locations.npcs ?? [])].map(npc => npc.id))) {
+      keys.push(getPlayerInventoryKey(boardId, mapId, npcId), getMonsterActionsKey(boardId, mapId, npcId));
     }
     for (const monster of locations.monsters.filter(m => m.scriptedActions)) {
-      await deleteMonsterActionsStateFromRedis(boardId, mapId, monster.id);
-      await deletePlayerMessagesFromRedis(boardId, mapId, monster.id);
+      keys.push(getMonsterActionsKey(boardId, mapId, monster.id), getPlayerMessagesKey(boardId, mapId, monster.id));
     }
 
-    // Delete the monsters state from Redis
-    await deleteLocationsStateFromRedis(boardId, mapId);
-    await deleteProcessingTurnFromRedis(boardId, mapId);
-
-    await publishGameStateUpdated(boardId, mapId);
+    // Remove the game and its related state together before notifying clients.
+    await redis.del(...new Set(keys));
   }
+
+  // A retry must still notify clients if the game was deleted before publishing failed.
+  await publishGameStateUpdated(boardId, mapId);
 }
 
 export async function publishGameStateUpdated(boardId: string, mapId: string): Promise<void> {
