@@ -24,6 +24,26 @@ export const cauldronOfFire: GameListEntry = {
   portalLocations: cauldronOfFirePortals,
   gameTips: [
     {
+      turn: 0,
+      character: 'barbarian',
+      markDownMessage: 'Apply your stats. A *Barbarian* needs **Strength** for melee combat and **Resilience** for health'
+    },
+    {
+      turn: 0,
+      character: 'ranger',
+      markDownMessage: 'Apply your stats. A *Ranger* needs **Skill** for ranged combat and **Resilience** for health'
+    },
+    {
+      turn: 0,
+      character: 'mage',
+      markDownMessage: 'Apply your stats. A *Mage* needs **Intelligence** for magic and **Resilience** for health'
+    },
+    {
+      turn: 0,
+      character: 'witch',
+      markDownMessage: 'Apply your stats. A *Witch* needs **Intelligence** for magic and **Resilience** for health'
+    },
+    {
       turn: 1,
       markDownMessage: 'Try to travel *North* to the village at **91** where there are shops.'
     },

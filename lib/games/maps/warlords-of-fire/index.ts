@@ -22,4 +22,38 @@ export const warlordsOfFire: GameListEntry = {
   storeItems: warlordsOfFireStoreItems,
   portalLocations: [],
   visitedLocations: visitedLocations,
+  gameTips: [
+    {
+      turn: 0,
+      character: 'barbarian',
+      markDownMessage: 'Apply your stats. A *Barbarian* needs **Strength** for melee combat and **Resilience** for health'
+    },
+    {
+      turn: 0,
+      character: 'ranger',
+      markDownMessage: 'Apply your stats. A *Ranger* needs **Skill** for ranged combat and **Resilience** for health'
+    },
+    {
+      turn: 0,
+      character: 'mage',
+      markDownMessage: 'Apply your stats. A *Mage* needs **Intelligence** for magic and **Resilience** for health'
+    },
+    {
+      turn: 0,
+      character: 'witch',
+      markDownMessage: 'Apply your stats. A *Witch* needs **Intelligence** for magic and **Resilience** for health'
+    },
+    {
+      turn: 2,
+      markDownMessage: '*Recruit* **monsters** them add them to your *Party*.'
+    },
+    {
+      turn: 4,
+      markDownMessage: 'Defeat **NPC Warlords** to recruit different monsters.'
+    },
+    {
+      turn: 5,
+      markDownMessage: 'Defeated **NPC Warlords** join your team.'
+    },
+  ]
 };

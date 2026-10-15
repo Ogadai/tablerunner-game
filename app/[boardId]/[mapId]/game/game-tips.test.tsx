@@ -112,6 +112,60 @@ describe('GameTips', () => {
     expect(screen.queryByText('Stay on the roads.')).not.toBeInTheDocument();
   });
 
+  describe('character-specific tips', () => {
+    const classTips = [
+      ...tips,
+      { turn: 1, character: 'mage', markDownMessage: 'Invest in intelligence.' },
+      { turn: 1, character: 'barbarian', markDownMessage: 'Invest in strength.' },
+      { turn: 4, character: 'mage', markDownMessage: 'Learn another spell.' },
+    ];
+
+    it.each([
+      ['mage', ['Visit the village.', 'Invest in intelligence.']],
+      ['barbarian', ['Visit the village.', 'Invest in strength.']],
+      ['ranger', ['Visit the village.']],
+      [undefined, ['Visit the village.']],
+    ] as const)('shows general and matching popup tips for %s', async (character, expected) => {
+      await mount({ character, tips: classTips });
+      expect(screen.getAllByRole('listitem').map(item => item.textContent)).toEqual(expected);
+    });
+
+    it('reviews only general and matching class tips through this turn', async () => {
+      await mount({ character: 'mage', tips: classTips, turn: 2, reviewOpen: true, allowPopup: false });
+      expect(screen.getAllByRole('listitem').map(item => item.textContent)).toEqual([
+        'Visit the village.', 'Invest in intelligence.', 'Stay on the roads.',
+      ]);
+      expect(screen.queryByText('Invest in strength.')).not.toBeInTheDocument();
+      expect(screen.queryByText('Learn another spell.')).not.toBeInTheDocument();
+    });
+
+    it('updates the popup when the selected character changes', async () => {
+      const view = await mount({ character: 'mage', tips: classTips });
+      view.rerender(<GameTips {...defaultProps} character="barbarian" tips={classTips} />);
+      expect(screen.queryByText('Invest in intelligence.')).not.toBeInTheDocument();
+      await flush();
+      expect(screen.getByText('Invest in strength.')).toBeInTheDocument();
+      expect(screen.queryByText('Visit the village.')).not.toBeInTheDocument();
+      view.rerender(<GameTips {...defaultProps} character="mage" tips={classTips} />);
+      await flush();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('remembers identical messages separately for different classes', async () => {
+      const matchingMessages = [
+        { turn: 1, character: 'mage', markDownMessage: 'Apply your stats.' },
+        { turn: 1, character: 'ranger', markDownMessage: 'Apply your stats.' },
+      ];
+      const view = await mount({ character: 'mage', tips: matchingMessages });
+      view.unmount();
+      const ranger = await mount({ character: 'ranger', tips: matchingMessages });
+      expect(screen.getByText('Apply your stats.')).toBeInTheDocument();
+      ranger.unmount();
+      await mount({ character: 'mage', tips: matchingMessages });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
   it('waits until popups are allowed before showing or recording a tip', async () => {
     const view = await mount({ allowPopup: false });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

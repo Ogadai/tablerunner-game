@@ -22,4 +22,38 @@ export const raceOfFire: GameListEntry = {
   itemLocations: cauldronOfFireItems,
   storeItems: cauldronOfFireStoreItems,
   portalLocations: cauldronOfFirePortals.filter(p => p !== 184), // Not the castle gates
+  gameTips: [
+    {
+      turn: 0,
+      markDownMessage: '*Portal* to the village at **92** or **23** to spend your *Coins*.'
+    },
+    {
+      turn: 1,
+      character: 'barbarian',
+      markDownMessage: 'Apply your stats. A *Barbarian* needs **Strength** for melee combat and **Resilience** for health'
+    },
+    {
+      turn: 1,
+      character: 'ranger',
+      markDownMessage: 'Apply your stats. A *Ranger* needs **Skill** for ranged combat and **Resilience** for health'
+    },
+    {
+      turn: 1,
+      character: 'mage',
+      markDownMessage: 'Apply your stats. A *Mage* needs **Intelligence** for magic and **Resilience** for health'
+    },
+    {
+      turn: 1,
+      character: 'witch',
+      markDownMessage: 'Apply your stats. A *Witch* needs **Intelligence** for magic and **Resilience** for health'
+    },
+    {
+      turn: 2,
+      markDownMessage: 'You need to be **stronger**! Buy gear or hire an NPC at the shops.'
+    },
+    {
+      turn: 5,
+      markDownMessage: 'Monsters are more dangerous away from roads, further north and underground.'
+    },
+  ]
 };

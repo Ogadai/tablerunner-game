@@ -32,12 +32,14 @@ function seenTipCookie(gameId: string, tip: GameTip): string {
   for (let index = 0; index < tip.markDownMessage.length; index++) {
     hash = Math.imul(hash ^ tip.markDownMessage.charCodeAt(index), 0x01000193);
   }
-  return `tablerunner-tip-seen-${encodeURIComponent(gameId)}-${tip.turn}-${(hash >>> 0).toString(36)}`;
+  const characterKey = tip.character ? `-${encodeURIComponent(tip.character)}` : '';
+  return `tablerunner-tip-seen-${encodeURIComponent(gameId)}-${tip.turn}-${(hash >>> 0).toString(36)}${characterKey}`;
 }
 
-export default function GameTips({ gameId, turn, tips, reviewOpen, allowPopup, onReviewClose }: {
+export default function GameTips({ gameId, turn, character, tips, reviewOpen, allowPopup, onReviewClose }: {
   gameId: string;
   turn: number;
+  character?: string;
   tips: GameTip[];
   reviewOpen: boolean;
   allowPopup: boolean;
@@ -47,9 +49,10 @@ export default function GameTips({ gameId, turn, tips, reviewOpen, allowPopup, o
   const [popupTips, setPopupTips] = useState<GameTip[]>([]);
   const seenTips = useRef(new Set<string>());
   const showTipsOverride = useRef<boolean | null>(null);
-  const reviewTips = useMemo(() => tips.filter(tip => tip.turn <= turn)
-    .sort((left, right) => left.turn - right.turn), [tips, turn]);
-  const currentPopupTips = useMemo(() => popupTips.filter(tip => tip.turn === turn), [popupTips, turn]);
+  const characterTips = useMemo(() => tips.filter(tip => !tip.character || tip.character === character), [character, tips]);
+  const reviewTips = useMemo(() => characterTips.filter(tip => tip.turn <= turn)
+    .sort((left, right) => left.turn - right.turn), [characterTips, turn]);
+  const currentPopupTips = useMemo(() => popupTips.filter(tip => tip.turn === turn && characterTips.includes(tip)), [characterTips, popupTips, turn]);
   const automaticOpen = allowPopup && showTips && currentPopupTips.length > 0;
   const open = reviewOpen || automaticOpen;
   const visibleTips = reviewOpen ? reviewTips : currentPopupTips;
@@ -58,13 +61,13 @@ export default function GameTips({ gameId, turn, tips, reviewOpen, allowPopup, o
     const timer = window.setTimeout(() => {
       const enabled = showTipsOverride.current ?? (readCookie(showTipsCookie) !== 'false');
       setShowTips(enabled);
-      setPopupTips(allowPopup && enabled ? tips.filter(tip => {
+      setPopupTips(allowPopup && enabled ? characterTips.filter(tip => {
         const cookie = seenTipCookie(gameId, tip);
         return tip.turn === turn && !seenTips.current.has(cookie) && readCookie(cookie) !== 'true';
       }) : []);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [allowPopup, gameId, tips, turn]);
+  }, [allowPopup, characterTips, gameId, turn]);
 
   useEffect(() => {
     if (!open) return;

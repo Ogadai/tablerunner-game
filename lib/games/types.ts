@@ -17,6 +17,7 @@ export interface GameListEntry {
 
 export interface GameTip {
   turn: number;
+  character?: string;
   markDownMessage: string;
 }
 

@@ -74,6 +74,18 @@ describe('PlayHeaderMenu', () => {
       fireEvent.keyDown(screen.getByRole('button', { name: 'Settings' }), { key: 'ArrowDown' });
       expect(screen.queryByRole('menuitem', { name: /Game Tips/ })).not.toBeInTheDocument();
     });
+
+    it.each(['barbarian', 'ranger', 'mage', 'witch'])('reviews tips for the selected %s class', async character => {
+      const gameState = makeGameState({ gameId: 'cauldronfire', turn: 2 });
+      const snapshot = makePlayerSnapshot({ gameState, playerId: character });
+      render(<PlayHeaderMenu boardId="board" mapId="map" gameState={gameState} snapshot={snapshot} />);
+      await select(/Game Tips/);
+      const classTip = screen.getByText(/Apply your stats/);
+      expect(classTip).toHaveTextContent(new RegExp(character, 'i'));
+      expect(screen.getByText(/Try to travel/)).toBeInTheDocument();
+      expect(screen.getByText(/Monsters are more dangerous/)).toBeInTheDocument();
+      expect(screen.queryByText(/You need to have a strong party/)).not.toBeInTheDocument();
+    });
   });
 
   describe('team selection', () => {

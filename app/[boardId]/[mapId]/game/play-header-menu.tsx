@@ -259,6 +259,7 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
       key={gameState.gameId}
       gameId={gameState.gameId}
       turn={gameState.turn}
+      character={snapshot?.playerId}
       tips={gameTips}
       reviewOpen={activeDialog === 'tips'}
       allowPopup={!!snapshot && !menuOpen && activeDialog === null}
