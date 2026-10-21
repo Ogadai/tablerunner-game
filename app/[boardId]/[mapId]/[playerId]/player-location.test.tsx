@@ -223,6 +223,19 @@ describe('PlayerLocation', () => {
     await waitFor(() => expect(addPlayerAction).toHaveBeenCalled());
   });
 
+  it('removes confirmed pickups locally without waiting for a location broadcast or changing the snapshot', async () => {
+    location.items = [{ id: 'first', type: 'swordRusty' }, { id: 'second', type: 'healingPotion' }];
+    await setup();
+    const onItemTaken = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].onItemTaken;
+    await act(async () => {
+      onItemTaken('first');
+      onItemTaken('second');
+    });
+    expect(jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].items).toEqual([]);
+    expect(location.items).toHaveLength(2);
+    expect(getLocationState).not.toHaveBeenCalled();
+  });
+
   it('updates party membership locally without fetching location state or changing the snapshot', async () => {
     const monster = createMonster({ team: 'good' });
     location = { monsters: [monster], items: [], npcs: [] };

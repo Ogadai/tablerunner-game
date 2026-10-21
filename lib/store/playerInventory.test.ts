@@ -209,12 +209,21 @@ describe('taking items', () => {
     expect(game.players[0].equipment).toHaveLength(1);
   });
 
-  it.each(['enemy', 'distant item', 'missing item'])('rejects taking an item with %s', async scenario => {
-    if (scenario === 'enemy') locations.monsters.push({ id: 'rat', type: 'rat', health: 1, location: 1, team: 'monster' });
+  it('rejects taking an item while enemies are present', async () => {
+    locations.monsters.push({ id: 'rat', type: 'rat', health: 1, location: 1, team: 'monster' });
+    await expect(takeItemAtLocation('board', 'map', 'hero', 'potion')).resolves.toEqual({
+      success: false, error: 'Cannot take item while there are enemies here',
+    });
+    expectNoWrites();
+    expect(releaseGame).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['distant item', 'missing item'])('treats an unavailable pickup as a no-op (%s)', async scenario => {
     if (scenario === 'distant item') locations.items[0].location = 2;
     if (scenario === 'missing item') locations.items = [];
-    await expect(takeItemAtLocation('board', 'map', 'hero', 'potion')).resolves.toEqual({ success: false,
-      error: scenario === 'enemy' ? 'Cannot take item while there are enemies here' : 'Item potion not found in location' });
+    inventory.equipment = [];
+    await expect(takeItemAtLocation('board', 'map', 'hero', 'potion')).resolves.toEqual({ success: true, data: inventory });
+    expect(inventory.equipment).toEqual([]);
     expectNoWrites();
     expect(releaseGame).toHaveBeenCalledTimes(1);
   });

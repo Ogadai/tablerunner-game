@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { startTransition, useActionState, useEffect, useOptimistic, useRef, useState } from "react";
 import { Dialog } from "radix-ui";
 import Swal from 'sweetalert2'
 import { monsters } from '@/lib/games/monsters';
@@ -24,11 +24,18 @@ export interface PlayerLocationListProps {
   npcs: NPCState[];
   entities: EntityItemDetail[],
   items: PlayerItem[];
+  onItemTaken: (itemId: string) => void;
   playerStats: PlayerStats;
   actionsState: PlayerActionsState;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
   gameState?: GameState;
   processing?: boolean;
+}
+
+interface ItemPickup {
+  itemId: string;
+  context: string;
+  requestId: number;
 }
 
 export default function PlayerLocationList({
@@ -40,6 +47,7 @@ export default function PlayerLocationList({
   monsters: locationMonsters,
   entities,
   items: locationItems,
+  onItemTaken,
   playerStats,
   actionsState,
   addNewAction,
@@ -49,6 +57,46 @@ export default function PlayerLocationList({
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
   const [npcOpen, setNpcOpen] = useState<NPCState | null>(null);
+  const pickupRequest = useRef(0);
+  const pendingPickups = useRef(new Set<string>());
+  const onItemTakenRef = useRef(onItemTaken);
+  const pickupContext = JSON.stringify([boardId, mapId, player.id, player.location.id, gameState?.turn, !!processing, player.health <= 0]);
+  const [optimisticItems, removeOptimistically] = useOptimistic(locationItems, (current, pickup: ItemPickup) =>
+    pickup.context === pickupContext ? current.filter(item => item.id !== pickup.itemId) : current);
+
+  useEffect(() => {
+    onItemTakenRef.current = onItemTaken;
+  }, [onItemTaken]);
+
+  useEffect(() => {
+    const pending = pendingPickups.current;
+    return () => {
+      pickupRequest.current += 1;
+      pending.clear();
+    };
+  }, [pickupContext]);
+
+  const [, pickUpItem] = useActionState<null, ItemPickup>(async (previous, pickup) => {
+    if (pickup.requestId !== pickupRequest.current) return previous;
+    try {
+      const response = await takeItemAtLocation(boardId, mapId, player.id, pickup.itemId);
+      if (pickup.requestId !== pickupRequest.current) return previous;
+      if (response.success && response.data) {
+        const inventory = response.data;
+        const sourcePlayer = gameState?.players.find(source => source.id === player.id);
+        startTransition(() => {
+          if (sourcePlayer) playerStatsSyncService.updateInventory(inventory, sourcePlayer);
+          else playerStatsSyncService.updateInventory(inventory);
+          onItemTakenRef.current(pickup.itemId);
+        });
+      }
+    } catch {
+      // Failed requests restore the item for retry without interrupting other pickups.
+    } finally {
+      if (pickup.requestId === pickupRequest.current) pendingPickups.current.delete(pickup.itemId);
+    }
+    return null;
+  }, null);
   const openMonster = monsterOpen
     ? locationMonsters.find(monster => monster.id === monsterOpen.id) || monsterOpen
     : null;
@@ -103,6 +151,7 @@ export default function PlayerLocationList({
   }
 
   const onTakeItem = async (itemId: string) => {
+    if (processing || pendingPickups.current.has(itemId) || !optimisticItems.some(item => item.id === itemId)) return;
     if (player.health === 0) {
       await Swal.fire({
         ...getSwalDefaultOptions(),
@@ -123,10 +172,12 @@ export default function PlayerLocationList({
       return;
     }
 
-    const response = await takeItemAtLocation(boardId, mapId, player.id, itemId);
-    if (response.success && response.data) {
-      playerStatsSyncService.updateInventory(response.data);
-    }
+    const pickup: ItemPickup = { itemId, context: pickupContext, requestId: pickupRequest.current };
+    pendingPickups.current.add(itemId);
+    startTransition(() => {
+      removeOptimistically(pickup);
+      pickUpItem(pickup);
+    });
   }
 
   const dialogOpen = (monsterOpen !== null) || (openCharacter !== null) || (npcOpen !== null);
@@ -166,7 +217,7 @@ export default function PlayerLocationList({
       <EntityList entities={enemyEntities} onClickEntity={onClickEntity} />
     </div>
 
-    <LocationItemList items={locationItems} onTakeItem={onTakeItem} />
+    <LocationItemList items={optimisticItems} onTakeItem={onTakeItem} />
 
     <Dialog.Root open={dialogOpen} onOpenChange={open => { if (!open) onCloseDialog() }}>
       <Dialog.Portal>

@@ -279,7 +279,8 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
 
     const item = locationsState.items.find(i => i.id === itemId && i.location === playerState.location.id);
     if (!item) {
-      throw new Error(`Item ${itemId} not found in location`);
+      // Another player may have collected it while this request was in flight.
+      return { success: true, data: playerInventory };
     }
 
     addItemToPlayer(playerState, playerInventory, item);

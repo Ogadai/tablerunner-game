@@ -296,6 +296,13 @@ export default function PlayerLocation(
   const locationDescription = locationOverride
     ? locationOverride.description : playerState.location?.description;
 
+  const onItemTaken = (itemId: string) => {
+    setLocationUpdate(current => {
+      const state = current?.snapshot === snapshot ? current.state : snapshot.location;
+      return { snapshot, state: { ...state, items: state.items.filter(item => item.id !== itemId) } };
+    });
+  };
+
   const onPartyChanged = (monsterId: string, inParty: boolean) => {
     setLocationUpdate(current => {
       const state = current?.snapshot === snapshot ? current.state : snapshot.location;
@@ -327,6 +334,7 @@ export default function PlayerLocation(
         npcs={npcs}
         entities={entities}
         items={locationState.items}
+        onItemTaken={onItemTaken}
         actionsState={actionsState}
         playerStats={playerStats}
         addNewAction={addNewAction}

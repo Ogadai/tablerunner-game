@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useRef, useState, useTransition } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { Dialog } from 'radix-ui';
 
 import tabStyles from './tabs.module.css';
@@ -13,6 +13,21 @@ import NpcCard from './npc-card';
 import { getCombatStats, getPlayerStats } from '@/lib/store/playerStats';
 import { allItems } from '@/lib/games/items';
 import EntityList, { EntityItemClass } from './entity-list';
+
+interface ItemTransfer {
+  npcId: string;
+  item: PlayerItem;
+  direction: 'give' | 'take';
+  context: string;
+  requestId: number;
+  inventoryRequest: number;
+}
+
+interface TransferState {
+  context: string;
+  item: PlayerItem | null;
+  error: string | null;
+}
 
 export default function CharacterCard({
   boardId,
@@ -53,9 +68,16 @@ export default function CharacterCard({
   } | null>(null);
   const [reloadInventory, setReloadInventory] = useState(0);
   const [giveItem, setGiveItem] = useState<PlayerItem | null>(null);
-  const [transferError, setTransferError] = useState<string | null>(null);
-  const [transferring, startTransfer] = useTransition();
   const inventoryRequest = useRef(0);
+  const transferRequest = useRef(0);
+  const transferPending = useRef(false);
+  const transferContext = JSON.stringify([boardId, mapId, player.id, viewer.id, viewer.location.id, isSelf, gameState?.turn]);
+  const currentTransferContext = useRef(transferContext);
+
+  useEffect(() => {
+    currentTransferContext.current = transferContext;
+    return () => { transferRequest.current += 1; };
+  }, [transferContext]);
 
   useEffect(() => {
     if (isSelf) return;
@@ -87,28 +109,49 @@ export default function CharacterCard({
     equipped: { ...player.equipped, ...pendingInventory.equipped },
   } : player;
 
-  const transferItem = (npcId: string, item: PlayerItem, direction: 'give' | 'take') => {
-    if (transferring) return;
-    const request = inventoryRequest.current;
-    setTransferError(null);
-    startTransfer(async () => {
-      try {
-        const action = direction === 'give' ? giveItemToNpc : takeItemFromNpc;
-        const response = await action(boardId, mapId, viewer.id, npcId, item.id);
-        if (!response.success || !response.data) {
-          throw new Error(response.error || 'Unable to transfer item.');
-        }
-        playerStatsSyncService.updateInventory(response.data.playerInventory);
-        if (request === inventoryRequest.current) {
-          if (!isSelf && player.id === npcId) {
-            setInventoryResult({ source: player, inventory: response.data.npcInventory });
+  const [transferState, transfer, transferring] = useActionState<TransferState, ItemTransfer>(async (previous, change) => {
+    if (change.requestId !== transferRequest.current) return previous;
+    try {
+      const action = change.direction === 'give' ? giveItemToNpc : takeItemFromNpc;
+      const response = await action(boardId, mapId, viewer.id, change.npcId, change.item.id);
+      if (response.success && response.data && currentTransferContext.current === change.context) {
+        const inventories = response.data;
+        const sourcePlayer = gameState?.players.find(source => source.id === viewer.id);
+        startTransition(() => {
+          if (sourcePlayer) playerStatsSyncService.updateInventory(inventories.playerInventory, sourcePlayer);
+          else playerStatsSyncService.updateInventory(inventories.playerInventory);
+          if (change.requestId === transferRequest.current && change.inventoryRequest === inventoryRequest.current) {
+            if (!isSelf && player.id === change.npcId) {
+              setInventoryResult({ source: player, inventory: inventories.npcInventory });
+            }
+            setGiveItem(null);
           }
-          setGiveItem(null);
-        }
-      } catch (error) {
-        if (request === inventoryRequest.current) setTransferError((error as Error).message);
+        });
       }
-    });
+      if (change.requestId !== transferRequest.current || change.inventoryRequest !== inventoryRequest.current) return previous;
+      return { context: change.context, item: change.item, error: response.success && response.data
+        ? null : response.error || 'Unable to transfer item.' };
+    } catch (error) {
+      if (change.requestId !== transferRequest.current || change.inventoryRequest !== inventoryRequest.current) return previous;
+      return { context: change.context, item: change.item, error: error instanceof Error ? error.message : 'Unable to transfer item.' };
+    } finally {
+      transferPending.current = false;
+    }
+  }, { context: transferContext, item: null, error: null });
+  const transferError = !transferring && transferState.context === transferContext && (!giveItem || transferState.item === giveItem)
+    ? transferState.error : null;
+
+  const transferItem = (npcId: string, item: PlayerItem, direction: 'give' | 'take') => {
+    if (transferring || transferPending.current) return;
+    transferPending.current = true;
+    startTransition(() => transfer({
+      npcId,
+      item,
+      direction,
+      context: transferContext,
+      requestId: transferRequest.current,
+      inventoryRequest: inventoryRequest.current,
+    }));
   };
 
   const onEquipItem = async (item: PlayerItem) => {
@@ -132,8 +175,7 @@ export default function CharacterCard({
     npc.masterId === viewer.id && npc.location.id === viewer.location.id && npc.health > 0);
   const onGiveItem = (isSelf && availableFollowers.length > 0 && viewer.health > 0 && !transferring)
     ? (item: PlayerItem) => {
-      setTransferError(null);
-      setGiveItem(item);
+      setGiveItem({ ...item });
     } : undefined;
 
   const playerState = (displayPlayer as PlayerState).characterStats ? (displayPlayer as PlayerState) : null;
