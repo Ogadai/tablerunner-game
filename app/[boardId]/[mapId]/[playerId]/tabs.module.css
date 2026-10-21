@@ -58,6 +58,20 @@
   right: 30px;
 }
 
+.inventorySkeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 65px);
+  gap: 6px;
+
+  span {
+    height: 65px;
+    border: 2px solid var(--border-stone);
+    border-radius: 3px;
+    background: var(--bg-card);
+    opacity: 0.5;
+  }
+}
+
 .childPopover {
   min-width: 350px;
 }

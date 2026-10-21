@@ -1,4 +1,4 @@
-import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import { ReactNode, startTransition, Suspense, use, useActionState, useEffect, useRef, useState } from "react";
 import { Dialog } from 'radix-ui';
 
 import tabStyles from './tabs.module.css';
@@ -27,6 +27,40 @@ interface TransferState {
   context: string;
   item: PlayerItem | null;
   error: string | null;
+}
+
+function createInventoryRequest(boardId: string, mapId: string, playerId: string) {
+  let resolve!: (response: Awaited<ReturnType<typeof getPlayerInventory>>) => void;
+  const promise = new Promise<Awaited<ReturnType<typeof getPlayerInventory>>>(done => { resolve = done; });
+  let started = false;
+
+  return {
+    promise,
+    async start() {
+      if (started) return;
+      started = true;
+      try {
+        resolve(await getPlayerInventory(boardId, mapId, playerId));
+      } catch {
+        resolve({ success: false, error: 'Unable to load inventory.' });
+      }
+    },
+  };
+}
+
+function CharacterInventory({ promise, onRetry, children }: {
+  promise: ReturnType<typeof getPlayerInventory>;
+  onRetry: () => void;
+  children: (inventory: PlayerInventoryState) => ReactNode;
+}) {
+  const response = use(promise);
+  if (!response.success || !response.data) {
+    return <p role="alert">
+      {response.error || 'Unable to load inventory.'}{' '}
+      <button type="button" onClick={onRetry}>Retry</button>
+    </p>;
+  }
+  return children(response.data);
 }
 
 export default function CharacterCard({
@@ -61,12 +95,28 @@ export default function CharacterCard({
   processing?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<'stats' | 'inventory'>('stats');
-  const [inventoryResult, setInventoryResult] = useState<{
-    source: INamedTarget;
-    inventory?: PlayerInventoryState;
-    error?: string;
-  } | null>(null);
   const [reloadInventory, setReloadInventory] = useState(0);
+  const inventoryContext = JSON.stringify([boardId, mapId, player.id, isSelf, gameState?.turn, reloadInventory]);
+  // This component stays mounted when its tab content suspends, preserving the promise.
+  const [inventoryLoad, setInventoryLoad] = useState(() => ({
+    source: player,
+    context: inventoryContext,
+    version: 0,
+    request: isSelf ? null : createInventoryRequest(boardId, mapId, player.id),
+  }));
+  // Reset the boundary for new loads so its fallback can mount during transitions and start the request.
+  if (inventoryLoad.source !== player || inventoryLoad.context !== inventoryContext) {
+    setInventoryLoad({
+      source: player,
+      context: inventoryContext,
+      version: inventoryLoad.version + 1,
+      request: isSelf ? null : createInventoryRequest(boardId, mapId, player.id),
+    });
+  }
+  const [inventoryUpdate, setInventoryUpdate] = useState<{
+    load: typeof inventoryLoad;
+    promise: ReturnType<typeof getPlayerInventory>;
+  } | null>(null);
   const [giveItem, setGiveItem] = useState<PlayerItem | null>(null);
   const inventoryRequest = useRef(0);
   const transferRequest = useRef(0);
@@ -80,34 +130,14 @@ export default function CharacterCard({
   }, [transferContext]);
 
   useEffect(() => {
-    if (isSelf) return;
     const request = ++inventoryRequest.current;
-    startTransition(async () => {
-      try {
-        const response = await getPlayerInventory(boardId, mapId, player.id);
-        if (request !== inventoryRequest.current) return;
-        setInventoryResult({
-          source: player,
-          inventory: response.success ? response.data : undefined,
-          error: response.success && response.data ? undefined : response.error || 'Unable to load inventory.',
-        });
-      } catch {
-        if (request === inventoryRequest.current) {
-          setInventoryResult({ source: player, error: 'Unable to load inventory.' });
-        }
-      }
-    });
+    // Start Server Functions after mounting, rather than during rendering.
+    void inventoryLoad.request?.start();
     return () => { inventoryRequest.current = request + 1; };
-  }, [boardId, mapId, player, isSelf, reloadInventory]);
+  }, [inventoryLoad]);
 
-  const currentInventory = !isSelf && inventoryResult?.source === player ? inventoryResult : null;
-  const pendingInventory = currentInventory?.inventory;
-  const loadingInventory = !isSelf && !currentInventory;
-  const displayPlayer = pendingInventory ? {
-    ...player,
-    equipment: pendingInventory.equipment ?? player.equipment,
-    equipped: { ...player.equipped, ...pendingInventory.equipped },
-  } : player;
+  const inventoryPromise = inventoryUpdate?.load === inventoryLoad
+    ? inventoryUpdate.promise : inventoryLoad.request?.promise;
 
   const [transferState, transfer, transferring] = useActionState<TransferState, ItemTransfer>(async (previous, change) => {
     if (change.requestId !== transferRequest.current) return previous;
@@ -122,7 +152,10 @@ export default function CharacterCard({
           else playerStatsSyncService.updateInventory(inventories.playerInventory);
           if (change.requestId === transferRequest.current && change.inventoryRequest === inventoryRequest.current) {
             if (!isSelf && player.id === change.npcId) {
-              setInventoryResult({ source: player, inventory: inventories.npcInventory });
+              setInventoryUpdate({
+                load: inventoryLoad,
+                promise: Promise.resolve({ success: true, data: inventories.npcInventory }),
+              });
             }
             setGiveItem(null);
           }
@@ -168,7 +201,7 @@ export default function CharacterCard({
     }
   }
 
-  const onTakeItem = ((player as NPCState).masterId === viewer.id && viewer.health > 0 && pendingInventory && !transferring)
+  const onTakeItem = ((player as NPCState).masterId === viewer.id && viewer.health > 0 && !transferring)
     ? (item: PlayerItem) => transferItem(player.id, item, 'take') : undefined;
 
   const availableFollowers = (followerNPCs || []).filter(npc =>
@@ -178,22 +211,61 @@ export default function CharacterCard({
       setGiveItem({ ...item });
     } : undefined;
 
-  const playerState = (displayPlayer as PlayerState).characterStats ? (displayPlayer as PlayerState) : null;
-  const displayedPlayerState = playerState && pendingInventory ? {
-    ...playerState,
-    coins: pendingInventory.coins ?? playerState.coins,
-    baseStats: getPlayerStats(playerState),
-  } : playerState;
+  const renderContent = (pendingInventory?: PlayerInventoryState) => {
+    const displayPlayer = pendingInventory ? {
+      ...player,
+      equipment: pendingInventory.equipment ?? player.equipment,
+      equipped: { ...player.equipped, ...pendingInventory.equipped },
+    } : player;
+    const playerState = (displayPlayer as PlayerState).characterStats ? (displayPlayer as PlayerState) : null;
+    const displayedPlayerState = playerState && pendingInventory ? {
+      ...playerState,
+      coins: pendingInventory.coins ?? playerState.coins,
+      baseStats: getPlayerStats(playerState),
+    } : playerState;
+
+    return activeTab === 'stats'
+      ? (displayedPlayerState ? <CharacterStats
+          boardId={boardId}
+          mapId={mapId}
+          player={displayedPlayerState}
+          playerStats={playerStats}
+          isSelf={isSelf}
+          gameState={gameState}
+          inventory={pendingInventory}
+          processing={processing}
+        />
+        : <NpcCard
+          boardId={boardId}
+          mapId={mapId}
+          npc={displayPlayer as NPCState}
+          player={viewer}
+          onHired={onHired}
+        />)
+      : <Inventory
+          player={displayPlayer}
+          disabled={transferring}
+          isSelf={isSelf}
+          isDead={(playerStats ? playerStats.health : player.health) === 0}
+          actionPointsLeft={actionPointsLeft}
+          onEquipItem={onEquipItem}
+          onUseItem={onUseItem}
+          onLearnScroll={onLearnScroll}
+          onDropItem={onDropItem}
+          onTakeItem={pendingInventory ? onTakeItem : undefined}
+          onGiveItem={onGiveItem}
+          usedItemIds={isSelf ? usedItemIds : []}
+        />;
+  };
+
+  const loadingInventory = <div role="status">
+    <p>Loading...</p>
+    {activeTab === 'inventory' && <div className={tabStyles.inventorySkeleton} aria-hidden="true">
+      {Array.from({ length: 6 }, (_, index) => <span key={index} />)}
+    </div>}
+  </div>;
 
   return <>
-    {loadingInventory && <p className={tabStyles.transferMsg} role="status">Loading...</p>}
-    {currentInventory?.error && <p role="alert">
-      {currentInventory.error}{' '}
-      <button type="button" onClick={() => {
-        setInventoryResult(null);
-        setReloadInventory(value => value + 1);
-      }}>Retry</button>
-    </p>}
     {transferError && !giveItem && <p className={tabStyles.transferMsg} role="alert">{transferError}</p>}
     {transferring && <p className={tabStyles.transferMsg} role="status">Transferring...</p>}
     <div className={tabStyles.tabs} role="tablist" aria-label="Character details">
@@ -214,39 +286,11 @@ export default function CharacterCard({
 
     <div className={`${tabStyles.tabContent} ${activeTab === 'stats' ? tabStyles.tabContentFirst : ''}`}
       id={`${activeTab}-panel`} role="tabpanel" aria-label={activeTab === 'stats' ? 'Stats' : 'Inventory'}>
-      {activeTab === 'stats'
-        ? (displayedPlayerState ? <CharacterStats
-            boardId={boardId}
-            mapId={mapId}
-            player={displayedPlayerState}
-            playerStats={playerStats}
-            isSelf={isSelf}
-            gameState={gameState}
-            inventory={pendingInventory}
-            processing={processing}
-          />
-          :
-          <NpcCard
-            boardId={boardId}
-            mapId={mapId}
-            npc={displayPlayer as NPCState}
-            player={viewer}
-            onHired={onHired}
-          />)
-        : <Inventory
-            player={displayPlayer}
-            disabled={loadingInventory || transferring}
-            isSelf={isSelf}
-            isDead={(playerStats ? playerStats.health : player.health) === 0}
-            actionPointsLeft={actionPointsLeft}
-            onEquipItem={onEquipItem}
-            onUseItem={onUseItem}
-            onLearnScroll={onLearnScroll}
-            onDropItem={onDropItem}
-            onTakeItem={onTakeItem}
-            onGiveItem={onGiveItem}
-            usedItemIds={isSelf ? usedItemIds : []}
-          />}
+      <Suspense key={isSelf ? 'self' : inventoryLoad.version} fallback={loadingInventory}>
+        {inventoryPromise ? <CharacterInventory promise={inventoryPromise} onRetry={() => {
+          setReloadInventory(value => value + 1);
+        }}>{renderContent}</CharacterInventory> : renderContent()}
+      </Suspense>
     </div>
     <Dialog.Root open={giveItem !== null} onOpenChange={open => {
       if (!open && !transferring) setGiveItem(null);

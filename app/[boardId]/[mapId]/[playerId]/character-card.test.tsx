@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { startTransition, StrictMode } from 'react';
 import { dropItemAtLocation, getPlayerInventory, giveItemToNpc, playerEquipItem, takeItemFromNpc } from '@/lib/store/playerInventory';
 import CharacterCard from './character-card';
 import sync from './player-stats-sync.service';
@@ -12,9 +13,21 @@ jest.mock('@/lib/store/playerInventory', () => ({
 }));
 jest.mock('./player-stats-sync.service', () => ({ __esModule: true, default: { updateInventory: jest.fn() } }));
 
+async function renderCard(ui: Parameters<typeof render>[0]) {
+  let result!: ReturnType<typeof render>;
+  await act(async () => { result = render(ui); });
+  return result;
+}
+
 function pendingTransfer() {
   let resolve!: (result: Awaited<ReturnType<typeof giveItemToNpc>>) => void;
   const promise = new Promise<Awaited<ReturnType<typeof giveItemToNpc>>>(done => { resolve = done; });
+  return { promise, resolve };
+}
+
+function pendingInventory() {
+  let resolve!: (result: Awaited<ReturnType<typeof getPlayerInventory>>) => void;
+  const promise = new Promise<Awaited<ReturnType<typeof getPlayerInventory>>>(done => { resolve = done; });
   return { promise, resolve };
 }
 
@@ -29,7 +42,7 @@ describe('CharacterCard', () => {
     jest.mocked(playerEquipItem).mockResolvedValue({ success: true, data });
     jest.mocked(dropItemAtLocation).mockResolvedValue({ success: true, data });
     const player = makePlayer({ equipment: [{ id: 'sword-1', type: 'swordRusty' }] });
-    render(<CharacterCard boardId="board" mapId="map" player={player} viewer={player} isSelf
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={player} viewer={player} isSelf
       actionPointsLeft={20} playerStats={makeStats()} onUseItem={jest.fn()} onLearnScroll={jest.fn()}
       usedItemIds={[]} onHired={jest.fn()} />);
     expect(screen.getByText('Player stats')).toBeInTheDocument();
@@ -39,19 +52,112 @@ describe('CharacterCard', () => {
     fireEvent.click(screen.getByRole('button', { name: action }));
     await waitFor(() => expect(sync.updateInventory).toHaveBeenCalledWith(data));
     expect(action === 'Equip' ? playerEquipItem : dropItemAtLocation).toHaveBeenCalledWith('board', 'map', 'warrior', 'sword-1');
+    expect(getPlayerInventory).not.toHaveBeenCalled();
   });
 
   it('shows NPC stats for a non-player character', async () => {
-    render(<CharacterCard boardId="board" mapId="map" player={makeNpc()} viewer={makePlayer()} isSelf={false}
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={makeNpc()} viewer={makePlayer()} isSelf={false}
       actionPointsLeft={20} playerStats={null} onUseItem={jest.fn()} onLearnScroll={jest.fn()}
       usedItemIds={[]} onHired={jest.fn()} />);
-    expect(screen.getByText('NPC stats')).toBeInTheDocument();
+    expect(await screen.findByText('NPC stats')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  });
+
+  it('keeps the tabs available while loading and reuses the request when switching tabs', async () => {
+    const pending = pendingInventory();
+    jest.mocked(getPlayerInventory).mockReturnValueOnce(pending.promise);
+    await renderCard(<StrictMode><CharacterCard boardId="board" mapId="map"
+      player={makeNpc({ equipment: [{ id: 'old', type: 'swordRusty' }] })}
+      viewer={makePlayer()} isSelf={false} actionPointsLeft={20} playerStats={null}
+      onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} /></StrictMode>);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading...');
+    expect(screen.queryByText('NPC stats')).not.toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole('tab', { name: 'Inventory' })); });
+    expect(screen.getByRole('tabpanel', { name: 'Inventory' })).toContainElement(screen.getByRole('status'));
+    expect(screen.queryByRole('button', { name: 'Rusty Sword' })).not.toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole('tab', { name: 'Stats' })); });
+    await act(async () => { fireEvent.click(screen.getByRole('tab', { name: 'Inventory' })); });
+    expect(getPlayerInventory).toHaveBeenCalledTimes(1);
+
+    await act(async () => pending.resolve({ success: true, data: {
+      equipment: [{ id: 'steel', type: 'swordSteel' }], equipped: {},
+    } }));
+    expect(await screen.findByRole('button', { name: 'Steel Sword' })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(getPlayerInventory).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['response', 'network', 'missing data'])('allows retry after an inventory load failure (%s)', async failure => {
+    const retry = pendingInventory();
+    if (failure === 'network') jest.mocked(getPlayerInventory).mockRejectedValueOnce(new Error('Network failed'));
+    else if (failure === 'response') jest.mocked(getPlayerInventory).mockResolvedValueOnce({ success: false, error: 'Read failed' });
+    else jest.mocked(getPlayerInventory).mockResolvedValueOnce({ success: true });
+    jest.mocked(getPlayerInventory).mockReturnValue(retry.promise);
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={makeNpc()} viewer={makePlayer()}
+      isSelf={false} actionPointsLeft={20} playerStats={null} onUseItem={jest.fn()}
+      onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(failure === 'response' ? 'Read failed' : 'Unable to load inventory.');
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Retry' })); });
+    expect(screen.getByRole('status')).toHaveTextContent('Loading...');
+    await act(async () => retry.resolve({ success: true, data: {
+      equipment: [{ id: 'steel', type: 'swordSteel' }], equipped: {},
+    } }));
+    expect(await screen.findByRole('button', { name: 'Steel Sword' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(getPlayerInventory).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['character', 'turn'])('ignores a pending inventory load after a %s change', async change => {
+    const pending = pendingInventory();
+    jest.mocked(getPlayerInventory).mockReturnValueOnce(pending.promise).mockResolvedValue({ success: true, data: {
+      equipment: [{ id: 'steel', type: 'swordSteel' }], equipped: {},
+    } });
+    const props = { boardId: 'board', mapId: 'map', player: makeNpc(), viewer: makePlayer(),
+      isSelf: false, actionPointsLeft: 20, playerStats: null, onUseItem: jest.fn(), onLearnScroll: jest.fn(),
+      usedItemIds: [], onHired: jest.fn(), gameState: makeGameState() };
+    const { rerender } = await renderCard(<CharacterCard {...props} />);
+    await act(async () => { fireEvent.click(screen.getByRole('tab', { name: 'Inventory' })); });
+    await act(async () => {
+      rerender(<CharacterCard {...props}
+        player={change === 'character' ? makeNpc({ id: 'npc-2' }) : props.player}
+        gameState={change === 'turn' ? { ...props.gameState, turn: props.gameState.turn + 1 } : props.gameState} />);
+    });
+    expect(await screen.findByRole('button', { name: 'Steel Sword' })).toBeInTheDocument();
+
+    await act(async () => pending.resolve({ success: true, data: {
+      equipment: [{ id: 'old', type: 'swordRusty' }], equipped: {},
+    } }));
+    expect(screen.getByRole('button', { name: 'Steel Sword' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rusty Sword' })).not.toBeInTheDocument();
+    expect(getPlayerInventory).toHaveBeenCalledTimes(2);
+  });
+
+  it('starts a fresh load when the displayed character snapshot changes in a transition', async () => {
+    const pending = pendingInventory();
+    jest.mocked(getPlayerInventory).mockResolvedValueOnce({ success: true, data: {
+      equipment: [{ id: 'old', type: 'swordRusty' }], equipped: {},
+    } }).mockReturnValueOnce(pending.promise);
+    const props = { boardId: 'board', mapId: 'map', player: makeNpc(), viewer: makePlayer(),
+      isSelf: false, actionPointsLeft: 20, playerStats: null, onUseItem: jest.fn(), onLearnScroll: jest.fn(),
+      usedItemIds: [], onHired: jest.fn() };
+    const { rerender } = await renderCard(<CharacterCard {...props} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
+    expect(await screen.findByRole('button', { name: 'Rusty Sword' })).toBeInTheDocument();
+
+    await act(async () => { startTransition(() => rerender(<CharacterCard {...props} player={{ ...props.player }} />)); });
+    expect(getPlayerInventory).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading...');
+    await act(async () => pending.resolve({ success: true, data: {
+      equipment: [{ id: 'steel', type: 'swordSteel' }], equipped: {},
+    } }));
+    expect(await screen.findByRole('button', { name: 'Steel Sword' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rusty Sword' })).not.toBeInTheDocument();
   });
 
   it('shows pending inventory for another player, including an empty replacement list', async () => {
     jest.mocked(getPlayerInventory).mockResolvedValue({ success: true, data: { equipment: [], equipped: {} } });
-    render(<CharacterCard boardId="board" mapId="map"
+    await renderCard(<CharacterCard boardId="board" mapId="map"
       player={makePlayer({ id: 'other', equipment: [{ id: 'old', type: 'swordRusty' }] })}
       viewer={makePlayer()} isSelf={false} actionPointsLeft={20} playerStats={null}
       onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
@@ -69,7 +175,7 @@ describe('CharacterCard', () => {
     jest.mocked(takeItemFromNpc).mockResolvedValue({ success: true, data: {
       playerInventory, npcInventory: { equipment: [], equipped: {} },
     } });
-    render(<CharacterCard boardId="board" mapId="map" player={makeNpc({ masterId: 'warrior' })}
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={makeNpc({ masterId: 'warrior' })}
       viewer={makePlayer()} isSelf={false} actionPointsLeft={20} playerStats={null}
       onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
@@ -79,6 +185,7 @@ describe('CharacterCard', () => {
     await waitFor(() => expect(sync.updateInventory).toHaveBeenCalledWith(playerInventory));
     expect(takeItemFromNpc).toHaveBeenCalledWith('board', 'map', 'warrior', 'npc-1', 'steel');
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Steel Sword' })).not.toBeInTheDocument());
+    expect(getPlayerInventory).toHaveBeenCalledTimes(1);
   });
 
   it('blocks duplicate transfers, keeps failures in the picker, and clears the error when reopening it', async () => {
@@ -89,7 +196,7 @@ describe('CharacterCard', () => {
     jest.mocked(giveItemToNpc).mockReturnValueOnce(pending.promise).mockResolvedValue({ success: true, data: {
       playerInventory, npcInventory: { equipment: [item], equipped: {} },
     } });
-    render(<CharacterCard boardId="board" mapId="map" player={player} viewer={player} isSelf
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={player} viewer={player} isSelf
       followerNPCs={[makeNpc({ masterId: player.id })]} actionPointsLeft={20} playerStats={makeStats()}
       onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
@@ -123,7 +230,7 @@ describe('CharacterCard', () => {
     jest.mocked(takeItemFromNpc).mockResolvedValue({ success: true, data: {
       playerInventory: { equipment: [item], equipped: {} }, npcInventory: { equipment: [], equipped: {} },
     } });
-    render(<CharacterCard boardId="board" mapId="map" player={makeNpc({ masterId: 'warrior' })}
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={makeNpc({ masterId: 'warrior' })}
       viewer={makePlayer()} isSelf={false} actionPointsLeft={20} playerStats={null}
       onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
@@ -147,16 +254,18 @@ describe('CharacterCard', () => {
     const props = { boardId: 'board', mapId: 'map', player: makeNpc({ masterId: viewer.id }), viewer,
       isSelf: false, actionPointsLeft: 20, playerStats: null, onUseItem: jest.fn(), onLearnScroll: jest.fn(),
       usedItemIds: [], onHired: jest.fn(), gameState: makeGameState({ players: [viewer] }) };
-    const { rerender } = render(<CharacterCard {...props} />);
+    const { rerender } = await renderCard(<CharacterCard {...props} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Steel Sword' }));
     fireEvent.click(screen.getByRole('button', { name: 'Take' }));
-    rerender(<CharacterCard {...props} gameState={{ ...props.gameState, turn: props.gameState.turn + 1 }} />);
+    await act(async () => {
+      rerender(<CharacterCard {...props} gameState={{ ...props.gameState, turn: props.gameState.turn + 1 }} />);
+    });
     await act(async () => pending.resolve({ success: true, data: {
       playerInventory: { equipment: [item], equipped: {} }, npcInventory: { equipment: [], equipped: {} },
     } }));
     expect(sync.updateInventory).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Steel Sword' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Steel Sword' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -170,7 +279,7 @@ describe('CharacterCard', () => {
     jest.mocked(giveItemToNpc).mockResolvedValue({ success: true, data: {
       playerInventory, npcInventory: { equipment: player.equipment, equipped: { weapon: 'sword' } },
     } });
-    render(<CharacterCard boardId="board" mapId="map" player={player} viewer={player} isSelf
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={player} viewer={player} isSelf
       followerNPCs={followers} actionPointsLeft={20} playerStats={makeStats()}
       onUseItem={jest.fn()} onLearnScroll={jest.fn()} usedItemIds={[]} onHired={jest.fn()} />);
     fireEvent.click(screen.getByRole('tab', { name: 'Inventory' }));
