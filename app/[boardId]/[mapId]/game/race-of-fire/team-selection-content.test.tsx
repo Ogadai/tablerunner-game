@@ -11,7 +11,7 @@ jest.mock('@/lib/runner/race-of-fire/server-actions', () => ({
 }));
 
 const blueSnapshot = () => makePlayerSnapshot({ gameState: makeGameState({
-  gameId: 'racefire', processState: { 'crystal-shard': { blueTeam: ['warrior'], redTeam: ['mage'] } },
+  gameId: 'racefire', players: [makePlayer()], processState: { 'crystal-shard': { blueTeam: ['warrior'], redTeam: ['mage'] } },
 }) });
 const teamButton = (label: string) => screen.getByRole('button', { name: label });
 
@@ -81,21 +81,24 @@ describe('TeamSelectionContent', () => {
 
   it.each([
     ['warrior', 'Blue team'], ['mage', 'Red team'], ['ranger', 'No team'],
-  ])('loads the persisted team for %s', (playerId, label) => {
+  ])('loads the persisted team for %s', async (playerId, label) => {
     mount({ ...blueSnapshot(), playerId });
+    await act(async () => {});
     expect(teamButton(label)).toHaveAttribute('aria-pressed', 'true');
     expect(setPlayerRaceTeam).not.toHaveBeenCalled();
   });
 
-  it('defaults to independent when the process state is missing', () => {
+  it('defaults to independent when the process state is missing', async () => {
     mount(makePlayerSnapshot());
+    await act(async () => {});
     expect(teamButton('No team')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it.each([
     ['red', 'Red team'], [null, 'No team'],
-  ] as const)('prefers the pending instruction (%s) over the persisted blue team', (team, label) => {
+  ] as const)('prefers the pending instruction (%s) over the persisted blue team', async (team, label) => {
     mount({ ...blueSnapshot(), instructions: { team } });
+    await act(async () => {});
     expect(teamButton(label)).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -119,8 +122,9 @@ describe('TeamSelectionContent', () => {
     expect(setPlayerRaceTeam).not.toHaveBeenCalled();
   });
 
-  it.each(['disabled', 'no game'])('disables choices when %s', reason => {
+  it.each(['disabled', 'no game'])('disables choices when %s', async reason => {
     mount(reason === 'no game' ? makePlayerSnapshot({ gameState: null }) : blueSnapshot(), reason === 'disabled');
+    await act(async () => {});
     for (const input of screen.getAllByRole('button')) expect(input).toBeDisabled();
     fireEvent.click(teamButton('Red team'));
     expect(setPlayerRaceTeam).not.toHaveBeenCalled();
@@ -146,8 +150,11 @@ describe('TeamSelectionContent', () => {
     expect(setPlayerRaceTeam).toHaveBeenNthCalledWith(2, 'board', 'map', 'warrior', { team: 'blue' });
     expect(teamButton('Blue team')).toHaveAttribute('aria-pressed', 'true');
 
-    view.rerender(<TeamSelectionContent {...view.props} snapshot={onSnapshotChange.mock.calls[0][0]} />);
+    await act(async () => {
+      view.rerender(<TeamSelectionContent {...view.props} snapshot={onSnapshotChange.mock.calls[0][0]} />);
+    });
     await act(async () => second.resolve({ success: true, data: { team: 'blue' } }));
+    expect(setPlayerRaceTeam).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
     expect(teamButton('Blue team')).toHaveAttribute('aria-pressed', 'true');
     expect(onSnapshotChange).toHaveBeenCalledTimes(2);
