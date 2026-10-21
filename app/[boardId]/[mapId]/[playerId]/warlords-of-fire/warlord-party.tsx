@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { startTransition, useActionState, useEffect, useOptimistic, useRef, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { monsters } from '@/lib/games/monsters';
 import { getMonsterName, type MonsterState, type PlayerState } from '@/lib/store/types';
@@ -8,9 +8,23 @@ import { warlordEditParty } from '@/lib/runner/warlords-of-fire/server-actions';
 import EntityList, { EntityItemClass, type EntityItemDetail } from '../entity-list';
 import styles from './warlord-party.module.css';
 
+interface PartyChange {
+  monsterId: string;
+  monsterName: string;
+  inParty: boolean;
+  context: string;
+  requestId: number;
+}
+
+interface PartySaveState {
+  context: string;
+  errors: Record<string, string>;
+}
+
 export default function WarlordParty({
   boardId,
   mapId,
+  turn,
   player,
   locationMonsters,
   processing,
@@ -18,45 +32,72 @@ export default function WarlordParty({
 }: {
   boardId: string;
   mapId: string;
+  turn: number;
   player: PlayerState;
   locationMonsters: MonsterState[];
   processing: boolean;
   onPartyChanged: (monsterId: string, inParty: boolean) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const saving = useRef(false);
   const requestId = useRef(0);
-  const disabled = processing || isPending || player.health <= 0;
-  const availableMonsters = locationMonsters.filter(monster => player.team !== null
+  const onPartyChangedRef = useRef(onPartyChanged);
+  const disabled = processing || player.health <= 0;
+  const context = JSON.stringify([boardId, mapId, turn, player.id, player.location.id, player.team, disabled]);
+  const [optimisticMonsters, moveOptimistically] = useOptimistic(locationMonsters, (current, change: PartyChange) => {
+    if (change.context !== context) return current;
+    return current.map(monster => monster.id === change.monsterId && (!monster.masterId || monster.masterId === player.id)
+      ? { ...monster, masterId: change.inParty ? player.id : undefined } : monster);
+  });
+  const availableMonsters = optimisticMonsters.filter(monster => player.team !== null
     && monster.team === player.team && monster.health > 0 && monster.location === player.location.id
     && (!monster.masterId || monster.masterId === player.id));
 
   useEffect(() => {
+    onPartyChangedRef.current = onPartyChanged;
+  }, [onPartyChanged]);
+
+  useEffect(() => {
     return () => { requestId.current += 1; };
-  }, [boardId, mapId, player, locationMonsters]);
+  }, [context]);
+
+  const [saveState, saveParty, isPending] = useActionState<PartySaveState, PartyChange>(async (previous, change) => {
+    if (change.requestId !== requestId.current) return previous;
+    const errors = previous.context === change.context ? { ...previous.errors } : {};
+
+    try {
+      const result = await warlordEditParty(boardId, mapId, player.id, change.monsterId, change.inParty);
+      if (change.requestId !== requestId.current) return previous;
+      if (result.success) {
+        delete errors[change.monsterId];
+        startTransition(() => onPartyChangedRef.current(change.monsterId, change.inParty));
+      } else {
+        errors[change.monsterId] = `${change.monsterName}: ${result.error || 'Unable to update party.'}`;
+      }
+    } catch (error) {
+      if (change.requestId !== requestId.current) return previous;
+      errors[change.monsterId] = `${change.monsterName}: ${error instanceof Error ? error.message : 'Unable to update party.'}`;
+    }
+
+    return { context: change.context, errors };
+  }, { context, errors: {} });
+  const error = saveState.context === context ? Object.values(saveState.errors).join(' ') : '';
 
   const editParty = (entity: EntityItemDetail) => {
-    if (disabled || saving.current) return;
+    if (disabled) return;
     const monster = availableMonsters.find(monster => monster.id === entity.id);
     if (!monster) return;
-    const inParty = monster.masterId !== player.id;
-    saving.current = true;
-    const currentRequest = ++requestId.current;
-    setError(null);
+    const change: PartyChange = {
+      monsterId: monster.id,
+      monsterName: getMonsterName(monster),
+      inParty: monster.masterId !== player.id,
+      context,
+      requestId: requestId.current,
+    };
 
-    startTransition(async () => {
-      try {
-        const result = await warlordEditParty(boardId, mapId, player.id, monster.id, inParty);
-        if (currentRequest !== requestId.current) return;
-        if (!result.success) throw new Error(result.error || 'Unable to update party.');
-        onPartyChanged(monster.id, inParty);
-      } catch (error) {
-        if (currentRequest === requestId.current) setError((error as Error).message);
-      } finally {
-        saving.current = false;
-      }
+    startTransition(() => {
+      // Apply every click immediately, even while earlier saves are queued.
+      moveOptimistically(change);
+      saveParty(change);
     });
   };
 
@@ -94,7 +135,7 @@ export default function WarlordParty({
               </section>
             ))}
             {isPending && <p role="status" className={styles.statusMessage}>Saving...</p>}
-            {error && <p role="alert" className={styles.statusMessage}>{error}</p>}
+            {!isPending && error && <p role="alert" className={styles.statusMessage}>{error}</p>}
           </div>
           <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">close</Dialog.Close>
         </Dialog.Content>

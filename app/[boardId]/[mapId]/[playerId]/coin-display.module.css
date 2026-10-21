@@ -1,5 +1,6 @@
 .coinDisplay {
   margin: 0 0 0 15px;
+  font-size: 0.9em;
 
   & span {
     display: inline-block;

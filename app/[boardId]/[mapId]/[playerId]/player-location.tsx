@@ -346,6 +346,7 @@ export default function PlayerLocation(
         <WarlordParty
           boardId={boardId}
           mapId={mapId}
+          turn={gameState.turn}
           player={playerState}
           locationMonsters={locationState.monsters}
           processing={processing}
