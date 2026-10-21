@@ -8,10 +8,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# General rules
-
-- Don't automatically run unit tests unless I ask you to
-
 ## Project Overview
 This is a web application built with Next.js and React,
 TypeScript. It is designed for deployment to Vercel.

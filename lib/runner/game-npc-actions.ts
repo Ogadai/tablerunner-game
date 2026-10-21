@@ -214,15 +214,23 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
   // Include spells that become affordable after the available mana potion.
   const manaPotion = getMagicPotionAction(params, npc);
   const availableMagic = Math.min(npc.baseStats!.magic, npc.magic + (manaPotion?.restoreMagic ?? 0));
+  const hasLastingEffect = !!spell.bonusStats.turns;
   const castCount = Math.min(
     Math.floor(actionsPerTurn.total / getSpellActionCost(spell, npc.baseStats!.magic)),
     Math.floor(availableMagic / spell.magicCost),
+    hasLastingEffect ? (spell.pickTarget ? targets.length : 1) : Infinity,
   );
   const actionsWithCosts: ActionsWithCosts[] = [];
   for(let n = 0; n < castCount; n++) {
+    const targetIndex = spell.pickTarget ? Math.floor(Math.random() * targets.length) : -1;
     const target: ITarget | null = spell.pickTarget
-      ? targets[Math.floor(Math.random() * targets.length)]
+      ? targets[targetIndex]
       : null;
+
+    // Lasting effects do not stack, so offer each target only once this turn.
+    if (target && hasLastingEffect) {
+      targets.splice(targetIndex, 1);
+    }
 
     const action: PlayerActionCast = {
       id: -1,

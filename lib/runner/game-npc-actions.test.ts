@@ -57,6 +57,62 @@ it('plans mana restoration before a spell that is currently unaffordable', () =>
   expect(npc.magic).toBe(0);
 });
 
+it.each([
+  [SpellIds.fear, ['rat', 'other-enemy']],
+  [SpellIds.shield, ['hero', 'npc']],
+  [SpellIds.strength, ['hero', 'npc']],
+] as const)('plans %s only once per target while still allowing different targets', (spellId, targetIds) => {
+  const npc = createNpc({
+    magic: 60, spells: [spellId], equipment: [],
+    baseStats: { attack: 0, damage: 0, defence: 10, health: 20, magic: 60, speed: 10 },
+  });
+  const params = createParams({ monsters: [createMonster(), createMonster({ id: 'other-enemy' })] });
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions).toEqual(targetIds.map(targetId =>
+    expect.objectContaining({ type: PlayerActionType.Cast, spellId, targetId })
+  ));
+});
+
+it.each([SpellIds.terror, SpellIds.shieldWall, SpellIds.strengthAura])('plans %s only once per turn for the whole group', spellId => {
+  const npc = createNpc({
+    magic: 60, spells: [spellId], equipment: [],
+    baseStats: { attack: 0, damage: 0, defence: 10, health: 20, magic: 60, speed: 10 },
+  });
+  const params = createParams({ monsters: [createMonster(), createMonster({ id: 'other-enemy' })] });
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions).toEqual([
+    expect.objectContaining({ type: PlayerActionType.Cast, spellId, targetId: undefined }),
+  ]);
+});
+
+it('allows Fear on the same target again on a subsequent turn', () => {
+  const npc = createNpc({
+    magic: 60, spells: [SpellIds.fear], equipment: [],
+    baseStats: { attack: 0, damage: 0, defence: 10, health: 20, magic: 60, speed: 10 },
+  });
+  const params = createParams({ monsters: [createMonster()] });
+  const expectedActions = [expect.objectContaining({ type: PlayerActionType.Cast, spellId: SpellIds.fear, targetId: 'rat' })];
+
+  expect(getNpcActions(params, npc).actions).toEqual(expectedActions);
+  params.gameState.turn++;
+  expect(getNpcActions(params, npc).actions).toEqual(expectedActions);
+});
+
+it.each([SpellIds.spiritArrow, SpellIds.fireWall, SpellIds.heal, SpellIds.healingAura])('still allows repeated casts of %s in one turn', spellId => {
+  const npc = createNpc({
+    magic: 100, spells: [spellId], equipment: [],
+    baseStats: { attack: 0, damage: 0, defence: 10, health: 20, magic: 100, speed: 10 },
+  });
+  const params = createParams({ monsters: [createMonster()] });
+  params.gameState.players = [createPlayer({ health: 5 })];
+  const actions = getNpcActions(params, npc).actions;
+
+  expect(actions.length).toBeGreaterThan(1);
+  expect(actions).toEqual(actions.map(() => expect.objectContaining({ type: PlayerActionType.Cast, spellId })));
+});
+
 it('offers an eligible scroll and preserves its inventory item ID', () => {
   const npc = createNpc({
     equipment: [{ id: 'spell-scroll', type: ScrollIds.spiritArrow }],
