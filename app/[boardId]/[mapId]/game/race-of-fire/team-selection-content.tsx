@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { startTransition, useActionState, useEffect, useOptimistic, useRef, useState } from 'react';
 import EntityList, { EntityItemClass, type EntityItemDetail } from '../../[playerId]/entity-list';
 import { characters } from '@/lib/games/characters';
 import type { PlayerSnapshot } from '@/lib/store/types';
@@ -18,6 +18,17 @@ interface TeamSelectionContentProps {
   disabled?: boolean;
 }
 
+interface TeamChange {
+  team: RaceInstructionTeam['team'];
+  context: string;
+  requestId: number;
+}
+
+interface TeamSaveState {
+  context: string;
+  error: string | null;
+}
+
 const teams = [
   { value: 'blue', label: 'Blue team' },
   { value: 'red', label: 'Red team' },
@@ -31,13 +42,16 @@ export default function TeamSelectionContent({
   onSnapshotChange,
   disabled = false,
 }: TeamSelectionContentProps) {
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [teamSelections, setTeamSelections] = useState<RaceTeamSelections>({});
+  const selectionContext = JSON.stringify([boardId, mapId, snapshot.gameState?.turn]);
+  const choicesDisabled = disabled || !snapshot.gameState;
+  const context = JSON.stringify([selectionContext, snapshot.playerId, choicesDisabled]);
+  const [selections, setTeamSelections] = useState<{ context: string; teams: RaceTeamSelections } | null>(null);
+  const teamSelections = selections?.context === selectionContext ? selections.teams : {};
   const [loadError, setLoadError] = useState<string | null>(null);
   const liveUpdates = useRef<RaceTeamSelections>({});
   const requestId = useRef(0);
-  const saving = useRef(false);
+  const snapshotRef = useRef(snapshot);
+  const onSnapshotChangeRef = useRef(onSnapshotChange);
   const instructions = snapshot.instructions as RaceInstructionTeam;
   const state = snapshot.gameState?.processState['crystal-shard'] as {
     blueTeam?: string[];
@@ -45,9 +59,10 @@ export default function TeamSelectionContent({
   } | undefined;
   const currentTeam = state?.blueTeam?.includes(snapshot.playerId) ? 'blue'
     : state?.redTeam?.includes(snapshot.playerId) ? 'red' : null;
-  const selectedTeam = Object.hasOwn(teamSelections, snapshot.playerId) ? teamSelections[snapshot.playerId]
+  const confirmedTeam = Object.hasOwn(teamSelections, snapshot.playerId) ? teamSelections[snapshot.playerId]
     : Object.hasOwn(instructions, 'team') ? instructions.team ?? null : currentTeam;
-  const choicesDisabled = disabled || isPending || !snapshot.gameState;
+  const [selectedTeam, selectOptimistically] = useOptimistic(confirmedTeam, (current, change: TeamChange) =>
+    change.context === context ? change.team ?? null : current);
   const getPlayerTeam = (playerId: string) => playerId === snapshot.playerId ? selectedTeam
     : Object.hasOwn(teamSelections, playerId) ? teamSelections[playerId]
     : state?.blueTeam?.includes(playerId) ? 'blue'
@@ -68,8 +83,13 @@ export default function TeamSelectionContent({
       }));
 
   useEffect(() => {
+    snapshotRef.current = snapshot;
+    onSnapshotChangeRef.current = onSnapshotChange;
+  }, [snapshot, onSnapshotChange]);
+
+  useEffect(() => {
     return () => { requestId.current += 1; };
-  }, [boardId, mapId, snapshot]);
+  }, [context]);
 
   useEffect(() => {
     if (!snapshot.gameState) return;
@@ -81,7 +101,7 @@ export default function TeamSelectionContent({
         if (!active) return;
         if (result.success && result.data) {
           // Preserve messages received while the initial request was in flight.
-          setTeamSelections({ ...result.data, ...liveUpdates.current });
+          setTeamSelections({ context: selectionContext, teams: { ...result.data, ...liveUpdates.current } });
           setLoadError(null);
         } else {
           setLoadError(result.error || 'Unable to load team selections.');
@@ -95,46 +115,57 @@ export default function TeamSelectionContent({
 
     const unsubscribe = RaceTeamTopicService.subscribe(getGameTopicId(boardId, mapId), message => {
       liveUpdates.current[message.playerId] = message.team;
-      setTeamSelections(previous => ({ ...previous, [message.playerId]: message.team }));
+      setTeamSelections(previous => ({
+        context: selectionContext,
+        teams: { ...(previous?.context === selectionContext ? previous.teams : {}), [message.playerId]: message.team },
+      }));
     });
     void refreshTeams();
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [boardId, mapId, snapshot.gameState]);
+  }, [boardId, mapId, snapshot.gameState, selectionContext]);
+
+  const [saveState, saveTeam, isPending] = useActionState<TeamSaveState, TeamChange>(async (previous, change) => {
+    if (change.requestId !== requestId.current) return previous;
+
+    try {
+      const result = await setPlayerRaceTeam(boardId, mapId, snapshot.playerId, {
+        ...snapshotRef.current.instructions,
+        team: change.team,
+      });
+      if (change.requestId !== requestId.current) return previous;
+      if (!result.success || !result.data) {
+        return { context: change.context, error: result.error || 'Unable to change team. Please try again.' };
+      }
+
+      const nextSnapshot = { ...snapshotRef.current, instructions: result.data };
+      const savedTeam = result.data.team ?? null;
+      snapshotRef.current = nextSnapshot;
+      startTransition(() => {
+        onSnapshotChangeRef.current(nextSnapshot);
+        RaceTeamTopicService.raiseRaceTeamUpdated(getGameTopicId(boardId, mapId), {
+          type: GameTopicMessageType.RaceTeamUpdated,
+          playerId: snapshot.playerId,
+          team: savedTeam,
+        });
+      });
+      return { context: change.context, error: null };
+    } catch {
+      if (change.requestId !== requestId.current) return previous;
+      return { context: change.context, error: 'Unable to change team. Please try again.' };
+    }
+  }, { context, error: null });
+  const error = saveState.context === context ? saveState.error : null;
 
   const changeTeam = (team: RaceInstructionTeam['team']) => {
-    if (disabled || saving.current || !snapshot.gameState || team === selectedTeam) return;
-    saving.current = true;
-    const currentRequest = ++requestId.current;
-    setError(null);
+    if (choicesDisabled || team === selectedTeam) return;
+    const change: TeamChange = { team, context, requestId: requestId.current };
 
-    startTransition(async () => {
-      try {
-        const result = await setPlayerRaceTeam(boardId, mapId, snapshot.playerId, {
-          ...instructions,
-          team,
-        });
-        if (currentRequest !== requestId.current) return;
-        if (result.success && result.data) {
-          const savedTeam = result.data.team ?? null;
-          onSnapshotChange({ ...snapshot, instructions: result.data });
-          RaceTeamTopicService.raiseRaceTeamUpdated(getGameTopicId(boardId, mapId), {
-            type: GameTopicMessageType.RaceTeamUpdated,
-            playerId: snapshot.playerId,
-            team: savedTeam,
-          });
-        } else {
-          setError(result.error || 'Unable to change team. Please try again.');
-        }
-      } catch {
-        if (currentRequest === requestId.current) {
-          setError('Unable to change team. Please try again.');
-        }
-      } finally {
-        saving.current = false;
-      }
+    startTransition(() => {
+      selectOptimistically(change);
+      saveTeam(change);
     });
   };
 
@@ -159,7 +190,7 @@ export default function TeamSelectionContent({
         ))}
       </div>
       {isPending && <p className={styles.statusMessage} role="status">Saving...</p>}
-      {error && <p className={styles.statusMessage} role="alert">{error}</p>}
+      {!isPending && error && <p className={styles.statusMessage} role="alert">{error}</p>}
       {loadError && <p className={styles.statusMessage} role="alert">{loadError}</p>}
     </div>
   );

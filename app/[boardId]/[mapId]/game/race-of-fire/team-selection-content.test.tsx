@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { getPlayerRaceTeams, setPlayerRaceTeam } from '@/lib/runner/race-of-fire/server-actions';
 import RaceTeamTopicService from '@/app/message-bus/race-team-topic-service';
 import { GameTopicMessageType, type RaceTeamUpdatedMessage } from '@/lib/message-types';
@@ -15,6 +15,12 @@ const blueSnapshot = () => makePlayerSnapshot({ gameState: makeGameState({
 }) });
 const teamButton = (label: string) => screen.getByRole('button', { name: label });
 
+function pendingSave() {
+  let resolve!: (result: Awaited<ReturnType<typeof setPlayerRaceTeam>>) => void;
+  const promise = new Promise<Awaited<ReturnType<typeof setPlayerRaceTeam>>>(done => { resolve = done; });
+  return { promise, resolve };
+}
+
 describe('TeamSelectionContent', () => {
   const onSnapshotChange = jest.fn();
   const mount = (snapshot = blueSnapshot(), disabled = false) => {
@@ -24,7 +30,7 @@ describe('TeamSelectionContent', () => {
 
   beforeEach(() => {
     jest.mocked(getPlayerRaceTeams).mockReset().mockResolvedValue({ success: true, data: {} });
-    jest.mocked(setPlayerRaceTeam).mockImplementation(async (_boardId, _mapId, _playerId, instructions) => ({
+    jest.mocked(setPlayerRaceTeam).mockReset().mockImplementation(async (_boardId, _mapId, _playerId, instructions) => ({
       success: true, data: instructions,
     }));
   });
@@ -120,19 +126,81 @@ describe('TeamSelectionContent', () => {
     expect(setPlayerRaceTeam).not.toHaveBeenCalled();
   });
 
-  it('disables further changes while saving and enables them after the response', async () => {
-    let resolve!: (result: Awaited<ReturnType<typeof setPlayerRaceTeam>>) => void;
-    jest.mocked(setPlayerRaceTeam).mockReturnValue(new Promise(done => { resolve = done; }));
-    mount();
-    await act(async () => fireEvent.click(teamButton('Red team')));
+  it('moves the player immediately and queues a return to the original team while saving', async () => {
+    const first = pendingSave();
+    const second = pendingSave();
+    jest.mocked(setPlayerRaceTeam).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const view = mount();
+    await act(async () => {});
+    fireEvent.click(teamButton('Red team'));
+    expect(teamButton('Red team')).toHaveAttribute('aria-pressed', 'true');
+    expect(within(teamButton('Red team').parentElement!).getByRole('listitem', { name: 'Test Warrior' })).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Saving...');
-    expect(teamButton('Red team')).toBeDisabled();
-    fireEvent.click(teamButton('No team'));
+    expect(teamButton('Blue team')).toBeEnabled();
+
+    fireEvent.click(teamButton('Blue team'));
+    fireEvent.click(teamButton('Blue team'));
+    expect(teamButton('Blue team')).toHaveAttribute('aria-pressed', 'true');
     expect(setPlayerRaceTeam).toHaveBeenCalledTimes(1);
-    await act(async () => resolve({ success: true, data: { team: 'red' } }));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    expect(teamButton('Red team')).toBeEnabled();
+    await act(async () => first.resolve({ success: true, data: { team: 'red' } }));
+    expect(setPlayerRaceTeam).toHaveBeenNthCalledWith(2, 'board', 'map', 'warrior', { team: 'blue' });
+    expect(teamButton('Blue team')).toHaveAttribute('aria-pressed', 'true');
+
+    view.rerender(<TeamSelectionContent {...view.props} snapshot={onSnapshotChange.mock.calls[0][0]} />);
+    await act(async () => second.resolve({ success: true, data: { team: 'blue' } }));
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+    expect(teamButton('Blue team')).toHaveAttribute('aria-pressed', 'true');
+    expect(onSnapshotChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the latest optimistic choice during live updates and rolls back to the last saved team on failure', async () => {
+    const first = pendingSave();
+    jest.mocked(setPlayerRaceTeam).mockReturnValueOnce(first.promise)
+      .mockResolvedValueOnce({ success: false, error: 'Cannot leave team' });
+    mount();
+    await act(async () => {});
+    fireEvent.click(teamButton('Red team'));
+    fireEvent.click(teamButton('No team'));
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('board-map', {
+      type: GameTopicMessageType.RaceTeamUpdated, playerId: 'warrior', team: 'red',
+    }));
+    expect(teamButton('No team')).toHaveAttribute('aria-pressed', 'true');
+
+    await act(async () => first.resolve({ success: true, data: { team: 'red' } }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cannot leave team');
+    expect(teamButton('Red team')).toHaveAttribute('aria-pressed', 'true');
     expect(onSnapshotChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('continues saving queued choices after an earlier failure', async () => {
+    const first = pendingSave();
+    jest.mocked(setPlayerRaceTeam).mockReturnValueOnce(first.promise);
+    mount();
+    await act(async () => {});
+    fireEvent.click(teamButton('Red team'));
+    fireEvent.click(teamButton('No team'));
+
+    await act(async () => first.resolve({ success: false, error: 'First save failed' }));
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+    expect(teamButton('No team')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(onSnapshotChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps other players live while the current player has a pending selection', async () => {
+    const first = pendingSave();
+    jest.mocked(setPlayerRaceTeam).mockReturnValueOnce(first.promise);
+    const snapshot = blueSnapshot();
+    mount({ ...snapshot, gameState: { ...snapshot.gameState!, players: [makePlayer(), makePlayer({ id: 'mage', name: 'Test Mage' })] } });
+    await act(async () => {});
+    fireEvent.click(teamButton('Red team'));
+    await act(async () => RaceTeamTopicService.raiseRaceTeamUpdated('board-map', {
+      type: GameTopicMessageType.RaceTeamUpdated, playerId: 'mage', team: null,
+    }));
+    expect(within(teamButton('No team').parentElement!).getByRole('listitem', { name: 'Test Mage' })).toBeInTheDocument();
+    expect(teamButton('Red team')).toHaveAttribute('aria-pressed', 'true');
+    await act(async () => first.resolve({ success: true, data: { team: 'red' } }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it.each(['server error', 'missing error', 'rejection'])('keeps the previous selection after %s and allows retry', async failure => {
@@ -156,6 +224,7 @@ describe('TeamSelectionContent', () => {
     jest.mocked(setPlayerRaceTeam).mockReturnValue(new Promise(done => { resolve = done; }));
     const view = mount();
     await act(async () => fireEvent.click(teamButton('Red team')));
+    fireEvent.click(teamButton('No team'));
     if (change === 'unmount') view.unmount();
     else {
       const snapshot: PlayerSnapshot = change === 'new player'
@@ -165,5 +234,6 @@ describe('TeamSelectionContent', () => {
     }
     await act(async () => resolve({ success: true, data: { team: 'red' } }));
     expect(onSnapshotChange).not.toHaveBeenCalled();
+    expect(setPlayerRaceTeam).toHaveBeenCalledTimes(1);
   });
 });

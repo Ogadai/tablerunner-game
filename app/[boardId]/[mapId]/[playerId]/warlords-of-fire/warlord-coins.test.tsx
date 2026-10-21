@@ -8,6 +8,16 @@ import WarlordCoins from './warlord-coins';
 
 jest.mock('@/lib/runner/warlords-of-fire/server-actions', () => ({ warlordAllocateCoins: jest.fn() }));
 
+beforeEach(() => {
+  jest.mocked(warlordAllocateCoins).mockReset();
+});
+
+function pendingSave() {
+  let resolve!: (result: Awaited<ReturnType<typeof warlordAllocateCoins>>) => void;
+  const promise = new Promise<Awaited<ReturnType<typeof warlordAllocateCoins>>>(done => { resolve = done; });
+  return { promise, resolve };
+}
+
 function setup(inventory: PlayerInventoryState = { equipment: null, equipped: null }) {
   const player = makePlayer({ coins: 120 });
   const gameState = makeGameState({ gameId: 'warlordsfire', players: [player] });
@@ -56,6 +66,136 @@ it('loads pending balances on mount and restores them if saving fails', async ()
   fireEvent.blur(slider);
   expect(await screen.findByRole('alert')).toHaveTextContent('Save failed');
   await waitFor(() => expect(slider).toHaveValue('140'));
+});
+
+it('queues a return to the original split without blocking the slider or duplicating release events', async () => {
+  const props = setup();
+  const first = pendingSave();
+  const second = pendingSave();
+  jest.mocked(warlordAllocateCoins).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+  render(<WarlordCoins {...props} />);
+  await act(async () => {});
+  const slider = screen.getByRole('slider');
+
+  fireEvent.change(slider, { target: { value: '140' } });
+  fireEvent.pointerUp(slider);
+  fireEvent.blur(slider);
+  fireEvent.keyUp(slider);
+  expect(warlordAllocateCoins).toHaveBeenCalledTimes(1);
+  expect(slider).toBeEnabled();
+  expect(slider).toHaveValue('140');
+
+  fireEvent.change(slider, { target: { value: '80' } });
+  fireEvent.pointerUp(slider);
+  expect(slider).toHaveAttribute('aria-valuetext', '120 personal coins, 80 team coins');
+  expect(warlordAllocateCoins).toHaveBeenCalledTimes(1);
+
+  await act(async () => first.resolve({
+    success: true, data: { equipment: null, equipped: null, coins: 60, teamCoinTransfer: 60 },
+  }));
+  expect(warlordAllocateCoins).toHaveBeenNthCalledWith(2, 'board', 'map', props.player.id, 80);
+  expect(slider).toHaveValue('80');
+
+  await act(async () => second.resolve({
+    success: true, data: { equipment: null, equipped: null, coins: 120, teamCoinTransfer: 0 },
+  }));
+  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  expect(slider).toHaveValue('80');
+});
+
+it('preserves an unfinished drag when an earlier allocation finishes saving', async () => {
+  const props = setup();
+  const first = pendingSave();
+  jest.mocked(warlordAllocateCoins).mockReturnValueOnce(first.promise).mockResolvedValueOnce({
+    success: true, data: { equipment: null, equipped: null, coins: 30, teamCoinTransfer: 90 },
+  });
+  render(<WarlordCoins {...props} />);
+  await act(async () => {});
+  const slider = screen.getByRole('slider');
+  fireEvent.change(slider, { target: { value: '140' } });
+  fireEvent.pointerUp(slider);
+  fireEvent.change(slider, { target: { value: '170' } });
+
+  await act(async () => first.resolve({
+    success: true, data: { equipment: null, equipped: null, coins: 60, teamCoinTransfer: 60 },
+  }));
+  expect(slider).toHaveAttribute('aria-valuetext', '30 personal coins, 170 team coins');
+  expect(warlordAllocateCoins).toHaveBeenCalledTimes(1);
+  fireEvent.keyUp(slider);
+  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  expect(warlordAllocateCoins).toHaveBeenLastCalledWith('board', 'map', props.player.id, 170);
+  expect(slider).toHaveValue('170');
+});
+
+it.each(['response', 'network'])('restores the last saved allocation when a queued save fails (%s)', async failure => {
+  const props = setup();
+  const first = pendingSave();
+  jest.mocked(warlordAllocateCoins).mockReturnValueOnce(first.promise);
+  if (failure === 'network') jest.mocked(warlordAllocateCoins).mockRejectedValueOnce(new Error('Save failed'));
+  else jest.mocked(warlordAllocateCoins).mockResolvedValueOnce({ success: false, error: 'Save failed' });
+  render(<WarlordCoins {...props} />);
+  await act(async () => {});
+  const slider = screen.getByRole('slider');
+  fireEvent.change(slider, { target: { value: '140' } });
+  fireEvent.pointerUp(slider);
+  fireEvent.change(slider, { target: { value: '200' } });
+  fireEvent.pointerUp(slider);
+  expect(slider).toHaveValue('200');
+
+  await act(async () => first.resolve({
+    success: true, data: { equipment: null, equipped: null, coins: 60, teamCoinTransfer: 60 },
+  }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Save failed');
+  expect(slider).toHaveAttribute('aria-valuetext', '60 personal coins, 140 team coins');
+  expect(warlordAllocateCoins).toHaveBeenCalledTimes(2);
+});
+
+it('continues saving a newer allocation after an earlier failure', async () => {
+  const props = setup();
+  const first = pendingSave();
+  jest.mocked(warlordAllocateCoins).mockReturnValueOnce(first.promise).mockResolvedValueOnce({
+    success: true, data: { equipment: null, equipped: null, coins: 160, teamCoinTransfer: -40 },
+  });
+  render(<WarlordCoins {...props} />);
+  await act(async () => {});
+  const slider = screen.getByRole('slider');
+  fireEvent.change(slider, { target: { value: '140' } });
+  fireEvent.pointerUp(slider);
+  fireEvent.change(slider, { target: { value: '40' } });
+  fireEvent.pointerUp(slider);
+
+  await act(async () => first.resolve({ success: false, error: 'First save failed' }));
+  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  expect(slider).toHaveValue('40');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(warlordAllocateCoins).toHaveBeenCalledTimes(2);
+});
+
+it('skips old queued allocations and inventory responses after a turn change', async () => {
+  const props = setup();
+  const first = pendingSave();
+  jest.mocked(warlordAllocateCoins).mockReturnValueOnce(first.promise).mockResolvedValueOnce({
+    success: true, data: { equipment: null, equipped: null, coins: 160, teamCoinTransfer: -40 },
+  });
+  const view = render(<WarlordCoins {...props} />);
+  await act(async () => {});
+  const slider = screen.getByRole('slider');
+  fireEvent.change(slider, { target: { value: '140' } });
+  fireEvent.pointerUp(slider);
+  fireEvent.change(slider, { target: { value: '170' } });
+  fireEvent.pointerUp(slider);
+
+  view.rerender(<WarlordCoins {...props} gameState={{ ...props.gameState, turn: props.gameState.turn + 1 }} />);
+  expect(slider).toHaveValue('80');
+  fireEvent.change(slider, { target: { value: '40' } });
+  fireEvent.pointerUp(slider);
+  await act(async () => first.resolve({
+    success: true, data: { equipment: null, equipped: null, coins: 60, teamCoinTransfer: 60 },
+  }));
+  await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  expect(warlordAllocateCoins).toHaveBeenCalledTimes(2);
+  expect(slider).toHaveValue('40');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 it('keeps the inventory synchronized if the popup closes before saving completes', async () => {

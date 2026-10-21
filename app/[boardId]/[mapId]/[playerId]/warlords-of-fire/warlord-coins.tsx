@@ -1,12 +1,23 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { startTransition, useActionState, useEffect, useOptimistic, useRef, useState } from 'react';
 import { GameState, PlayerInventoryState, PlayerState } from '@/lib/store/types';
 import { warlordAllocateCoins } from '@/lib/runner/warlords-of-fire/server-actions';
 import { getState } from '@/lib/runner/warlords-of-fire/territory-state';
 import CoinDisplay from '../coin-display';
 import playerStatsSyncService from '../player-stats-sync.service';
 import styles from './warlord-coins.module.css';
+
+interface CoinAllocation {
+  teamCoins: number;
+  context: string;
+  requestId: number;
+}
+
+interface AllocationSaveState {
+  context: string;
+  error: string | null;
+}
 
 export default function WarlordCoins({
   boardId,
@@ -28,11 +39,11 @@ export default function WarlordCoins({
   showHint?: boolean;
 }) {
   const [liveInventory, setLiveInventory] = useState<PlayerInventoryState | null>(null);
-  const [draftTeamCoins, setDraftTeamCoins] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, startSaving] = useTransition();
-  const savePending = useRef(false);
+  const [draftAllocation, setDraftAllocation] = useState<CoinAllocation | null>(null);
+  const draft = useRef<CoinAllocation | null>(null);
   const requestId = useRef(0);
+  const inventoryContext = JSON.stringify([boardId, mapId, player.id, gameState.turn]);
+  const currentInventoryContext = useRef(inventoryContext);
 
   useEffect(() => {
     if (!isSelf) return;
@@ -41,42 +52,62 @@ export default function WarlordCoins({
     });
   }, [isSelf, player.id]);
 
-  useEffect(() => {
-    const requests = requestId;
-    return () => { requests.current++; };
-  }, [boardId, mapId, player.id, gameState.turn]);
-
   const pendingInventory = isSelf ? liveInventory : inventory;
   const team = getState(gameState).teams[player.team || player.id];
   const teamCoins = (team?.coins ?? 0) + (pendingInventory?.teamCoinTransfer ?? 0);
   const personalCoins = pendingInventory?.coins ?? player.coins;
   const totalCoins = personalCoins + teamCoins;
-  const allocatedTeamCoins = draftTeamCoins ?? teamCoins;
+  const disabled = processing || player.health <= 0 || !team || totalCoins <= 0;
+  const context = JSON.stringify([inventoryContext, player.team, isSelf, disabled]);
+  const [optimisticTeamCoins, allocateOptimistically] = useOptimistic(teamCoins, (current, allocation: CoinAllocation) =>
+    allocation.context === context ? allocation.teamCoins : current);
+  const allocatedTeamCoins = draftAllocation?.context === context ? draftAllocation.teamCoins : optimisticTeamCoins;
   const allocatedPersonalCoins = totalCoins - allocatedTeamCoins;
-  const disabled = processing || saving || player.health <= 0 || !team || totalCoins <= 0;
+
+  useEffect(() => {
+    currentInventoryContext.current = inventoryContext;
+  }, [inventoryContext]);
+
+  useEffect(() => {
+    const requests = requestId;
+    return () => { requests.current++; };
+  }, [context]);
+
+  const [saveState, saveCoins, saving] = useActionState<AllocationSaveState, CoinAllocation>(async (previous, allocation) => {
+    if (allocation.requestId !== requestId.current) return previous;
+
+    try {
+      const response = await warlordAllocateCoins(boardId, mapId, player.id, allocation.teamCoins);
+      if (response.success && response.data && currentInventoryContext.current === inventoryContext) {
+        // Keep confirmed inventory in sync even if this popup has closed.
+        const confirmedInventory = response.data;
+        startTransition(() => playerStatsSyncService.updateInventory(confirmedInventory, gameState.players.find(source => source.id === player.id)));
+      }
+      if (allocation.requestId !== requestId.current) return previous;
+      return { context: allocation.context, error: response.success && response.data
+        ? null : response.error || 'Unable to allocate coins.' };
+    } catch (error) {
+      if (allocation.requestId !== requestId.current) return previous;
+      return { context: allocation.context, error: error instanceof Error ? error.message : 'Unable to allocate coins.' };
+    }
+  }, { context, error: null });
+  const error = saveState.context === context ? saveState.error : null;
+
+  const cancelDraft = () => {
+    draft.current = null;
+    setDraftAllocation(null);
+  };
 
   const saveAllocation = () => {
-    if (draftTeamCoins === null || savePending.current || disabled || !isSelf) return;
-    if (draftTeamCoins === teamCoins) {
-      setDraftTeamCoins(null);
-      return;
-    }
-    savePending.current = true;
-    const currentRequest = ++requestId.current;
-    setError(null);
-    startSaving(async () => {
-      try {
-        const response = await warlordAllocateCoins(boardId, mapId, player.id, draftTeamCoins);
-        if (!response.success || !response.data) {
-          throw new Error(response.error || 'Unable to allocate coins.');
-        }
-        playerStatsSyncService.updateInventory(response.data, gameState.players.find(source => source.id === player.id));
-      } catch (error) {
-        if (currentRequest === requestId.current) setError((error as Error).message);
-      } finally {
-        savePending.current = false;
-        if (currentRequest === requestId.current) setDraftTeamCoins(null);
-      }
+    const allocation = draft.current;
+    if (!allocation || allocation.context !== context || disabled || !isSelf) return;
+    // A release followed by blur must submit this draft only once.
+    cancelDraft();
+    if (allocation.teamCoins === optimisticTeamCoins) return;
+
+    startTransition(() => {
+      allocateOptimistically(allocation);
+      saveCoins(allocation);
     });
   };
 
@@ -100,15 +131,19 @@ export default function WarlordCoins({
         disabled={disabled}
         aria-label="Coins allocated to team"
         aria-valuetext={`${allocatedPersonalCoins} personal coins, ${allocatedTeamCoins} team coins`}
-        onChange={event => setDraftTeamCoins(Number(event.target.value))}
+        onChange={event => {
+          const allocation = { teamCoins: Number(event.target.value), context, requestId: requestId.current };
+          draft.current = allocation;
+          setDraftAllocation(allocation);
+        }}
         onPointerUp={saveAllocation}
         onKeyUp={saveAllocation}
         onBlur={saveAllocation}
-        onPointerCancel={() => setDraftTeamCoins(null)}
+        onPointerCancel={cancelDraft}
       />
       {showHint && <p className={styles.hint}>Team coins fund sub-commanders.</p>}
       {saving && <p className={styles.statusMessage} role="status">Saving...</p>}
-      {error && <p className={styles.statusMessage} role="alert">{error}</p>}
+      {!saving && error && <p className={styles.statusMessage} role="alert">{error}</p>}
     </>}
   </section>;
 }
