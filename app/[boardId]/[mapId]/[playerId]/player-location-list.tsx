@@ -84,11 +84,10 @@ export default function PlayerLocationList({
       if (response.success && response.data) {
         const inventory = response.data;
         const sourcePlayer = gameState?.players.find(source => source.id === player.id);
-        startTransition(() => {
-          if (sourcePlayer) playerStatsSyncService.updateInventory(inventory, sourcePlayer);
-          else playerStatsSyncService.updateInventory(inventory);
-          onItemTakenRef.current(pickup.itemId);
-        });
+        // Show confirmed loot immediately, even while other pickups are still queued.
+        if (sourcePlayer) playerStatsSyncService.updateInventory(inventory, sourcePlayer);
+        else playerStatsSyncService.updateInventory(inventory);
+        onItemTakenRef.current(pickup.itemId);
       }
     } catch {
       // Failed requests restore the item for retry without interrupting other pickups.
