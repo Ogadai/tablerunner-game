@@ -33,6 +33,7 @@ import {
 } from '../store/redis-access';
 import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
+import { getNpcsInMasterOrder } from './npc-followers';
 import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
 import { applyCharacterInventory, applyPlayerInventory } from "./apply-inventory";
 import { executeProcessesBetweenTurns, executeProcessesForTurn, initialiseProcessesForTurn } from "./game-processes";
@@ -317,12 +318,14 @@ function processTargetEffects(targets: ITarget[]) {
 
 function processNpcTimeouts(params: BaseParams) {
   const newNPCs: NPCState[] = [];
-  for(const npc of params.gameState.npcs) {
+  const expiredNpcIds = new Set<string>();
+  for(const npc of getNpcsInMasterOrder(params.gameState.npcs)) {
     if (npc.turnsLeft && npc.turnsLeft > 0) {
       npc.turnsLeft--;
       if (npc.masterId) {
-        const master = params.gameState.players.find(p => p.id === npc.masterId);
-        if (master && master.health === 0) {
+        const master = params.gameState.players.find(p => p.id === npc.masterId)
+          ?? params.gameState.npcs.find(candidate => candidate.id === npc.masterId);
+        if (!master || master.health <= 0 || master.team !== npc.team || expiredNpcIds.has(master.id)) {
           npc.turnsLeft = 0;
         }
       }
@@ -330,6 +333,7 @@ function processNpcTimeouts(params: BaseParams) {
       if (npc.turnsLeft > 0) {
         newNPCs.push(npc);
       } else {
+        expiredNpcIds.add(npc.id);
         if (npc.expiryAction !== 'remove') {
           if (npc.monsterType) {
             const monster: MonsterState = {
@@ -354,5 +358,6 @@ function processNpcTimeouts(params: BaseParams) {
     }
   }
 
-  params.gameState.npcs = newNPCs;
+  const retained = new Set(newNPCs);
+  params.gameState.npcs = params.gameState.npcs.filter(npc => retained.has(npc));
 }

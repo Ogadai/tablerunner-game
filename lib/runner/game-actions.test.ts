@@ -11,6 +11,8 @@ import { SpellIds } from '../games/spells';
 import { PlayerActionsState, PlayerActionAttack, PlayerActionCast, PlayerActionMove, PlayerActionReadScroll, PlayerActionType, PlayerActionUseItem } from '../store/types';
 import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 import { gameRunners } from './games';
+import { ScrollIds } from '../games/items';
+import { getNpcSpells } from './shared-processes/npcs';
 
 jest.mock('../store/redis-access', () => ({ getMonsterActionsForTurnFromRedis: jest.fn() }));
 jest.mock('./game-action-attack', () => ({ actionAttack: jest.fn(), monsterAttack: jest.fn() }));
@@ -297,4 +299,81 @@ it.each([false, true])('moves a scripted monster in an empty location unless blo
   mockQueuedActions({ actions: [move] });
   await runGameActions(params, playerActions);
   expect(monster.location).toBe(blocked ? 1 : 2);
+});
+
+it.each([PlayerActionType.Move, PlayerActionType.Portal, PlayerActionType.FastTravel] as const)(
+  'moves and recovers an NPC caster and its summon with the player (%s)', async type => {
+    const mage = createNpc({ id: 'mage', masterId: 'hero', health: 10, magic: 0 });
+    const spirit = createNpc({ id: 'spirit', masterId: mage.id, health: 5, magic: 0, turnsLeft: 5 });
+    const params = createParams();
+    // Follower storage order must not affect movement or recovery.
+    params.gameState.npcs = [spirit, mage];
+    const travelAction = type === PlayerActionType.Move ? move
+      : { id: 1, type, description: '', targetLocation: 2 };
+    playerActions.hero = { actions: [travelAction] };
+    for (const travel of [actionMove, actionPortal, actionFastTravel]) {
+      jest.mocked(travel).mockImplementation((_params, target) => {
+        target.location = { id: 2, description: 'Road', move: [] };
+      });
+    }
+
+    await runGameActions(params, playerActions);
+
+    expect(mage).toMatchObject({ health: 12, magic: 2, location: { id: 2 } });
+    expect(spirit).toMatchObject({ health: 7, magic: 2, location: { id: 2 } });
+    expect(getNpcActions).not.toHaveBeenCalled();
+  },
+);
+
+it('moves a summoned NPC with its independent NPC master and skips combat during travel', async () => {
+  const mage = createNpc({ id: 'mage', scriptedActions: true, team: 'red' });
+  const spirit = createNpc({ id: 'spirit', masterId: mage.id, team: mage.team, turnsLeft: 5 });
+  const params = createParams();
+  params.gameState.players = [];
+  params.gameState.npcs = [spirit, mage];
+  mockQueuedActions({ actions: [move] });
+  executeNpcAction.mockImplementation((_params, target) => { target.location.id = 2; });
+
+  await runGameActions(params, {});
+
+  expect(spirit.location.id).toBe(2);
+  expect(getNpcActions).not.toHaveBeenCalled();
+});
+
+it('lets an NPC summon fight and recover mana without passive healing during combat', async () => {
+  const mage = createNpc({ id: 'mage', masterId: 'hero' });
+  const spirit = createNpc({ id: 'spirit', masterId: mage.id, health: 5, magic: 0, turnsLeft: 5 });
+  const params = createParams({ monsters: [createMonster()] });
+  params.gameState.npcs = [spirit, mage];
+  jest.mocked(getNpcActions).mockReturnValue({ actions: [attack(1)] });
+
+  await runGameActions(params, playerActions);
+
+  expect(actionAttack).toHaveBeenCalledWith(params, spirit, attack(1));
+  expect(spirit).toMatchObject({ health: 5, magic: 2 });
+});
+
+it('learns Spirit Guide, summons support on the next turn, and keeps it on subsequent turns', async () => {
+  const mage = createNpc({ id: 'mage', name: 'Mage', masterId: 'hero', magic: 40,
+    spells: [], equipment: [{ id: 'guide-scroll', type: ScrollIds.spiritGuide }],
+    equipped: {}, baseStats: { attack: 6, damage: 6, defence: 10, health: 20, magic: 40, speed: 10 } });
+  const params = createParams();
+  params.gameState.npcs = [mage];
+  jest.mocked(getNpcActions).mockImplementation(jest.requireActual('./game-npc-actions').getNpcActions);
+  jest.mocked(actionCastSpell).mockImplementation(jest.requireActual('./game-action-spell').actionCastSpell);
+  jest.mocked(actionReadScroll).mockImplementation(jest.requireActual('./game-action-spell').actionReadScroll);
+
+  await runGameActions(params, playerActions);
+  expect(mage.spells).toContain(SpellIds.spiritGuide);
+  expect(mage.equipment).toEqual([]);
+  mage.spells.push(...getNpcSpells('mage'));
+
+  await runGameActions(params, playerActions);
+  const spirit = params.gameState.npcs.find(npc => npc.masterId === mage.id)!;
+  expect(spirit).toMatchObject({ name: 'Spirit Eagle', turnsLeft: 5, team: mage.team });
+  expect(params.messages.hero.messages).toContainEqual({ text: '**Mage** summoned **Spirit Eagle**' });
+
+  await runGameActions(params, playerActions);
+  expect(params.gameState.npcs.filter(npc => npc.masterId === mage.id)).toEqual([spirit]);
+  expect(spirit.turnsLeft).toBe(5);
 });

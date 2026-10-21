@@ -6,6 +6,10 @@ import { ConsumableIds, EquipableIds, ScrollIds } from '../games/items';
 import { SpellIds } from '../games/spells';
 import { createMonster, createNpc, createParams, createPlayer } from './test-support/fixtures';
 import { getMonsterCombatant } from './monster-combatant';
+import { getNpcSpells } from './shared-processes/npcs';
+
+const followerSpells = [SpellIds.spiritGuide, SpellIds.spiritGuarian, SpellIds.spiritWarrior,
+  SpellIds.raiseDead, SpellIds.animateCorpse, SpellIds.familiar];
 
 beforeEach(() => jest.spyOn(Math, 'random').mockReturnValue(0));
 afterEach(() => jest.restoreAllMocks());
@@ -168,4 +172,92 @@ it('uses character targets when planning for a monster', () => {
   const params = createParams({ monsters: [monster] });
   const result = getNpcActions(params, getMonsterCombatant(monster));
   expect(result.actions).toEqual([expect.objectContaining({ type: PlayerActionType.Attack, target: 'hero' })]);
+});
+
+it.each(['mage', 'witch'])('prioritizes a learned Spirit Guide over a %s\'s regular combat actions', type => {
+  const npc = createNpc({ magic: 40, spells: [...getNpcSpells(type), SpellIds.spiritGuide], equipment: [],
+    baseStats: { attack: 6, damage: 6, defence: 10, health: 20, magic: 40, speed: 10 } });
+  const params = createParams({ monsters: [createMonster()] });
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions[0]).toMatchObject({ type: PlayerActionType.Cast, spellId: SpellIds.spiritGuide });
+});
+
+it.each(followerSpells)('does not cast %s while an existing follower is alive, even elsewhere', spellId => {
+  const npc = createNpc({ magic: 100, spells: [spellId], equipment: [],
+    baseStats: { attack: 0, damage: 0, defence: 10, health: 20, magic: 100, speed: 10 } });
+  const params = createParams({ monsters: [createMonster({ health: 0 })] });
+  params.gameState.npcs = [npc, createNpc({ id: 'follower', masterId: npc.id, turnsLeft: 1,
+    location: { id: 2, description: '', move: [] } })];
+
+  expect(getNpcActions(params, npc).actions).toEqual([]);
+});
+
+it('does not replace a living monster follower with a summoned follower', () => {
+  const npc = createNpc({ magic: 100, spells: followerSpells, equipment: [],
+    baseStats: { attack: 0, damage: 0, defence: 10, health: 20, magic: 100, speed: 10 } });
+  const params = createParams({ monsters: [createMonster({ id: 'corpse', health: 0 }),
+    createMonster({ masterId: npc.id, team: npc.team })] });
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions).toEqual([]);
+});
+
+it.each(['dead', 'expired', 'another master'])('allows a summon when a previous follower is %s', reason => {
+  const npc = createNpc({ magic: 20, spells: [SpellIds.spiritGuide],
+    baseStats: { attack: 6, damage: 6, defence: 10, health: 20, magic: 20, speed: 10 } });
+  const params = createParams();
+  params.gameState.npcs = [npc, createNpc({ id: 'follower',
+    masterId: reason === 'another master' ? 'hero' : npc.id,
+    health: reason === 'dead' ? 0 : 20, turnsLeft: reason === 'expired' ? 0 : 5 })];
+
+  expect(getNpcActions(params, npc).actions).toEqual([
+    expect.objectContaining({ type: PlayerActionType.Cast, spellId: SpellIds.spiritGuide }),
+  ]);
+});
+
+it('plans at most one follower spell per turn across spirits and necromancy', () => {
+  const npc = createNpc({ magic: 200, spells: followerSpells, equipment: [],
+    baseStats: { attack: 0, damage: 0, defence: 10, health: 20, magic: 200, speed: 10 } });
+  const params = createParams({ monsters: [createMonster({ health: 0 })] });
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions).toHaveLength(1);
+});
+
+it('keeps emergency healing ahead of summoning', () => {
+  const npc = createNpc({ health: 5, magic: 20, spells: [SpellIds.spiritGuide],
+    equipment: [{ id: 'heal', type: ConsumableIds.healingPotion }],
+    baseStats: { attack: 6, damage: 6, defence: 10, health: 20, magic: 20, speed: 10 } });
+  const params = createParams();
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions).toEqual([
+    expect.objectContaining({ type: PlayerActionType.UseItem, itemId: 'heal' }),
+    expect.objectContaining({ type: PlayerActionType.Cast, spellId: SpellIds.spiritGuide }),
+  ]);
+});
+
+it('uses a mana potion to enable a summon before spending mana on cheaper spells', () => {
+  const npc = createNpc({ magic: 3, spells: [SpellIds.spiritArrow, SpellIds.spiritGuide],
+    equipment: [{ id: 'mana', type: ConsumableIds.manaPotion }],
+    baseStats: { attack: 6, damage: 6, defence: 10, health: 20, magic: 20, speed: 10 } });
+  const params = createParams({ monsters: [createMonster()] });
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions).toEqual([
+    expect.objectContaining({ type: PlayerActionType.UseItem, itemId: 'mana' }),
+    expect.objectContaining({ type: PlayerActionType.Cast, spellId: SpellIds.spiritGuide }),
+  ]);
+});
+
+it('keeps emergency healing spells ahead of summoning', () => {
+  const npc = createNpc({ magic: 20, spells: [SpellIds.healingAura, SpellIds.spiritGuide], equipment: [],
+    health: 5, baseStats: { attack: 6, damage: 6, defence: 10, health: 20, magic: 20, speed: 10 } });
+  const params = createParams();
+  params.gameState.npcs = [npc];
+
+  expect(getNpcActions(params, npc).actions).toEqual([
+    expect.objectContaining({ type: PlayerActionType.Cast, spellId: SpellIds.healingAura }),
+  ]);
 });

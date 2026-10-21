@@ -9,6 +9,7 @@ import { BaseParams } from "./base-params";
 import { getAvailableSpellTargets, isMonsterCaster } from './spell-targets';
 import { getMonsterStats } from './monster-stats';
 import { getEnemies, isFriend } from './game-friends-or-enemies';
+import { hasActiveFollower, isFollowerSpell } from './npc-followers';
 
 interface ValueBase {
   value: number;
@@ -73,7 +74,8 @@ function getAvailableActions(params: BaseParams, npc: INamedTarget, actionsPerTu
   }
 
   actions.push(getHealPotionAction(params, npc));
-  actions.push(getMagicPotionAction(params, npc));
+  const manaPotion = getMagicPotionAction(params, npc);
+  actions.push(manaPotion);
 
   for(const item of npc.equipment) {
     const itemDef = allItems[item.type];
@@ -88,6 +90,11 @@ function getAvailableActions(params: BaseParams, npc: INamedTarget, actionsPerTu
     actions.push(
       ...getCastSpellActions(params, npc, spellId, actionsPerTurn),
     );
+  }
+
+  if (manaPotion && actions.some(action => action?.exclusiveGroup === 'follower'
+      && action.magic > npc.magic && action.cost + manaPotion.cost <= actionsPerTurn.total)) {
+    manaPotion.priority = 1;
   }
 
   return actions.filter(a => !!a && a.value > 0) as ActionsWithCosts[];
@@ -202,6 +209,10 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
   if (targets.length === 0) {
     return [];
   }
+  const summonsFollower = isFollowerSpell(spellId) && !isMonsterCaster(params, npc);
+  if (summonsFollower && hasActiveFollower(params, npc.id)) {
+    return [];
+  }
   const necromancy = spellId === SpellIds.raiseDead || spellId === SpellIds.animateCorpse || spellId === SpellIds.familiar;
   if (necromancy && isMonsterCaster(params, npc)) {
     const undead = params.monsters.filter(m => m.id !== npc.id && m.location === npc.location.id
@@ -219,6 +230,7 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
     Math.floor(actionsPerTurn.total / getSpellActionCost(spell, npc.baseStats!.magic)),
     Math.floor(availableMagic / spell.magicCost),
     hasLastingEffect ? (spell.pickTarget ? targets.length : 1) : Infinity,
+    summonsFollower ? 1 : Infinity,
   );
   const actionsWithCosts: ActionsWithCosts[] = [];
   for(let n = 0; n < castCount; n++) {
@@ -239,12 +251,17 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
       description: `Cast ${spell.name}`,
       targetId: target ? target.id : undefined
     };
+    const spellTargets = target ? [target] : targets;
+    const emergencyHealing = !!spell.bonusStats.health && spellTargets.some(t => t.health <=
+      ('type' in t ? getMonsterStats(t as MonsterState).health : (t as INamedTarget).baseStats!.health) / 2);
 
     actionsWithCosts.push({
       cost: getSpellActionCost(spell, npc.baseStats!.magic),
       magic: spell.magicCost,
-      exclusiveGroup: necromancy ? 'necromancy' : undefined,
-      value: getSpellValue(npc, spell, target ? [target] : targets) / (npc.recentSpells?.includes(spellId as SpellIds) ? 1.3 : 1),
+      exclusiveGroup: summonsFollower ? 'follower' : necromancy ? 'necromancy' : undefined,
+      // Establish support before ordinary attacks and buffs, after emergency healing.
+      priority: emergencyHealing ? 2 : summonsFollower ? 1 : 0,
+      value: getSpellValue(npc, spell, spellTargets) / (npc.recentSpells?.includes(spellId as SpellIds) ? 1.3 : 1),
       action
     });
   }

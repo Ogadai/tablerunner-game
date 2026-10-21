@@ -60,6 +60,7 @@ function summonSpirit(params: BaseParams, player: INamedTarget, spirit: MonsterL
   };
 
   params.gameState.npcs.push(newNPC);
+  playerMessageAtLocation(params, player.id, `**{player}** summoned **${spirit.name}**`);
 }
 
 function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarget[], turns: number, health: number = 10) {
@@ -138,6 +139,7 @@ function animateCorpse(params: BaseParams, player: INamedTarget, targets: ITarge
       params.monsters = params.monsters.filter(m => m.id !== target.id);
       params.gameState.npcs.push(newNPC);
     }
+    playerMessageAtLocation(params, player.id, '**{player}** animated a corpse');
   }
 }
 

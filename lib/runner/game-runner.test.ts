@@ -181,6 +181,44 @@ it('applies pending NPC inventory before combat and consumes it even if the NPC 
     expect.objectContaining({ npcs: [] }), params.messages, [], ['follower'], params.playerInstructions);
 });
 
+it.each(['alive', 'dead', 'missing', 'changed team'])('handles a timed summon with an NPC master who is %s', async state => {
+  const mage = createNpc({ id: 'mage', health: state === 'dead' ? 0 : 20,
+    team: state === 'changed team' ? 'other' : 'good' });
+  const spirit = createNpc({ id: 'spirit', masterId: mage.id, turnsLeft: 5, expiryAction: 'remove' });
+  const params = createParams();
+  params.gameState.npcs = state === 'missing' ? [spirit] : [spirit, mage];
+
+  await processGameTurn(params);
+
+  expect(params.gameState.npcs.some(npc => npc.id === spirit.id)).toBe(state === 'alive');
+  if (state === 'alive') expect(spirit.turnsLeft).toBe(4);
+});
+
+it('expires dependent summons in the same turn as their master, regardless of storage order', async () => {
+  const mage = createNpc({ id: 'mage', masterId: 'hero', turnsLeft: 1, expiryAction: 'remove' });
+  const spirit = createNpc({ id: 'spirit', masterId: mage.id, turnsLeft: 5, expiryAction: 'remove' });
+  const params = createParams();
+  params.gameState.npcs = [spirit, mage];
+
+  await processGameTurn(params);
+
+  expect(params.gameState.npcs).toEqual([]);
+});
+
+it.each(['dead', 'monster'] as const)('preserves %s expiry behavior when an NPC master dies', async expiryAction => {
+  const mage = createNpc({ id: 'mage', health: 0 });
+  const undead = createNpc({ id: 'undead', masterId: mage.id, turnsLeft: 5,
+    expiryAction, monsterType: 'rat', health: 5, zombie: true });
+  const params = createParams();
+  params.gameState.npcs = [undead, mage];
+
+  await processGameTurn(params);
+
+  expect(params.gameState.npcs.map(npc => npc.id)).toEqual([mage.id]);
+  expect(params.monsters).toContainEqual(expect.objectContaining({ id: undead.id,
+    type: 'rat', health: expiryAction === 'dead' ? 0 : 5, zombie: true, team: 'monster' }));
+});
+
 it('preserves the original processing error even if recovery also fails', async () => {
   const error = new Error('action failed');
   jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: ['hero'] });

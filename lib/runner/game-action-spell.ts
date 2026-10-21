@@ -12,6 +12,7 @@ import { getAvailableSpellTargets } from './spell-targets';
 import { getMonsterStats } from './monster-stats';
 import { getCombatStats } from '../store/playerStats';
 import { joinWithAnd } from '../string-helpers';
+import { hasActiveFollower, isFollowerSpell } from './npc-followers';
 
 const MAX_RECENT_SPELLS = 2;
 
@@ -23,6 +24,7 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
 
   const spell = spells[action.spellId];
   if (!spell || player.health <= 0 || player.magic < spell.magicCost) return;
+  if ('masterId' in player && isFollowerSpell(action.spellId) && hasActiveFollower(params, player.id)) return;
   const targets = getSpellTargets(params, player, action);
 
   if (targets.length > 0) {

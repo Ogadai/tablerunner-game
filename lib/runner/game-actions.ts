@@ -33,6 +33,7 @@ import { games } from '../games/games';
 import { playerMessageAtLocation } from './game-messages';
 import { getEnemies } from './game-friends-or-enemies';
 import { gameRunners } from './games';
+import { getNpcsInMasterOrder } from './npc-followers';
 
 enum EntityActionEntityTypes {
   player,
@@ -67,11 +68,12 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
   const playerRespawns: Record<string, PlayerAction[]> = {};
   const playerIsMoving = (id: string): boolean => !!(playerMoves[id]?.length || playerPortals[id]?.length
     || playerFastTravels[id]?.length || playerRespawns[id]?.length);
-  const masterIsMoving = (masterId: string | null | undefined): boolean => {
-    if (!masterId) return false;
+  const masterIsMoving = (masterId: string | null | undefined, visited = new Set<string>()): boolean => {
+    if (!masterId || visited.has(masterId)) return false;
+    visited.add(masterId);
     const npcMaster = params.gameState.npcs.find(npc => npc.id === masterId);
     return playerIsMoving(masterId) || !!npcTravel[masterId]?.length
-      || (!!npcMaster?.masterId && playerIsMoving(npcMaster.masterId));
+      || masterIsMoving(npcMaster?.masterId, visited);
   };
 
   try {
@@ -139,7 +141,7 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
       ? await getMonsterActionsForTurnFromRedis(params.boardId, params.mapId, npcActionIds) : {};
 
     // Get the NPCs at these locations
-    for(const npc of params.gameState.npcs.filter(npc => npc.health > 0 && !!npc.team)) {
+    for(const npc of getNpcsInMasterOrder(params.gameState.npcs).filter(npc => npc.health > 0 && !!npc.team)) {
       const locId = `${npc.location.id}`;
       if (npc.scriptedActions) {
         entityActionsForLocations[locId] ??= { entities: [] };
@@ -282,21 +284,21 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
         for(const travelAction of playerFastTravels[player.id]) {
           actionFastTravel(params, player, travelAction);
         }
-
-        // Recover following NPCs and move to the same location
-        for(const npc of params.gameState.npcs.filter(npc => npc.health > 0 && npc.masterId === player.id)) {
-          characterRecovery(npc, playerFought[player.id]);
-
-          npc.location = {
-            ...player.location,
-          };
-        }
       } else {
         playerRespawns[player.id].forEach(() => actionRespawn(params, player));
 
         if (player.respawnTurns !== undefined && player.respawnTurns > 0) {
           player.respawnTurns--;
         }
+      }
+    }
+    // A hired caster's summons follow the caster after the caster follows the player.
+    for (const npc of getNpcsInMasterOrder(params.gameState.npcs).filter(npc => npc.health > 0 && npc.masterId)) {
+      const master = params.gameState.players.find(player => player.id === npc.masterId)
+        ?? params.gameState.npcs.find(candidate => candidate.id === npc.masterId);
+      if (master && master.health > 0 && master.team === npc.team) {
+        characterRecovery(npc, !!(npcFought[npc.id] || playerFought[master.id] || npcFought[master.id]));
+        npc.location = { ...master.location };
       }
     }
     for (const monster of params.monsters.filter(monster => monster.health > 0 && monster.masterId)) {

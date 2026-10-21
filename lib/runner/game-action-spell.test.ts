@@ -110,3 +110,17 @@ it.each(['learn', 'known', 'insufficient', 'missing'])('handles scroll learning:
   expect(player.equipment).toHaveLength(reason === 'learn' ? 0 : 1);
   expect(player.spells).toEqual(reason === 'learn' || reason === 'known' ? [SpellIds.heal] : []);
 });
+
+it('rechecks an NPC follower at execution time without spending mana or replacing the follower', () => {
+  const mage = createNpc({ id: 'mage', magic: 20, spells: [SpellIds.spiritGuide] });
+  const spirit = createNpc({ id: 'spirit', masterId: mage.id, turnsLeft: 5 });
+  const params = createParams();
+  params.gameState.npcs = [mage, spirit];
+
+  actionCastSpell(params, mage, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.spiritGuide });
+
+  expect(params.gameState.npcs).toEqual([mage, spirit]);
+  expect(spirit.turnsLeft).toBe(5);
+  expect(mage.magic).toBe(20);
+  expect(mage.recentSpells).toBeUndefined();
+});
