@@ -12,7 +12,8 @@ import LocationItemList from "./location-item-list";
 import { takeItemAtLocation } from "@/lib/store/playerInventory";
 import { getSwalDefaultOptions } from "@/app/swal";
 import styles from './player-location-list.module.css';
-import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
+import playerStatsSyncService from "./player-stats-sync.service";
+import type { PlayerStats } from '@/lib/store/playerTurnStats';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 
 export interface PlayerLocationListProps {

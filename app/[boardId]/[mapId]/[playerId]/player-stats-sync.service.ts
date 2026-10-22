@@ -1,197 +1,41 @@
 'use client';
 
-import { BaseStats } from "@/lib/games/types";
-import { getPlayerActionsCosts, getPlayerActionsMagic, getPlayerActionsPerTurn, getPlayerStats, PlayerActionsPerTurn } from "@/lib/store/playerStats";
-import { PlayerActionsState, PlayerActionType, PlayerAddStatsState, PlayerInventoryState, PlayerState, PlayerTurnInputs } from "@/lib/store/types";
-
-export interface PlayerStats {
-  baseStats: BaseStats;
-  health: number;
-  magic: number;
-  actionsPerTurn: PlayerActionsPerTurn;
-  actionPointsUsed: number;
-  actionPointsTotal: number;
-  availablePoints: number;
-  magicUsed: number;
-  magicLeft: number;
-  isAttacking: boolean;
-  playerCanMove: boolean;
-};
-
-export const emptyPlayerStats: PlayerStats = {
-  baseStats: {
-    attack: 0,
-    defence: 0,
-    magic: 0,
-    damage: 0,
-    health: 0,
-    speed: 0,
-  },
-  health: 0,
-  magic: 0,
-  actionsPerTurn: { attack: 0, move: 0, total: 0 },
-  actionPointsUsed: 0,
-  actionPointsTotal: 0,
-  availablePoints: 0,
-  magicUsed: 0,
-  magicLeft: 0,
-  isAttacking: false,
-  playerCanMove: false,
-};
-
-type PlayerStatsListener = (
-  playerStats: PlayerStats,
-  actionsState: PlayerActionsState,
-  addStatsState: PlayerAddStatsState | null,
-  activePlayer: PlayerState | null,
-  inventoryState?: PlayerInventoryState | null
-) => void;
+import { calculatePlayerTurnStats, type PlayerStatsInputs } from '@/lib/store/playerTurnStats';
+import type { PlayerActionsState, PlayerAddStatsState, PlayerInventoryState, PlayerState, PlayerTurnInputs } from '@/lib/store/types';
+import playerStatsStore from './player-stats-store';
 
 class PlayerStatsSyncService {
-  private statsPromise: Promise<PlayerStats> = Promise.resolve(emptyPlayerStats);
-
-  private player: PlayerState | null = null;
-
-  private inventoryState: PlayerInventoryState | null = null;
-  private actionsState: PlayerActionsState | null = null;
-  private addStatsState: PlayerAddStatsState | null = null;
-  private activePlayer: PlayerState | null = null;
-  private currentStats: PlayerStats = emptyPlayerStats;
-
-  private readonly listeners = new Set<PlayerStatsListener>();
-
-  getStats(): Promise<PlayerStats> {
-    return this.statsPromise;
-  }
-
-  getActionsState(): Promise<PlayerActionsState> {
-    return this.statsPromise.then(() => this.actionsState || { actions: [] });
-  }
-
-  getAddStateState(): Promise<PlayerAddStatsState | null> {
-    return this.statsPromise.then(() => this.addStatsState || null);
-  }
-
   updatePlayer(player: PlayerState, inputs: PlayerTurnInputs): void {
-    this.player = player;
-    this.inventoryState = inputs.inventory;
-    this.actionsState = inputs.actions;
-    this.addStatsState = inputs.addedStats;
-    this.activePlayer = null;
-    this.currentStats = emptyPlayerStats;
-    this.statsPromise = this.getUpdatedStats();
+    this.publish({
+      sourcePlayer: player,
+      inventoryState: inputs.inventory,
+      actionsState: inputs.actions,
+      addStatsState: inputs.addedStats,
+    });
   }
 
   updateInventory(inventoryState: PlayerInventoryState | undefined, sourcePlayer?: PlayerState): void {
     // Missing data from a failed action must not clear the current inventory.
-    if (!inventoryState || (sourcePlayer && sourcePlayer !== this.player)) return;
-    this.inventoryState = inventoryState;
-    this.statsPromise = this.getUpdatedStats();
+    if (!inventoryState || !this.isCurrentPlayer(sourcePlayer)) return;
+    this.publish({ ...playerStatsStore.getSnapshot(), inventoryState });
   }
 
-  updateActionsState(actionsState: PlayerActionsState): void {
-    this.actionsState = actionsState;
-    this.statsPromise = this.getUpdatedStats();
+  updateActionsState(actionsState: PlayerActionsState | undefined, sourcePlayer?: PlayerState): void {
+    if (!actionsState || !this.isCurrentPlayer(sourcePlayer)) return;
+    this.publish({ ...playerStatsStore.getSnapshot(), actionsState });
   }
 
-  updateAddStatsState(addStatsState: PlayerAddStatsState): void {
-    this.addStatsState = addStatsState;
-    this.statsPromise = this.getUpdatedStats();
+  updateAddStatsState(addStatsState: PlayerAddStatsState, sourcePlayer?: PlayerState): void {
+    if (!this.isCurrentPlayer(sourcePlayer)) return;
+    this.publish({ ...playerStatsStore.getSnapshot(), addStatsState });
   }
 
-  subscribe(listener: PlayerStatsListener): () => void {
-    this.listeners.add(listener);
-
-    this.statsPromise.then(() => {
-      if (this.listeners.has(listener)) {
-        listener(this.currentStats, this.actionsState || { actions: [] }, this.addStatsState, this.activePlayer, this.inventoryState);
-      }
-    });
-
-    return () => {
-      this.listeners.delete(listener);
-    };
+  private isCurrentPlayer(sourcePlayer?: PlayerState): boolean {
+    return !sourcePlayer || sourcePlayer === playerStatsStore.getSnapshot().sourcePlayer;
   }
 
-  private async getUpdatedStats(): Promise<PlayerStats> {
-    if (!this.player) return emptyPlayerStats;
-
-    const inventoryState = this.inventoryState;
-    const actionsState = this.actionsState;
-    const addStatsState = this.addStatsState;
-
-    const combinedPlayer: PlayerState = {
-      ...this.player,
-      equipped: inventoryState?.equipped ? {
-        ...this.player.equipped,
-        ...inventoryState.equipped
-      } : { ...this.player.equipped },
-      equipment: inventoryState?.equipment !== null && inventoryState?.equipment !== undefined
-          ? inventoryState.equipment : this.player.equipment,
-      coins: inventoryState?.coins !== undefined ? inventoryState.coins : this.player.coins,
-    };
-
-    const addedStats = addStatsState?.characterStats;
-    const effectivePlayer: PlayerState = {
-      ...combinedPlayer,
-      characterStats: addedStats ? {
-        strength: combinedPlayer.characterStats.strength + addedStats.strength,
-        skill: combinedPlayer.characterStats.skill + addedStats.skill,
-        intelligence: combinedPlayer.characterStats.intelligence + addedStats.intelligence,
-        resiliance: combinedPlayer.characterStats.resiliance + addedStats.resiliance,
-        reactions: combinedPlayer.characterStats.reactions + addedStats.reactions,
-      } : combinedPlayer.characterStats,
-    };
-    effectivePlayer.baseStats = getPlayerStats(effectivePlayer);
-
-    const actionPointsUsed = getPlayerActionsCosts(effectivePlayer, actionsState);
-    const actionsPerTurn = getPlayerActionsPerTurn(effectivePlayer)
-    const actionPointsTotal = actionsPerTurn.total;
-
-    const magicUsed = getPlayerActionsMagic(effectivePlayer, actionsState);
-    const magicLeft = effectivePlayer.magic - magicUsed;
-
-    const isAttacking = actionsState?.actions.some(a => a.type === PlayerActionType.Attack) || false;
-
-    const actionPointsLeft = actionPointsTotal - actionPointsUsed
-    const playerCanMove = (effectivePlayer.health > 0) && !isAttacking &&  actionPointsLeft >= actionsPerTurn.move;
-
-    const allocatedPoints = addedStats ? Object.values(addedStats)
-      .reduce((total, points) => total + points, 0) : 0;
-    const availablePoints = Math.max(0, effectivePlayer.availableStats - allocatedPoints);
-
-    const playerStats: PlayerStats = {
-      health: effectivePlayer.health,
-      magic: effectivePlayer.magic,
-      baseStats: effectivePlayer.baseStats,
-      actionsPerTurn,
-      actionPointsUsed,
-      actionPointsTotal,
-      availablePoints,
-      magicUsed,
-      magicLeft,
-      isAttacking,
-      playerCanMove,
-    };
-    this.currentStats = playerStats;
-
-    const activePlayer = {
-      ...combinedPlayer,
-      baseStats: effectivePlayer.baseStats,
-    };
-    this.activePlayer = activePlayer;
-
-    for(const listener of this.listeners) {
-      listener(
-        playerStats,
-        actionsState || { actions: [] },
-        addStatsState || null,
-        activePlayer,
-        inventoryState
-      );
-    }
-
-    return playerStats;
+  private publish(inputs: PlayerStatsInputs): void {
+    playerStatsStore.setSnapshot({ ...inputs, ...calculatePlayerTurnStats(inputs) });
   }
 }
 

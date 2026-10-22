@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { CharacterStats as CharacterStatsType } from '@/lib/games/types';
 
 import styles from './character-stats.module.css';
@@ -9,7 +8,9 @@ import EntityBaseStats from './entity-base-stats';
 
 import { setPlayerAddStatsState } from '@/lib/store/playerStatsState';
 import CoinDisplay from './coin-display';
-import playerStatsSyncService, { PlayerStats } from "./player-stats-sync.service";
+import playerStatsSyncService from "./player-stats-sync.service";
+import type { PlayerStats } from '@/lib/store/playerTurnStats';
+import usePlayerStatsSnapshot from './use-player-stats-snapshot';
 import WarlordCoins from './warlords-of-fire/warlord-coins';
 
 const emptyStats: CharacterStatsType = {
@@ -19,6 +20,8 @@ const emptyStats: CharacterStatsType = {
   intelligence: 0,
   resiliance: 0,
 };
+
+const emptyAddStats: PlayerAddStatsState = { characterStats: emptyStats };
 
 export default function CharacterStats({
   boardId,
@@ -39,23 +42,10 @@ export default function CharacterStats({
   inventory?: PlayerInventoryState;
   processing?: boolean;
 }) {
-  const [playerAddStats, setPlayerAddStats] = useState<PlayerAddStatsState>({ characterStats: emptyStats });
+  const { sourcePlayer, addStatsState } = usePlayerStatsSnapshot();
+  const playerAddStats = isSelf && sourcePlayer?.id === player.id ? addStatsState ?? emptyAddStats : emptyAddStats;
 
   const baseStats = playerStats?.baseStats || player.baseStats!;
-
-  useEffect(() => {
-    const disposeFns = [
-      playerStatsSyncService.subscribe((stats, actionsState, addStatsState) => {
-        setPlayerAddStats(addStatsState || { characterStats: emptyStats });
-      }),
-    ];
-
-    playerStatsSyncService.getAddStateState().then(addStatsState => 
-      setPlayerAddStats(addStatsState || { characterStats: emptyStats })
-    );
-
-    return () => disposeFns.forEach(f => f());
-  }, [player]);
 
   const savePlayerAddStats = async (nextStats: PlayerAddStatsState = playerAddStats) =>
     await setPlayerAddStatsState(boardId, mapId, player.id, nextStats);
@@ -80,7 +70,7 @@ export default function CharacterStats({
       },
     };
 
-    playerStatsSyncService.updateAddStatsState(nextStats);
+    playerStatsSyncService.updateAddStatsState(nextStats, sourcePlayer ?? undefined);
     await savePlayerAddStats(nextStats);
   };
 

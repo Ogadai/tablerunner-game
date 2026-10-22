@@ -8,7 +8,7 @@ import { EquipableItemDef, SpellDef, SpellTargetType } from '@/lib/games/types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import { getSwalDefaultOptions } from '@/app/swal';
 import EntityStats from './entity-base-stats';
-import { PlayerStats } from './player-stats-sync.service';
+import type { PlayerStats } from '@/lib/store/playerTurnStats';
 import { allItems } from '@/lib/games/items';
 
 export default function PlayerSpells({

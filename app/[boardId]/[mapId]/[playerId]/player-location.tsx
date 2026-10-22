@@ -5,7 +5,7 @@ import { getSwalDefaultOptions } from '@/app/swal';
 
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionsState, PlayerActionType, LocationState, GameState, PlayerState, PlayerSnapshot, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
+import { PlayerAction, PlayerActionMove, PlayerActionType, LocationState, GameState, PlayerSnapshot, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
 import { LocationMoveDirection } from "@/lib/games/types";
 import { addPlayerAction, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
@@ -19,7 +19,10 @@ import PlayerPortal from './player-portal';
 import { characters } from '@/lib/games/characters';
 import { monsters } from '@/lib/games/monsters';
 import { EntityItemClass, EntityItemDetail } from './entity-list';
-import playerStatsSyncService, { PlayerStats, emptyPlayerStats } from "./player-stats-sync.service";
+import playerStatsSyncService from "./player-stats-sync.service";
+import playerStatsStore from './player-stats-store';
+import usePlayerStatsSnapshot from './use-player-stats-snapshot';
+import { emptyPlayerStats } from '@/lib/store/playerTurnStats';
 import FastTravel from './fast-travel';
 import PlayerVideo from './player-video';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
@@ -52,17 +55,14 @@ export default function PlayerLocation(
   const [locationUpdate, setLocationUpdate] = useState<{ snapshot: PlayerSnapshot; state: LocationState } | null>(null);
   const locationState = locationUpdate && locationUpdate.snapshot === snapshot
     ? locationUpdate.state : snapshot?.location || { monsters: [], items: [], npcs: [] };
-  const [playerState, setPlayerState] = useState<PlayerState | null>();
-  const [playerStats, setPlayerStats] = useState<PlayerStats>(emptyPlayerStats);
+  const statsSnapshot = usePlayerStatsSnapshot();
+  const sourcePlayer = gameState.players.find(p => p.id === playerId);
+  const hasCurrentStats = !!snapshot && statsSnapshot.sourcePlayer === sourcePlayer;
+  const playerState = hasCurrentStats ? statsSnapshot.activePlayer : null;
+  const playerStats = hasCurrentStats ? statsSnapshot.playerStats : emptyPlayerStats;
+  const actionsState = hasCurrentStats ? statsSnapshot.actionsState : { actions: [] };
   const combatActionPending = useRef(false);
   const nextActionNumber = useRef(0);
-  const currentPlayerInputs = useRef<{
-    player: PlayerState;
-    stats: PlayerStats;
-    actions: PlayerActionsState;
-  } | null>(null);
-  const [actionsSnapshot, setActionsSnapshot] = useState<{ gameState: GameState; state: PlayerActionsState } | null>(null);
-  const actionsState = actionsSnapshot?.gameState === gameState ? actionsSnapshot.state : { actions: [] };
   const router = useRouter();
 
   const playerAlive = playerState && playerState.health > 0;
@@ -79,6 +79,7 @@ export default function PlayerLocation(
     if (!player) {
       router.push(`/${boardId}/${mapId}`);
     } else if (snapshot) {
+      nextActionNumber.current = snapshot.actions.actions.reduce((number, action) => Math.max(number, action.id + 1), 0);
       playerStatsSyncService.updatePlayer(player, snapshot);
       let disposed = false;
       let requestId = 0;
@@ -94,20 +95,13 @@ export default function PlayerLocation(
       const disposeFns = [
         StoreTopicService.subscribe(topicId, message => {
           if (message.playerId === playerId) {
-            playerStatsSyncService.updateInventory(message.playerInventory);
+            playerStatsSyncService.updateInventory(message.playerInventory, player);
           }
         }),
         LocationTopicService.subscribe(topicId, locationId => {
           if (locationId === player.location.id) {
             fetchLocationState();
           }
-        }),
-        playerStatsSyncService.subscribe((stats, actionsState, addStatsState, activePlayer) => {
-          currentPlayerInputs.current = activePlayer ? { player: activePlayer, stats, actions: actionsState } : null;
-          nextActionNumber.current = actionsState.actions.reduce((number, action) => Math.max(number, action.id + 1), 0);
-          setPlayerStats(stats);
-          setActionsSnapshot({ gameState, state: actionsState });
-          setPlayerState(activePlayer);
         }),
       ];
 
@@ -121,15 +115,15 @@ export default function PlayerLocation(
   const addNewAction = async (opts: Omit<PlayerAction, 'id'>) => {
     const isCombatAction = opts.type === PlayerActionType.Attack || opts.type === PlayerActionType.Cast;
     if (isCombatAction && combatActionPending.current) return;
-    const inputs = currentPlayerInputs.current;
-    if (!inputs) return;
-    const nextActionId = inputs.actions.actions.reduce((number, action) => Math.max(number, action.id + 1), nextActionNumber.current);
+    const inputs = playerStatsStore.getSnapshot();
+    if (!inputs.activePlayer || inputs.sourcePlayer !== sourcePlayer) return;
+    const nextActionId = inputs.actionsState.actions.reduce((number, action) => Math.max(number, action.id + 1), nextActionNumber.current);
     const action = { ...opts, id: nextActionId } as PlayerAction;
     if (isCombatAction) {
-      const effectivePlayer = { ...inputs.player, baseStats: inputs.stats.baseStats };
-      const nextActions = { actions: [...inputs.actions.actions, action] };
-      const overActionBudget = getPlayerActionsCosts(effectivePlayer, nextActions) > inputs.stats.actionPointsTotal;
-      const overMagicBudget = getPlayerActionsMagic(effectivePlayer, nextActions) > inputs.stats.magic;
+      const effectivePlayer = inputs.activePlayer;
+      const nextActions = { actions: [...inputs.actionsState.actions, action] };
+      const overActionBudget = getPlayerActionsCosts(effectivePlayer, nextActions) > inputs.playerStats.actionPointsTotal;
+      const overMagicBudget = getPlayerActionsMagic(effectivePlayer, nextActions) > inputs.playerStats.magic;
       if (overActionBudget || overMagicBudget) {
         await Swal.fire({
           ...getSwalDefaultOptions(),
@@ -144,13 +138,9 @@ export default function PlayerLocation(
     }
     nextActionNumber.current = nextActionId + 1;
     try {
-      const state = await addPlayerAction(boardId, mapId, inputs.player.id, action);
+      const state = await addPlayerAction(boardId, mapId, inputs.activePlayer.id, action);
       if (!state.success || !state.data) throw new Error(state.error || 'Unable to save action.');
-      // Keep the next click accurate even before the subscription triggers a render.
-      if (currentPlayerInputs.current === inputs) {
-        currentPlayerInputs.current = { ...inputs, actions: state.data };
-      }
-      playerStatsSyncService.updateActionsState(state.data);
+      playerStatsSyncService.updateActionsState(state.data, inputs.sourcePlayer ?? undefined);
     } catch (error) {
       await Swal.fire({
         ...getSwalDefaultOptions(),
@@ -196,7 +186,7 @@ export default function PlayerLocation(
 
     if (travelAction) {
       const state = await removePlayerAction(boardId, mapId, playerState!.id, travelAction.id);
-      playerStatsSyncService.updateActionsState(state.data!);
+      playerStatsSyncService.updateActionsState(state.data, sourcePlayer);
     }
 
     endTurnAction(undefined, false);
@@ -205,7 +195,7 @@ export default function PlayerLocation(
   const bindRemoveAction = (action: PlayerAction) => 
     async () => {
       const state = await removePlayerAction(boardId, mapId, playerState!.id, action.id);
-      playerStatsSyncService.updateActionsState(state.data!);
+      playerStatsSyncService.updateActionsState(state.data, sourcePlayer);
     };
 
   if (!snapshot || !playerState) {

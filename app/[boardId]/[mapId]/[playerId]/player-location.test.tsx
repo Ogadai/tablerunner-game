@@ -14,6 +14,7 @@ import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
 import WarlordParty from './warlords-of-fire/warlord-party';
 import { createMonster, createNpc } from '@/lib/runner/test-support/fixtures';
 import sync from './player-stats-sync.service';
+import playerStatsStore from './player-stats-store';
 import { makeGameState, makePlayer as makeTestPlayer, makeStats } from './test-fixtures';
 import { makePlayerSnapshot } from '../game/test-fixtures';
 
@@ -26,8 +27,8 @@ jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() }
 jest.mock('@/lib/store/playerActionsState', () => ({ addPlayerAction: jest.fn(), removePlayerAction: jest.fn() }));
 jest.mock('@/lib/store/locationState', () => ({ getLocationState: jest.fn() }));
 jest.mock('@/app/message-bus/location-topic-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
-jest.mock('./player-stats-sync.service', () => ({ __esModule: true, emptyPlayerStats: {}, default: {
-  updatePlayer: jest.fn(), subscribe: jest.fn(), updateActionsState: jest.fn(),
+jest.mock('./player-stats-sync.service', () => ({ __esModule: true, default: {
+  updatePlayer: jest.fn(), updateActionsState: jest.fn(),
 } }));
 jest.mock('./player-location-list', () => ({ __esModule: true, default: jest.fn(() => null) }));
 jest.mock('./player-spells', () => ({ __esModule: true, default: () => null }));
@@ -42,10 +43,8 @@ jest.mock('./warlords-of-fire/warlord-party', () => ({ __esModule: true, default
 
 describe('PlayerLocation', () => {
   const push = jest.fn();
-  const disposeStats = jest.fn();
   const disposeLocation = jest.fn();
   let onLocation: Parameters<typeof locationTopic.subscribe>[1];
-  let onStats: Parameters<typeof sync.subscribe>[0];
   let location: LocationState;
 
   beforeEach(() => {
@@ -54,7 +53,15 @@ describe('PlayerLocation', () => {
     jest.mocked(getLocationState).mockResolvedValue({ success: true, data: { monsters: [], items: [], npcs: [] } });
     jest.mocked(addPlayerAction).mockResolvedValue({ success: true, data: { actions: [] } });
     jest.mocked(removePlayerAction).mockResolvedValue({ success: true, data: { actions: [] } });
-    jest.mocked(sync.subscribe).mockImplementation(callback => { onStats = callback; return disposeStats; });
+    jest.mocked(sync.updatePlayer).mockImplementation((player, inputs) => {
+      playerStatsStore.setSnapshot({
+        sourcePlayer: player, activePlayer: player, playerStats: makeStats({ health: player.health }),
+        inventoryState: inputs.inventory, actionsState: inputs.actions, addStatsState: inputs.addedStats,
+      });
+    });
+    jest.mocked(sync.updateActionsState).mockImplementation(actionsState => {
+      if (actionsState) playerStatsStore.setSnapshot({ ...playerStatsStore.getSnapshot(), actionsState });
+    });
     jest.mocked(locationTopic.subscribe).mockImplementation((_topic, callback) => { onLocation = callback; return disposeLocation; });
   });
 
@@ -66,7 +73,6 @@ describe('PlayerLocation', () => {
       isPlayerReady: false, processing: false, endTurnAction: jest.fn(), ...overrides };
     const snapshot = makePlayerSnapshot({ playerId: props.playerId, gameState: props.gameState, location, actions });
     const view = render(<PlayerLocation snapshot={snapshot} {...props} />);
-    await act(async () => onStats(makeStats({ health: player.health }), actions, null, player));
     return { ...view, props, player };
   }
 
@@ -120,7 +126,7 @@ describe('PlayerLocation', () => {
     expect(addPlayerAction).toHaveBeenCalledWith('board', 'map', 'barbarian', {
       id: 8, type: PlayerActionType.Move, description: 'Go North', direction: 'n',
     });
-    expect(sync.updateActionsState).toHaveBeenCalledWith({ actions: [] });
+    expect(sync.updateActionsState).toHaveBeenCalledWith({ actions: [] }, props.gameState.players[0]);
   });
 
   it('blocks advancing past living enemies but allows retreat', async () => {
@@ -193,7 +199,9 @@ describe('PlayerLocation', () => {
   it('rejects a spell when queued spells have used the remaining magic', async () => {
     const { player } = await setup();
     const cast = { id: 0, type: PlayerActionType.Cast, description: 'Cast', spellId: 'spiritArrow' };
-    await act(async () => onStats(makeStats({ magic: 3, actionPointsTotal: 100 }), { actions: [cast] }, null, player));
+    act(() => playerStatsStore.setSnapshot({ ...playerStatsStore.getSnapshot(),
+      playerStats: makeStats({ magic: 3, actionPointsTotal: 100 }), actionsState: { actions: [cast] }, activePlayer: player,
+    }));
     const submit = jest.mocked(PlayerLocationList).mock.calls.at(-1)![0].addNewAction;
     await act(async () => { await submit(cast); });
     expect(addPlayerAction).not.toHaveBeenCalled();
@@ -259,13 +267,13 @@ describe('PlayerLocation', () => {
     fireEvent.click(screen.getByRole('button', { name: /Not Ready!/ }));
     await waitFor(() => expect(props.endTurnAction).toHaveBeenCalledTimes(1));
     expect(removePlayerAction).toHaveBeenCalledWith('board', 'map', 'barbarian', 3);
-    expect(sync.updateActionsState).toHaveBeenCalledWith({ actions: [] });
+    expect(sync.updateActionsState).toHaveBeenCalledWith({ actions: [] }, props.gameState.players[0]);
   });
 
   it('removes a selected action and synchronizes the remaining queue', async () => {
-    await setup({}, { actions: [{ id: 4, type: PlayerActionType.Attack, description: 'Attack Goblin' }] });
+    const { player } = await setup({}, { actions: [{ id: 4, type: PlayerActionType.Attack, description: 'Attack Goblin' }] });
     fireEvent.click(screen.getByRole('button', { name: 'delete_forever' }));
-    await waitFor(() => expect(sync.updateActionsState).toHaveBeenCalledWith({ actions: [] }));
+    await waitFor(() => expect(sync.updateActionsState).toHaveBeenCalledWith({ actions: [] }, player));
     expect(removePlayerAction).toHaveBeenCalledWith('board', 'map', 'barbarian', 4);
   });
 
@@ -323,7 +331,6 @@ describe('PlayerLocation', () => {
     await act(async () => onLocation(1));
     expect(getLocationState).toHaveBeenCalledTimes(1);
     unmount();
-    expect(disposeStats).toHaveBeenCalledTimes(1);
     expect(disposeLocation).toHaveBeenCalledTimes(1);
   });
 });

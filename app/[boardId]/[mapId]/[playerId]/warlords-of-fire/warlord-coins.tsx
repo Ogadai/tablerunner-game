@@ -6,6 +6,7 @@ import { warlordAllocateCoins } from '@/lib/runner/warlords-of-fire/server-actio
 import { getState } from '@/lib/runner/warlords-of-fire/territory-state';
 import CoinDisplay from '../coin-display';
 import playerStatsSyncService from '../player-stats-sync.service';
+import usePlayerStatsSnapshot from '../use-player-stats-snapshot';
 import styles from './warlord-coins.module.css';
 
 interface CoinAllocation {
@@ -38,20 +39,15 @@ export default function WarlordCoins({
   processing?: boolean;
   showHint?: boolean;
 }) {
-  const [liveInventory, setLiveInventory] = useState<PlayerInventoryState | null>(null);
+  const statsSnapshot = usePlayerStatsSnapshot();
   const [draftAllocation, setDraftAllocation] = useState<CoinAllocation | null>(null);
   const draft = useRef<CoinAllocation | null>(null);
   const requestId = useRef(0);
   const inventoryContext = JSON.stringify([boardId, mapId, player.id, gameState.turn]);
   const currentInventoryContext = useRef(inventoryContext);
 
-  useEffect(() => {
-    if (!isSelf) return;
-    return playerStatsSyncService.subscribe((_stats, _actions, _addedStats, activePlayer, inventory) => {
-      if (activePlayer?.id === player.id) setLiveInventory(inventory ?? null);
-    });
-  }, [isSelf, player.id]);
-
+  const sourcePlayer = gameState.players.find(source => source.id === player.id);
+  const liveInventory = statsSnapshot.sourcePlayer === sourcePlayer ? statsSnapshot.inventoryState : null;
   const pendingInventory = isSelf ? liveInventory : inventory;
   const team = getState(gameState).teams[player.team || player.id];
   const teamCoins = (team?.coins ?? 0) + (pendingInventory?.teamCoinTransfer ?? 0);

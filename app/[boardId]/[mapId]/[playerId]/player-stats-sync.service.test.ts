@@ -3,127 +3,80 @@ import { makePlayer } from './test-fixtures';
 
 describe('PlayerStatsSyncService', () => {
   let service: typeof import('./player-stats-sync.service').default;
+  let store: typeof import('./player-stats-store').default;
   let inputs: PlayerTurnInputs;
-  const added = { strength: 2, skill: 0, reactions: 0, resiliance: 0, intelligence: 1 };
 
   beforeEach(async () => {
     jest.resetModules();
     service = (await import('./player-stats-sync.service')).default;
+    store = (await import('./player-stats-store')).default;
     inputs = {
       inventory: { equipment: null, equipped: null },
-      actions: { actions: [] }, addedStats: { characterStats: null },
-      instructions: {},
+      actions: { actions: [] }, addedStats: { characterStats: null }, instructions: {},
     };
   });
 
-  it('starts with empty stats and supports unsubscribing before initial delivery', async () => {
-    const listener = jest.fn();
-    service.subscribe(listener)();
-    expect(await service.getStats()).toMatchObject({ health: 0, playerCanMove: false });
-    expect(await service.getActionsState()).toEqual({ actions: [] });
-    expect(await service.getAddStateState()).toBeNull();
-    expect(listener).not.toHaveBeenCalled();
+  it('publishes inputs and their calculated values together, synchronously', () => {
+    const player = makePlayer({ availableStats: 5 });
+    const addedStats = { characterStats: { strength: 2, skill: 0, reactions: 0, resiliance: 0, intelligence: 1 } };
+    const listener = jest.fn(() => {
+      expect(store.getSnapshot()).toMatchObject({
+        sourcePlayer: player, addStatsState: addedStats,
+        playerStats: { availablePoints: 2, baseStats: { attack: 3, magic: 2 } },
+      });
+    });
+    store.subscribe(listener);
+    service.updatePlayer(player, { ...inputs, addedStats });
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it('merges inventory and allocated stats without mutating the persisted player', async () => {
-    const player = makePlayer({ availableStats: 5, coins: 50 });
-    const original = JSON.parse(JSON.stringify(player));
-    inputs.inventory = {
-      equipment: [{ id: 'sword', type: 'swordRusty' }], equipped: { weapon: 'sword' }, coins: 0,
-    };
-    inputs.addedStats = { characterStats: added };
-    service.updatePlayer(player, inputs);
-    const stats = await service.getStats();
-    expect(stats).toMatchObject({ availablePoints: 2, baseStats: { attack: 4, magic: 2 } });
-    const listener = jest.fn();
-    const dispose = service.subscribe(listener);
-    await service.getStats();
-    expect(listener).toHaveBeenLastCalledWith(stats, { actions: [] }, { characterStats: added },
-      expect.objectContaining({ coins: 0, characterStats: original.characterStats,
-        equipment: [{ id: 'sword', type: 'swordRusty' }] }), inputs.inventory);
-    expect(player).toEqual(original);
-    dispose();
-  });
-
-  it('recomputes cached actions, magic and movement and stops notifying disposed listeners', async () => {
-    service.updatePlayer(makePlayer({ magic: 10 }), inputs);
-    await service.getStats();
-    const listener = jest.fn();
-    const dispose = service.subscribe(listener);
-    await service.getStats();
-    service.updateActionsState({ actions: [{ id: 1, type: PlayerActionType.Attack, description: 'Attack' }] });
-    expect(await service.getStats()).toMatchObject({ isAttacking: true, playerCanMove: false, actionPointsUsed: 12 });
-    dispose();
-    listener.mockClear();
-    service.updateActionsState({ actions: [{ id: 2, type: PlayerActionType.Cast, description: 'Cast',
-      ...{ spellId: 'spiritArrow' } }] });
-    expect(await service.getStats()).toMatchObject({ isAttacking: false, magicUsed: 3, magicLeft: 7, playerCanMove: false });
-    expect(listener).not.toHaveBeenCalled();
-  });
-
-  it('updates inventory and allocations locally and resets caches when switching players', async () => {
-    service.updatePlayer(makePlayer({ availableStats: 1 }), inputs);
-    await service.getStats();
-    service.updateAddStatsState({ characterStats: added });
-    expect(await service.getStats()).toMatchObject({ availablePoints: 0, baseStats: { attack: 3 } });
-    service.updateInventory(undefined);
-    await service.getStats();
-    service.updatePlayer(makePlayer({ id: 'mage', health: 0 }), inputs);
-    expect(await service.getStats()).toMatchObject({ health: 0, playerCanMove: false, actionPointsTotal: 0 });
-    expect(await service.getAddStateState()).toEqual({ characterStats: null });
-  });
-
-  it('uses persisted inventory when the snapshot has no pending inventory changes', async () => {
-    const player = makePlayer({ equipment: [{ id: 'sword', type: 'swordRusty' }], equipped: { weapon: 'sword' } });
-    service.updatePlayer(player, inputs);
-    expect(await service.getStats()).toMatchObject({ health: 10, actionPointsUsed: 0, playerCanMove: true });
-    const listener = jest.fn();
-    service.subscribe(listener);
-    await service.getStats();
-    expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, { characterStats: null },
-      expect.objectContaining({ equipment: player.equipment, equipped: player.equipped }), inputs.inventory);
-  });
-
-  it('preserves pending inventory when an action returns no data and accepts an explicitly empty inventory', async () => {
-    const inventory = {
-      equipment: [{ id: 'sword', type: 'swordRusty' }],
-      equipped: { weapon: 'sword' },
-      coins: 5,
-    };
-    service.updatePlayer(makePlayer(), { ...inputs, inventory });
-    await service.getStats();
-    const listener = jest.fn();
-    const dispose = service.subscribe(listener);
-    await service.getStats();
-    const stats = await service.getStats();
-    listener.mockClear();
-
-    service.updateInventory(undefined);
-    expect(await service.getStats()).toBe(stats);
-    expect(listener).not.toHaveBeenCalled();
-    service.updateActionsState({ actions: [] });
-    await service.getStats();
-    expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, inputs.addedStats,
-      expect.objectContaining(inventory), inventory);
-
+  it('replaces all pending inputs when switching players or turns', () => {
+    const oldPlayer = makePlayer({ availableStats: 1 });
+    service.updatePlayer(oldPlayer, inputs);
     service.updateInventory({ equipment: [], equipped: {}, coins: 0 });
-    await service.getStats();
-    expect(listener).toHaveBeenLastCalledWith(expect.anything(), { actions: [] }, inputs.addedStats,
-      expect.objectContaining({ equipment: [], coins: 0 }), { equipment: [], equipped: {}, coins: 0 });
-    dispose();
+    service.updateActionsState({ actions: [{ id: 1, type: PlayerActionType.Attack, description: 'Attack' }] });
+    service.updateAddStatsState({ characterStats: { strength: 2, skill: 0, reactions: 0, resiliance: 0, intelligence: 0 } });
+    const player = makePlayer({ id: 'mage', health: 0 });
+    service.updatePlayer(player, inputs);
+    expect(store.getSnapshot()).toMatchObject({
+      sourcePlayer: player, inventoryState: inputs.inventory, actionsState: inputs.actions,
+      addStatsState: inputs.addedStats, activePlayer: { id: 'mage', health: 0 },
+      playerStats: { health: 0, playerCanMove: false, actionPointsTotal: 0 },
+    });
   });
 
-  it('ignores a coin-allocation response from an earlier turn snapshot', async () => {
+  it('preserves state for missing responses and accepts an explicitly empty inventory', () => {
+    const player = makePlayer();
+    service.updatePlayer(player, inputs);
+    const previous = store.getSnapshot();
+    const listener = jest.fn();
+    store.subscribe(listener);
+    service.updateInventory(undefined);
+    service.updateActionsState(undefined);
+    expect(store.getSnapshot()).toBe(previous);
+    expect(listener).not.toHaveBeenCalled();
+    const inventory = { equipment: [], equipped: {}, coins: 0 };
+    service.updateInventory(inventory, player);
+    expect(store.getSnapshot().inventoryState).toBe(inventory);
+    expect(store.getSnapshot().activePlayer).toMatchObject({ equipment: [], coins: 0 });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['turn', 'player'])('ignores responses from an earlier %s', change => {
     const oldPlayer = makePlayer({ coins: 120 });
     service.updatePlayer(oldPlayer, inputs);
-    const currentPlayer = { ...oldPlayer, coins: 150 };
+    const currentPlayer = { ...oldPlayer, id: change === 'player' ? 'mage' : oldPlayer.id, coins: 150 };
     service.updatePlayer(currentPlayer, inputs);
-    service.updateInventory({ equipment: null, equipped: null, coins: 60, teamCoinTransfer: 60 }, oldPlayer);
+    const current = store.getSnapshot();
     const listener = jest.fn();
-    const dispose = service.subscribe(listener);
-    await service.getStats();
-    expect(listener.mock.calls.at(-1)?.[3].coins).toBe(150);
-    expect(listener.mock.calls.at(-1)?.[4]).toEqual(inputs.inventory);
-    dispose();
+    store.subscribe(listener);
+    service.updateInventory({ equipment: null, equipped: null, coins: 60, teamCoinTransfer: 60 }, oldPlayer);
+    service.updateActionsState({ actions: [] }, oldPlayer);
+    service.updateAddStatsState({ characterStats: null }, oldPlayer);
+    expect(store.getSnapshot()).toBe(current);
+    expect(listener).not.toHaveBeenCalled();
+    const inventory = { equipment: [], equipped: {}, coins: 90 };
+    service.updateInventory(inventory, currentPlayer);
+    expect(store.getSnapshot().inventoryState).toBe(inventory);
   });
 });

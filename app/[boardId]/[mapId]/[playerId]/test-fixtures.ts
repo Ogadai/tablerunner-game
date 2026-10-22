@@ -2,7 +2,7 @@ import type { BaseStats } from '@/lib/games/types';
 import type { NPCState, PlayerState } from '@/lib/store/types';
 import { makePlayer as makeGamePlayer } from '../game/test-fixtures';
 import { EntityItemClass, type EntityItemDetail } from './entity-list';
-import type { PlayerStats } from './player-stats-sync.service';
+import type { PlayerStats } from '@/lib/store/playerTurnStats';
 
 export { makeGameState } from '../game/test-fixtures';
 
