@@ -3,7 +3,7 @@ import Swal from 'sweetalert2'
 import { Dialog, Popover } from 'radix-ui';
 import { getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
 import styles from './player-spells.module.css';
-import { PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionType, PlayerState } from '@/lib/store/types';
+import { PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
 import { EquipableItemDef, SpellDef, SpellTargetType } from '@/lib/games/types';
 import EntityList, { EntityItemClass, EntityItemDetail } from './entity-list';
 import { getSwalDefaultOptions } from '@/app/swal';
@@ -16,12 +16,14 @@ export default function PlayerSpells({
   player,
   entities,
   playerStats,
+  actionsState,
   addNewAction
 }: {
   playerSpells: SpellIds[],
   player: PlayerState,
   entities: EntityItemDetail[],
   playerStats: PlayerStats;
+  actionsState: PlayerActionsState;
   addNewAction: (opts: Omit<PlayerAction, 'id'>) => Promise<void>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -127,8 +129,16 @@ export default function PlayerSpells({
   const actionPointsLeft = playerStats.actionPointsTotal- playerStats.actionPointsUsed;
   const canAttack = player.health > 0 && attackTargets.length > 0 && playerStats.actionsPerTurn.attack <= actionPointsLeft;
 
+  const recentSpellIds = [...new Set([
+    ...actionsState.actions
+      .filter((action): action is PlayerActionCast => action.type === PlayerActionType.Cast)
+      .map(action => action.spellId)
+      .reverse(),
+    ...(player.recentSpells || []),
+  ])].slice(0, 2);
+
   const recentSpells: { spell: SpellDef, canCast: boolean }[]
-      = (player.recentSpells || []).map(spellId => {
+      = recentSpellIds.map(spellId => {
         const spell = spells[spellId];
         const actionCost = getSpellActionCost(spell, playerStats?.baseStats?.magic);
         const canCast = player.health > 0 && actionCost <= actionPointsLeft && spell.magicCost <= playerStats.magicLeft

@@ -409,6 +409,7 @@ export default function PlayerLocation(
           player={playerState}
           entities={entities}
           playerStats={playerStats}
+          actionsState={actionsState}
           addNewAction={addNewAction}
         />
       }
