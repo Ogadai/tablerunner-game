@@ -8,29 +8,27 @@ import readyService from '../game/ready-state-sync-service';
 import PlayerLocation from './player-location';
 import Page from './page';
 import { makeGameState } from './test-fixtures';
+import { makePlayerSnapshot } from '../game/test-fixtures';
 
 jest.mock('next/navigation', () => ({ useParams: jest.fn(), useRouter: jest.fn() }));
 jest.mock('@/lib/store/playerReadyState', () => ({ setPlayerReady: jest.fn() }));
 jest.mock('@/app/message-bus/game-processing-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
-jest.mock('../game/game-state-sync-service', () => ({ __esModule: true, default: { get: jest.fn(), getPlayerSnapshot: jest.fn(), subscribe: jest.fn() } }));
+jest.mock('../game/game-state-lighting-service', () => ({ __esModule: true, default: { update: jest.fn() } }));
 jest.mock('../game/ready-state-sync-service', () => ({ __esModule: true, default: { get: jest.fn(), subscribe: jest.fn() } }));
 jest.mock('./player-location', () => ({ __esModule: true, default: jest.fn() }));
 
 describe('Player page', () => {
-  let onGame: Parameters<typeof gameService.subscribe>[2];
   let onProcessing: Parameters<typeof processingService.subscribe>[1];
   let onReady: Parameters<typeof readyService.subscribe>[2];
   const push = jest.fn();
-  const disposeGame = jest.fn();
   const disposeProcessing = jest.fn();
   const disposeReady = jest.fn();
 
   beforeEach(() => {
     jest.mocked(useParams).mockReturnValue({ boardId: 'board', mapId: 'map', playerId: 'warrior' });
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
-    jest.mocked(gameService.get).mockReturnValue(makeGameState());
+    gameService.set('board', 'map', makeGameState());
     jest.mocked(readyService.get).mockReturnValue({ readyPlayerIds: [] });
-    jest.mocked(gameService.subscribe).mockImplementation((_board, _map, callback) => { onGame = callback; return disposeGame; });
     jest.mocked(processingService.subscribe).mockImplementation((_topic, callback) => { onProcessing = callback; return disposeProcessing; });
     jest.mocked(readyService.subscribe).mockImplementation((_board, _map, callback) => {
       onReady = state => {
@@ -49,11 +47,23 @@ describe('Player page', () => {
   });
 
   it('shows loading and redirects if the game disappears', () => {
-    jest.mocked(gameService.get).mockReturnValue(undefined);
     render(<Page />);
+    act(() => gameService.set('board', 'map', undefined));
     expect(screen.getByText('Loading...')).toBeInTheDocument();
-    act(() => onGame(undefined));
     expect(push).toHaveBeenCalledWith('/board/map');
+  });
+
+  it('updates player inputs when the game object is unchanged and withholds another player\'s snapshot', () => {
+    const snapshot = makePlayerSnapshot();
+    gameService.set('board', 'map', snapshot.gameState!, snapshot);
+    const { rerender } = render(<Page />);
+    expect(jest.mocked(PlayerLocation).mock.calls.at(-1)![0].snapshot).toBe(snapshot);
+    const updated = { ...snapshot, instructions: { team: 'red' } };
+    act(() => gameService.set('board', 'map', snapshot.gameState!, updated));
+    expect(jest.mocked(PlayerLocation).mock.calls.at(-1)![0].snapshot).toBe(updated);
+    jest.mocked(useParams).mockReturnValue({ boardId: 'board', mapId: 'map', playerId: 'mage' });
+    rerender(<Page />);
+    expect(jest.mocked(PlayerLocation).mock.calls.at(-1)![0].snapshot).toBeUndefined();
   });
 
   it('submits the direction, disables while pending, and toggles ready state', async () => {
@@ -98,10 +108,11 @@ describe('Player page', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('The turn failed');
     act(() => onProcessing(true));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    act(() => onGame(makeGameState({ turn: 2 })));
+    act(() => gameService.set('board', 'map', makeGameState({ turn: 2 })));
     expect(screen.getByRole('button')).toBeEnabled();
     unmount();
-    expect(disposeGame).toHaveBeenCalledTimes(1);
+    gameService.set('board', 'map', undefined);
+    expect(push).not.toHaveBeenCalled();
     expect(disposeProcessing).toHaveBeenCalledTimes(1);
     expect(disposeReady).toHaveBeenCalledTimes(1);
   });

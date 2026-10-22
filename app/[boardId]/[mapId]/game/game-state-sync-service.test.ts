@@ -16,12 +16,20 @@ describe('gameStateSyncService', () => {
   });
 
   it('starts loading and completes loading even when no game exists', () => {
-    expect(sync.loading).toBe(true);
+    const initial = sync.getSnapshot('board', 'map');
+    expect(initial.loading).toBe(true);
+    expect(sync.getSnapshot('board', 'map')).toBe(initial);
     expect(sync.get('board', 'map')).toBeUndefined();
     const listener = jest.fn();
     sync.subscribe('board', 'map', listener);
     sync.set('board', 'map', undefined);
-    expect(sync.loading).toBe(false);
+    const loaded = sync.getSnapshot('board', 'map');
+    expect(loaded).toEqual({ gameState: undefined, playerSnapshot: undefined, loading: false });
+    expect(loaded).not.toBe(initial);
+    expect(sync.getSnapshot('board', 'map')).toBe(loaded);
+    expect(sync.getSnapshot('other', 'map').loading).toBe(true);
+    expect(sync.getSnapshot('board', 'other').loading).toBe(true);
+    expect(sync.getServerSnapshot()).toBe(initial);
     expect(listener).toHaveBeenCalledWith(undefined);
     expect(updateLighting).toHaveBeenCalledWith('board', 'map', undefined);
   });
@@ -72,5 +80,18 @@ describe('gameStateSyncService', () => {
     dispose();
     sync.set('board', 'map', makeGameState());
     expect(sync.getPlayerSnapshot('board', 'map', 'warrior')).toBeUndefined();
+  });
+
+  it('replaces the cached snapshot when only player inputs change', () => {
+    const snapshot = makePlayerSnapshot();
+    sync.set('board', 'map', snapshot.gameState!, snapshot);
+    const previous = sync.getSnapshot('board', 'map');
+    const updated = { ...snapshot, instructions: { team: 'red' } };
+    sync.set('board', 'map', snapshot.gameState!, updated);
+    const current = sync.getSnapshot('board', 'map');
+    expect(current).not.toBe(previous);
+    expect(current.gameState).toBe(previous.gameState);
+    expect(current.playerSnapshot).toBe(updated);
+    expect(previous.playerSnapshot).toBe(snapshot);
   });
 });

@@ -5,36 +5,50 @@ import gameStateLightingService from './game-state-lighting-service';
 
 type GameStateListener = (gameState: GameState | undefined) => void;
 
+export interface GameStateSyncSnapshot {
+  readonly gameState: GameState | undefined;
+  readonly playerSnapshot: PlayerSnapshot | undefined;
+  readonly loading: boolean;
+}
+
+const loadingSnapshot: GameStateSyncSnapshot = {
+  gameState: undefined,
+  playerSnapshot: undefined,
+  loading: true,
+};
+
 class GameStateSyncService {
-  private readonly gameStates = new Map<string, GameState | undefined>();
-  private readonly playerSnapshots = new Map<string, PlayerSnapshot>();
+  private readonly snapshots = new Map<string, GameStateSyncSnapshot>();
   private readonly listeners = new Map<string, Set<GameStateListener>>();
 
   private getKey(boardId: string, mapId: string): string {
     return `${boardId}:${mapId}`;
   }
 
-  private _loading = true;
-  public get loading() { return this._loading; }
+  getSnapshot(boardId: string, mapId: string): GameStateSyncSnapshot {
+    return this.snapshots.get(this.getKey(boardId, mapId)) ?? loadingSnapshot;
+  }
+
+  getServerSnapshot(): GameStateSyncSnapshot {
+    return loadingSnapshot;
+  }
 
   get(boardId: string, mapId: string): GameState | undefined {
-    return this.gameStates.get(this.getKey(boardId, mapId));
+    return this.getSnapshot(boardId, mapId).gameState;
   }
 
   getPlayerSnapshot(boardId: string, mapId: string, playerId: string): PlayerSnapshot | undefined {
-    const snapshot = this.playerSnapshots.get(this.getKey(boardId, mapId));
+    const snapshot = this.getSnapshot(boardId, mapId).playerSnapshot;
     return snapshot?.playerId === playerId ? snapshot : undefined;
   }
 
   set(boardId: string, mapId: string, gameState: GameState | undefined, snapshot?: PlayerSnapshot): void {
     const key = this.getKey(boardId, mapId);
-    this.gameStates.set(key, gameState);
-    if (snapshot && snapshot.gameState === gameState) {
-      this.playerSnapshots.set(key, snapshot);
-    } else {
-      this.playerSnapshots.delete(key);
-    }
-    this._loading = false;
+    this.snapshots.set(key, {
+      gameState,
+      playerSnapshot: snapshot?.gameState === gameState ? snapshot : undefined,
+      loading: false,
+    });
     this.listeners.get(key)?.forEach(listener => listener(gameState));
 
     gameStateLightingService.update(boardId, mapId, gameState);

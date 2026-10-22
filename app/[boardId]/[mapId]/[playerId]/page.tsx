@@ -9,6 +9,7 @@ import { LocationMoveDirection } from "@/lib/games/types";
 import PlayerLocation from './player-location';
 
 import gameStateSyncService from "../game/game-state-sync-service";
+import useGameStateSnapshot from '../game/use-game-state-snapshot';
 import GameProcessingStartedService from '@/app/message-bus/game-processing-service';
 import { getGameTopicId } from '@/lib/message-types';
 
@@ -24,17 +25,16 @@ export default function Page() {
     () => readyStateSyncService.get(boardId, mapId),
     () => readyStateSyncService.get(boardId, mapId),
   );
-  const [gameState, setGameState] = useState(() => gameStateSyncService.get(boardId, mapId));
+  const { gameState, playerSnapshot } = useGameStateSnapshot(boardId, mapId);
   const [settingReady, setSettingReady] = useState(false);
   const [gameProcessing, setGameProcessing] = useState(false);
   const [turnError, setTurnError] = useState<string | null>(null);
 
   const topicId = getGameTopicId(boardId, mapId);
-  const snapshot = gameStateSyncService.getPlayerSnapshot(boardId, mapId, playerId);
+  const snapshot = playerSnapshot?.playerId === playerId ? playerSnapshot : undefined;
 
   useEffect(() => {
     const disposeGameState = gameStateSyncService.subscribe(boardId, mapId, state => {
-      setGameState(state);
       setGameProcessing(false);
       if (!state) {
         router.push(`/${boardId}/${mapId}`);
