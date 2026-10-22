@@ -14,7 +14,9 @@ jest.mock('next/navigation', () => ({ useParams: jest.fn(), useRouter: jest.fn()
 jest.mock('@/lib/store/playerReadyState', () => ({ setPlayerReady: jest.fn() }));
 jest.mock('@/app/message-bus/game-processing-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
 jest.mock('../game/game-state-lighting-service', () => ({ __esModule: true, default: { update: jest.fn() } }));
-jest.mock('../game/ready-state-sync-service', () => ({ __esModule: true, default: { get: jest.fn(), subscribe: jest.fn() } }));
+jest.mock('../game/ready-state-sync-service', () => ({ __esModule: true, default: {
+  get: jest.fn(), getServerSnapshot: jest.fn(), subscribe: jest.fn(),
+} }));
 jest.mock('./player-location', () => ({ __esModule: true, default: jest.fn() }));
 
 describe('Player page', () => {
@@ -29,6 +31,7 @@ describe('Player page', () => {
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     gameService.set('board', 'map', makeGameState());
     jest.mocked(readyService.get).mockReturnValue({ readyPlayerIds: [] });
+    jest.mocked(readyService.getServerSnapshot).mockReturnValue({ readyPlayerIds: [] });
     jest.mocked(processingService.subscribe).mockImplementation((_topic, callback) => { onProcessing = callback; return disposeProcessing; });
     jest.mocked(readyService.subscribe).mockImplementation((_board, _map, callback) => {
       onReady = state => {

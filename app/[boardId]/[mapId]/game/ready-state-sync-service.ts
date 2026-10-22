@@ -4,12 +4,18 @@ import { PlayerReadyState } from '../../../../lib/store/types';
 
 type ReadyStateListener = (readyState: PlayerReadyState) => void;
 
+const emptyServerSnapshot: PlayerReadyState = { readyPlayerIds: [] };
+
 class ReadyStateSyncService {
   private readonly readyStates = new Map<string, PlayerReadyState>();
   private readonly listeners = new Map<string, Set<ReadyStateListener>>();
 
   private getKey(boardId: string, mapId: string): string {
     return `${boardId}:${mapId}`;
+  }
+
+  getServerSnapshot(): PlayerReadyState {
+    return emptyServerSnapshot;
   }
 
   get(boardId: string, mapId: string): PlayerReadyState {

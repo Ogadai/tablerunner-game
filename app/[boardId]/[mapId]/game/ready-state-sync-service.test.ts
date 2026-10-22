@@ -17,6 +17,14 @@ describe('readyStateSyncService', () => {
     expect(sync.get('other', 'map').readyPlayerIds).not.toBe(state.readyPlayerIds);
   });
 
+  it('returns a stable empty server snapshot regardless of cached client readiness', () => {
+    const initial = sync.getServerSnapshot();
+    sync.set('board', 'map', { readyPlayerIds: ['warrior'] });
+    expect(sync.getServerSnapshot()).toBe(initial);
+    expect(initial).toEqual({ readyPlayerIds: [] });
+    expect(sync.get('board', 'map').readyPlayerIds).toEqual(['warrior']);
+  });
+
   it('stores and replaces readiness without notifying other boards or maps', () => {
     const listener = jest.fn();
     const other = jest.fn();

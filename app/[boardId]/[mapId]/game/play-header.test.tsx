@@ -19,8 +19,7 @@ jest.mock('./player-snapshot', () => ({ fetchPlayerSnapshot: jest.fn() }));
 jest.mock('@/lib/store/playerReadyState', () => ({ getPlayerReadyState: jest.fn(), setPlayerReady: jest.fn() }));
 jest.mock('@/app/message-bus/game-topic-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
 jest.mock('@/app/message-bus/playerReady-topic-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
-jest.mock('./game-state-sync-service', () => ({ __esModule: true, default: { set: jest.fn() } }));
-jest.mock('./ready-state-sync-service', () => ({ __esModule: true, default: { set: jest.fn() } }));
+jest.mock('./game-state-lighting-service', () => ({ __esModule: true, default: { update: jest.fn() } }));
 jest.mock('./play-header-menu', () => ({
   __esModule: true,
   default: jest.fn<ReturnType<typeof PlayHeaderMenu>, [ComponentProps<typeof PlayHeaderMenu>]>(() => <div>Game menu</div>),
@@ -47,6 +46,10 @@ describe('PlayHeader', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    gameStateSyncService.set('board', 'map', undefined);
+    readyStateSyncService.set('board', 'map', { readyPlayerIds: [] });
+    jest.spyOn(gameStateSyncService, 'set');
+    jest.spyOn(readyStateSyncService, 'set');
     global.fetch = fetchMock;
     fetchMock.mockResolvedValue({ ok: true, status: 200 });
     jest.mocked(useParams).mockReturnValue({ playerId: 'warrior' });
@@ -94,6 +97,53 @@ describe('PlayHeader', () => {
     await act(async () => readyChanged({ readyPlayerIds: [] }));
     expect(screen.queryByText('check')).not.toBeInTheDocument();
     expect(readyStateSyncService.set).toHaveBeenLastCalledWith('board', 'map', { readyPlayerIds: [] });
+  });
+
+  it('renders shared store updates without refetching', async () => {
+    await mount();
+    const updated = makeGameState({ ...game, turn: 2 });
+    const snapshot = makePlayerSnapshot({ gameState: updated });
+    act(() => {
+      gameStateSyncService.set('board', 'map', updated, snapshot);
+      readyStateSyncService.set('board', 'map', { readyPlayerIds: [] });
+    });
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0]).toMatchObject({ gameState: updated, snapshot });
+    expect(screen.queryByText('check')).not.toBeInTheDocument();
+    expect(fetchPlayerSnapshot).toHaveBeenCalledTimes(1);
+    expect(getPlayerReadyState).toHaveBeenCalledTimes(1);
+    act(() => gameStateSyncService.set('board', 'map', undefined));
+    expect(screen.getByRole('heading', { name: 'TableRunner' })).toBeInTheDocument();
+    expect(screen.queryByText('Game menu')).not.toBeInTheDocument();
+  });
+
+  it('reads cached state on mount while refresh requests are pending', async () => {
+    const snapshot = makePlayerSnapshot({ gameState: game });
+    gameStateSyncService.set('board', 'map', game, snapshot);
+    readyStateSyncService.set('board', 'map', { readyPlayerIds: ['mage'] });
+    jest.mocked(fetchPlayerSnapshot).mockReturnValueOnce(new Promise(() => {}));
+    jest.mocked(getPlayerReadyState).mockReturnValueOnce(new Promise(() => {}));
+    await mount();
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0]).toMatchObject({ gameState: game, snapshot });
+    expect(screen.getByText('check')).toBeInTheDocument();
+  });
+
+  it('switches to another game without showing or reacting to the previous game state', async () => {
+    const view = await mount();
+    const otherGame = makeGameState({ players: [makePlayer({ id: 'mage' })] });
+    gameStateSyncService.set('other-board', 'other-map', otherGame);
+    readyStateSyncService.set('other-board', 'other-map', { readyPlayerIds: [] });
+    jest.mocked(fetchPlayerSnapshot).mockReturnValueOnce(new Promise(() => {}));
+    jest.mocked(getPlayerReadyState).mockReturnValueOnce(new Promise(() => {}));
+    await act(async () => view.rerender(<PlayHeader boardId="other-board" mapId="other-map" />));
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].gameState).toBe(otherGame);
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].snapshot).toBeUndefined();
+    expect(screen.queryByText('check')).not.toBeInTheDocument();
+    act(() => {
+      gameStateSyncService.set('board', 'map', undefined);
+      readyStateSyncService.set('board', 'map', { readyPlayerIds: ['warrior'] });
+    });
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].gameState).toBe(otherGame);
+    expect(screen.queryByText('check')).not.toBeInTheDocument();
   });
 
   it('navigates to the player list or a selected player', async () => {
