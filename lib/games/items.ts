@@ -247,7 +247,7 @@ for(const [spellId, spell] of Object.entries(spells)) {
       id: `${spell.id}Scroll`,
       type: PlayerItemType.scroll,
       name: `Scroll of ${spell.name}`,
-      iconXY: { x: 5, y: 7 },
+      iconXY: spell.characterType === 'mage' ? { x: 7, y: 8 } : spell.characterType === 'witch' ? { x: 8, y: 8 } : { x: 5, y: 7 },
       value: spell.intelligence * 2,
       spellId,
       bonusStats: {

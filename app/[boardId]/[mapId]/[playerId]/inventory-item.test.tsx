@@ -85,6 +85,8 @@ describe('InventoryItem', () => {
     const props = setup({ item: { id: 'scroll-1', type: 'spiritArrowScroll' }, actionPointsLeft: 10 });
     fireEvent.click(screen.getByRole('button', { name: 'Learn' }));
     expect(props.onLearnScroll).toHaveBeenCalledTimes(1);
+    expect(allItems.spiritArrowScroll.iconXY).toEqual({ x: 7, y: 8 });
+    expect(allItems.iceShardsScroll.iconXY).toEqual({ x: 8, y: 8 });
   });
 
   it.each([
