@@ -1,6 +1,6 @@
 import { allItems, ConsumableIds, consumableItems } from "../games/items";
 import { monsters } from "../games/monsters";
-import { getSpellActionCost, SpellIds, spells } from "../games/spells";
+import { canCharacterUseSpell, getSpellActionCost, SpellIds, spells } from "../games/spells";
 import { PlayerItemType, ScrollItemDef, SpellDef } from "../games/types";
 import { getCombatStats, getPlayerActionsPerTurn, LEARN_SCROLL_ACTION_COST, PlayerActionsPerTurn } from "../store/playerStats";
 import { INamedTarget, ITarget, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem } from "../store/types";
@@ -183,7 +183,7 @@ function getMagicPotionAction(params: BaseParams, npc: INamedTarget): ActionsWit
 function getLearnScrollActions(params: BaseParams, npc: INamedTarget, itemId: string, scroll: ScrollItemDef): ActionsWithCosts | null {
   if (!npc.spells.includes(scroll.spellId as SpellIds)) {
     const spell = spells[scroll.spellId];
-    if (spell.intelligence <= npc.baseStats!.magic) {
+    if (canCharacterUseSpell(npc, spell) && spell.intelligence <= npc.baseStats!.magic) {
       const action: PlayerActionReadScroll = {
         id: -1,
         itemId: itemId,
@@ -205,6 +205,9 @@ function getLearnScrollActions(params: BaseParams, npc: INamedTarget, itemId: st
 
 function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: string, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
   const spell = spells[spellId];
+  if (!isMonsterCaster(params, npc) && !canCharacterUseSpell(npc, spell)) {
+    return [];
+  }
   const targets = getAvailableSpellTargets(params, npc, spell);
   if (targets.length === 0) {
     return [];

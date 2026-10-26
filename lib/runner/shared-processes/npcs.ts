@@ -218,8 +218,6 @@ export function getNpcSpells(type: string): SpellIds[] {
         SpellIds.iceStorm,
         SpellIds.terror,
         SpellIds.lightning,
-        SpellIds.shieldWall,
-        SpellIds.strengthAura,
       ];
     case 'mage':
       return [
@@ -231,6 +229,8 @@ export function getNpcSpells(type: string): SpellIds[] {
         SpellIds.strengthAura,
         SpellIds.fireRain,
         SpellIds.shield,
+        SpellIds.shieldWall,
+        SpellIds.strength,
       ];
   }
   return [];

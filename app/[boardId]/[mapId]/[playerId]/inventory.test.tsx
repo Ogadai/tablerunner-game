@@ -8,7 +8,7 @@ describe('Inventory', () => {
     const onUseItem = jest.fn();
     const onDropItem = jest.fn();
     const onLearnScroll = jest.fn();
-    render(<Inventory player={makePlayer({ equipment: [item] })} isSelf isDead={false}
+    render(<Inventory player={makePlayer({ id: 'mage', equipment: [item] })} isSelf isDead={false}
       actionPointsLeft={20} usedItemIds={[]} onEquipItem={jest.fn()}
       onUseItem={onUseItem} onDropItem={onDropItem} onLearnScroll={onLearnScroll} />);
     fireEvent.click(screen.getByRole('button'));

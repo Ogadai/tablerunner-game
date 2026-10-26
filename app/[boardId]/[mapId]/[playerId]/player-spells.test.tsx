@@ -9,7 +9,7 @@ jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() }
 
 function setup(spellId = SpellIds.spiritArrow, entities = [makeEntity()]) {
   const addNewAction = jest.fn().mockResolvedValue(undefined);
-  render(<PlayerSpells playerSpells={[spellId]} player={makePlayer({ recentSpells: [spellId] })}
+  render(<PlayerSpells playerSpells={[spellId]} player={makePlayer({ id: spells[spellId].characterType ?? 'mage', recentSpells: [spellId] })}
     entities={entities} playerStats={makeStats({ actionPointsTotal: 30, magicLeft: 30 })}
     actionsState={{ actions: [] }} addNewAction={addNewAction} />);
   return addNewAction;
@@ -18,7 +18,7 @@ function setup(spellId = SpellIds.spiritArrow, entities = [makeEntity()]) {
 describe('PlayerSpells', () => {
   it('makes a newly queued spell available before the turn runs and updates when it is removed', async () => {
     const addNewAction = jest.fn().mockResolvedValue(undefined);
-    const player = makePlayer({ recentSpells: [SpellIds.heal] });
+    const player = makePlayer({ id: 'mage', recentSpells: [SpellIds.heal] });
     const props = { playerSpells: [SpellIds.spiritArrow], player, entities: [makeEntity()],
       playerStats: makeStats({ actionPointsTotal: 30, magicLeft: 30 }), addNewAction };
     const { rerender } = render(<PlayerSpells {...props} actionsState={{ actions: [] }} />);
@@ -50,7 +50,7 @@ describe('PlayerSpells', () => {
       .map((spellId, id) => ({ id, spellId, type: PlayerActionType.Cast, description: 'Cast' }));
     const actions = [...casts, { id: 3, type: PlayerActionType.Attack, description: 'Attack' }];
     render(<PlayerSpells playerSpells={[SpellIds.spiritArrow, SpellIds.fireWall]}
-      player={makePlayer({ recentSpells: [SpellIds.spiritArrow, SpellIds.heal] })}
+      player={makePlayer({ id: 'mage', recentSpells: [SpellIds.spiritArrow, SpellIds.heal] })}
       entities={[makeEntity()]} playerStats={makeStats()} actionsState={{ actions }} addNewAction={jest.fn()} />);
 
     expect(screen.getAllByRole('button', { name: /^(Spirit Arrow|Fire Wall|Heal)$/ })
@@ -61,7 +61,7 @@ describe('PlayerSpells', () => {
   it.each([{ actionPointsTotal: 0 }, { magicLeft: 0 }])('disables unaffordable quick actions: %o', stats => {
     const addNewAction = jest.fn();
     render(<PlayerSpells playerSpells={[SpellIds.spiritArrow]}
-      player={makePlayer({ recentSpells: [SpellIds.spiritArrow] })} entities={[makeEntity()]}
+      player={makePlayer({ id: 'mage', recentSpells: [SpellIds.spiritArrow] })} entities={[makeEntity()]}
       playerStats={makeStats(stats)} actionsState={{ actions: [] }} addNewAction={addNewAction} />);
     const spellButton = screen.getByRole('button', { name: 'Spirit Arrow' });
     expect(spellButton).toBeDisabled();
@@ -129,10 +129,17 @@ describe('PlayerSpells', () => {
   });
 
   it.each([{ magicLeft: 2 }, { actionPointsTotal: 0 }])('hides Cast when resources are insufficient: %o', stats => {
-    render(<PlayerSpells playerSpells={[SpellIds.spiritArrow]} player={makePlayer()} entities={[makeEntity()]}
+    render(<PlayerSpells playerSpells={[SpellIds.spiritArrow]} player={makePlayer({ id: 'mage' })} entities={[makeEntity()]}
       playerStats={makeStats(stats)} actionsState={{ actions: [] }} addNewAction={jest.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /Spells/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Spirit Arrow' }));
     expect(screen.queryByRole('button', { name: 'Cast' })).not.toBeInTheDocument();
+  });
+
+  it.each(['witch', 'barbarian', 'ranger'])('hides spells that do not belong to %s', id => {
+    render(<PlayerSpells playerSpells={[SpellIds.spiritArrow]} player={makePlayer({ id, recentSpells: [SpellIds.spiritArrow] })}
+      entities={[makeEntity()]} playerStats={makeStats()} actionsState={{ actions: [] }} addNewAction={jest.fn()} />);
+    expect(screen.queryByRole('button', { name: /Spells/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Spirit Arrow' })).not.toBeInTheDocument();
   });
 });

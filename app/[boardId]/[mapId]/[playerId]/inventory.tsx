@@ -52,6 +52,7 @@ export default function Inventory({
           actionPointsLeft={actionPointsLeft}
           baseStats={player.baseStats!}
           playerSpells={player.spells}
+          characterType={player.id}
           onEquipped={() => onEquipItem(item)}
           onUsed={() => onUseItem(item)}
           onDropped={() => onDropItem(item)}

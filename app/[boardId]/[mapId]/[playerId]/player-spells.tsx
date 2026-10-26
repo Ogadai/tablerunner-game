@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2'
 import { Dialog, Popover } from 'radix-ui';
-import { getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
+import { canCharacterUseSpell, getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
 import styles from './player-spells.module.css';
 import { PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
 import { EquipableItemDef, SpellDef, SpellTargetType } from '@/lib/games/types';
@@ -128,6 +128,7 @@ export default function PlayerSpells({
 
   const actionPointsLeft = playerStats.actionPointsTotal- playerStats.actionPointsUsed;
   const canAttack = player.health > 0 && attackTargets.length > 0 && playerStats.actionsPerTurn.attack <= actionPointsLeft;
+  const availableSpells = playerSpells.filter(spellId => canCharacterUseSpell(player, spells[spellId]));
 
   const recentSpellIds = [...new Set([
     ...actionsState.actions
@@ -135,7 +136,7 @@ export default function PlayerSpells({
       .map(action => action.spellId)
       .reverse(),
     ...(player.recentSpells || []),
-  ])].slice(0, 2);
+  ])].filter(spellId => canCharacterUseSpell(player, spells[spellId])).slice(0, 2);
 
   const recentSpells: { spell: SpellDef, canCast: boolean }[]
       = recentSpellIds.map(spellId => {
@@ -154,7 +155,7 @@ export default function PlayerSpells({
     : `-${6 * 40}px -${4 * 40}px`;
 
   return (<>
-    { playerSpells.length > 0 && <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+    { availableSpells.length > 0 && <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
         <button type="button" className={styles.spellsButton}>
           <span>Spells</span>
@@ -173,7 +174,7 @@ export default function PlayerSpells({
             />
 
             <ul className={styles.spellList}>
-              {playerSpells.map(spellId => {
+              {availableSpells.map(spellId => {
                 const spell = spells[spellId];
                 return spell ? <SpellIcon key={spell.id}
                   spell={spell}

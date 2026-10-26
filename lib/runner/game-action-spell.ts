@@ -1,6 +1,6 @@
 import { scrollItems } from "../games/items";
 import { monsters } from "../games/monsters";
-import { SpellIds, spells } from "../games/spells";
+import { canCharacterUseSpell, SpellIds, spells } from "../games/spells";
 import { SpellDef } from "../games/types";
 import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll } from "../store/types";
 import { BaseParams } from "./base-params";
@@ -8,7 +8,7 @@ import { genericAttackMonster, handlePlayerIsDead, processAttackForDamage } from
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
 import { specialSpellActions } from './special-spell-actions';
 
-import { getAvailableSpellTargets } from './spell-targets';
+import { getAvailableSpellTargets, isMonsterCaster } from './spell-targets';
 import { getMonsterStats } from './monster-stats';
 import { getCombatStats } from '../store/playerStats';
 import { joinWithAnd } from '../string-helpers';
@@ -24,6 +24,7 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
 
   const spell = spells[action.spellId];
   if (!spell || player.health <= 0 || player.magic < spell.magicCost) return;
+  if (!isMonsterCaster(params, player) && !canCharacterUseSpell(player, spell)) return;
   if ('masterId' in player && isFollowerSpell(action.spellId) && hasActiveFollower(params, player.id)) return;
   const targets = getSpellTargets(params, player, action);
 
@@ -134,7 +135,8 @@ export function actionReadScroll(params: BaseParams, character: INamedTarget, ac
     const spell = spells[scrollItem.spellId];
     const characterStats = getCombatStats(character);
 
-    if (characterStats.magic >= spell.intelligence
+    if (canCharacterUseSpell(character, spell)
+      && characterStats.magic >= spell.intelligence
       && !character.spells.includes(scrollItem.spellId as SpellIds)
     ) {
       character.spells = [

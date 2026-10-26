@@ -147,9 +147,12 @@ export enum SpellTargetType {
   corpse = 'corpse',
 }
 
+export type SpellCharacterType = 'mage' | 'witch';
+
 export interface SpellDef {
   id: string;
   name: string;
+  characterType?: SpellCharacterType;
   pickTarget: boolean;
   targetType: SpellTargetType;
   intelligence: number,

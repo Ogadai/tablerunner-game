@@ -80,6 +80,7 @@ it.each(['player', 'npc', 'army', 'wild monster', 'spell'])('transfers a defeate
     // The surviving warlord determines the result even when a wild monster dealt the hit.
     if (attackerKind === 'wild monster') attacker.health = 0;
   } else if (attackerKind === 'spell') {
+    winner.id = 'mage';
     winner.spells = [SpellIds.fireBall];
     actionCastSpell(params, winner, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.fireBall, targetId: npc.id });
   } else {
@@ -216,6 +217,7 @@ it('finishes damaging spell targets before deciding whether a faction has won', 
   const { params, npc, winner } = scenario();
   const subordinate = createNpc({ id: 'sub', team: npc.team, scriptedActions: true, health: 20 });
   params.gameState.npcs.push(subordinate);
+  winner.id = 'mage';
   winner.spells = [SpellIds.fireRain];
   winner.magic = 100;
   actionCastSpell(params, winner, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.fireRain });

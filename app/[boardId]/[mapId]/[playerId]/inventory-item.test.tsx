@@ -89,8 +89,9 @@ describe('InventoryItem', () => {
 
   it.each([
     { playerSpells: [SpellIds.spiritArrow] }, { actionPointsLeft: 9 }, { baseStats: makeBaseStats({ magic: 9 }) },
+    { characterType: 'witch' }, { characterType: 'barbarian' }, { characterType: 'ranger' },
   ])('does not offer an ineligible scroll with %o', overrides => {
-    setup({ item: { id: 'scroll-1', type: 'spiritArrowScroll' }, ...overrides });
+    setup({ item: { id: 'scroll-1', type: 'spiritArrowScroll' }, characterType: 'mage', ...overrides });
     expect(screen.queryByRole('button', { name: 'Learn' })).not.toBeInTheDocument();
   });
 

@@ -13,6 +13,7 @@ it('heals and buffs allied monsters in persisted state, rejecting enemies and fr
   const ally = createMonster({ team: 'good', health: 1 });
   const params = createParams({ monsters: [ally] });
   const caster = params.gameState.players[0];
+  caster.id = 'mage';
   caster.spells = [SpellIds.heal, SpellIds.shield, SpellIds.fireBall];
   caster.magic = 100;
   const cast = (spellId: SpellIds) => actionCastSpell(params, caster, {
@@ -39,15 +40,17 @@ it.each(['player', 'npc'])('damages an enemy %s with a player spell', kind => {
   if ('masterId' in target) params.gameState.npcs.push(target);
   else params.gameState.players.push(target);
   const caster = params.gameState.players[0];
+  caster.id = 'mage';
   caster.spells = [SpellIds.fireBall];
   jest.mocked(processAttackForDamage).mockReturnValue(3);
   actionCastSpell(params, caster, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.fireBall, targetId: target.id });
   expect(target.health).toBe(17);
 });
 
-it.each(['unknown', 'dead', 'no-magic', 'remote', 'missing-target'])('does not spend mana for an invalid cast: %s', reason => {
+it.each(['unknown', 'dead', 'no-magic', 'remote', 'missing-target', 'wrong-class'])('does not spend mana for an invalid cast: %s', reason => {
   const params = createParams({ monsters: [createMonster()] });
   const player = params.gameState.players[0];
+  player.id = reason === 'wrong-class' ? 'witch' : 'mage';
   player.spells = reason === 'unknown' ? [] : [SpellIds.fireBall];
   if (reason === 'dead') player.health = 0;
   if (reason === 'no-magic') player.magic = 4;
@@ -64,6 +67,7 @@ it('casts on the selected monster, spends mana once, and deduplicates recent spe
   const monster = createMonster();
   const params = createParams({ monsters: [monster, createMonster({ id: 'other' })] });
   const player = params.gameState.players[0];
+  player.id = 'mage';
   player.spells = [SpellIds.fireBall];
   player.recentSpells = [SpellIds.heal, SpellIds.fireBall];
   actionCastSpell(params, player, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.fireBall, targetId: monster.id });
@@ -76,6 +80,7 @@ it('casts on the selected monster, spends mana once, and deduplicates recent spe
 it('caps healing and refreshes matching effects instead of stacking them', () => {
   const params = createParams();
   const player = params.gameState.players[0];
+  player.id = 'mage';
   player.spells = [SpellIds.heal, SpellIds.shield];
   player.magic = 100;
   player.health = 19;
@@ -99,10 +104,11 @@ it('applies monster spell damage to characters and handles lethal damage', () =>
   expect(monster.magic).toBe(5);
 });
 
-it.each(['learn', 'known', 'insufficient', 'missing'])('handles scroll learning: %s', reason => {
+it.each(['learn', 'known', 'insufficient', 'missing', 'wrong-class', 'non-caster'])('handles scroll learning: %s', reason => {
   const scroll = Object.values(scrollItems).find(item => item.spellId === SpellIds.heal)!;
   const params = createParams();
   const player = params.gameState.players[0];
+  player.id = reason === 'wrong-class' ? 'witch' : reason === 'non-caster' ? 'barbarian' : 'mage';
   player.equipment = [{ id: 'scroll', type: scroll.id }];
   player.baseStats!.magic = reason === 'insufficient' ? spells.heal.intelligence - 1 : spells.heal.intelligence;
   player.spells = reason === 'known' ? [SpellIds.heal] : [];

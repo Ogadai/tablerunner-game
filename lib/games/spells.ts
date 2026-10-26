@@ -1,4 +1,6 @@
+import { NPC_DATA } from './npc-details';
 import { SpellDef, SpellTargetType } from './types';
+import type { INamedTarget, NPCState } from '../store/types';
 
 const MAGIC_ACTION_COST_REDUCTION = 0.1;
 
@@ -32,6 +34,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.spiritArrow]: {
     id: SpellIds.spiritArrow.toString(),
     name: 'Spirit Arrow',
+    characterType: 'mage',
     intelligence: 10,
     pickTarget: true,
     targetType: SpellTargetType.enemy,
@@ -45,6 +48,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.fireBall]: {
     id: SpellIds.fireBall.toString(),
     name: 'Fire Ball',
+    characterType: 'mage',
     intelligence: 15,
     pickTarget: true,
     targetType: SpellTargetType.enemy,
@@ -59,6 +63,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.fireWall]: {
     id: SpellIds.fireWall.toString(),
     name: 'Fire Wall',
+    characterType: 'mage',
     intelligence: 20,
     pickTarget: false,
     targetType: SpellTargetType.enemy,
@@ -73,6 +78,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.iceShards]: {
     id: SpellIds.iceShards.toString(),
     name: 'Ice Shards',
+    characterType: 'witch',
     intelligence: 10,
     pickTarget: true,
     targetType: SpellTargetType.enemy,
@@ -87,6 +93,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.iceStorm]: {
     id: SpellIds.iceStorm.toString(),
     name: 'Ice Storm',
+    characterType: 'witch',
     intelligence: 17,
     pickTarget: false,
     targetType: SpellTargetType.enemy,
@@ -101,6 +108,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.heal]: {
     id: SpellIds.heal.toString(),
     name: 'Heal',
+    characterType: 'mage',
     intelligence: 10,
     pickTarget: true,
     targetType: SpellTargetType.friend,
@@ -114,6 +122,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.healingAura]: {
     id: SpellIds.healingAura.toString(),
     name: 'Healing Aura',
+    characterType: 'mage',
     intelligence: 20,
     pickTarget: false,
     targetType: SpellTargetType.friend,
@@ -127,6 +136,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.fear]: {
     id: SpellIds.fear.toString(),
     name: 'Fear',
+    characterType: 'witch',
     intelligence: 10,
     pickTarget: true,
     targetType: SpellTargetType.enemy,
@@ -142,6 +152,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.terror]: {
     id: SpellIds.terror.toString(),
     name: 'Terror',
+    characterType: 'witch',
     intelligence: 20,
     pickTarget: false,
     targetType: SpellTargetType.enemy,
@@ -157,6 +168,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.shield]: {
     id: SpellIds.shield.toString(),
     name: 'Shield',
+    characterType: 'mage',
     intelligence: 15,
     pickTarget: true,
     targetType: SpellTargetType.friend,
@@ -171,6 +183,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.shieldWall]: {
     id: SpellIds.shieldWall.toString(),
     name: 'Shield Wall',
+    characterType: 'mage',
     intelligence: 25,
     pickTarget: false,
     targetType: SpellTargetType.friend,
@@ -185,6 +198,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.strength]: {
     id: SpellIds.strength.toString(),
     name: 'Strength',
+    characterType: 'mage',
     intelligence: 15,
     pickTarget: true,
     targetType: SpellTargetType.friend,
@@ -199,6 +213,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.strengthAura]: {
     id: SpellIds.strengthAura.toString(),
     name: 'Strength Aura',
+    characterType: 'mage',
     intelligence: 25,
     pickTarget: false,
     targetType: SpellTargetType.friend,
@@ -213,6 +228,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.lightning]: {
     id: SpellIds.lightning.toString(),
     name: 'Lightning',
+    characterType: 'witch',
     intelligence: 30,
     pickTarget: false,
     targetType: SpellTargetType.enemy,
@@ -226,6 +242,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.fireRain]: {
     id: SpellIds.fireRain.toString(),
     name: 'Fire Rain',
+    characterType: 'mage',
     intelligence: 30,
     pickTarget: false,
     targetType: SpellTargetType.enemy,
@@ -240,6 +257,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.spiritGuide]: {
     id: SpellIds.spiritGuide.toString(),
     name: 'Spirit Guide',
+    characterType: 'mage',
     intelligence: 12,
     pickTarget: false,
     targetType: SpellTargetType.friend,
@@ -253,6 +271,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.spiritGuarian]: {
     id: SpellIds.spiritGuarian.toString(),
     name: 'Spirit Guardian',
+    characterType: 'mage',
     intelligence: 21,
     pickTarget: false,
     targetType: SpellTargetType.friend,
@@ -266,6 +285,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.spiritWarrior]: {
     id: SpellIds.spiritWarrior.toString(),
     name: 'Spirit Warrior',
+    characterType: 'mage',
     intelligence: 27,
     pickTarget: false,
     targetType: SpellTargetType.friend,
@@ -279,6 +299,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.raiseDead]: {
     id: SpellIds.raiseDead.toString(),
     name: 'Raise Dead',
+    characterType: 'witch',
     intelligence: 15,
     pickTarget: false,
     targetType: SpellTargetType.friend,
@@ -292,6 +313,7 @@ export const spells: Record<string, SpellDef> = {
   [SpellIds.animateCorpse]: {
     id: SpellIds.animateCorpse.toString(),
     name: 'Animate Corpse',
+    characterType: 'witch',
     intelligence: 15,
     pickTarget: true,
     targetType: SpellTargetType.corpse,
@@ -347,4 +369,19 @@ export const spells: Record<string, SpellDef> = {
 
 export const getSpellActionCost = (spell: SpellDef, magic: number): number => {
   return Math.max(1, spell.actionCost - Math.floor(magic * MAGIC_ACTION_COST_REDUCTION));
+}
+
+export const getCharacterType = (character: Pick<INamedTarget, 'id'> & Partial<Pick<NPCState, 'characterType' | 'monsterType' | 'hireCost' | 'iconXY'>>): string | undefined => {
+  if (character.characterType) return character.characterType;
+  if ('masterId' in character && !character.monsterType && (character.hireCost || 0) > 0 && character.iconXY) {
+    const npcType = NPC_DATA.find(entry => entry.iconXY.x === character.iconXY!.x && entry.iconXY.y === character.iconXY!.y)?.type;
+    if (npcType) return npcType;
+  }
+  return character.id;
+}
+
+export const canCharacterUseSpell = (character: Pick<INamedTarget, 'id'> & Partial<Pick<NPCState, 'characterType' | 'monsterType' | 'hireCost' | 'iconXY'>>, spell: SpellDef | undefined): boolean => {
+  if (!spell) return false;
+  if (!spell.characterType) return true;
+  return getCharacterType(character) === spell.characterType;
 }
