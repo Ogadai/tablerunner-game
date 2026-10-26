@@ -200,6 +200,19 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       speed: 4,
     },
   },
+  'ghoul': {
+    id: 'ghoul',
+    name: 'Ghoul',
+    iconXY: { x: 8, y: 4 },
+    baseStats: {
+      attack: 11,
+      damage: 7,
+      defence: 8,
+      magic: 0,
+      health: 15,
+      speed: 4,
+    },
+  },
   'ogre': {
     id: 'ogre',
     name: 'Ogre',
