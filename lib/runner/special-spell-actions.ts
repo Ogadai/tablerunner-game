@@ -16,6 +16,8 @@ export const specialSpellActions: Record<string, (params: BaseParams, player: IN
       summonSpirit(params, player, monsters['spiritbear'], 15),
   [SpellIds.raiseDead]: (params: BaseParams, player: INamedTarget) =>
       summonSpirit(params, player, monsters['skeleton'], 7, 'dead'),
+  [SpellIds.raiseDemon]: (params: BaseParams, player: INamedTarget) =>
+      summonSpirit(params, player, monsters['firespirit'], 10),
   [SpellIds.animateCorpse]: (params: BaseParams, player: INamedTarget, spell: SpellDef, targets: ITarget[]) =>
       animateCorpse(params, player, targets, 12),
   [SpellIds.familiar]: (params: BaseParams, player: INamedTarget) =>

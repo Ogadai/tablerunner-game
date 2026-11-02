@@ -25,6 +25,10 @@ export enum SpellIds {
   spiritWarrior = 'spiritWarrior',
   raiseDead = 'raiseDead',
   animateCorpse = 'animateCorpse',
+  raiseDemon = 'raiseDemon',
+  tangleTwist = 'tangleTwist',
+  poisonCloud = 'poisonCloud',
+  timeWarp = 'timeWarp',
   fireBreathSmall = 'fireBreathSmall',
   fireBreathLarge = 'fireBreathLarge',
   familiar = 'familiar',
@@ -322,6 +326,67 @@ export const spells: Record<string, SpellDef> = {
     iconXY: { x: 6, y: 2 },
     bonusStats: {
       special: 'Animate a fallen character or monster'
+    }
+  },
+  [SpellIds.raiseDemon]: {
+    id: SpellIds.raiseDemon.toString(),
+    name: 'Raise Demon',
+    characterType: 'witch',
+    intelligence: 25,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 22,
+    actionCost: 15,
+    iconXY: { x: 6, y: 3 },
+    bonusStats: {
+      special: 'Raise a Fire Spirit from the depths'
+    }
+  },
+  [SpellIds.tangleTwist]: {
+    id: SpellIds.tangleTwist.toString(),
+    name: 'Tangle Twist',
+    characterType: 'mage',
+    intelligence: 18,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 10,
+    actionCost: 12,
+    iconXY: { x: 5, y: 4 },
+    bonusStats: {
+      turns: 4,
+      attack: -4,
+      damage: -4,
+      speed: -4,
+    }
+  },
+  [SpellIds.poisonCloud]: {
+    id: SpellIds.poisonCloud.toString(),
+    name: 'Poison Cloud',
+    characterType: 'witch',
+    intelligence: 20,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 12,
+    actionCost: 13,
+    iconXY: { x: 3, y: 3 },
+    bonusStats: {
+      turns: 4,
+      damage: 4,
+    }
+  },
+  [SpellIds.timeWarp]: {
+    id: SpellIds.timeWarp.toString(),
+    name: 'Time Warp',
+    characterType: 'mage',
+    intelligence: 20,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 10,
+    actionCost: 12,
+    iconXY: { x: 5, y: 3 },
+    bonusStats: {
+      turns: 5,
+      speed: 5,
     }
   },
   [SpellIds.fireBreathSmall]: {

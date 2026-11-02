@@ -146,7 +146,7 @@ it('does not report a committed turn as failed when publishing its update fails'
 });
 
 it('expires effects and summons, records portals, and commits destroyed shops with the turn', async () => {
-  const params = createParams({ monsters: [createMonster({ effects: [{ description: 'Slow', turns: 1 }] })] });
+  const params = createParams({ monsters: [createMonster({ effects: [{ description: 'Slow', turns: 1 }, { description: 'Poison Cloud', turns: 2, health: -3 }] })] });
   params.gameState.portals = [1];
   params.gameState.players[0].effects = [{ description: 'Old', turns: 1 }, { description: 'New', turns: 3 }];
   params.gameState.npcs = [createNpc({ id: 'summon', turnsLeft: 1, expiryAction: 'remove' }),
@@ -155,7 +155,8 @@ it('expires effects and summons, records portals, and commits destroyed shops wi
   await processGameTurn(params);
   expect(params.gameState.turn).toBe(4);
   expect(params.gameState.players[0].effects).toEqual([{ description: 'New', turns: 2 }]);
-  expect(params.monsters[0].effects).toEqual([]);
+  expect(params.monsters[0].health).toBe(2);
+  expect(params.monsters[0].effects).toEqual([{ description: 'Poison Cloud', turns: 1, health: -3 }]);
   expect(params.gameState.npcs).toEqual([]);
   expect(params.monsters).toContainEqual(expect.objectContaining({ id: 'undead', health: 0, type: 'rat' }));
   expect(params.gameState.visitedPortals).toEqual([1]);

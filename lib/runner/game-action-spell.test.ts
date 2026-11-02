@@ -130,3 +130,60 @@ it('rechecks an NPC follower at execution time without spending mana or replacin
   expect(mage.magic).toBe(20);
   expect(mage.recentSpells).toBeUndefined();
 });
+
+it('applies Tangle Twist debuffs and Time Warp speed buffs to their target groups', () => {
+  const monster = createMonster();
+  const ally = createNpc({ id: 'ally' });
+  const params = createParams({ monsters: [monster] });
+  params.gameState.npcs = [ally];
+  const mage = params.gameState.players[0];
+  mage.id = 'mage';
+  mage.magic = 50;
+  mage.spells = [SpellIds.tangleTwist, SpellIds.timeWarp];
+
+  actionCastSpell(params, mage, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.tangleTwist });
+  expect(monster.effects).toEqual([{
+    description: 'Tangle Twist',
+    turns: spells.tangleTwist.bonusStats.turns,
+    attack: spells.tangleTwist.bonusStats.attack,
+    damage: spells.tangleTwist.bonusStats.damage,
+    defence: undefined,
+    speed: spells.tangleTwist.bonusStats.speed,
+  }]);
+
+  actionCastSpell(params, mage, { id: 2, type: PlayerActionType.Cast, description: '', spellId: SpellIds.timeWarp });
+  for (const target of [mage, ally]) {
+    expect(target.effects).toEqual([{
+      description: 'Time Warp',
+      turns: spells.timeWarp.bonusStats.turns,
+      attack: undefined,
+      damage: undefined,
+      defence: undefined,
+      speed: spells.timeWarp.bonusStats.speed,
+    }]);
+  }
+});
+
+it('deals initial damage and applies a damage-over-time effect to surviving targets with Poison Cloud', () => {
+  const surviving = createMonster({ id: 'surviving', health: 5 });
+  const slain = createMonster({ id: 'slain', health: 5 });
+  const params = createParams({ monsters: [surviving, slain] });
+  const witch = params.gameState.players[0];
+  witch.id = 'witch';
+  witch.magic = 50;
+  witch.spells = [SpellIds.poisonCloud];
+  jest.mocked(genericAttackMonster).mockImplementation((_p, _player, _stats, monster) => {
+    if (monster.id === 'slain') monster.health = 0;
+    return true;
+  });
+
+  actionCastSpell(params, witch, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.poisonCloud });
+
+  expect(genericAttackMonster).toHaveBeenCalledTimes(2);
+  expect(surviving.effects).toEqual([{
+    description: 'Poison Cloud',
+    turns: spells.poisonCloud.bonusStats.turns,
+    health: -spells.poisonCloud.bonusStats.damage!,
+  }]);
+  expect(slain.effects).toBeUndefined();
+});

@@ -61,3 +61,18 @@ it('assigns a reanimated NPC to the caster team', () => {
   specialSpellActions[SpellIds.animateCorpse](params, player, spells.animateCorpse, [npc]);
   expect(npc).toMatchObject({ team: player.team, masterId: player.id, zombie: true });
 });
+
+it('summons a Fire Spirit with Raise Demon', () => {
+  const params = createParams();
+  const player = params.gameState.players[0];
+  specialSpellActions[SpellIds.raiseDemon](params, player, spells.raiseDemon, [player]);
+  expect(params.gameState.npcs).toEqual([
+    expect.objectContaining({
+      id: 'summon-1',
+      masterId: player.id,
+      name: 'Fire Spirit',
+      turnsLeft: 10,
+      expiryAction: 'remove',
+    }),
+  ]);
+});

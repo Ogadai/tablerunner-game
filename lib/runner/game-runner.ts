@@ -2,6 +2,7 @@ import {
   GameState,
   PlayerReadyState,
   AllLocationsState,
+  INamedTarget,
   ITarget,
   NPCState,
   MonsterState,
@@ -41,6 +42,8 @@ import { populateMonsters } from "./populate-monsters";
 import { updatePortalAndShopLeds } from "./game-action-portal";
 import { updateMonsterLeds } from './game-action-monsters';
 import { actionRespawn } from './game-action-move';
+import { handlePlayerIsDead } from './game-action-attack';
+import { playerMessageAtLocation } from './game-messages';
 
 export async function checkAllPlayersReady(boardId: string, mapId: string): Promise<void> {
   let gameStateLock: (() => Promise<void>) | null = null;
@@ -299,16 +302,27 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
 async function runGameTurn(params: BaseParams, playerActions: Record<string, PlayerActionsState>): Promise<void> {
   await runGameActions(params, playerActions);
 
-  processTargetEffects(params.gameState.players);
-  processTargetEffects(params.gameState.npcs);
-  processTargetEffects(params.monsters);
+  processTargetEffects(params, params.gameState.players);
+  processTargetEffects(params, params.gameState.npcs);
+  processTargetEffects(params, params.monsters);
 
   processNpcTimeouts(params);
 }
 
-function processTargetEffects(targets: ITarget[]) {
+function processTargetEffects(params: BaseParams, targets: ITarget[]) {
   for(const target of targets) {
     if (target.effects) {
+      for (const effect of target.effects) {
+        if (effect.health && effect.health < 0 && target.health > 0) {
+          const damage = Math.min(target.health, -effect.health);
+          target.health -= damage;
+          playerMessageAtLocation(params, target.id,
+            `**{player}** took **${damage}** damage from **${effect.description}**${target.health <= 0 && 'type' in target ? ' and *was defeated!*' : ''}`);
+          if (target.health <= 0 && !('type' in target)) {
+            handlePlayerIsDead(params, target as INamedTarget);
+          }
+        }
+      }
       target.effects = target.effects
         .map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
         .filter(e => e.turns > 0);

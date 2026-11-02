@@ -79,6 +79,17 @@ function applySpellEnemy(
       }
     }
   }
+
+  if (spell.bonusStats.turns) {
+    addEffectToTargets(
+      targets.filter(target => target.health > 0),
+      {
+        turns: spell.bonusStats.turns,
+        description: spell.name,
+        health: -spell.bonusStats.damage!,
+      },
+    );
+  }
 }
 
 function applySpellEffects(
@@ -111,6 +122,7 @@ function applySpellEffects(
       turns: spell.bonusStats.turns || 1,
       description: spell.name,
       attack: spell.bonusStats.attack,
+      damage: spell.bonusStats.damage,
       defence: spell.bonusStats.defence,
       speed: spell.bonusStats.speed,
     });

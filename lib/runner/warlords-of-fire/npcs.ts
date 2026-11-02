@@ -125,7 +125,7 @@ export const npcProcesses: ProcessRunner = {
         startLocation: location.id,
         location: getPlayerLocation(params, location),
         magic: stats.magic,
-        spells: getNpcSpells(npcDef.type),
+        spells: getNpcSpells(npcDef.type, cost),
         equipment,
         equipped,
         baseStats,

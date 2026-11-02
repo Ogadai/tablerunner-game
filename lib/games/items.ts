@@ -232,6 +232,10 @@ export enum ScrollIds {
   spiritWarrior = 'spiritWarriorScroll',
   raiseDead = 'raiseDeadScroll',
   animateCorpse = 'animateCorpseScroll',
+  raiseDemon = 'raiseDemonScroll',
+  tangleTwist = 'tangleTwistScroll',
+  poisonCloud = 'poisonCloudScroll',
+  timeWarp = 'timeWarpScroll',
 }
 const excludedSpells: SpellIds[] = [
   SpellIds.fireBreathSmall,

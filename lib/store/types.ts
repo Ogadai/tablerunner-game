@@ -49,6 +49,7 @@ export interface CharacterEffect {
   damage?: number;
   defence?: number;
   speed?: number;
+  health?: number;
   special?: string;
   turns: number;
 }

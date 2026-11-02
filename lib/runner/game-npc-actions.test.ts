@@ -9,7 +9,7 @@ import { getMonsterCombatant } from './monster-combatant';
 import { getNpcSpells } from './shared-processes/npcs';
 
 const followerSpells = [SpellIds.spiritGuide, SpellIds.spiritGuarian, SpellIds.spiritWarrior,
-  SpellIds.raiseDead, SpellIds.animateCorpse, SpellIds.familiar];
+  SpellIds.raiseDead, SpellIds.raiseDemon, SpellIds.animateCorpse, SpellIds.familiar];
 
 beforeEach(() => jest.spyOn(Math, 'random').mockReturnValue(0));
 afterEach(() => jest.restoreAllMocks());
@@ -79,7 +79,7 @@ it.each([
   ));
 });
 
-it.each([SpellIds.terror, SpellIds.shieldWall, SpellIds.strengthAura])('plans %s only once per turn for the whole group', spellId => {
+it.each([SpellIds.terror, SpellIds.shieldWall, SpellIds.strengthAura, SpellIds.tangleTwist, SpellIds.poisonCloud, SpellIds.timeWarp])('plans %s only once per turn for the whole group', spellId => {
   const npc = createNpc({
     characterType: spells[spellId].characterType,
     magic: 60, spells: [spellId], equipment: [],
@@ -185,6 +185,7 @@ it('uses character targets when planning for a monster', () => {
 it.each([
   ['mage', SpellIds.spiritGuide],
   ['witch', SpellIds.raiseDead],
+  ['witch', SpellIds.raiseDemon],
 ] as const)('prioritizes a learned follower spell over a %s\'s regular combat actions', (type, summonSpell) => {
   const npc = createNpc({ characterType: type, magic: 40, spells: [...getNpcSpells(type), summonSpell], equipment: [],
     baseStats: { attack: 6, damage: 6, defence: 10, health: 20, magic: 40, speed: 10 } });

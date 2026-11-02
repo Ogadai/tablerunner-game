@@ -4,7 +4,7 @@ import { ProcessRunner } from "../types";
 import { NPC_DATA, NPC_NAMES } from '@/lib/games/npc-details';
 import { NPCState } from "@/lib/store/types";
 import { BaseStats, PlayerItem } from "@/lib/games/types";
-import { SpellIds } from "@/lib/games/spells";
+import { SpellIds, spells } from "@/lib/games/spells";
 import { getNamedTargetStats } from "@/lib/store/playerStats";
 
 interface IMapNpc { location: number, min: number, max: number, from: number, to: number };
@@ -155,7 +155,7 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
     name: name,
     location: { id: mapNpc.location, description: '', move: [] },
     magic: stats.magic,
-    spells: getNpcSpells(type),
+    spells: getNpcSpells(type, cost),
     equipment: equipment,
     equipped: equipped,
     baseStats: baseStats,
@@ -206,34 +206,66 @@ export function getNpcEquipment(npcId: string, type: string): PlayerItem[] {
   return [];
 }
 
-export function getNpcSpells(type: string): SpellIds[] {
-  switch(type) {
-    case 'barbarian':
-    case 'ranger':
-      return [];
-    case 'witch':
-      return [
-        SpellIds.iceShards,
-        SpellIds.fear,
-        SpellIds.iceStorm,
-        SpellIds.terror,
-        SpellIds.lightning,
-      ];
-    case 'mage':
-      return [
-        SpellIds.spiritArrow,
-        SpellIds.heal,
-        SpellIds.fireBall,
-        SpellIds.fireWall,
-        SpellIds.healingAura,
-        SpellIds.strengthAura,
-        SpellIds.fireRain,
-        SpellIds.shield,
-        SpellIds.shieldWall,
-        SpellIds.strength,
-      ];
+const NPC_LOW_SPELLS: Record<string, SpellIds[]> = {
+  witch: [
+    SpellIds.iceShards,
+    SpellIds.fear,
+    SpellIds.iceStorm,
+  ],
+  mage: [
+    SpellIds.spiritArrow,
+    SpellIds.heal,
+    SpellIds.fireBall,
+    SpellIds.shield,
+    SpellIds.strength,
+    SpellIds.tangleTwist,
+  ],
+};
+
+const NPC_HIGH_SPELLS: Record<string, SpellIds[]> = {
+  witch: [
+    SpellIds.terror,
+    SpellIds.poisonCloud,
+    SpellIds.lightning,
+  ],
+  mage: [
+    SpellIds.fireWall,
+    SpellIds.healingAura,
+    SpellIds.timeWarp,
+    SpellIds.shieldWall,
+    SpellIds.strengthAura,
+    SpellIds.fireRain,
+  ],
+};
+
+function pickRandomSpells(pool: SpellIds[], count: number): SpellIds[] {
+  const available = [...pool];
+  const picked: SpellIds[] = [];
+  const total = Math.min(count, available.length);
+  for (let i = 0; i < total; i++) {
+    const index = Math.floor(Math.random() * available.length);
+    picked.push(available.splice(index, 1)[0]);
   }
-  return [];
+  return picked;
+}
+
+export function getNpcSpells(type: string, cost: number = 100): SpellIds[] {
+  const lowPool = NPC_LOW_SPELLS[type];
+  const highPool = NPC_HIGH_SPELLS[type];
+  if (!lowPool || !highPool) {
+    return [];
+  }
+
+  const maxHighIntelligence = cost >= 140 ? 30 : cost >= 100 ? 25 : 20;
+  const eligibleHighPool = highPool.filter(id => spells[id].intelligence <= maxHighIntelligence);
+
+  const highCount = cost >= 120 ? 2 : 1;
+  const lowCount = cost >= 140 || (cost >= 100 && cost < 120) ? 4 : 3;
+
+  return [
+    ...pickRandomSpells(lowPool, lowCount),
+    ...pickRandomSpells(eligibleHighPool, highCount),
+  ];
 }
 
 export const npcs: ProcessRunner = {

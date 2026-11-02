@@ -284,8 +284,9 @@ function getSpellValue(npc: INamedTarget, spell: SpellDef, targets: ITarget[]): 
   const sumValue = (valueFn: (target: ITarget) => number) =>
         targets.reduce((total, t) => total + valueFn(t), 0);
 
-  if (spell.bonusStats.damage) {
-    return sumValue(t => expectedDamage(spell.bonusStats.damage!, npc.baseStats!.magic, t));
+  if (spell.bonusStats.damage && spell.bonusStats.damage > 0) {
+    return sumValue(t => expectedDamage(spell.bonusStats.damage!, npc.baseStats!.magic, t)
+      + (spell.bonusStats.turns ? Math.min(t.health, spell.bonusStats.damage! * spell.bonusStats.turns) : 0));
   } else if (spell.bonusStats.health) {
     return sumValue(t => 10 / (t.health / ('type' in t ? getMonsterStats(t as MonsterState).health : (t as INamedTarget).baseStats!.health)) - 10);
   } else if (spell.bonusStats.special) {
