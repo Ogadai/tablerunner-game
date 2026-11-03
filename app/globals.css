@@ -366,8 +366,7 @@ button:active,
 
 button:focus-visible,
 .btn:focus-visible {
-  outline: 2px solid var(--gold-bright);
-  outline-offset: 3px;
+  outline: none;
 }
 
 /* Disabled State */
