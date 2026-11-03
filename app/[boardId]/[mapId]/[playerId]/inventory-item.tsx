@@ -4,7 +4,7 @@ import styles from './inventory-item.module.css';
 import { BaseStats, ConsumableItemDef, PlayerItem, PlayerItemType, ScrollItemDef } from '@/lib/games/types';
 import { allItems, SELL_COST_RATIO } from '@/lib/games/items';
 import { LEARN_SCROLL_ACTION_COST } from '@/lib/store/playerStats';
-import { canCharacterLearnSpell, getSpellLearningStatValue, SpellIds, spells } from '@/lib/games/spells';
+import { canCharacterLearnSpell, canCharacterUseSpell, getSpellLearningStatValue, SpellIds, spells } from '@/lib/games/spells';
 import CoinDisplay from './coin-display';
 
 export default function InventoryItem({
@@ -80,14 +80,21 @@ export default function InventoryItem({
 
   const isEquipable = !!onEquipped && itemDef.type !== PlayerItemType.consumable && itemDef.type !== PlayerItemType.scroll;
   const isConsumable = itemDef.type === PlayerItemType.consumable;
+  const scrollSpell = itemDef.type === PlayerItemType.scroll
+    ? spells[(itemDef as ScrollItemDef).spellId]
+    : undefined;
+  const scrollClass = scrollSpell?.characterType
+    ? `${scrollSpell.characterType.charAt(0).toUpperCase()}${scrollSpell.characterType.slice(1)}`
+    : undefined;
+  const isMatchingClass = !!scrollSpell && (!characterType || canCharacterUseSpell({ id: characterType }, scrollSpell));
   const canUse = !!onUsed && !isUsed && isConsumable && actionPointsLeft >= (itemDef as ConsumableItemDef).useCost;
   const canDrop = !!onDropped && !isUsed;
   const canGive = !!onGive && !isUsed;
   const canTake = !!onTake && !isUsed;
-  const canLearnSpell = !!onLearnScroll && !isUsed && itemDef.type === PlayerItemType.scroll
+  const canLearnSpell = !!onLearnScroll && !isUsed && !!scrollSpell
     && (characterType
-      ? canCharacterLearnSpell({ id: characterType }, baseStats, spells[(itemDef as ScrollItemDef).spellId])
-      : getSpellLearningStatValue(spells[(itemDef as ScrollItemDef).spellId], baseStats) >= spells[(itemDef as ScrollItemDef).spellId].intelligence)
+      ? canCharacterLearnSpell({ id: characterType }, baseStats, scrollSpell)
+      : getSpellLearningStatValue(scrollSpell, baseStats) >= scrollSpell.intelligence)
     && !playerSpells?.includes((itemDef as ScrollItemDef).spellId as SpellIds)
     && actionPointsLeft >= LEARN_SCROLL_ACTION_COST;
 
@@ -117,6 +124,11 @@ export default function InventoryItem({
       <Popover.Portal>
         <Popover.Content className={`PopoverContent ${styles.itemPopover}`}>
           <h3 className={styles.itemHeader}>{itemDef.name}</h3>
+          {scrollClass && (
+            <p className={`${styles.itemClass} ${isMatchingClass ? styles.itemClassMatch : styles.itemClassMismatch}`}>
+              {scrollClass} only
+            </p>
+          )}
           {coins > 0 && (
             <div className={styles.itemHeaderCoins}>
               <CoinDisplay coins={coins} />

@@ -82,7 +82,8 @@ describe('InventoryItem', () => {
   );
 
   it('learns a scroll with sufficient magic and actions', () => {
-    const props = setup({ item: { id: 'scroll-1', type: 'spiritArrowScroll' }, actionPointsLeft: 10 });
+    const props = setup({ item: { id: 'scroll-1', type: 'spiritArrowScroll' }, characterType: 'mage', actionPointsLeft: 10 });
+    expect(screen.getByText('Mage only')).toHaveClass('itemClassMatch');
     fireEvent.click(screen.getByRole('button', { name: 'Learn' }));
     expect(props.onLearnScroll).toHaveBeenCalledTimes(1);
     expect(allItems.spiritArrowScroll.iconXY).toEqual({ x: 7, y: 8 });
@@ -103,6 +104,7 @@ describe('InventoryItem', () => {
       baseStats: makeBaseStats({ attack: 10, magic: 0 }),
       actionPointsLeft: 10,
     });
+    expect(screen.getByText('Barbarian only')).toHaveClass('itemClassMatch');
     fireEvent.click(screen.getByRole('button', { name: 'Learn' }));
     expect(props.onLearnScroll).toHaveBeenCalledTimes(1);
   });
@@ -110,10 +112,11 @@ describe('InventoryItem', () => {
   it('does not offer Learn for a barbarian Brew when attack is too low or class mismatches', () => {
     setup({
       item: { id: 'brew-1', type: 'rageScroll' },
-      characterType: 'barbarian',
-      baseStats: makeBaseStats({ attack: 9, magic: 20 }),
+      characterType: 'ranger',
+      baseStats: makeBaseStats({ attack: 20, magic: 20 }),
       actionPointsLeft: 10,
     });
+    expect(screen.getByText('Barbarian only')).toHaveClass('itemClassMismatch');
     expect(screen.queryByRole('button', { name: 'Learn' })).not.toBeInTheDocument();
   });
 

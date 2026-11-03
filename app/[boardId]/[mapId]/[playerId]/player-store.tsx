@@ -123,6 +123,7 @@ export default function PlayerStore({
                     isUsed={false}
                     actionPointsLeft={0}
                     baseStats={player.baseStats!}
+                    characterType={player.id}
                     onBuy={() => onBuyItem(storeItem.itemId)}
                     availableCoins={player.coins}
                   />
@@ -138,6 +139,7 @@ export default function PlayerStore({
                   isUsed={usedItemIds.includes(item.id || '')}
                   actionPointsLeft={0}
                   baseStats={player.baseStats!}
+                  characterType={player.id}
                   onSell={() => onSellItem(item)}
                 />
               ))}
