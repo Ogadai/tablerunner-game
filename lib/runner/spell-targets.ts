@@ -10,6 +10,9 @@ export function isMonsterCaster(params: BaseParams, caster: INamedTarget): boole
 /** Shared by planning and execution; even selected targets must be local. */
 export function getAvailableSpellTargets(params: BaseParams, caster: INamedTarget, spell: SpellDef): (INamedTarget | MonsterState)[] {
   const alive = spell.targetType !== SpellTargetType.corpse;
+  if (spell.selfOnly) {
+    return (caster.health > 0) === alive ? [caster] : [];
+  }
   const monsterTargets = params.monsters.filter(m => m.location === caster.location.id && (m.health > 0) === alive);
   const characterTargets = [
     ...params.gameState.players,

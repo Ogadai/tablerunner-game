@@ -187,3 +187,74 @@ it('deals initial damage and applies a damage-over-time effect to surviving targ
   }]);
   expect(slain.effects).toBeUndefined();
 });
+
+it('executes barbarian and ranger skills using combat stats, sets cooldowns, and handles self-only buffs, heals, debuffs, and lifesteal', () => {
+  const monster = createMonster({ id: 'orc', health: 20 });
+  const ally = createNpc({ id: 'ally', health: 10 });
+  const params = createParams({ monsters: [monster] });
+  params.gameState.npcs = [ally];
+  const barbarian = params.gameState.players[0];
+  barbarian.id = 'barbarian';
+  barbarian.health = 10;
+  barbarian.magic = 0;
+  barbarian.spells = [SpellIds.ironSkin, SpellIds.bloodthirst];
+
+  // Iron Skin is selfOnly and both heals (+4) and applies a 3-turn defence buff (+8)
+  actionCastSpell(params, barbarian, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.ironSkin, targetId: barbarian.id });
+  expect(barbarian.health).toBe(14);
+  expect(barbarian.effects).toEqual([{
+    description: 'Iron Skin',
+    turns: 3,
+    attack: undefined,
+    damage: undefined,
+    defence: 8,
+    speed: undefined,
+  }]);
+  expect(barbarian.spellCooldowns?.[SpellIds.ironSkin]).toBe(spells.ironSkin.cooldown! + 1);
+
+  // Cannot cast Iron Skin again while on cooldown
+  barbarian.health = 10;
+  actionCastSpell(params, barbarian, { id: 2, type: PlayerActionType.Cast, description: '', spellId: SpellIds.ironSkin, targetId: barbarian.id });
+  expect(barbarian.health).toBe(10);
+
+  // Bloodthirst uses combat attack/damage + bonusStats and heals for half of damage dealt
+  jest.mocked(genericAttackMonster).mockImplementation((_p, _player, _stats, target) => {
+    target.health -= 6;
+    return true;
+  });
+  actionCastSpell(params, barbarian, { id: 3, type: PlayerActionType.Cast, description: '', spellId: SpellIds.bloodthirst, targetId: monster.id });
+  expect(genericAttackMonster).toHaveBeenCalledWith(params, barbarian, {
+    name: 'Bloodthirst',
+    attack: barbarian.baseStats!.attack + spells.bloodthirst.bonusStats.attack!,
+    damage: barbarian.baseStats!.damage + spells.bloodthirst.bonusStats.damage!,
+    damageType: undefined,
+  }, monster);
+  expect(barbarian.health).toBe(13); // 10 + ceil(6 / 2)
+
+  // Ranger Pinning Shot deals physical attack + applies defence/speed debuff on hit
+  const ranger = createPlayer({ id: 'ranger', spells: [SpellIds.pinningShot, SpellIds.rage] });
+  params.gameState.players.push(ranger);
+  actionCastSpell(params, ranger, { id: 4, type: PlayerActionType.Cast, description: '', spellId: SpellIds.pinningShot, targetId: monster.id });
+  expect(monster.effects).toEqual([{
+    description: 'Pinning Shot',
+    turns: 3,
+    attack: undefined,
+    damage: undefined,
+    defence: -4,
+    speed: -4,
+  }]);
+});
+
+it('learns a barbarian brew when attack is high enough', () => {
+  const brew = Object.values(scrollItems).find(item => item.spellId === SpellIds.rage)!;
+  const params = createParams();
+  const player = params.gameState.players[0];
+  player.id = 'barbarian';
+  player.equipment = [{ id: 'brew', type: brew.id }];
+  player.baseStats!.attack = spells.rage.intelligence;
+  player.baseStats!.magic = 0;
+  player.spells = [];
+  actionReadScroll(params, player, { id: 1, type: PlayerActionType.ReadScroll, description: '', itemId: 'brew' });
+  expect(player.equipment).toHaveLength(0);
+  expect(player.spells).toEqual([SpellIds.rage]);
+});

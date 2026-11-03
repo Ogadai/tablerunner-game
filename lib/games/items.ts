@@ -1,5 +1,5 @@
 import { ItemDef, PlayerItemType, EquipableItemDef, ConsumableItemDef, ScrollItemDef } from './types';
-import { SpellIds, spells } from './spells';
+import { isSkillSpell, SpellIds, spells } from './spells';
 
 export const SELL_COST_RATIO = 0.7;
 
@@ -185,8 +185,8 @@ export const consumableItems: Record<string, ConsumableItemDef> = {
   [ConsumableIds.manaPotion]: { id: 'manaPotion', type: PlayerItemType.consumable, name: 'Mana Potion', iconXY: { x: 1, y: 7 }, value: 30, useCost: 5, bonusStats: { magic: 20 } },
   [ConsumableIds.toughPotion]: { id: 'toughPotion', type: PlayerItemType.consumable, name: 'Toughness Potion', iconXY: { x: 3, y: 7 }, value: 65, useCost: 5, bonusStats: { defence: 5 }, turns: 10 },
   [ConsumableIds.focusPotion]: { id: 'focusPotion', type: PlayerItemType.consumable, name: 'Focus Potion', iconXY: { x: 3, y: 7 }, value: 50, useCost: 5, bonusStats: { attack: 5 }, turns: 10 },
-  [ConsumableIds.swiftPotion]: { id: 'swiftPotion', type: PlayerItemType.consumable, name: 'Swift Potion', iconXY: { x: 2, y: 7 }, value: 25, useCost: 5, bonusStats: { speed: 3 }, turns: 10 },
-  [ConsumableIds.elixir]: { id: 'elixir', type: PlayerItemType.consumable, name: 'Mighty Elixir', iconXY: { x: 4, y: 7 }, value: 90, useCost: 5, bonusStats: { attack: 4, defence: 4 }, turns: 15 },
+  [ConsumableIds.swiftPotion]: { id: 'swiftPotion', type: PlayerItemType.consumable, name: 'Swift Potion', iconXY: { x: 3, y: 7 }, value: 25, useCost: 5, bonusStats: { speed: 3 }, turns: 10 },
+  [ConsumableIds.elixir]: { id: 'elixir', type: PlayerItemType.consumable, name: 'Mighty Elixir', iconXY: { x: 3, y: 7 }, value: 90, useCost: 5, bonusStats: { attack: 4, defence: 4 }, turns: 15 },
   [ConsumableIds.resurrectionStone]: {
     id: ConsumableIds.resurrectionStone.toString(),
     type: PlayerItemType.consumable,
@@ -236,6 +236,20 @@ export enum ScrollIds {
   tangleTwist = 'tangleTwistScroll',
   poisonCloud = 'poisonCloudScroll',
   timeWarp = 'timeWarpScroll',
+  rage = 'rageScroll',
+  mightyCleave = 'mightyCleaveScroll',
+  warCry = 'warCryScroll',
+  ironSkin = 'ironSkinScroll',
+  whirlwind = 'whirlwindScroll',
+  bloodthirst = 'bloodthirstScroll',
+  berserker = 'berserkerScroll',
+  focus = 'focusScroll',
+  pinningShot = 'pinningShotScroll',
+  evasiveStep = 'evasiveStepScroll',
+  multiShot = 'multiShotScroll',
+  poisonArrow = 'poisonArrowScroll',
+  sniperShot = 'sniperShotScroll',
+  callCompanion = 'callCompanionScroll',
 }
 const excludedSpells: SpellIds[] = [
   SpellIds.fireBreathSmall,
@@ -247,14 +261,26 @@ export const scrollItems: Record<string, ScrollItemDef> = {
 }
 for(const [spellId, spell] of Object.entries(spells)) {
   if (!excludedSpells.includes(spellId as SpellIds)) {
+    const isSkill = isSkillSpell(spell);
+    const itemPrefix = spell.characterType === 'barbarian' ? 'Brew'
+      : spell.characterType === 'ranger' ? 'Elixir' : 'Scroll';
+    const iconXY = spell.characterType === 'mage' ? { x: 7, y: 8 }
+      : spell.characterType === 'witch' ? { x: 8, y: 8 }
+      : spell.characterType === 'barbarian' ? { x: 4, y: 7 }
+      : spell.characterType === 'ranger' ? { x: 2, y: 7 }
+      : { x: 5, y: 7 };
+
     scrollItems[`${spell.id}Scroll`] = {
       id: `${spell.id}Scroll`,
       type: PlayerItemType.scroll,
-      name: `Scroll of ${spell.name}`,
-      iconXY: spell.characterType === 'mage' ? { x: 7, y: 8 } : spell.characterType === 'witch' ? { x: 8, y: 8 } : { x: 5, y: 7 },
+      name: `${itemPrefix} of ${spell.name}`,
+      iconXY,
       value: spell.intelligence * 2,
       spellId,
-      bonusStats: {
+      bonusStats: isSkill ? {
+        attack: spell.intelligence,
+        special: 'Learn if your attack is high enough'
+      } : {
         magic: spell.intelligence,
         special: 'Learn if your magic is high enough'
       }

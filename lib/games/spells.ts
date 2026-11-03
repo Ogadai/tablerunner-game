@@ -1,5 +1,5 @@
 import { NPC_DATA } from './npc-details';
-import { SpellDef, SpellTargetType } from './types';
+import { BaseStats, SpellDef, SpellTargetType } from './types';
 import type { INamedTarget, NPCState } from '../store/types';
 
 const MAGIC_ACTION_COST_REDUCTION = 0.1;
@@ -32,6 +32,20 @@ export enum SpellIds {
   fireBreathSmall = 'fireBreathSmall',
   fireBreathLarge = 'fireBreathLarge',
   familiar = 'familiar',
+  rage = 'rage',
+  mightyCleave = 'mightyCleave',
+  warCry = 'warCry',
+  ironSkin = 'ironSkin',
+  whirlwind = 'whirlwind',
+  bloodthirst = 'bloodthirst',
+  berserker = 'berserker',
+  focus = 'focus',
+  pinningShot = 'pinningShot',
+  evasiveStep = 'evasiveStep',
+  multiShot = 'multiShot',
+  poisonArrow = 'poisonArrow',
+  sniperShot = 'sniperShot',
+  callCompanion = 'callCompanion',
 };
 
 export const spells: Record<string, SpellDef> = {
@@ -430,9 +444,258 @@ export const spells: Record<string, SpellDef> = {
       special: 'Summon a familiar as a minion'
     }
   },
+  [SpellIds.rage]: {
+    id: SpellIds.rage.toString(),
+    name: 'Rage',
+    characterType: 'barbarian',
+    intelligence: 10,
+    pickTarget: false,
+    selfOnly: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 0,
+    actionCost: 6,
+    cooldown: 5,
+    iconXY: { x: 5, y: 5 },
+    bonusStats: {
+      turns: 3,
+      attack: 4,
+      damage: 4,
+      defence: -2,
+    }
+  },
+  [SpellIds.mightyCleave]: {
+    id: SpellIds.mightyCleave.toString(),
+    name: 'Mighty Cleave',
+    characterType: 'barbarian',
+    intelligence: 13,
+    pickTarget: true,
+    targetType: SpellTargetType.enemy,
+    magicCost: 0,
+    actionCost: 12,
+    cooldown: 3,
+    iconXY: { x: 6, y: 5 },
+    bonusStats: {
+      attack: 3,
+      damage: 6,
+    }
+  },
+  [SpellIds.warCry]: {
+    id: SpellIds.warCry.toString(),
+    name: 'War Cry',
+    characterType: 'barbarian',
+    intelligence: 15,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 0,
+    actionCost: 8,
+    cooldown: 6,
+    iconXY: { x: 0, y: 6 },
+    bonusStats: {
+      turns: 3,
+      attack: 3,
+      defence: 3,
+      speed: 2,
+    }
+  },
+  [SpellIds.ironSkin]: {
+    id: SpellIds.ironSkin.toString(),
+    name: 'Iron Skin',
+    characterType: 'barbarian',
+    intelligence: 16,
+    pickTarget: false,
+    selfOnly: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 0,
+    actionCost: 6,
+    cooldown: 5,
+    iconXY: { x: 0, y: 7 },
+    bonusStats: {
+      turns: 3,
+      defence: 8,
+      health: 4,
+    }
+  },
+  [SpellIds.whirlwind]: {
+    id: SpellIds.whirlwind.toString(),
+    name: 'Whirlwind',
+    characterType: 'barbarian',
+    intelligence: 18,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 0,
+    actionCost: 14,
+    cooldown: 4,
+    iconXY: { x: 1, y: 6 },
+    bonusStats: {
+      damage: 2,
+      special: 'Strike all enemies at location',
+    }
+  },
+  [SpellIds.bloodthirst]: {
+    id: SpellIds.bloodthirst.toString(),
+    name: 'Bloodthirst',
+    characterType: 'barbarian',
+    intelligence: 20,
+    pickTarget: true,
+    targetType: SpellTargetType.enemy,
+    magicCost: 0,
+    actionCost: 12,
+    cooldown: 4,
+    iconXY: { x: 2, y: 2 },
+    bonusStats: {
+      attack: 2,
+      damage: 2,
+      special: 'Heal for half of damage dealt',
+    }
+  },
+  [SpellIds.berserker]: {
+    id: SpellIds.berserker.toString(),
+    name: 'Berserker',
+    characterType: 'barbarian',
+    intelligence: 24,
+    pickTarget: false,
+    selfOnly: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 0,
+    actionCost: 10,
+    cooldown: 6,
+    iconXY: { x: 0, y: 1 },
+    bonusStats: {
+      turns: 3,
+      attack: 8,
+      damage: 8,
+      speed: 6,
+      defence: -3,
+    }
+  },
+  [SpellIds.focus]: {
+    id: SpellIds.focus.toString(),
+    name: 'Focus',
+    characterType: 'ranger',
+    intelligence: 10,
+    pickTarget: false,
+    selfOnly: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 0,
+    actionCost: 6,
+    cooldown: 5,
+    iconXY: { x: 2, y: 6 },
+    bonusStats: {
+      turns: 3,
+      attack: 5,
+      damage: 3,
+      speed: 2,
+    }
+  },
+  [SpellIds.pinningShot]: {
+    id: SpellIds.pinningShot.toString(),
+    name: 'Pinning Shot',
+    characterType: 'ranger',
+    intelligence: 13,
+    pickTarget: true,
+    targetType: SpellTargetType.enemy,
+    magicCost: 0,
+    actionCost: 10,
+    cooldown: 4,
+    iconXY: { x: 3, y: 6 },
+    bonusStats: {
+      turns: 3,
+      damage: 2,
+      defence: -4,
+      speed: -4,
+    }
+  },
+  [SpellIds.evasiveStep]: {
+    id: SpellIds.evasiveStep.toString(),
+    name: 'Evasive Step',
+    characterType: 'ranger',
+    intelligence: 15,
+    pickTarget: false,
+    selfOnly: true,
+    targetType: SpellTargetType.friend,
+    magicCost: 0,
+    actionCost: 6,
+    cooldown: 5,
+    iconXY: { x: 1, y: 7 },
+    bonusStats: {
+      turns: 3,
+      defence: 6,
+      speed: 6,
+    }
+  },
+  [SpellIds.multiShot]: {
+    id: SpellIds.multiShot.toString(),
+    name: 'Multi-Shot',
+    characterType: 'ranger',
+    intelligence: 16,
+    pickTarget: false,
+    targetType: SpellTargetType.enemy,
+    magicCost: 0,
+    actionCost: 13,
+    cooldown: 4,
+    iconXY: { x: 4, y: 6 },
+    bonusStats: {
+      damage: 2,
+      special: 'Fire arrows at all enemies',
+    }
+  },
+  [SpellIds.poisonArrow]: {
+    id: SpellIds.poisonArrow.toString(),
+    name: 'Poison Arrow',
+    characterType: 'ranger',
+    intelligence: 18,
+    pickTarget: true,
+    targetType: SpellTargetType.enemy,
+    magicCost: 0,
+    actionCost: 10,
+    cooldown: 3,
+    iconXY: { x: 5, y: 6 },
+    bonusStats: {
+      turns: 3,
+      damage: 4,
+    }
+  },
+  [SpellIds.sniperShot]: {
+    id: SpellIds.sniperShot.toString(),
+    name: 'Sniper Shot',
+    characterType: 'ranger',
+    intelligence: 21,
+    pickTarget: true,
+    targetType: SpellTargetType.enemy,
+    magicCost: 0,
+    actionCost: 14,
+    cooldown: 4,
+    iconXY: { x: 6, y: 6 },
+    bonusStats: {
+      attack: 10,
+      damage: 12,
+    }
+  },
+  [SpellIds.callCompanion]: {
+    id: SpellIds.callCompanion.toString(),
+    name: 'Call Companion',
+    characterType: 'ranger',
+    intelligence: 24,
+    pickTarget: false,
+    targetType: SpellTargetType.friend,
+    magicCost: 0,
+    actionCost: 15,
+    cooldown: 6,
+    iconXY: { x: 3, y: 4 },
+    bonusStats: {
+      special: 'Summon a spirit guardian'
+    }
+  },
 };
 
+export const isSkillSpell = (spell: SpellDef | undefined): boolean =>
+  spell?.characterType === 'barbarian' || spell?.characterType === 'ranger';
+
+export const isCharacterSkillUser = (characterType: string | undefined): boolean =>
+  characterType === 'barbarian' || characterType === 'ranger';
+
 export const getSpellActionCost = (spell: SpellDef, magic: number): number => {
+  if (isSkillSpell(spell)) return Math.max(1, spell.actionCost);
   return Math.max(1, spell.actionCost - Math.floor(magic * MAGIC_ACTION_COST_REDUCTION));
 }
 
@@ -449,4 +712,18 @@ export const canCharacterUseSpell = (character: Pick<INamedTarget, 'id'> & Parti
   if (!spell) return false;
   if (!spell.characterType) return true;
   return getCharacterType(character) === spell.characterType;
+}
+
+export const getSpellLearningStatValue = (spell: SpellDef | undefined, stats: BaseStats): number => {
+  if (!spell) return 0;
+  return isSkillSpell(spell) ? stats.attack : stats.magic;
+}
+
+export const canCharacterLearnSpell = (
+  character: Pick<INamedTarget, 'id'> & Partial<Pick<NPCState, 'characterType' | 'monsterType' | 'hireCost' | 'iconXY'>>,
+  stats: BaseStats,
+  spell: SpellDef | undefined
+): boolean => {
+  if (!spell || !canCharacterUseSpell(character, spell)) return false;
+  return getSpellLearningStatValue(spell, stats) >= spell.intelligence;
 }

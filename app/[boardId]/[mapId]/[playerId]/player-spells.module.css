@@ -11,7 +11,7 @@
     width: 40px;
     height: 40px;
     margin: 4px 5px 0 0;
-    background-size: 280px 240px;
+    background-size: 280px 320px;
   }
 
   .attackIcon {
@@ -31,7 +31,7 @@
   .spellIcon:hover,
   .spellIcon:active,
   .spellIcon:focus-visible {
-    background-size: 280px 240px;
+    background-size: 280px 320px;
   }
 
   .disabledSpellIcon {
@@ -64,6 +64,7 @@
 }
 
 .spellIcon {
+  position: relative;
   width: 80px;
   height: 80px;
   padding: 0;
@@ -72,7 +73,7 @@
   background-color: transparent;
   background-image: url('/spell-sheet.png');
   background-repeat: no-repeat;
-  background-size: 560px 480px;
+  background-size: 560px 640px;
 }
 
 .spellIcon:hover,
@@ -81,7 +82,24 @@
   background-color: transparent;
   background-image: url('/spell-sheet.png');
   background-repeat: no-repeat;
-  background-size: 560px 480px;
+  background-size: 560px 640px;
+}
+
+.cooldownSpellIcon {
+  filter: grayscale(0.8);
+}
+
+.cooldownBadge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: var(--color-warning);
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1.1;
 }
 
 .spellPopover {

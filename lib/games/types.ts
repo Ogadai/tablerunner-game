@@ -147,7 +147,7 @@ export enum SpellTargetType {
   corpse = 'corpse',
 }
 
-export type SpellCharacterType = 'mage' | 'witch';
+export type SpellCharacterType = 'mage' | 'witch' | 'barbarian' | 'ranger';
 
 export interface SpellDef {
   id: string;
@@ -158,6 +158,8 @@ export interface SpellDef {
   intelligence: number,
   magicCost: number,
   actionCost: number,
+  cooldown?: number;
+  selfOnly?: boolean;
   iconXY: { x: number, y: number };
   bonusStats: {
     attack?: number;

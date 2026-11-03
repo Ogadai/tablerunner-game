@@ -123,6 +123,7 @@ export function handlePlayerIsDead(params: BaseParams, target: INamedTarget, mes
       delete monster.masterId;
     }
   }
+  delete target.spellCooldowns;
 
   const npc = params.gameState.npcs.find(npc => npc.id === target.id);
   if (!npc?.deferDefeat) {

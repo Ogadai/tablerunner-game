@@ -1,6 +1,6 @@
 import { allItems, ConsumableIds, consumableItems } from "../games/items";
 import { monsters } from "../games/monsters";
-import { canCharacterUseSpell, getSpellActionCost, SpellIds, spells } from "../games/spells";
+import { canCharacterLearnSpell, canCharacterUseSpell, getSpellActionCost, isSkillSpell, SpellIds, spells } from "../games/spells";
 import { PlayerItemType, ScrollItemDef, SpellDef } from "../games/types";
 import { getCombatStats, getPlayerActionsPerTurn, LEARN_SCROLL_ACTION_COST, PlayerActionsPerTurn } from "../store/playerStats";
 import { INamedTarget, ITarget, MonsterState, PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionReadScroll, PlayerActionsState, PlayerActionType, PlayerActionUseItem } from "../store/types";
@@ -183,7 +183,7 @@ function getMagicPotionAction(params: BaseParams, npc: INamedTarget): ActionsWit
 function getLearnScrollActions(params: BaseParams, npc: INamedTarget, itemId: string, scroll: ScrollItemDef): ActionsWithCosts | null {
   if (!npc.spells.includes(scroll.spellId as SpellIds)) {
     const spell = spells[scroll.spellId];
-    if (canCharacterUseSpell(npc, spell) && spell.intelligence <= npc.baseStats!.magic) {
+    if (canCharacterLearnSpell(npc, npc.baseStats!, spell)) {
       const action: PlayerActionReadScroll = {
         id: -1,
         itemId: itemId,
@@ -205,11 +205,17 @@ function getLearnScrollActions(params: BaseParams, npc: INamedTarget, itemId: st
 
 function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: string, actionsPerTurn: PlayerActionsPerTurn): ActionsWithCosts[] {
   const spell = spells[spellId];
+  if (!spell || (npc.spellCooldowns?.[spellId] ?? 0) > 0) {
+    return [];
+  }
   if (!isMonsterCaster(params, npc) && !canCharacterUseSpell(npc, spell)) {
     return [];
   }
   const targets = getAvailableSpellTargets(params, npc, spell);
   if (targets.length === 0) {
+    return [];
+  }
+  if (spell.selfOnly && getEnemies(params, npc).filter(enemy => enemy.health > 0).length === 0) {
     return [];
   }
   const summonsFollower = isFollowerSpell(spellId) && !isMonsterCaster(params, npc);
@@ -231,7 +237,8 @@ function getCastSpellActions(params: BaseParams, npc: INamedTarget, spellId: str
   const hasLastingEffect = !!spell.bonusStats.turns;
   const castCount = Math.min(
     Math.floor(actionsPerTurn.total / getSpellActionCost(spell, npc.baseStats!.magic)),
-    Math.floor(availableMagic / spell.magicCost),
+    spell.magicCost > 0 ? Math.floor(availableMagic / spell.magicCost) : Infinity,
+    spell.cooldown ? 1 : Infinity,
     hasLastingEffect ? (spell.pickTarget ? targets.length : 1) : Infinity,
     summonsFollower ? 1 : Infinity,
   );
@@ -283,11 +290,21 @@ function expectedDamage(damage: number, attack: number, target: ITarget): number
 function getSpellValue(npc: INamedTarget, spell: SpellDef, targets: ITarget[]): number {
   const sumValue = (valueFn: (target: ITarget) => number) =>
         targets.reduce((total, t) => total + valueFn(t), 0);
+  const isSkill = isSkillSpell(spell);
 
-  if (spell.bonusStats.damage && spell.bonusStats.damage > 0) {
-    return sumValue(t => expectedDamage(spell.bonusStats.damage!, npc.baseStats!.magic, t)
-      + (spell.bonusStats.turns ? Math.min(t.health, spell.bonusStats.damage! * spell.bonusStats.turns) : 0));
-  } else if (spell.bonusStats.health) {
+  if (spell.bonusStats.damage && spell.bonusStats.damage > 0 && spell.targetType === 'enemy') {
+    const attackStat = isSkill
+      ? Math.max(1, npc.baseStats!.attack + (spell.bonusStats.attack || 0))
+      : npc.baseStats!.magic;
+    const damageStat = isSkill
+      ? Math.max(1, npc.baseStats!.damage + spell.bonusStats.damage)
+      : spell.bonusStats.damage;
+    const hasStatDebuff = spell.bonusStats.attack !== undefined
+      || spell.bonusStats.defence !== undefined
+      || spell.bonusStats.speed !== undefined;
+    return sumValue(t => expectedDamage(damageStat, attackStat, t)
+      + (spell.bonusStats.turns && !hasStatDebuff ? Math.min(t.health, spell.bonusStats.damage! * spell.bonusStats.turns) : 0));
+  } else if (spell.bonusStats.health && !spell.bonusStats.turns) {
     return sumValue(t => 10 / (t.health / ('type' in t ? getMonsterStats(t as MonsterState).health : (t as INamedTarget).baseStats!.health)) - 10);
   } else if (spell.bonusStats.special) {
     // Summons contribute over several turns, comparable to a strong attack.

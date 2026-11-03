@@ -35,7 +35,7 @@ it.each([[0, 11, true], [0.5, 17, false]] as const)('generates populated NPCs at
     expect(npc.equipment[0].type).toBe(caster ? EquipableIds.staffRuby : EquipableIds.bowElven);
     expect(npc.equipped.weapon).toBe(npc.equipment[0].id);
     expect(npc.equipment.some(item => item.type === ConsumableIds.manaPotion)).toBe(caster);
-    expect(npc.spells.length > 0).toBe(caster);
+    expect(npc.spells.length).toBeGreaterThan(0);
   }
 });
 
@@ -47,27 +47,10 @@ it.each([
   ['witch', 60, 4, 3, 1, 20],
   ['witch', 130, 5, 3, 2, 20],
   ['witch', 160, 5, 3, 2, 30],
-] as const)('gives a %s at cost %i %i unique spells with appropriate levels and power', (type, cost, expectedTotal, expectedLow, expectedHigh, maxInt) => {
-  jest.spyOn(Math, 'random').mockReturnValue(0.99);
-  const npcSpells = getNpcSpells(type, cost);
-  expect(npcSpells).toHaveLength(expectedTotal);
-  expect(new Set(npcSpells).size).toBe(expectedTotal);
-
-  const lowLevel = npcSpells.filter(id => spells[id].intelligence < 20);
-  const highLevel = npcSpells.filter(id => spells[id].intelligence >= 20);
-  expect(lowLevel).toHaveLength(expectedLow);
-  expect(highLevel).toHaveLength(expectedHigh);
-  expect(Math.max(...highLevel.map(id => spells[id].intelligence))).toBe(maxInt);
-});
-
-it.each([
-  ['mage', 60, 4, 3, 1, 20],
-  ['mage', 100, 5, 4, 1, 25],
-  ['mage', 130, 5, 3, 2, 25],
-  ['mage', 160, 6, 4, 2, 30],
-  ['witch', 60, 4, 3, 1, 20],
-  ['witch', 130, 5, 3, 2, 20],
-  ['witch', 160, 5, 3, 2, 30],
+  ['barbarian', 60, 4, 3, 1, 20],
+  ['barbarian', 130, 5, 3, 2, 24],
+  ['ranger', 60, 4, 3, 1, 21],
+  ['ranger', 130, 5, 3, 2, 24],
 ] as const)('gives a %s at cost %i %i unique spells with appropriate levels and power', (type, cost, expectedTotal, expectedLow, expectedHigh, maxInt) => {
   jest.spyOn(Math, 'random').mockReturnValue(0.99);
   const npcSpells = getNpcSpells(type, cost);

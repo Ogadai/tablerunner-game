@@ -327,6 +327,15 @@ function processTargetEffects(params: BaseParams, targets: ITarget[]) {
         .map(({ turns, ...effect }) => ({ ...effect, turns: turns - 1 }))
         .filter(e => e.turns > 0);
     }
+    if ('spellCooldowns' in target && target.spellCooldowns) {
+      const nextCooldowns: { [spellId: string]: number } = {};
+      for (const [spellId, turns] of Object.entries(target.spellCooldowns)) {
+        if (turns > 1) {
+          nextCooldowns[spellId] = turns - 1;
+        }
+      }
+      target.spellCooldowns = nextCooldowns;
+    }
   }
 }
 

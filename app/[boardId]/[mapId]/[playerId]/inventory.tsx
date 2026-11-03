@@ -2,6 +2,7 @@ import { INamedTarget, PlayerInventoryEquipSlots } from '@/lib/store/types';
 import styles from './inventory-item.module.css';
 import { PlayerItem } from '@/lib/games/types';
 import { allItems } from '@/lib/games/items';
+import { getCharacterType } from '@/lib/games/spells';
 import InventoryItem from './inventory-item';
 
 export default function Inventory({
@@ -52,7 +53,7 @@ export default function Inventory({
           actionPointsLeft={actionPointsLeft}
           baseStats={player.baseStats!}
           playerSpells={player.spells}
-          characterType={player.id}
+          characterType={getCharacterType(player)}
           onEquipped={() => onEquipItem(item)}
           onUsed={() => onUseItem(item)}
           onDropped={() => onDropItem(item)}

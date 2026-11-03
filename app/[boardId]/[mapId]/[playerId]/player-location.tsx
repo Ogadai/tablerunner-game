@@ -5,8 +5,9 @@ import { getSwalDefaultOptions } from '@/app/swal';
 
 import { moveDescriptions, moveLabels, moveLabelOrder } from './move-descriptions';
 import styles from './player-location.module.css';
-import { PlayerAction, PlayerActionMove, PlayerActionType, LocationState, GameState, PlayerSnapshot, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
+import { PlayerAction, PlayerActionCast, PlayerActionMove, PlayerActionType, LocationState, GameState, PlayerSnapshot, PlayerActionUseItem, PlayerLocationMove, getDisplayName } from "@/lib/store/types";
 import { LocationMoveDirection } from "@/lib/games/types";
+import { spells } from "@/lib/games/spells";
 import { addPlayerAction, removePlayerAction } from "@/lib/store/playerActionsState";
 import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
@@ -121,6 +122,23 @@ export default function PlayerLocation(
     const action = { ...opts, id: nextActionId } as PlayerAction;
     if (isCombatAction) {
       const effectivePlayer = inputs.activePlayer;
+      if (action.type === PlayerActionType.Cast) {
+        const castAction = action as PlayerActionCast;
+        const spellDef = spells[castAction.spellId];
+        const onCooldown = (effectivePlayer.spellCooldowns?.[castAction.spellId] || 0) > 0;
+        const alreadyQueued = !!spellDef?.cooldown && inputs.actionsState.actions.some(
+          a => a.type === PlayerActionType.Cast && (a as PlayerActionCast).spellId === castAction.spellId
+        );
+        if (onCooldown || alreadyQueued) {
+          await Swal.fire({
+            ...getSwalDefaultOptions(),
+            title: 'Action blocked!',
+            icon: 'warning',
+            text: 'That skill is on cooldown.',
+          });
+          return;
+        }
+      }
       const nextActions = { actions: [...inputs.actionsState.actions, action] };
       const overActionBudget = getPlayerActionsCosts(effectivePlayer, nextActions) > inputs.playerStats.actionPointsTotal;
       const overMagicBudget = getPlayerActionsMagic(effectivePlayer, nextActions) > inputs.playerStats.magic;

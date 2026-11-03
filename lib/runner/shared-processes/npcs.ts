@@ -207,6 +207,20 @@ export function getNpcEquipment(npcId: string, type: string): PlayerItem[] {
 }
 
 const NPC_LOW_SPELLS: Record<string, SpellIds[]> = {
+  barbarian: [
+    SpellIds.rage,
+    SpellIds.mightyCleave,
+    SpellIds.warCry,
+    SpellIds.ironSkin,
+    SpellIds.whirlwind,
+  ],
+  ranger: [
+    SpellIds.focus,
+    SpellIds.pinningShot,
+    SpellIds.evasiveStep,
+    SpellIds.multiShot,
+    SpellIds.poisonArrow,
+  ],
   witch: [
     SpellIds.iceShards,
     SpellIds.fear,
@@ -223,6 +237,14 @@ const NPC_LOW_SPELLS: Record<string, SpellIds[]> = {
 };
 
 const NPC_HIGH_SPELLS: Record<string, SpellIds[]> = {
+  barbarian: [
+    SpellIds.bloodthirst,
+    SpellIds.berserker,
+  ],
+  ranger: [
+    SpellIds.sniperShot,
+    SpellIds.callCompanion,
+  ],
   witch: [
     SpellIds.terror,
     SpellIds.poisonCloud,
@@ -256,7 +278,7 @@ export function getNpcSpells(type: string, cost: number = 100): SpellIds[] {
     return [];
   }
 
-  const maxHighIntelligence = cost >= 140 ? 30 : cost >= 100 ? 25 : 20;
+  const maxHighIntelligence = cost >= 140 ? 30 : cost >= 100 ? 25 : 21;
   const eligibleHighPool = highPool.filter(id => spells[id].intelligence <= maxHighIntelligence);
 
   const highCount = cost >= 120 ? 2 : 1;

@@ -68,6 +68,7 @@ export interface INamedTarget extends ITarget {
   location: PlayerStateLocation;
   magic: number;
   spells: SpellIds[];
+  spellCooldowns?: { [spellId: string]: number };
   equipment: PlayerItem[];
   equipped: PlayerInventoryEquipSlots;
   baseStats?: BaseStats;

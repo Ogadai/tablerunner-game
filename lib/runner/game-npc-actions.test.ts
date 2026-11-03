@@ -273,3 +273,29 @@ it('keeps emergency healing spells ahead of summoning', () => {
     expect.objectContaining({ type: PlayerActionType.Cast, spellId: SpellIds.healingAura }),
   ]);
 });
+
+it('lets barbarian and ranger NPCs learn brews/elixirs, use skills in combat, and respect cooldowns', () => {
+  const barbarianNpc = createNpc({
+    characterType: 'barbarian',
+    magic: 0,
+    spells: [SpellIds.rage, SpellIds.mightyCleave],
+    spellCooldowns: { [SpellIds.mightyCleave]: 2 },
+    equipment: [{ id: 'brew-1', type: ScrollIds.whirlwind }],
+    baseStats: { attack: 18, damage: 10, defence: 10, health: 20, magic: 0, speed: 10 },
+  });
+
+  // Out of combat: learns Whirlwind brew, does not cast selfOnly buff Rage when no enemies exist
+  const outOfCombatActions = getNpcActions(createParams(), barbarianNpc).actions;
+  expect(outOfCombatActions).toEqual([
+    expect.objectContaining({ type: PlayerActionType.ReadScroll, itemId: 'brew-1' }),
+  ]);
+
+  // In combat: uses Rage at most once (cooldown skill) and skips Mighty Cleave (on cooldown)
+  const combatBarbarian = { ...barbarianNpc, equipment: [], baseStats: { ...barbarianNpc.baseStats!, attack: 0, damage: 0 } };
+  const combatParams = createParams({ monsters: [createMonster()] });
+  combatParams.gameState.npcs = [combatBarbarian];
+  const combatActions = getNpcActions(combatParams, combatBarbarian).actions;
+  expect(combatActions).toEqual([
+    expect.objectContaining({ type: PlayerActionType.Cast, spellId: SpellIds.rage }),
+  ]);
+});

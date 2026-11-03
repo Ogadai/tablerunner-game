@@ -136,10 +136,52 @@ describe('PlayerSpells', () => {
     expect(screen.queryByRole('button', { name: 'Cast' })).not.toBeInTheDocument();
   });
 
-  it.each(['witch', 'barbarian', 'ranger'])('hides spells that do not belong to %s', id => {
+  it.each(['witch', 'barbarian', 'ranger'])('hides spells that do not belong to %s and disables the button when none are available', id => {
     render(<PlayerSpells playerSpells={[SpellIds.spiritArrow]} player={makePlayer({ id, recentSpells: [SpellIds.spiritArrow] })}
       entities={[makeEntity()]} playerStats={makeStats()} actionsState={{ actions: [] }} addNewAction={jest.fn()} />);
-    expect(screen.queryByRole('button', { name: /Spells/ })).not.toBeInTheDocument();
+    const buttonLabel = id === 'witch' ? /Spells/ : /Skills/;
+    expect(screen.getByRole('button', { name: buttonLabel })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Spirit Arrow' })).not.toBeInTheDocument();
+  });
+
+  it('renders Skills dialog for barbarian/ranger without magic bar and enforces skill cooldowns', async () => {
+    const addNewAction = jest.fn().mockResolvedValue(undefined);
+    const player = makePlayer({ id: 'barbarian', recentSpells: [SpellIds.rage, SpellIds.mightyCleave], spellCooldowns: { [SpellIds.rage]: 2 } });
+    const { rerender } = render(<PlayerSpells playerSpells={[SpellIds.rage, SpellIds.mightyCleave]} player={player}
+      entities={[makeEntity()]} playerStats={makeStats({ actionPointsTotal: 30, magicLeft: 0 })}
+      actionsState={{ actions: [] }} addNewAction={addNewAction} />);
+
+    // Rage is on cooldown, so its quick-bar button is disabled and shows remaining turns
+    expect(screen.getByRole('button', { name: 'Rage' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Mighty Cleave' })).not.toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /Skills/ }));
+    expect(screen.getByRole('heading', { name: 'Skills' })).toBeInTheDocument();
+    expect(screen.queryByText(/Magic/)).not.toBeInTheDocument();
+
+    // Selecting Rage (on cooldown) should not show the Use button
+    fireEvent.click(screen.getByRole('button', { name: 'Rage' }));
+    expect(screen.queryByRole('button', { name: 'Use' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+    // Selecting Mighty Cleave should show Use button and queue action
+    fireEvent.click(screen.getByRole('button', { name: 'Mighty Cleave' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(addNewAction).toHaveBeenCalledWith({
+      type: PlayerActionType.Cast,
+      description: 'Use Mighty Cleave',
+      spellId: SpellIds.mightyCleave,
+      targetId: 'enemy-1',
+    });
+
+    // Once queued in actionsState, a cooldown skill should also be disabled in the quick-bar
+    const queuedAction: PlayerActionCast = {
+      id: 0, type: PlayerActionType.Cast, description: 'Use Mighty Cleave', spellId: SpellIds.mightyCleave, targetId: 'enemy-1',
+    };
+    rerender(<PlayerSpells playerSpells={[SpellIds.rage, SpellIds.mightyCleave]} player={player}
+      entities={[makeEntity()]} playerStats={makeStats({ actionPointsTotal: 30, magicLeft: 0 })}
+      actionsState={{ actions: [queuedAction] }} addNewAction={addNewAction} />);
+    expect(screen.getByRole('button', { name: 'Mighty Cleave' })).toBeDisabled();
   });
 });

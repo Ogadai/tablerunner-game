@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2'
 import { Dialog, Popover } from 'radix-ui';
-import { canCharacterUseSpell, getSpellActionCost, SpellIds, spells } from '@/lib/games/spells';
+import { canCharacterUseSpell, getCharacterType, getSpellActionCost, isCharacterSkillUser, isSkillSpell, SpellIds, spells } from '@/lib/games/spells';
 import styles from './player-spells.module.css';
 import { PlayerAction, PlayerActionAttack, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerState } from '@/lib/store/types';
 import { EquipableItemDef, SpellDef, SpellTargetType } from '@/lib/games/types';
@@ -29,11 +29,15 @@ export default function PlayerSpells({
   const [isOpen, setIsOpen] = useState(false);
   const [targetSpell, setTargetSpell] = useState<SpellDef | null>(null);
   const [isAttackTargetOpen, setIsAttackTargetOpen] = useState(false);
+  const isSkillUser = isCharacterSkillUser(getCharacterType(player));
+  const actionLabel = isSkillUser ? 'Use' : 'Cast';
+  const buttonLabel = isSkillUser ? 'Skills' : 'Spells';
+  const buttonIcon = isSkillUser ? 'swords' : 'wand_stars';
   
   const castSpell = async (spell: SpellDef, targetId?: string) => {
     await addNewAction({
       type: PlayerActionType.Cast,
-      description: `Cast ${spell.name}`,
+      description: `${isSkillSpell(spell) ? 'Use' : 'Cast'} ${spell.name}`,
       spellId: spell.id,
       targetId,
     } as Omit<PlayerActionCast, 'id'>);
@@ -61,8 +65,21 @@ export default function PlayerSpells({
     setIsAttackTargetOpen(true);
   };
 
+  const getSpellCooldownLeft = (spellId: string): number => {
+    const spell = spells[spellId];
+    const activeCooldown = player.spellCooldowns?.[spellId] ?? 0;
+    if (activeCooldown > 0) return activeCooldown;
+    if (spell?.cooldown && actionsState.actions.some(a => a.type === PlayerActionType.Cast && (a as PlayerActionCast).spellId === spellId)) {
+      return spell.cooldown;
+    }
+    return 0;
+  };
+
   const canCastSpell = (spellId: string) => {
     const spell = spells[spellId];
+    if (getSpellCooldownLeft(spellId) > 0) {
+      return false;
+    }
     if (spell.pickTarget || spell.targetType === SpellTargetType.enemy) {
       const targets = getTargetEntities(spell.targetType);
       return targets.length > 0;
@@ -80,9 +97,9 @@ export default function PlayerSpells({
       if (targets.length === 0) {
         await Swal.fire({
           ...getSwalDefaultOptions(),
-          title: 'Cannot cast spell!',
+          title: `Cannot ${isSkillSpell(spell) ? 'use skill' : 'cast spell'}!`,
           icon: 'warning',
-          text: "There are no targets here for this spell",
+          text: `There are no targets here for this ${isSkillSpell(spell) ? 'skill' : 'spell'}`,
         });
         return;
       }
@@ -138,14 +155,15 @@ export default function PlayerSpells({
     ...(player.recentSpells || []),
   ])].filter(spellId => canCharacterUseSpell(player, spells[spellId])).slice(0, 2);
 
-  const recentSpells: { spell: SpellDef, canCast: boolean }[]
+  const recentSpells: { spell: SpellDef, canCast: boolean, cooldownLeft: number }[]
       = recentSpellIds.map(spellId => {
         const spell = spells[spellId];
         const actionCost = getSpellActionCost(spell, playerStats?.baseStats?.magic);
+        const cooldownLeft = getSpellCooldownLeft(spellId);
         const canCast = player.health > 0 && actionCost <= actionPointsLeft && spell.magicCost <= playerStats.magicLeft
             && canCastSpell(spellId);
 
-        return { spell, canCast }
+        return { spell, canCast, cooldownLeft }
       });
 
   const equippedWeapon = player.equipped.weapon && player.equipment.find(e => e.id ===player.equipped.weapon);
@@ -155,23 +173,25 @@ export default function PlayerSpells({
     : `-${6 * 40}px -${4 * 40}px`;
 
   return (<>
-    { availableSpells.length > 0 && <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Trigger asChild>
-        <button type="button" className={styles.spellsButton}>
-          <span>Spells</span>
-          <span className="material-symbols-outlined">wand_stars</span>
+        <button type="button" className={styles.spellsButton} disabled={availableSpells.length === 0}>
+          <span>{buttonLabel}</span>
+          <span className="material-symbols-outlined">{buttonIcon}</span>
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className={`DialogContent ${styles.spellsDialog}`}>
-          <Dialog.Title className="DialogTitle">Spells</Dialog.Title>
+          <Dialog.Title className="DialogTitle">{buttonLabel}</Dialog.Title>
           <div className="DialogContentBody">
-            <EntityStats
-              current={{magic: playerStats.magic}}
-              baseStats={playerStats.baseStats}
-              statsList={['magic']}
-            />
+            {!isSkillUser && (
+              <EntityStats
+                current={{magic: playerStats.magic}}
+                baseStats={playerStats.baseStats}
+                statsList={['magic']}
+              />
+            )}
 
             <ul className={styles.spellList}>
               {availableSpells.map(spellId => {
@@ -181,6 +201,8 @@ export default function PlayerSpells({
                   playerStats={playerStats}
                   actionPointsLeft={actionPointsLeft}
                   magicLeft={playerStats.magicLeft}
+                  cooldownLeft={getSpellCooldownLeft(spell.id)}
+                  actionLabel={actionLabel}
                   onCast={() => onCastSpell(spell.id)}
                 /> : null;
               })}
@@ -191,7 +213,7 @@ export default function PlayerSpells({
           </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
-    </Dialog.Root> }
+    </Dialog.Root>
     <Dialog.Root open={targetSpell !== null} onOpenChange={open => { if (!open) setTargetSpell(null); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
@@ -229,7 +251,7 @@ export default function PlayerSpells({
           </Popover.Portal>
         }
       </Popover.Root>
-      { recentSpells.map(({spell, canCast}) =>
+      { recentSpells.map(({spell, canCast, cooldownLeft}) =>
         <button
           key={spell.id}
           type="button"
@@ -239,7 +261,9 @@ export default function PlayerSpells({
           title={spell.name}
           style={{ backgroundPosition: `-${spell.iconXY.x * 40}px -${spell.iconXY.y * 40}px` }}
           onClick={() => onCastSpell(spell.id)}
-        ></button>
+        >
+          {cooldownLeft > 0 && <span className={styles.cooldownBadge}>{cooldownLeft}t</span>}
+        </button>
       )}
     </div>
 
@@ -251,20 +275,25 @@ function SpellIcon({
   playerStats,
   actionPointsLeft,
   magicLeft,
+  cooldownLeft,
+  actionLabel,
   onCast
 }: {
   spell: (typeof spells)[string],
   playerStats: PlayerStats,
   actionPointsLeft: number,
   magicLeft: number,
+  cooldownLeft: number,
+  actionLabel: string,
   onCast: () => void
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const bonuses = Object.entries(spell.bonusStats || {}).filter(([, value]) => value !== undefined);
   const actionCost = getSpellActionCost(spell, playerStats.baseStats!.magic);
 
-  const canCast = actionCost <= actionPointsLeft && spell.magicCost <= magicLeft;
-  const targetType = spell.pickTarget ? spell.targetType
+  const canCast = cooldownLeft === 0 && actionCost <= actionPointsLeft && spell.magicCost <= magicLeft;
+  const targetType = spell.selfOnly ? 'Self'
+    : spell.pickTarget ? spell.targetType
     : (spell.targetType === SpellTargetType.enemy ? 'Multiple enemies' : 'Multiple friends');
 
   return (
@@ -273,26 +302,34 @@ function SpellIcon({
         <Popover.Trigger asChild>
           <button
             type="button"
-            className={styles.spellIcon}
+            className={`${styles.spellIcon} ${cooldownLeft > 0 ? styles.cooldownSpellIcon : ''}`}
             aria-label={spell.name}
             title={spell.name}
             style={{ backgroundPosition: `-${spell.iconXY.x * 80}px -${spell.iconXY.y * 80}px` }}
-          />
+          >
+            {cooldownLeft > 0 && <span className={styles.cooldownBadge}>{cooldownLeft}t</span>}
+          </button>
 
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content className={`PopoverContent ${styles.spellPopover}`}>
             <h3>{spell.name}</h3>
             <ul>
-              <li><span>Magic cost</span><strong>{spell.magicCost}</strong></li>
+              {spell.magicCost > 0 && <li><span>Magic cost</span><strong>{spell.magicCost}</strong></li>}
               <li><span>Action cost</span><strong>{actionCost}</strong></li>
+              {spell.cooldown && (
+                <li>
+                  <span>Cooldown</span>
+                  <strong>{cooldownLeft > 0 ? `${cooldownLeft}/${spell.cooldown}` : spell.cooldown}</strong>
+                </li>
+              )}
               <li><span>Target</span><strong>{targetType}</strong></li>
               {bonuses.map(([stat, value]) => (
                 <li key={stat}><span>{stat}</span><strong>{value}</strong></li>
               ))}
             </ul>
             { canCast && <div className={styles.spellButtons}>
-              <button type="button" className="btn" onClick={onCast}>Cast</button>
+              <button type="button" className="btn" onClick={onCast}>{actionLabel}</button>
             </div> }
             <Popover.Arrow className="PopoverArrow" width={15} height={10} />
           </Popover.Content>

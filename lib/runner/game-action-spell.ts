@@ -1,6 +1,6 @@
 import { scrollItems } from "../games/items";
 import { monsters } from "../games/monsters";
-import { canCharacterUseSpell, SpellIds, spells } from "../games/spells";
+import { canCharacterLearnSpell, canCharacterUseSpell, isSkillSpell, SpellIds, spells } from "../games/spells";
 import { SpellDef } from "../games/types";
 import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll } from "../store/types";
 import { BaseParams } from "./base-params";
@@ -24,6 +24,7 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
 
   const spell = spells[action.spellId];
   if (!spell || player.health <= 0 || player.magic < spell.magicCost) return;
+  if ((player.spellCooldowns?.[action.spellId] ?? 0) > 0) return;
   if (!isMonsterCaster(params, player) && !canCharacterUseSpell(player, spell)) return;
   if ('masterId' in player && isFollowerSpell(action.spellId) && hasActiveFollower(params, player.id)) return;
   const targets = getSpellTargets(params, player, action);
@@ -31,7 +32,7 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
   if (targets.length > 0) {
     if (specialSpellActions[action.spellId]) {
       specialSpellActions[action.spellId](params, player, spell, targets);
-    } else if (spell.bonusStats.damage! > 0) {
+    } else if (spell.bonusStats.damage! > 0 && spell.targetType === 'enemy') {
       // Regular attack spell with damage
       applySpellEnemy(params, player, spell, targets);
     } else {
@@ -46,6 +47,12 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
 
     player.magic = Math.max(0, player.magic - spell.magicCost);
     player.recentSpells = recentSpells.slice(0, MAX_RECENT_SPELLS);
+    if (spell.cooldown) {
+      player.spellCooldowns = {
+        ...player.spellCooldowns,
+        [action.spellId]: spell.cooldown + 1,
+      };
+    }
   }
 }
 
@@ -55,11 +62,20 @@ function applySpellEnemy(
   spell: SpellDef,
   targets: ITarget[]
 ) {
+  const isSkill = isSkillSpell(spell);
+  const playerCombatStats = getCombatStats(player);
+  let totalDamageDealt = 0;
+
   for(const monster of targets) {
+    const beforeHealth = monster.health;
     const attackStats = {
       name: spell.name,
-      attack: getCombatStats(player).magic,
-      damage: spell.bonusStats.damage || 0,
+      attack: isSkill
+        ? Math.max(1, playerCombatStats.attack + (spell.bonusStats.attack || 0))
+        : playerCombatStats.magic,
+      damage: isSkill
+        ? Math.max(1, playerCombatStats.damage + (spell.bonusStats.damage || 0))
+        : (spell.bonusStats.damage || 0),
       damageType: spell.damageType,
     };
     if ('type' in monster) {
@@ -78,12 +94,31 @@ function applySpellEnemy(
         handlePlayerIsDead(params, target);
       }
     }
+    totalDamageDealt += Math.max(0, beforeHealth - monster.health);
+  }
+
+  if (spell.id === SpellIds.bloodthirst && totalDamageDealt > 0 && player.health > 0) {
+    const maxHealth = playerCombatStats.health;
+    const addedHealth = Math.min(Math.ceil(totalDamageDealt * 0.5), maxHealth - player.health);
+    if (addedHealth > 0) {
+      player.health += addedHealth;
+      playerMessageAtLocation(params, player.id, `**{player}** healed {self} for **${addedHealth}** health!`);
+    }
   }
 
   if (spell.bonusStats.turns) {
+    const hasStatDebuff = spell.bonusStats.attack !== undefined
+      || spell.bonusStats.defence !== undefined
+      || spell.bonusStats.speed !== undefined;
     addEffectToTargets(
       targets.filter(target => target.health > 0),
-      {
+      hasStatDebuff ? {
+        turns: spell.bonusStats.turns,
+        description: spell.name,
+        attack: spell.bonusStats.attack,
+        defence: spell.bonusStats.defence,
+        speed: spell.bonusStats.speed,
+      } : {
         turns: spell.bonusStats.turns,
         description: spell.name,
         health: -spell.bonusStats.damage!,
@@ -101,7 +136,7 @@ function applySpellEffects(
   if (spell.bonusStats.health) {
     for(const target of targets) {
       const friendTarget = target;
-      const maxHealth = 'type' in target ? getMonsterStats(target as MonsterState).health : (target as INamedTarget).baseStats!.health;
+      const maxHealth = 'type' in target ? getMonsterStats(target as MonsterState).health : getCombatStats(target as INamedTarget).health;
       const addedHealth = Math.min(spell.bonusStats.health,
         maxHealth - friendTarget.health);
 
@@ -116,7 +151,9 @@ function applySpellEffects(
 
       }
     }
-  } else {
+  }
+
+  if (!spell.bonusStats.health || spell.bonusStats.turns) {
     // Apply spell effects to all targets
     addEffectToTargets(targets, {
       turns: spell.bonusStats.turns || 1,
@@ -133,9 +170,12 @@ function applySpellEffects(
         : monsters[(t as MonsterState).type].name;
 
     const targetNames = joinWithAnd(targets.map(getTargetName));
+    const verb = isSkillSpell(spell) ? 'used' : 'cast';
 
     playerMessageAtLocation(params, player.id,
-      `**{player}** cast **${spell.name}** on **${targetNames}**`);
+      spell.selfOnly
+        ? `**{player}** ${verb} **${spell.name}**`
+        : `**{player}** ${verb} **${spell.name}** on **${targetNames}**`);
   }
 }
 
@@ -147,8 +187,7 @@ export function actionReadScroll(params: BaseParams, character: INamedTarget, ac
     const spell = spells[scrollItem.spellId];
     const characterStats = getCombatStats(character);
 
-    if (canCharacterUseSpell(character, spell)
-      && characterStats.magic >= spell.intelligence
+    if (canCharacterLearnSpell(character, characterStats, spell)
       && !character.spells.includes(scrollItem.spellId as SpellIds)
     ) {
       character.spells = [

@@ -89,6 +89,34 @@ describe('InventoryItem', () => {
     expect(allItems.iceShardsScroll.iconXY).toEqual({ x: 8, y: 8 });
   });
 
+  it('learns a barbarian Brew and ranger Elixir using the attack stat and verifies potion icons', () => {
+    expect(allItems.rageScroll.name).toBe('Brew of Rage');
+    expect(allItems.rageScroll.iconXY).toEqual({ x: 4, y: 7 });
+    expect(allItems.focusScroll.name).toBe('Elixir of Focus');
+    expect(allItems.focusScroll.iconXY).toEqual({ x: 2, y: 7 });
+    expect(allItems.swiftPotion.iconXY).toEqual({ x: 3, y: 7 });
+    expect(allItems.elixir.iconXY).toEqual({ x: 3, y: 7 });
+
+    const props = setup({
+      item: { id: 'brew-1', type: 'rageScroll' },
+      characterType: 'barbarian',
+      baseStats: makeBaseStats({ attack: 10, magic: 0 }),
+      actionPointsLeft: 10,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Learn' }));
+    expect(props.onLearnScroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not offer Learn for a barbarian Brew when attack is too low or class mismatches', () => {
+    setup({
+      item: { id: 'brew-1', type: 'rageScroll' },
+      characterType: 'barbarian',
+      baseStats: makeBaseStats({ attack: 9, magic: 20 }),
+      actionPointsLeft: 10,
+    });
+    expect(screen.queryByRole('button', { name: 'Learn' })).not.toBeInTheDocument();
+  });
+
   it.each([
     { playerSpells: [SpellIds.spiritArrow] }, { actionPointsLeft: 9 }, { baseStats: makeBaseStats({ magic: 9 }) },
     { characterType: 'witch' }, { characterType: 'barbarian' }, { characterType: 'ranger' },

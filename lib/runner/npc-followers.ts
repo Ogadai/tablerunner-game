@@ -5,6 +5,7 @@ import { BaseParams } from './base-params';
 const FOLLOWER_SPELLS = new Set<string>([
   SpellIds.spiritGuide, SpellIds.spiritGuarian, SpellIds.spiritWarrior,
   SpellIds.raiseDead, SpellIds.raiseDemon, SpellIds.animateCorpse, SpellIds.familiar,
+  SpellIds.callCompanion,
 ]);
 
 export function isFollowerSpell(spellId: string): boolean {

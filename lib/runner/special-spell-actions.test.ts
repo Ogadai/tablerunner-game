@@ -76,3 +76,18 @@ it('summons a Fire Spirit with Raise Demon', () => {
     }),
   ]);
 });
+
+it('summons a Spirit Wolf for 8 turns with Call Companion', () => {
+  const params = createParams();
+  const player = params.gameState.players[0];
+  specialSpellActions[SpellIds.callCompanion](params, player, spells.callCompanion, [player]);
+  expect(params.gameState.npcs).toEqual([
+    expect.objectContaining({
+      id: 'summon-1',
+      masterId: player.id,
+      name: 'Spirit Wolf',
+      turnsLeft: 8,
+      expiryAction: 'remove',
+    }),
+  ]);
+});
