@@ -25,7 +25,7 @@ export default function PlayHeaderMessages({ playerMessages }
   return (<>
     { hasMessages && <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
-        <button className="btn material-symbols-outlined">mail</button>
+        <button className={styles.triggerButton + ' btn material-symbols-outlined'}>mail</button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className={ `PopoverContent ${styles.popoverContent}` }>

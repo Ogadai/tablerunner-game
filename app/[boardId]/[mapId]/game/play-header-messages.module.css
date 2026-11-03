@@ -1,3 +1,11 @@
+.triggerButton {
+  width: 48px;
+  min-width: 32px;
+  max-width: 48px;
+  padding: 0 !important;
+  text-align: center;
+}
+
 .popoverContent {
   padding-top: 45px;
   width: 600px;

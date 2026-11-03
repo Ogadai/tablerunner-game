@@ -1,5 +1,9 @@
 .questsTrigger {
-  margin-left: 5px;
+  width: 48px;
+  min-width: 32px;
+  max-width: 48px;
+  padding: 0 !important;
+  text-align: center;
 }
 
 .questsTriggerAttention {

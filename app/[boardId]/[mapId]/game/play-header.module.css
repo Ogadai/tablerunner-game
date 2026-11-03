@@ -16,10 +16,18 @@
   overflow: hidden;
 }
 
+.headerLeftButtons {
+  display: flex;
+  flex-direction: row;
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
 .headerContent {
   flex: 1 1 auto;
   margin: auto 0;
   overflow: hidden;
+  min-width: 197px;
 }
 
 .playerList {

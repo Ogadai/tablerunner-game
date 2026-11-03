@@ -177,35 +177,27 @@ export default function PlayHeader(
       router.push(`/${boardId}/${mapId}/${player.id}`);
     };
   
-  const navigateToNewPlayer = () => {
-    router.push(`/${boardId}/${mapId}`);
-  }
-  
   return (
     <div className={styles.headerContainerGame}>
-      { (gameState && playerId.length > 0) &&
-        <PlayHeaderMessages key={`${boardId}:${mapId}:${playerId}`} playerMessages={
-          playerSnapshot?.playerId === playerId ? playerSnapshot.messages : undefined
-        } />
-      }
-      { (gameState && playerId.length > 0 && gameState.gameId === 'cauldronfire') &&
-        <CauldronQuests
-          key={`quests:${boardId}:${mapId}:${playerId}`}
-          boardId={boardId}
-          mapId={mapId}
-          playerId={playerId}
-          gameState={gameState}
-        />
-      }
+      <div className={styles.headerLeftButtons}>
+        { (gameState && playerId.length > 0) &&
+          <PlayHeaderMessages key={`${boardId}:${mapId}:${playerId}`} playerMessages={
+            playerSnapshot?.playerId === playerId ? playerSnapshot.messages : undefined
+          } />
+        }
+        { (gameState && playerId.length > 0 && gameState.gameId === 'cauldronfire') &&
+          <CauldronQuests
+            key={`quests:${boardId}:${mapId}:${playerId}`}
+            boardId={boardId}
+            mapId={mapId}
+            playerId={playerId}
+            gameState={gameState}
+          />
+        }
+      </div>
+
       <div className={styles.headerContent}>
         <ul className={styles.playerList}>
-          {!!playerId && (gameState.players.length < 4) && <li key="add">
-            <button type="button"
-              className="material-symbols-outlined"
-              onClick={navigateToNewPlayer}
-            >add</button>
-          </li>}
-
           {gameState.players?.map((player) => (
             <li key={player.id}>
               <button type="button" className={getPlayerClassName(player)}
