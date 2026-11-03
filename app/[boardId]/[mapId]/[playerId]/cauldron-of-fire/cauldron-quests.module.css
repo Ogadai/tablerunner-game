@@ -7,8 +7,8 @@
 }
 
 .questsTriggerAttention {
-  border-color: var(--gold-bright, #f0c040);
-  box-shadow: 0 0 8px rgba(240, 192, 64, 0.55);
+  border-color: var(--gold-antique);
+  box-shadow: 0 0 8px var(--gold-glow);
 }
 
 .questsDialog {
@@ -39,8 +39,8 @@
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--gold-bright, #e0b034);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-section-heading);
+  border-bottom: 1px solid var(--border-stone);
   padding-bottom: 4px;
 }
 
@@ -58,24 +58,24 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-stone, #444);
+  background: var(--bg-card);
+  border: 1px solid var(--border-stone);
   border-radius: 6px;
 }
 
 .questCardAvailable {
-  border-color: rgba(224, 176, 52, 0.65);
-  background: rgba(224, 176, 52, 0.07);
+  border-color: var(--gold-antique);
+  background: var(--gold-glow);
 }
 
 .questCardMain {
-  border: 2px solid var(--gold-bright, #ffd700);
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.16), rgba(166, 43, 43, 0.14));
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.28), inset 0 0 10px rgba(255, 215, 0, 0.08);
+  border: 2px solid var(--badge-main-border);
+  background: var(--badge-main-bg);
+  box-shadow: 0 0 12px var(--gold-glow);
 }
 
 .questCardCompleted {
-  opacity: 0.78;
+  opacity: 0.82;
 }
 
 .questHeader {
@@ -89,7 +89,7 @@
 .questTitle {
   font-weight: bold;
   font-size: 0.98rem;
-  color: var(--color-text-primary, #f2f2f2);
+  color: var(--color-text-primary);
 }
 
 .badges {
@@ -111,49 +111,48 @@
 }
 
 .scopeBadgeMain {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.28), rgba(220, 38, 38, 0.32));
-  border: 1px solid #ffd700;
-  color: #fff2a3;
+  background: var(--badge-main-bg);
+  border: 1px solid var(--badge-main-border);
+  color: var(--badge-main-text);
   font-weight: 700;
   letter-spacing: 0.03em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .mainQuestIcon {
-  color: var(--gold-bright, #ffd700);
+  color: var(--gold-antique);
   font-size: 1.15rem;
   vertical-align: text-bottom;
   margin-right: 4px;
 }
 
 .scopeBadgeShared {
-  background: rgba(56, 130, 246, 0.22);
-  border: 1px solid rgba(96, 165, 250, 0.5);
-  color: #93c5fd;
+  background: var(--badge-shared-bg);
+  border: 1px solid var(--badge-shared-border);
+  color: var(--badge-shared-text);
 }
 
 .scopeBadgePlayer {
-  background: rgba(168, 85, 247, 0.22);
-  border: 1px solid rgba(192, 132, 252, 0.5);
-  color: #d8b4fe;
+  background: var(--badge-personal-bg);
+  border: 1px solid var(--badge-personal-border);
+  color: var(--badge-personal-text);
 }
 
 .statusBadgeCompleted {
-  background: rgba(34, 197, 94, 0.22);
-  border: 1px solid rgba(74, 222, 128, 0.5);
-  color: #86efac;
+  background: var(--badge-completed-bg);
+  border: 1px solid var(--badge-completed-border);
+  color: var(--badge-completed-text);
 }
 
 .statusBadgeFailed {
-  background: rgba(239, 68, 68, 0.22);
-  border: 1px solid rgba(248, 113, 113, 0.5);
-  color: #fca5a5;
+  background: var(--badge-failed-bg);
+  border: 1px solid var(--badge-failed-border);
+  color: var(--badge-failed-text);
 }
 
 .questDesc {
   margin: 0;
   font-size: 0.86rem;
-  color: var(--color-text-muted, #ccc);
+  color: var(--color-text-muted);
   line-height: 1.4;
 }
 
@@ -161,9 +160,10 @@
   font-size: 0.84rem;
   padding: 6px 10px;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  border-left: 3px solid var(--gold-bright, #d4a017);
-  color: #e5e7eb;
+  background: var(--bg-input);
+  border: 1px solid var(--border-stone);
+  border-left: 3px solid var(--gold-antique);
+  color: var(--color-text-primary);
   line-height: 1.35;
 }
 
@@ -185,38 +185,38 @@
 }
 
 .rewardLabel {
-  color: var(--color-text-muted, #aaa);
+  color: var(--color-text-muted);
 }
 
 .rewardXp {
   font-weight: bold;
-  color: #7dd3fc;
+  color: var(--color-xp);
 }
 
 .rewardItem {
   font-weight: bold;
-  color: #fde047;
+  color: var(--color-item-reward);
 }
 
 .rewardScopeHint {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #999);
+  color: var(--color-text-muted);
 }
 
 .emptyNotice {
   padding: 16px 12px;
   text-align: center;
-  color: var(--color-text-muted, #aaa);
+  color: var(--color-text-muted);
   font-size: 0.88rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed var(--border-stone, #444);
+  background: var(--bg-card);
+  border: 1px dashed var(--border-stone);
   border-radius: 6px;
 }
 
 .errorBanner {
-  background-color: rgba(180, 40, 40, 0.22);
-  border: 1px solid var(--color-error, #d32f2f);
-  color: #ff8080;
+  background-color: var(--red-glow);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 0.85rem;

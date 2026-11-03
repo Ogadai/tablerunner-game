@@ -62,6 +62,32 @@
   --color-friendly: #26a269;
   --color-npc: #1a5fb4;
 
+  /* Quest & Badge Colors */
+  --color-xp: #0284c7;
+  --color-item-reward: #9a6700;
+  --color-quest-personal: #7e22ce;
+  --color-section-heading: var(--gold-dark);
+
+  --badge-main-text: var(--gold-dark);
+  --badge-main-border: var(--gold-antique);
+  --badge-main-bg: linear-gradient(135deg, rgba(212, 175, 55, 0.28), rgba(166, 43, 43, 0.18));
+
+  --badge-shared-text: var(--color-connected);
+  --badge-shared-border: rgba(26, 95, 180, 0.45);
+  --badge-shared-bg: rgba(26, 95, 180, 0.12);
+
+  --badge-personal-text: var(--color-quest-personal);
+  --badge-personal-border: rgba(126, 34, 206, 0.45);
+  --badge-personal-bg: rgba(126, 34, 206, 0.12);
+
+  --badge-completed-text: #1b7a4b;
+  --badge-completed-border: rgba(27, 122, 75, 0.45);
+  --badge-completed-bg: rgba(27, 122, 75, 0.12);
+
+  --badge-failed-text: var(--color-error);
+  --badge-failed-border: rgba(192, 28, 40, 0.45);
+  --badge-failed-bg: rgba(192, 28, 40, 0.12);
+
   /* Typography */
   --font-header: 'Cinzel', 'MedievalSharp', Georgia, serif;
   --font-body: 'Lora', Georgia, serif;
@@ -116,6 +142,32 @@
     --color-self: #c5a059;
     --color-enemy: #a62b2b;
     --color-friendly: #2be67a;
+
+    /* Quest & Badge Colors */
+    --color-xp: #7dd3fc;
+    --color-item-reward: #fde047;
+    --color-quest-personal: #d8b4fe;
+    --color-section-heading: var(--gold-bright);
+
+    --badge-main-text: #fff2a3;
+    --badge-main-border: var(--gold-bright);
+    --badge-main-bg: linear-gradient(135deg, rgba(255, 215, 0, 0.28), rgba(220, 38, 38, 0.32));
+
+    --badge-shared-text: #93c5fd;
+    --badge-shared-border: rgba(96, 165, 250, 0.5);
+    --badge-shared-bg: rgba(56, 130, 246, 0.22);
+
+    --badge-personal-text: var(--color-quest-personal);
+    --badge-personal-border: rgba(192, 132, 252, 0.5);
+    --badge-personal-bg: rgba(168, 85, 247, 0.22);
+
+    --badge-completed-text: #86efac;
+    --badge-completed-border: rgba(74, 222, 128, 0.5);
+    --badge-completed-bg: rgba(34, 197, 94, 0.22);
+
+    --badge-failed-text: #fca5a5;
+    --badge-failed-border: rgba(248, 113, 113, 0.5);
+    --badge-failed-bg: rgba(239, 68, 68, 0.22);
   }
 }
 
