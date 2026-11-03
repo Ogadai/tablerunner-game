@@ -27,6 +27,7 @@
   --bg-disabled: #808080;
   --bg-shop: #CE6378;
   --bg-portal: #00AFAF;
+  --bg-quest: #d4a017;
 
   --color-text-primary: #2b221a;
   --color-text-muted: #5c4e40;
@@ -82,6 +83,7 @@
     --bg-disabled: #56473B;
     --bg-shop: #703642;
     --bg-portal: #006868;
+    --bg-quest: #ffd700;
 
     --color-text-primary: #e6dfd3;
     --color-text-muted: #a69d8d;

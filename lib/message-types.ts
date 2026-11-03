@@ -1,5 +1,5 @@
 import { LocationMoveDirection } from "./games/types";
-import type { NPCState, PlayerInventoryState, StoreInventoryState } from "./store/types";
+import type { LedState, NPCState, PlayerInventoryState, StoreInventoryState } from "./store/types";
 import type { RaceTeam } from "./runner/race-of-fire/race-types";
 import type { QuestInstance } from "./runner/cauldron-of-fire/quest-types";
 
@@ -61,6 +61,7 @@ export interface QuestsUpdatedMessage extends GameTopicMessageBase {
   type: GameTopicMessageType.QuestsUpdated;
   quests: QuestInstance[];
   npcs: NPCState[];
+  leds?: LedState[];
 }
 
 export interface VideoPreloadMessage extends GameTopicMessageBase {

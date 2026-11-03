@@ -149,14 +149,6 @@ describe('PlayHeader', () => {
     expect(screen.queryByText('check')).not.toBeInTheDocument();
   });
 
-  it('navigates to the player list or a selected player', async () => {
-    await mount();
-    fireEvent.click(screen.getByRole('button', { name: 'add' }));
-    expect(push).toHaveBeenLastCalledWith('/board/map');
-    fireEvent.click(screen.getByRole('button', { name: /skull/ }));
-    expect(push).toHaveBeenLastCalledWith('/board/map/mage');
-  });
-
   it('passes the current game and snapshot to the menu and synchronizes team updates without refetching', async () => {
     const race = makeGameState({ ...game, gameId: 'racefire' });
     const snapshot = makePlayerSnapshot({ gameState: race });

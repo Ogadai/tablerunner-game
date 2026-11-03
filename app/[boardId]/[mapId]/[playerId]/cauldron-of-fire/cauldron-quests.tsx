@@ -11,6 +11,7 @@ import { QuestInstance } from '@/lib/runner/cauldron-of-fire/quest-types';
 import { acceptCauldronQuest, claimCauldronQuestReward } from '@/lib/runner/cauldron-of-fire/server-actions';
 import { getCombatStats } from '@/lib/store/playerStats';
 import { GameState, NPCState, PlayerState } from '@/lib/store/types';
+import gameStateLightingService from '@/app/[boardId]/[mapId]/game/game-state-lighting-service';
 import CoinDisplay from '../coin-display';
 import playerStatsSyncService from '../player-stats-sync.service';
 import usePlayerStatsSnapshot from '../use-player-stats-snapshot';
@@ -63,13 +64,16 @@ export default function CauldronQuests({
 
   useEffect(() => {
     return QuestsTopicService.subscribe(topicId, message => {
+      if (message.leds) {
+        void gameStateLightingService.update(boardId, mapId, { ...gameState, leds: message.leds });
+      }
       setLiveUpdate({
         gameState,
         quests: message.quests,
         npcs: message.npcs ?? gameState.npcs,
       });
     });
-  }, [topicId, gameState]);
+  }, [topicId, gameState, boardId, mapId]);
 
   const statsSnapshot = usePlayerStatsSnapshot();
   const targetPlayerId = playerProp?.id ?? playerId ?? '';
@@ -99,9 +103,9 @@ export default function CauldronQuests({
       isPlayerEligibleForQuest(q, player.id),
   );
 
-  const activeQuests = allQuests.filter(
-    q => q.status === 'active' && isPlayerEligibleForQuest(q, player.id),
-  );
+  const activeQuests = allQuests
+    .filter(q => q.status === 'active' && isPlayerEligibleForQuest(q, player.id))
+    .sort((a, b) => (b.isMainQuest ? 1 : 0) - (a.isMainQuest ? 1 : 0));
 
   const finishedQuests = allQuests.filter(
     q =>
@@ -137,6 +141,9 @@ export default function CauldronQuests({
         quests: response.data.quests,
         npcs: response.data.npcs,
       });
+      if (response.data.leds) {
+        void gameStateLightingService.update(boardId, mapId, { ...gameState, leds: response.data.leds });
+      }
       if (response.data.playerInventory) {
         playerStatsSyncService.updateInventory(response.data.playerInventory, resolvedSourcePlayer ?? player);
       }
@@ -166,6 +173,9 @@ export default function CauldronQuests({
         quests: response.data.quests,
         npcs: response.data.npcs,
       });
+      if (response.data.leds) {
+        void gameStateLightingService.update(boardId, mapId, { ...gameState, leds: response.data.leds });
+      }
       if (response.data.playerInventory) {
         playerStatsSyncService.updateInventory(response.data.playerInventory, resolvedSourcePlayer ?? player);
       }
@@ -370,19 +380,36 @@ export default function CauldronQuests({
                       isPlayerEligibleForQuest(quest, player.id) &&
                       canClaimItemQuestTurnIn(quest, player, currentNpcs);
                     return (
-                      <li key={quest.id} className={styles.questCard}>
+                      <li
+                        key={quest.id}
+                        className={`${styles.questCard} ${quest.isMainQuest ? styles.questCardMain : ''}`}
+                      >
                         <div className={styles.questHeader}>
-                          <span className={styles.questTitle}>{quest.title}</span>
+                          <span className={styles.questTitle}>
+                            {quest.isMainQuest && (
+                              <span
+                                className={`material-symbols-outlined ${styles.mainQuestIcon}`}
+                                aria-hidden="true"
+                              >
+                                crown
+                              </span>
+                            )}
+                            {quest.title}
+                          </span>
                           <div className={styles.badges}>
-                            <span
-                              className={
-                                quest.scope === 'shared'
-                                  ? styles.scopeBadgeShared
-                                  : styles.scopeBadgePlayer
-                              }
-                            >
-                              {quest.scope === 'shared' ? 'Shared Quest' : 'Personal Quest'}
-                            </span>
+                            {quest.isMainQuest ? (
+                              <span className={styles.scopeBadgeMain}>Main Story Quest</span>
+                            ) : (
+                              <span
+                                className={
+                                  quest.scope === 'shared'
+                                    ? styles.scopeBadgeShared
+                                    : styles.scopeBadgePlayer
+                                }
+                              >
+                                {quest.scope === 'shared' ? 'Shared Quest' : 'Personal Quest'}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <p className={styles.questDesc}>{quest.description}</p>

@@ -28,6 +28,7 @@ export interface QuestInstance {
   scope: QuestScope;
   tier: QuestTier;
   status: QuestStatus;
+  isMainQuest?: boolean;
   offerLocation: number;
   assignedPlayerId?: string;
   completedByPlayerId?: string;

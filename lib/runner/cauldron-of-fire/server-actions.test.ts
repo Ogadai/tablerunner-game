@@ -13,7 +13,7 @@ import {
   setPlayerInventoryInRedis,
 } from '@/lib/store/redis-access';
 import { createGame, createLocations, createPlayer } from '@/lib/store/test-support/fixtures';
-import { getQuestsState, saveQuestsState } from './quests';
+import { getQuestsState, QUEST_LED_OWNER, QUEST_LED_RGB, saveQuestsState } from './quests';
 import { acceptCauldronQuest, claimCauldronQuestReward } from './server-actions';
 
 jest.mock('@/lib/messages/message-publisher', () => ({
@@ -86,6 +86,20 @@ describe('Cauldron of Fire Quest Server Actions', () => {
       'map-1',
       expect.objectContaining({
         type: GameTopicMessageType.QuestsUpdated,
+        leds: expect.arrayContaining([
+          expect.objectContaining({
+            location: 22,
+            owner: QUEST_LED_OWNER,
+            rgb: QUEST_LED_RGB,
+          }),
+        ]),
+      }),
+    );
+    expect(res.data?.leds).toContainEqual(
+      expect.objectContaining({
+        location: 22,
+        owner: QUEST_LED_OWNER,
+        rgb: QUEST_LED_RGB,
       }),
     );
     expect(releaseLocationsLock).toHaveBeenCalled();

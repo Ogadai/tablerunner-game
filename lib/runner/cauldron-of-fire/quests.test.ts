@@ -3,7 +3,16 @@ import { EquipableIds, SpecialIds } from '@/lib/games/items';
 import { createLocations } from '@/lib/store/test-support/fixtures';
 import { createGame, createParams, createPlayer } from '../test-support/fixtures';
 import { QuestInstance } from './quest-types';
-import { activateQuest, getQuestsState, questProcess, saveQuestsState } from './quests';
+import {
+  activateQuest,
+  getQuestsState,
+  MAIN_QUEST_ID,
+  QUEST_LED_OWNER,
+  QUEST_LED_RGB,
+  questProcess,
+  saveQuestsState,
+  updateQuestLeds,
+} from './quests';
 
 describe('Cauldron of Fire Quests', () => {
   it('generates between 22 and 28 quests with 2-3 character-specific personal quests per character and the remainder shared', async () => {
@@ -14,8 +23,8 @@ describe('Cauldron of Fire Quests', () => {
     await questProcess.setup!(params);
     const state = getQuestsState(params.gameState);
 
-    expect(state.quests.length).toBeGreaterThanOrEqual(22);
-    expect(state.quests.length).toBeLessThanOrEqual(28);
+    expect(state.quests.length).toBeGreaterThanOrEqual(23);
+    expect(state.quests.length).toBeLessThanOrEqual(29);
 
     for (const characterId of ['barbarian', 'ranger', 'mage', 'witch']) {
       const charQuests = state.quests.filter(q => q.scope === 'player' && q.assignedPlayerId === characterId);
@@ -29,7 +38,22 @@ describe('Cauldron of Fire Quests', () => {
     const sharedQuests = state.quests.filter(q => q.scope === 'shared');
     expect(sharedQuests.length).toBeGreaterThanOrEqual(10);
 
-    for (const q of state.quests) {
+    const mainQuest = state.quests[0];
+    expect(mainQuest.id).toBe(MAIN_QUEST_ID);
+    expect(mainQuest.title).toBe('Defeat the Lich King');
+    expect(mainQuest.isMainQuest).toBe(true);
+    expect(mainQuest.status).toBe('active');
+    expect(mainQuest.actualTargetLocation).toBe(224);
+
+    expect(params.gameState.leds).toContainEqual(
+      expect.objectContaining({
+        location: 224,
+        rgb: QUEST_LED_RGB,
+        owner: QUEST_LED_OWNER,
+      }),
+    );
+
+    for (const q of state.quests.slice(1)) {
       expect(q.status).toBe('available');
       expect(q.offerLocation).toBeGreaterThanOrEqual(1);
       expect(q.reward.coins).toBeGreaterThan(0);
@@ -373,5 +397,124 @@ describe('Cauldron of Fire Quests', () => {
     const finalQuests = getQuestsState(params.gameState).quests;
     expect(finalQuests.map(q => q.status)).toEqual(['completed', 'completed', 'completed']);
     expect(player1.coins).toBe(50 + 70 + 30);
+  });
+
+  it('completes the "Defeat the Lich King" main story quest when the lich king is defeated', async () => {
+    const player1 = createPlayer({ id: 'barbarian', location: { id: 224, description: '', move: [] }, coins: 0, points: 0 });
+    const player2 = createPlayer({ id: 'witch', location: { id: 224, description: '', move: [] }, coins: 0, points: 0 });
+    const gameState = createGame({
+      gameId: 'cauldronfire',
+      players: [player1, player2],
+    });
+
+    const params = createParams({
+      gameState,
+      monsters: [
+        {
+          id: 'lich-king',
+          type: 'lich',
+          location: 224,
+          health: 30,
+          team: 'monster',
+        },
+      ],
+    });
+
+    await questProcess.setup!(params);
+    const mainQuestBefore = getQuestsState(params.gameState).quests.find(q => q.id === MAIN_QUEST_ID);
+    expect(mainQuestBefore?.status).toBe('active');
+
+    // Defeat the Lich King
+    params.monsters.find(m => m.id === 'lich-king')!.health = 0;
+
+    await questProcess.executeForTurn!(params);
+
+    const mainQuestAfter = getQuestsState(params.gameState).quests.find(q => q.id === MAIN_QUEST_ID);
+    expect(mainQuestAfter?.status).toBe('completed');
+    expect(player1.coins).toBe(500);
+    expect(player2.coins).toBe(500);
+    expect(player1.points).toBe(1000);
+    expect(player2.points).toBe(1000);
+  });
+
+  it('shows LEDs for target locations of active quests, lighting return/destination locations even if visited', () => {
+    const player1 = createPlayer({ id: 'barbarian', location: { id: 10, description: '', move: [] } });
+    const gameState = createGame({
+      gameId: 'cauldronfire',
+      players: [player1],
+      visited: [10],
+      leds: [],
+    });
+
+    const activeQuest1: QuestInstance = {
+      id: 'q-active-1',
+      templateId: 'retrieve-item',
+      title: 'Retrieve Treasure',
+      description: 'Find item at 18 or 20, then return to 10',
+      category: 'retrieve_item',
+      scope: 'shared',
+      tier: 'early',
+      status: 'active',
+      offerLocation: 10,
+      actualTargetLocation: 18,
+      hintLocations: [18, 20],
+      itemType: SpecialIds.questRelicSkull,
+      spawnedItemId: 'item-relic-1',
+      reward: { coins: 50, points: 100 },
+    };
+
+    const activeQuest2: QuestInstance = {
+      id: 'q-active-2',
+      templateId: 'deliver-item',
+      title: 'Deliver Supplies',
+      description: 'Deliver to 22',
+      category: 'deliver_item',
+      scope: 'shared',
+      tier: 'early',
+      status: 'active',
+      offerLocation: 10,
+      destinationLocation: 22,
+      reward: { coins: 40, points: 80 },
+    };
+
+    saveQuestsState(gameState, { quests: [activeQuest1, activeQuest2] });
+    updateQuestLeds(gameState);
+
+    // activeQuest1 hints (18, 20) are unvisited -> lit
+    // activeQuest2 destination (22) is unvisited -> lit
+    const questLeds = gameState.leds.filter(l => l.owner === QUEST_LED_OWNER);
+    const litLocations = questLeds.map(l => l.location).sort((a, b) => a - b);
+    expect(litLocations).toEqual([18, 20, 22]);
+    for (const led of questLeds) {
+      expect(led.rgb).toBe(QUEST_LED_RGB);
+    }
+
+    // Now visit location 18 (hint search location) and location 22 (delivery destination)
+    gameState.visited.push(18, 22);
+    updateQuestLeds(gameState);
+
+    // 18 is an unvisited-only search hint -> unlit when visited
+    // 20 is still an unvisited search hint -> stays lit
+    // 22 is a delivery destination that still needs to be visited to complete -> STAYS lit even though visited!
+    const updatedLeds = gameState.leds.filter(l => l.owner === QUEST_LED_OWNER);
+    const updatedLocations = updatedLeds.map(l => l.location).sort((a, b) => a - b);
+    expect(updatedLocations).toEqual([20, 22]);
+
+    // Player picks up the quest item: now retrieve quest requires returning to offerLocation 10!
+    // Return location 10 was already visited when collecting the quest, but lights up anyway!
+    player1.equipment.push({ id: 'item-relic-1', type: SpecialIds.questRelicSkull });
+    updateQuestLeds(gameState);
+
+    const carryingLeds = gameState.leds.filter(l => l.owner === QUEST_LED_OWNER);
+    const carryingLocations = carryingLeds.map(l => l.location).sort((a, b) => a - b);
+    expect(carryingLocations).toEqual([10, 22]);
+
+    // When quests complete, their LEDs turn off
+    activeQuest1.status = 'completed';
+    activeQuest2.status = 'completed';
+    updateQuestLeds(gameState);
+
+    const completedLeds = gameState.leds.filter(l => l.owner === QUEST_LED_OWNER);
+    expect(completedLeds).toHaveLength(0);
   });
 });

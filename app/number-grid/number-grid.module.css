@@ -125,6 +125,10 @@
   background-color: var(--bg-shop);
 }
 
+.quest {
+  background-color: var(--bg-quest, #eab308);
+}
+
 .portal {
   background-color: var(--bg-portal);
 }

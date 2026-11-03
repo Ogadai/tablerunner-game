@@ -21,6 +21,135 @@ import { generateQuestsForGame } from './quest-templates';
 import { CauldronQuestsState, QuestInstance, QuestTier } from './quest-types';
 
 export const QUESTS_PROCESS_OWNER = 'quests';
+export const MAIN_QUEST_ID = 'quest-main-lich-king';
+export const QUEST_LED_OWNER = 'quest';
+export const QUEST_LED_RGB = 'FFFF00';
+
+export function createMainStoryQuest(): QuestInstance {
+  return {
+    id: MAIN_QUEST_ID,
+    templateId: 'main-defeat-lich-king',
+    title: 'Defeat the Lich King',
+    description: 'Storm the northern castle at Location 224 and destroy the Evil Lich King to save the realm!',
+    category: 'slay_boss',
+    scope: 'shared',
+    tier: 'late',
+    status: 'active',
+    isMainQuest: true,
+    offerLocation: 224,
+    actualTargetLocation: 224,
+    hintLocations: [224],
+    bossName: 'The Evil Lich King',
+    monsterType: 'lich',
+    spawnedMonsterId: 'lich-king',
+    reward: { coins: 500, points: 1000 },
+  };
+}
+
+export function isQuestItemCarried(quest: QuestInstance, gameState: GameState): boolean {
+  const matchesQuestItem = (item: { id: string; type: string }) =>
+    (quest.spawnedItemId && item.id === quest.spawnedItemId) ||
+    (!quest.spawnedItemId && quest.itemType && item.type === quest.itemType);
+
+  for (const p of gameState.players) {
+    if (p.equipment?.some(matchesQuestItem)) return true;
+  }
+  for (const n of gameState.npcs) {
+    if (n.equipment?.some(matchesQuestItem)) return true;
+  }
+  return false;
+}
+
+export interface QuestTargetLocation {
+  location: number;
+  allowVisited?: boolean;
+}
+
+export function getActiveQuestTargetLocations(
+  quest: QuestInstance,
+  gameState: GameState,
+): QuestTargetLocation[] {
+  if (quest.status !== 'active') return [];
+
+  switch (quest.category) {
+    case 'retrieve_item': {
+      if (isQuestItemCarried(quest, gameState)) {
+        // Return location was already visited when accepting the quest, but must be lit to guide the return
+        return [{ location: quest.offerLocation, allowVisited: true }];
+      }
+      const hints = quest.hintLocations && quest.hintLocations.length > 0
+        ? quest.hintLocations
+        : quest.actualTargetLocation !== undefined
+          ? [quest.actualTargetLocation]
+          : [quest.offerLocation];
+      return hints.map(location => ({ location, allowVisited: false }));
+    }
+    case 'deliver_item': {
+      const dest = quest.destinationLocation ?? quest.offerLocation;
+      return [{ location: dest, allowVisited: true }];
+    }
+    case 'escort_npc': {
+      const dest = quest.destinationLocation ?? quest.offerLocation;
+      return [{ location: dest, allowVisited: true }];
+    }
+    case 'rescue_npc': {
+      if (quest.npcRescued) {
+        const dest = quest.destinationLocation ?? quest.offerLocation;
+        return [{ location: dest, allowVisited: true }];
+      }
+      const hints = quest.hintLocations && quest.hintLocations.length > 0
+        ? quest.hintLocations
+        : quest.actualTargetLocation !== undefined
+          ? [quest.actualTargetLocation]
+          : [quest.offerLocation];
+      return hints.map(location => ({ location, allowVisited: false }));
+    }
+    case 'clear_dungeon':
+      return (quest.targetLocations || []).map(location => ({ location, allowVisited: false }));
+    case 'slay_boss': {
+      const hints = quest.hintLocations && quest.hintLocations.length > 0
+        ? quest.hintLocations
+        : quest.actualTargetLocation !== undefined
+          ? [quest.actualTargetLocation]
+          : [quest.offerLocation];
+      return hints.map(location => ({ location, allowVisited: false }));
+    }
+    case 'scout_area':
+      return (quest.targetLocations || [])
+        .filter(loc => !(quest.scoutedLocations || []).includes(loc))
+        .map(location => ({ location, allowVisited: false }));
+    default:
+      return [];
+  }
+}
+
+export function updateQuestLeds(gameState: GameState, quests?: QuestInstance[]): void {
+  const questsList = quests ?? getQuestsState(gameState).quests;
+  const targetLocations = new Set<number>();
+
+  for (const quest of questsList) {
+    if (quest.status !== 'active') continue;
+    const targets = getActiveQuestTargetLocations(quest, gameState);
+    for (const target of targets) {
+      if (target.allowVisited || !gameState.visited.includes(target.location)) {
+        targetLocations.add(target.location);
+      }
+    }
+  }
+
+  const questLeds = Array.from(targetLocations)
+    .map(location => ({
+      location,
+      rgb: QUEST_LED_RGB,
+      owner: QUEST_LED_OWNER,
+    }))
+    .filter(ql => !gameState.leds.some(l => l.owner !== QUEST_LED_OWNER && l.location === ql.location));
+
+  gameState.leds = [
+    ...gameState.leds.filter(l => l.owner !== QUEST_LED_OWNER),
+    ...questLeds,
+  ];
+}
 
 const DUNGEON_MONSTER_POOLS: Record<QuestTier, string[]> = {
   early: ['goblin', 'spider', 'snake', 'orc', 'skeleton'],
@@ -401,8 +530,9 @@ export function tryTurnInItemQuest(
 
 export const questProcess: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
-    const quests = generateQuestsForGame();
+    const quests = [createMainStoryQuest(), ...generateQuestsForGame()];
     saveQuestsState(params.gameState, { quests });
+    updateQuestLeds(params.gameState, quests);
   },
 
   async executeForTurn(params: BaseParams): Promise<void> {
@@ -593,6 +723,7 @@ export const questProcess: ProcessRunner = {
       }
     }
 
+    updateQuestLeds(params.gameState, state.quests);
     saveQuestsState(params.gameState, state);
   },
 };
