@@ -1,4 +1,6 @@
 import { ConsumableIds, EquipableIds, ScrollIds, SpecialIds, allItems } from '@/lib/games/items';
+import { getCellAtCoordinates, getCellCoordinates, MAP_COLUMNS, MAP_ROWS } from '@/lib/games/gridCells';
+import { sharedLocations } from '@/lib/games/maps/shared-locations';
 import { monsters } from '@/lib/games/monsters';
 import { NPC_DATA } from '@/lib/games/npc-details';
 import { QuestCategory, QuestInstance, QuestReward, QuestScope, QuestTier } from './quest-types';
@@ -341,7 +343,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     scope: 'shared',
     offerLocations: [22, 58, 90, 91, 110],
     destinationLocations: [118, 119, 121],
-    npcNames: ['Master Trader Corin', 'Lady Evelina', 'Jeweler Garrik', 'Silversmith Tessa'],
+    npcNames: ['Master Corin', 'Lady Evelina', 'Jeweler Garrik', 'Silversmith Tessa'],
   },
   {
     id: 'escort-farmer-home',
@@ -979,31 +981,169 @@ function instantiateTemplate(
   return instance;
 }
 
-export function generateQuestsForGame(minQuests = 22, maxQuests = 28): QuestInstance[] {
-  const targetCount = randomInt(minQuests, maxQuests);
-  const shuffledTemplates = shuffle(QUEST_TEMPLATES);
-  const usedOfferLocations = new Set<number>();
-  const rawChoices: { template: QuestTemplate; offerLocation: number }[] = [];
+const neighboursCache = new Map<number, Set<number>>();
 
-  // First pass: prefer unique offer locations so quests are spread widely across the map
-  const remainingTemplates: QuestTemplate[] = [];
-  for (const template of shuffledTemplates) {
-    if (rawChoices.length >= targetCount) break;
-    const availableOffers = shuffle(template.offerLocations).filter(loc => !usedOfferLocations.has(loc));
-    if (availableOffers.length > 0) {
-      const offerLocation = availableOffers[0];
-      usedOfferLocations.add(offerLocation);
-      rawChoices.push({ template, offerLocation });
-    } else {
-      remainingTemplates.push(template);
+/**
+ * Returns all locations neighbouring the given location.
+ * Includes direct movement graph connections as well as adjacent 2D grid cells.
+ */
+export function getNeighbourLocations(locationId: number): Set<number> {
+  const cached = neighboursCache.get(locationId);
+  if (cached) return cached;
+
+  const neighbours = new Set<number>();
+  const loc = sharedLocations.find(l => l.id === locationId);
+  if (loc) {
+    for (const m of loc.move) {
+      neighbours.add(m.id);
     }
   }
 
-  // Second pass: fill up to targetCount if needed
-  for (const template of remainingTemplates) {
-    if (rawChoices.length >= targetCount) break;
-    const offerLocation = pickRandom(template.offerLocations);
-    rawChoices.push({ template, offerLocation });
+  for (const other of sharedLocations) {
+    if (other.id !== locationId && other.move.some(m => m.id === locationId)) {
+      neighbours.add(other.id);
+    }
+  }
+
+  const coords = getCellCoordinates(locationId);
+  if (coords.row !== -1 && coords.col !== -1) {
+    for (let r = Math.max(0, coords.row - 1); r <= Math.min(MAP_ROWS - 1, coords.row + 1); r++) {
+      for (let c = Math.max(0, coords.col - 1); c <= Math.min(MAP_COLUMNS - 1, coords.col + 1); c++) {
+        const cell = getCellAtCoordinates({ row: r, col: c });
+        if (cell > 0 && cell !== locationId) {
+          neighbours.add(cell);
+        }
+      }
+    }
+  }
+
+  neighboursCache.set(locationId, neighbours);
+  return neighbours;
+}
+
+/**
+ * Returns true if two locations are the same or neighbours on the map.
+ */
+export function areLocationsNeighbours(locA: number, locB: number): boolean {
+  if (locA === locB) return true;
+  return getNeighbourLocations(locA).has(locB);
+}
+
+/**
+ * Returns the Manhattan distance between two locations on the board grid.
+ */
+export function getLocationDistance(locA: number, locB: number): number {
+  const a = getCellCoordinates(locA);
+  const b = getCellCoordinates(locB);
+  if (a.row === -1 || b.row === -1) return 99;
+  return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+}
+
+/**
+ * Maps a location to one of 6 geographic sectors across the 12x20 board:
+ * Rows 0..5 (South: 0, 1, 2 for West, Center, East)
+ * Rows 6..11 (North: 3, 4, 5 for West, Center, East)
+ */
+export function getMapSector(locationId: number): number {
+  const { row, col } = getCellCoordinates(locationId);
+  if (row === -1 || col === -1) return 0;
+  const rowSector = row < 6 ? 0 : 1;
+  const colSector = col < 7 ? 0 : col < 14 ? 1 : 2;
+  return rowSector * 3 + colSector;
+}
+
+export function generateQuestsForGame(
+  minQuests = 22,
+  maxQuests = 28,
+  excludedOfferLocations: number[] = [224],
+): QuestInstance[] {
+  const targetCount = randomInt(minQuests, maxQuests);
+  const usedOfferLocations = new Set<number>(excludedOfferLocations);
+  const usedTemplateIds = new Set<string>();
+  const sectorCounts = [0, 0, 0, 0, 0, 0];
+  const rawChoices: { template: QuestTemplate; offerLocation: number }[] = [];
+
+  while (rawChoices.length < targetCount) {
+    interface Candidate {
+      template: QuestTemplate;
+      offerLocation: number;
+      sector: number;
+      neighbourCount: number;
+      minDist: number;
+      score: number;
+    }
+
+    const candidates: Candidate[] = [];
+
+    const availableTemplates = QUEST_TEMPLATES.some(t => !usedTemplateIds.has(t.id))
+      ? QUEST_TEMPLATES.filter(t => !usedTemplateIds.has(t.id))
+      : QUEST_TEMPLATES;
+
+    for (const template of availableTemplates) {
+      for (const loc of template.offerLocations) {
+        // STRICT: Never allow two quests at the same location
+        if (usedOfferLocations.has(loc)) continue;
+
+        const sector = getMapSector(loc);
+        const neighbours = getNeighbourLocations(loc);
+
+        let neighbourCount = 0;
+        let neighbourCascadePenalty = 0;
+        for (const usedLoc of usedOfferLocations) {
+          if (neighbours.has(usedLoc)) {
+            neighbourCount++;
+            const uNeighbours = getNeighbourLocations(usedLoc);
+            let uExistingNeighbours = 0;
+            for (const otherUsed of usedOfferLocations) {
+              if (uNeighbours.has(otherUsed)) uExistingNeighbours++;
+            }
+            neighbourCascadePenalty += uExistingNeighbours * 350;
+          }
+        }
+
+        const coords = getCellCoordinates(loc);
+        let minDist = 99;
+        for (const usedLoc of usedOfferLocations) {
+          const uCoords = getCellCoordinates(usedLoc);
+          const dist = Math.abs(coords.row - uCoords.row) + Math.abs(coords.col - uCoords.col);
+          if (dist < minDist) minDist = dist;
+        }
+
+        // Scoring:
+        // 1. Sector balancing: penalize sectors with more quests so quests are spread evenly across the map
+        // 2. Neighbour limit: penalize candidate locations that have neighbouring quests and cascade onto existing neighbours
+        // 3. Spreading out: reward larger minimum distance to already placed quests
+        // 4. Random jitter: slight randomness to ensure varied layouts across games
+        const score =
+          -sectorCounts[sector] * 60 -
+          neighbourCount * 250 -
+          neighbourCascadePenalty +
+          minDist * 4 +
+          Math.random() * 8;
+
+        candidates.push({
+          template,
+          offerLocation: loc,
+          sector,
+          neighbourCount,
+          minDist,
+          score,
+        });
+      }
+    }
+
+    if (candidates.length === 0) {
+      break;
+    }
+
+    // Sort descending by score to pick the best spread candidate
+    candidates.sort((a, b) => b.score - a.score);
+    const chosen = candidates[0];
+
+    rawChoices.push({ template: chosen.template, offerLocation: chosen.offerLocation });
+    usedOfferLocations.add(chosen.offerLocation);
+    usedTemplateIds.add(chosen.template.id);
+    sectorCounts[chosen.sector]++;
   }
 
   // Assign 2-3 personal quests for each character, and make the remainder shared

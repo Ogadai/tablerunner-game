@@ -530,7 +530,8 @@ export function tryTurnInItemQuest(
 
 export const questProcess: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
-    const quests = [createMainStoryQuest(), ...generateQuestsForGame()];
+    const mainQuest = createMainStoryQuest();
+    const quests = [mainQuest, ...generateQuestsForGame(22, 28, [mainQuest.offerLocation])];
     saveQuestsState(params.gameState, { quests });
     updateQuestLeds(params.gameState, quests);
   },

@@ -13,8 +13,114 @@ import {
   saveQuestsState,
   updateQuestLeds,
 } from './quests';
+import {
+  areLocationsNeighbours,
+  generateQuestsForGame,
+  getLocationDistance,
+  getMapSector,
+  getNeighbourLocations,
+  QUEST_TEMPLATES,
+} from './quest-templates';
+import { getCellCoordinates } from '@/lib/games/gridCells';
 
 describe('Cauldron of Fire Quests', () => {
+  it('identifies neighbouring locations correctly via movement moves and grid adjacency', () => {
+    // 1 and 2 are adjacent connected cave rooms
+    expect(areLocationsNeighbours(1, 2)).toBe(true);
+    // 4 and 5 are connected road locations
+    expect(areLocationsNeighbours(4, 5)).toBe(true);
+    // 1 and 224 are on opposite sides of the map (SW cave vs North castle)
+    expect(areLocationsNeighbours(1, 224)).toBe(false);
+    expect(getLocationDistance(1, 224)).toBeGreaterThan(10);
+
+    const neighboursOf1 = getNeighbourLocations(1);
+    expect(neighboursOf1.has(2)).toBe(true);
+    expect(neighboursOf1.has(224)).toBe(false);
+  });
+
+  it('ensures no two quests share the same offer location, including the main quest', async () => {
+    for (let i = 0; i < 15; i++) {
+      const params = createParams({
+        gameState: createGame({ gameId: 'cauldronfire' }),
+      });
+      await questProcess.setup!(params);
+      const state = getQuestsState(params.gameState);
+
+      const offerLocations = state.quests.map(q => q.offerLocation);
+      expect(new Set(offerLocations).size).toBe(offerLocations.length);
+
+      // Main quest is at location 224 and no other quest should be at 224
+      const at224 = state.quests.filter(q => q.offerLocation === 224);
+      expect(at224.length).toBe(1);
+      expect(at224[0].id).toBe(MAIN_QUEST_ID);
+    }
+  });
+
+  it('distributes quests reasonably across all quadrants and sectors without clumping', async () => {
+    for (let run = 0; run < 10; run++) {
+      const quests = generateQuestsForGame(24, 26);
+      const quadrantCounts = [0, 0, 0, 0];
+      const sectorCounts = [0, 0, 0, 0, 0, 0];
+
+      for (const q of quests) {
+        const { row, col } = getCellCoordinates(q.offerLocation);
+        const rQuad = row < 6 ? 0 : 1;
+        const cQuad = col < 10 ? 0 : 1;
+        quadrantCounts[rQuad * 2 + cQuad]++;
+
+        sectorCounts[getMapSector(q.offerLocation)]++;
+      }
+
+      // Every quadrant must have multiple quests (no quadrant empty or neglected)
+      for (const count of quadrantCounts) {
+        expect(count).toBeGreaterThanOrEqual(3);
+        // No quadrant should hoard more than 50% of the total quests
+        expect(count).toBeLessThanOrEqual(quests.length * 0.5);
+      }
+
+      // All 6 sectors across South and North, West, Center and East must have quests
+      for (const count of sectorCounts) {
+        expect(count).toBeGreaterThanOrEqual(1);
+      }
+    }
+  });
+
+  it('limits neighbouring quest locations and spreads them out across the map', async () => {
+    let totalZeroNeighbours = 0;
+    let totalQuestsChecked = 0;
+    let maxNeighboursObserved = 0;
+
+    for (let run = 0; run < 15; run++) {
+      const params = createParams({
+        gameState: createGame({ gameId: 'cauldronfire' }),
+      });
+      await questProcess.setup!(params);
+      const state = getQuestsState(params.gameState);
+
+      for (const quest of state.quests) {
+        totalQuestsChecked++;
+        const neighbours = getNeighbourLocations(quest.offerLocation);
+        const neighbourQuests = state.quests.filter(
+          other => other.id !== quest.id && neighbours.has(other.offerLocation),
+        );
+
+        if (neighbourQuests.length > maxNeighboursObserved) {
+          maxNeighboursObserved = neighbourQuests.length;
+        }
+
+        // Dense clustering is prevented: no quest location is surrounded by 3 or more quest neighbours
+        expect(neighbourQuests.length).toBeLessThanOrEqual(2);
+
+        if (neighbourQuests.length === 0) {
+          totalZeroNeighbours++;
+        }
+      }
+    }
+
+    // Over 80% of quests have 0 neighbouring quest locations, effectively spreading them out
+    const isolatedRatio = totalZeroNeighbours / totalQuestsChecked;
+    expect(isolatedRatio).toBeGreaterThan(0.8);
+  });
   it('generates between 22 and 28 quests with 2-3 character-specific personal quests per character and the remainder shared', async () => {
     const params = createParams({
       gameState: createGame({ gameId: 'cauldronfire' }),
