@@ -27,6 +27,9 @@ jest.mock('./play-header-menu', () => ({
 jest.mock('./play-header-messages', () => ({
   __esModule: true, default: () => <div>Player messages</div>,
 }));
+jest.mock('../[playerId]/cauldron-of-fire/cauldron-quests', () => ({
+  __esModule: true, default: () => <div>Player quests</div>,
+}));
 
 describe('PlayHeader', () => {
   const push = jest.fn();

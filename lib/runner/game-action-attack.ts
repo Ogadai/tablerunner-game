@@ -8,7 +8,7 @@ import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monst
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getMonsterStats } from './monster-stats';
-import { ConsumableIds, consumableItems, ItemIds, lootItems } from "../games/items";
+import { ConsumableIds, consumableItems, ItemIds, lootItems, SpecialIds } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
 import { getCombatStats } from "../store/playerStats";
 import { SpellDef } from "../games/types";
@@ -16,7 +16,18 @@ import { getEnemies, isEnemy, isFriend } from './game-friends-or-enemies';
 import { getMonsterCombatant } from './monster-combatant';
 
 const MAXIMUM_COIN_DROP = 100;
-const AUTO_DROP_ITEMS: ItemIds[] = [ ConsumableIds.resurrectionStone, ConsumableIds.resurrectionShard ];
+const AUTO_DROP_ITEMS: ItemIds[] = [
+  ConsumableIds.resurrectionStone,
+  ConsumableIds.resurrectionShard,
+  SpecialIds.questRelicSkull,
+  SpecialIds.questAlchemistBag,
+  SpecialIds.questRoyalLedger,
+  SpecialIds.questSunMedallion,
+  SpecialIds.questMoonAmulet,
+  SpecialIds.questGoldenCrest,
+  SpecialIds.questSapphireScepter,
+  SpecialIds.questEmeraldIdol,
+];
 const PLAYER_ZOMBIE_RISK = 0.1;
 const ZOMBIE_TURNS = 3;
 

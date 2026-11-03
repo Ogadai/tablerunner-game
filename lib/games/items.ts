@@ -367,8 +367,88 @@ export const keyItems: Record<string, ConsumableItemDef> = {
 
 export enum SpecialIds {
   fireCrystalShard = 'fireCrystalShard',
+  questRelicSkull = 'questRelicSkull',
+  questAlchemistBag = 'questAlchemistBag',
+  questRoyalLedger = 'questRoyalLedger',
+  questSunMedallion = 'questSunMedallion',
+  questMoonAmulet = 'questMoonAmulet',
+  questGoldenCrest = 'questGoldenCrest',
+  questSapphireScepter = 'questSapphireScepter',
+  questEmeraldIdol = 'questEmeraldIdol',
 }
 export const specialItems: Record<string, ItemDef> = {
+  [SpecialIds.questRelicSkull]: {
+    id: SpecialIds.questRelicSkull.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Ancient Skull Relic',
+    iconXY: { x: 9, y: 5 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questAlchemistBag]: {
+    id: SpecialIds.questAlchemistBag.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Alchemist\'s Satchel',
+    iconXY: { x: 9, y: 6 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questRoyalLedger]: {
+    id: SpecialIds.questRoyalLedger.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Sealed Royal Ledger',
+    iconXY: { x: 5, y: 7 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questSunMedallion]: {
+    id: SpecialIds.questSunMedallion.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Sunstone Medallion',
+    iconXY: { x: 9, y: 7 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questMoonAmulet]: {
+    id: SpecialIds.questMoonAmulet.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Moonstone Amulet',
+    iconXY: { x: 8, y: 7 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questGoldenCrest]: {
+    id: SpecialIds.questGoldenCrest.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Golden Aegis Crest',
+    iconXY: { x: 7, y: 2 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questSapphireScepter]: {
+    id: SpecialIds.questSapphireScepter.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Sapphire Scepter',
+    iconXY: { x: 0, y: 1 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questEmeraldIdol]: {
+    id: SpecialIds.questEmeraldIdol.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Emerald Forest Idol',
+    iconXY: { x: 3, y: 1 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
   [SpecialIds.fireCrystalShard]: {
     id: SpecialIds.fireCrystalShard.toString(),
     type: PlayerItemType.consumable,

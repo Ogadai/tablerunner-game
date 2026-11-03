@@ -15,6 +15,7 @@ import { setPlayerReady } from "@/lib/store/playerReadyState";
 import GameTopicService from '../../../message-bus/game-topic-service';
 import PlayerReadyTopicService from '../../../message-bus/playerReady-topic-service';
 import PlayHeaderMessages from "./play-header-messages";
+import CauldronQuests from "../[playerId]/cauldron-of-fire/cauldron-quests";
 import { fetchPlayerSnapshot } from './player-snapshot';
 
 export default function PlayHeader(
@@ -186,6 +187,15 @@ export default function PlayHeader(
         <PlayHeaderMessages key={`${boardId}:${mapId}:${playerId}`} playerMessages={
           playerSnapshot?.playerId === playerId ? playerSnapshot.messages : undefined
         } />
+      }
+      { (gameState && playerId.length > 0 && gameState.gameId === 'cauldronfire') &&
+        <CauldronQuests
+          key={`quests:${boardId}:${mapId}:${playerId}`}
+          boardId={boardId}
+          mapId={mapId}
+          playerId={playerId}
+          gameState={gameState}
+        />
       }
       <div className={styles.headerContent}>
         <ul className={styles.playerList}>

@@ -11,6 +11,7 @@ jest.mock('../shared-processes/dragons', () => ({ dragons: { setup: jest.fn(), i
 jest.mock('../shared-processes/npcs', () => ({ npcs: {} }));
 jest.mock('../shared-processes/zombies', () => ({ zombies: {} }));
 jest.mock('./invasions', () => ({ invasions: {} }));
+jest.mock('./quests', () => ({ questProcess: {} }));
 afterEach(() => jest.restoreAllMocks());
 
 it.each(['setup', 'initialiseForTurn', 'executeForTurn', 'executeBetweenTurns'] as const)(
