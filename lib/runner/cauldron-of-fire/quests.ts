@@ -100,6 +100,9 @@ export function activateQuest(
   if (player.location.id !== quest.offerLocation) {
     throw new Error('You must be at the quest location to accept this quest');
   }
+  if (!isPlayerEligibleForQuest(quest, player.id)) {
+    throw new Error('This quest is only available to another hero');
+  }
 
   quest.status = 'active';
   if (quest.scope === 'player') {
@@ -290,8 +293,9 @@ export function distributeQuestReward(
     for (const p of gameState.players) {
       p.coins += quest.reward.coins;
       p.points += quest.reward.points;
-      if (completingPlayerInventory && p.id === completingPlayer.id && completingPlayerInventory.coins !== undefined) {
-        completingPlayerInventory.coins += quest.reward.coins;
+      if (completingPlayerInventory && p.id === completingPlayer.id) {
+        completingPlayerInventory.coins =
+          (completingPlayerInventory.coins ?? (p.coins - quest.reward.coins)) + quest.reward.coins;
       }
       if (paramsForMessages) {
         levelUpPlayer(paramsForMessages, p);
@@ -307,8 +311,9 @@ export function distributeQuestReward(
   } else {
     completingPlayer.coins += quest.reward.coins;
     completingPlayer.points += quest.reward.points;
-    if (completingPlayerInventory && completingPlayerInventory.coins !== undefined) {
-      completingPlayerInventory.coins += quest.reward.coins;
+    if (completingPlayerInventory) {
+      completingPlayerInventory.coins =
+        (completingPlayerInventory.coins ?? (completingPlayer.coins - quest.reward.coins)) + quest.reward.coins;
     }
     if (paramsForMessages) {
       levelUpPlayer(paramsForMessages, completingPlayer);
@@ -576,7 +581,7 @@ export const questProcess: ProcessRunner = {
     for (const player of params.gameState.players) {
       if (player.health <= 0) continue;
       const availableHere = state.quests.filter(
-        q => q.status === 'available' && q.offerLocation === player.location.id,
+        q => q.status === 'available' && q.offerLocation === player.location.id && isPlayerEligibleForQuest(q, player.id),
       );
       if (availableHere.length > 0) {
         const titles = availableHere.map(q => `**${q.title}**`).join(', ');

@@ -1,6 +1,7 @@
 import { LocationMoveDirection } from "./games/types";
-import type { PlayerInventoryState, StoreInventoryState } from "./store/types";
+import type { NPCState, PlayerInventoryState, StoreInventoryState } from "./store/types";
 import type { RaceTeam } from "./runner/race-of-fire/race-types";
+import type { QuestInstance } from "./runner/cauldron-of-fire/quest-types";
 
 export enum GameTopicMessageType {
   BleConnectedStatus = 'ble_connected',
@@ -11,6 +12,7 @@ export enum GameTopicMessageType {
   RaceTeamUpdated = 'race_team_updated',
   LocationUpdated = 'location_updated',
   StoreUpdated = 'store_updated',
+  QuestsUpdated = 'quests_updated',
   VideoPreload = 'video_preload',
   VideoPlay = 'video_play',
 }
@@ -53,6 +55,12 @@ export interface StoreUpdatedMessage extends GameTopicMessageBase {
   playerId: string;
   playerInventory: PlayerInventoryState;
   storeInventory: StoreInventoryState;
+}
+
+export interface QuestsUpdatedMessage extends GameTopicMessageBase {
+  type: GameTopicMessageType.QuestsUpdated;
+  quests: QuestInstance[];
+  npcs: NPCState[];
 }
 
 export interface VideoPreloadMessage extends GameTopicMessageBase {

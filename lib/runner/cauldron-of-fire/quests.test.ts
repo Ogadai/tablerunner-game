@@ -6,7 +6,7 @@ import { QuestInstance } from './quest-types';
 import { activateQuest, getQuestsState, questProcess, saveQuestsState } from './quests';
 
 describe('Cauldron of Fire Quests', () => {
-  it('generates between 22 and 28 quests with valid definitions on setup', async () => {
+  it('generates between 22 and 28 quests with 2-3 character-specific personal quests per character and the remainder shared', async () => {
     const params = createParams({
       gameState: createGame({ gameId: 'cauldronfire' }),
     });
@@ -16,12 +16,51 @@ describe('Cauldron of Fire Quests', () => {
 
     expect(state.quests.length).toBeGreaterThanOrEqual(22);
     expect(state.quests.length).toBeLessThanOrEqual(28);
+
+    for (const characterId of ['barbarian', 'ranger', 'mage', 'witch']) {
+      const charQuests = state.quests.filter(q => q.scope === 'player' && q.assignedPlayerId === characterId);
+      expect(charQuests.length).toBeGreaterThanOrEqual(2);
+      expect(charQuests.length).toBeLessThanOrEqual(3);
+      for (const q of charQuests) {
+        expect(q.reward.itemId).toBeDefined();
+      }
+    }
+
+    const sharedQuests = state.quests.filter(q => q.scope === 'shared');
+    expect(sharedQuests.length).toBeGreaterThanOrEqual(10);
+
     for (const q of state.quests) {
       expect(q.status).toBe('available');
       expect(q.offerLocation).toBeGreaterThanOrEqual(1);
       expect(q.reward.coins).toBeGreaterThan(0);
       expect(q.reward.points).toBeGreaterThan(0);
     }
+  });
+
+  it('prevents a character from accepting another character’s personal quest', () => {
+    const mage = createPlayer({ id: 'mage', location: { id: 10, description: '', move: [] } });
+    const gameState = createGame({ gameId: 'cauldronfire', players: [mage] });
+    const locationsState = createLocations();
+
+    const barbarianQuest: QuestInstance = {
+      id: 'q-barb',
+      templateId: 'deliver-1',
+      title: 'Barbarian Trial',
+      description: 'Deliver the ledger.',
+      category: 'deliver_item',
+      scope: 'player',
+      assignedPlayerId: 'barbarian',
+      tier: 'early',
+      status: 'available',
+      offerLocation: 10,
+      destinationLocation: 22,
+      itemType: SpecialIds.questRoyalLedger,
+      reward: { coins: 40, points: 80, itemId: EquipableIds.axeBattle },
+    };
+
+    expect(() => activateQuest(barbarianQuest, mage, gameState, locationsState)).toThrow(
+      'This quest is only available to another hero',
+    );
   });
 
   it('spawns the quest item on accept for retrieve_item and completes when returned to offerLocation', async () => {
@@ -101,12 +140,13 @@ describe('Cauldron of Fire Quests', () => {
       description: 'Deliver the Royal Ledger.',
       category: 'deliver_item',
       scope: 'player',
+      assignedPlayerId: 'barbarian',
       tier: 'early',
       status: 'available',
       offerLocation: 10,
       destinationLocation: 22,
       itemType: SpecialIds.questRoyalLedger,
-      reward: { coins: 40, points: 80 },
+      reward: { coins: 40, points: 80, itemId: EquipableIds.axeBattle },
     };
 
     activateQuest(quest, player1, gameState, locationsState, playerInventory);
@@ -128,6 +168,7 @@ describe('Cauldron of Fire Quests', () => {
     const updated = getQuestsState(params.gameState).quests[0];
     expect(updated.status).toBe('completed');
     expect(player1.equipment.some(i => i.id === quest.spawnedItemId)).toBe(false);
+    expect(player1.equipment.some(i => i.type === EquipableIds.axeBattle)).toBe(true);
     // Personal quest only rewards player1
     expect(player1.coins).toBe(50);
     expect(player2.coins).toBe(20);
@@ -145,6 +186,7 @@ describe('Cauldron of Fire Quests', () => {
       description: 'Escort Brother Aldous to Location 23.',
       category: 'escort_npc',
       scope: 'player',
+      assignedPlayerId: 'barbarian',
       tier: 'early',
       status: 'available',
       offerLocation: 10,
@@ -187,6 +229,7 @@ describe('Cauldron of Fire Quests', () => {
       description: 'Escort Sister Clara to Location 23.',
       category: 'escort_npc',
       scope: 'player',
+      assignedPlayerId: 'barbarian',
       tier: 'early',
       status: 'available',
       offerLocation: 10,
@@ -298,6 +341,7 @@ describe('Cauldron of Fire Quests', () => {
       description: 'Visit 7 and 16.',
       category: 'scout_area',
       scope: 'player',
+      assignedPlayerId: 'barbarian',
       tier: 'early',
       status: 'available',
       offerLocation: 38,

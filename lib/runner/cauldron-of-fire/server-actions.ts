@@ -1,7 +1,7 @@
 'use server'
 
 import { ApiResponse } from '@/lib/api-response';
-import { GameTopicMessageType, LocationUpdatedMessage } from '@/lib/message-types';
+import { GameTopicMessageType, LocationUpdatedMessage, QuestsUpdatedMessage } from '@/lib/message-types';
 import { publishMessage } from '@/lib/messages/message-publisher';
 import {
   getGameStateFromRedis,
@@ -13,7 +13,8 @@ import {
   setLocationsStateInRedis,
   setPlayerInventoryInRedis,
 } from '@/lib/store/redis-access';
-import { GameState, PlayerInventoryState } from '@/lib/store/types';
+import { GameState, NPCState, PlayerInventoryState } from '@/lib/store/types';
+import { QuestInstance } from './quest-types';
 import { activateQuest, getQuestsState, saveQuestsState, tryTurnInItemQuest } from './quests';
 
 async function publishLocationUpdated(boardId: string, mapId: string, locationId: number): Promise<void> {
@@ -24,8 +25,24 @@ async function publishLocationUpdated(boardId: string, mapId: string, locationId
   await publishMessage(boardId, mapId, msg);
 }
 
+async function publishQuestsUpdated(
+  boardId: string,
+  mapId: string,
+  quests: QuestInstance[],
+  npcs: NPCState[],
+): Promise<void> {
+  const msg: QuestsUpdatedMessage = {
+    type: GameTopicMessageType.QuestsUpdated,
+    quests,
+    npcs,
+  };
+  await publishMessage(boardId, mapId, msg);
+}
+
 export interface CauldronQuestActionResponse {
   gameState: GameState;
+  quests: QuestInstance[];
+  npcs: NPCState[];
   playerInventory?: PlayerInventoryState;
 }
 
@@ -75,7 +92,9 @@ export async function acceptCauldronQuest(
     }
 
     await setLocationsStateInRedis(boardId, mapId, locationsState);
-    await setGameStateInRedis(boardId, mapId, gameState);
+    // Do not broadcast GameStateUpdated on quest accept so clients don't re-render the whole page or re-pop turn messages.
+    await setGameStateInRedis(boardId, mapId, gameState, { notify: false });
+    await publishQuestsUpdated(boardId, mapId, questsState.quests, gameState.npcs);
 
     for (const locId of updatedLocationIds) {
       await publishLocationUpdated(boardId, mapId, locId);
@@ -85,6 +104,8 @@ export async function acceptCauldronQuest(
       success: true,
       data: {
         gameState,
+        quests: questsState.quests,
+        npcs: gameState.npcs,
         playerInventory: inventoryModified ? playerInventory : undefined,
       },
     };
@@ -142,12 +163,15 @@ export async function claimCauldronQuestReward(
 
     await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
     await setLocationsStateInRedis(boardId, mapId, locationsState);
-    await setGameStateInRedis(boardId, mapId, gameState);
+    await setGameStateInRedis(boardId, mapId, gameState, { notify: false });
+    await publishQuestsUpdated(boardId, mapId, questsState.quests, gameState.npcs);
 
     return {
       success: true,
       data: {
         gameState,
+        quests: questsState.quests,
+        npcs: gameState.npcs,
         playerInventory,
       },
     };

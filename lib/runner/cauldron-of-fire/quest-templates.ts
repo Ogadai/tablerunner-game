@@ -769,33 +769,137 @@ function shuffle<T>(items: T[]): T[] {
   return copy;
 }
 
-function generateQuestReward(tier: QuestTier): QuestReward {
+const CHARACTER_IDS = ['barbarian', 'ranger', 'mage', 'witch'] as const;
+
+const CHARACTER_REWARD_ITEMS: Record<string, Record<QuestTier, string[]>> = {
+  barbarian: {
+    early: [
+      EquipableIds.swordSteel,
+      EquipableIds.axeBattle,
+      EquipableIds.hammer,
+      ScrollIds.rage,
+      ScrollIds.mightyCleave,
+      ScrollIds.warCry,
+      ScrollIds.ironSkin,
+    ],
+    mid: [
+      EquipableIds.swordLegendary,
+      EquipableIds.axeWar,
+      EquipableIds.warhammer,
+      ScrollIds.whirlwind,
+      ScrollIds.bloodthirst,
+    ],
+    late: [
+      EquipableIds.swordArcane,
+      EquipableIds.swordInferno,
+      ScrollIds.berserker,
+      ScrollIds.bloodthirst,
+    ],
+  },
+  ranger: {
+    early: [
+      EquipableIds.bowLong,
+      EquipableIds.dagger,
+      ScrollIds.focus,
+      ScrollIds.pinningShot,
+      ScrollIds.evasiveStep,
+    ],
+    mid: [
+      EquipableIds.bowElven,
+      EquipableIds.crossbow,
+      EquipableIds.daggerVenom,
+      ScrollIds.multiShot,
+      ScrollIds.poisonArrow,
+    ],
+    late: [
+      EquipableIds.bowLegendary,
+      EquipableIds.crossbow,
+      ScrollIds.sniperShot,
+      ScrollIds.callCompanion,
+    ],
+  },
+  mage: {
+    early: [
+      EquipableIds.staffOrb,
+      ScrollIds.spiritArrow,
+      ScrollIds.heal,
+      ScrollIds.fireBall,
+      ScrollIds.shield,
+      ScrollIds.strength,
+      ScrollIds.tangleTwist,
+    ],
+    mid: [
+      EquipableIds.staffRuby,
+      ScrollIds.fireWall,
+      ScrollIds.healingAura,
+      ScrollIds.shieldWall,
+      ScrollIds.strengthAura,
+    ],
+    late: [
+      EquipableIds.staffCrystal,
+      EquipableIds.staffSun,
+      ScrollIds.timeWarp,
+      ScrollIds.fireRain,
+      ScrollIds.healingAura,
+    ],
+  },
+  witch: {
+    early: [
+      EquipableIds.staffSkull,
+      ScrollIds.iceShards,
+      ScrollIds.fear,
+      ScrollIds.iceStorm,
+    ],
+    mid: [
+      EquipableIds.staffRuby,
+      ScrollIds.terror,
+      ScrollIds.poisonCloud,
+      ScrollIds.lightning,
+    ],
+    late: [
+      EquipableIds.staffCrystal,
+      EquipableIds.staffEarth,
+      ScrollIds.lightning,
+      ScrollIds.poisonCloud,
+      ScrollIds.terror,
+    ],
+  },
+};
+
+function generateQuestReward(tier: QuestTier, assignedPlayerId?: string): QuestReward {
+  const charItemPool = assignedPlayerId ? CHARACTER_REWARD_ITEMS[assignedPlayerId]?.[tier] : undefined;
   if (tier === 'early') {
-    const hasItem = Math.random() < 0.6;
+    const hasItem = charItemPool ? true : Math.random() < 0.6;
     return {
       coins: randomInt(35, 65),
       points: randomInt(80, 150),
-      itemId: hasItem ? pickRandom(EARLY_REWARD_ITEMS) : undefined,
+      itemId: charItemPool ? pickRandom(charItemPool) : hasItem ? pickRandom(EARLY_REWARD_ITEMS) : undefined,
     };
   }
   if (tier === 'mid') {
-    const hasItem = Math.random() < 0.75;
+    const hasItem = charItemPool ? true : Math.random() < 0.75;
     return {
       coins: randomInt(75, 140),
       points: randomInt(160, 280),
-      itemId: hasItem ? pickRandom(MID_REWARD_ITEMS) : undefined,
+      itemId: charItemPool ? pickRandom(charItemPool) : hasItem ? pickRandom(MID_REWARD_ITEMS) : undefined,
     };
   }
   return {
     coins: randomInt(150, 260),
     points: randomInt(300, 500),
-    itemId: pickRandom(LATE_REWARD_ITEMS),
+    itemId: charItemPool ? pickRandom(charItemPool) : pickRandom(LATE_REWARD_ITEMS),
   };
 }
 
-function instantiateTemplate(template: QuestTemplate, index: number, offerLocation: number): QuestInstance {
+function instantiateTemplate(
+  template: QuestTemplate,
+  index: number,
+  offerLocation: number,
+  assignedPlayerId?: string,
+): QuestInstance {
   const questId = `quest-${index + 1}-${template.id}`;
-  const reward = generateQuestReward(template.tier);
+  const scope: QuestScope = assignedPlayerId ? 'player' : 'shared';
+  const reward = generateQuestReward(template.tier, assignedPlayerId);
 
   const instance: QuestInstance = {
     id: questId,
@@ -803,10 +907,11 @@ function instantiateTemplate(template: QuestTemplate, index: number, offerLocati
     title: template.titleTemplate,
     description: template.descriptionTemplate,
     category: template.category,
-    scope: template.scope,
+    scope,
     tier: template.tier,
     status: 'available',
     offerLocation,
+    assignedPlayerId,
     reward,
     areaName: template.areaName,
   };
@@ -878,17 +983,17 @@ export function generateQuestsForGame(minQuests = 22, maxQuests = 28): QuestInst
   const targetCount = randomInt(minQuests, maxQuests);
   const shuffledTemplates = shuffle(QUEST_TEMPLATES);
   const usedOfferLocations = new Set<number>();
-  const quests: QuestInstance[] = [];
+  const rawChoices: { template: QuestTemplate; offerLocation: number }[] = [];
 
   // First pass: prefer unique offer locations so quests are spread widely across the map
   const remainingTemplates: QuestTemplate[] = [];
   for (const template of shuffledTemplates) {
-    if (quests.length >= targetCount) break;
+    if (rawChoices.length >= targetCount) break;
     const availableOffers = shuffle(template.offerLocations).filter(loc => !usedOfferLocations.has(loc));
     if (availableOffers.length > 0) {
       const offerLocation = availableOffers[0];
       usedOfferLocations.add(offerLocation);
-      quests.push(instantiateTemplate(template, quests.length, offerLocation));
+      rawChoices.push({ template, offerLocation });
     } else {
       remainingTemplates.push(template);
     }
@@ -896,11 +1001,26 @@ export function generateQuestsForGame(minQuests = 22, maxQuests = 28): QuestInst
 
   // Second pass: fill up to targetCount if needed
   for (const template of remainingTemplates) {
-    if (quests.length >= targetCount) break;
+    if (rawChoices.length >= targetCount) break;
     const offerLocation = pickRandom(template.offerLocations);
-    quests.push(instantiateTemplate(template, quests.length, offerLocation));
+    rawChoices.push({ template, offerLocation });
   }
 
-  return quests;
+  // Assign 2-3 personal quests for each character, and make the remainder shared
+  const personalAssignments: (string | undefined)[] = [];
+  for (const characterId of CHARACTER_IDS) {
+    const countForChar = randomInt(2, 3);
+    for (let i = 0; i < countForChar; i++) {
+      personalAssignments.push(characterId);
+    }
+  }
+  while (personalAssignments.length < rawChoices.length) {
+    personalAssignments.push(undefined);
+  }
+  const shuffledAssignments = shuffle(personalAssignments);
+
+  return rawChoices.map((choice, index) =>
+    instantiateTemplate(choice.template, index, choice.offerLocation, shuffledAssignments[index]),
+  );
 }
 

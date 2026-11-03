@@ -1,14 +1,16 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog } from 'radix-ui';
+import QuestsTopicService from '@/app/message-bus/quests-topic-service';
 import { getCellCoordinates } from '@/lib/games/gridCells';
 import { allItems } from '@/lib/games/items';
+import { getGameTopicId } from '@/lib/message-types';
 import { canClaimItemQuestTurnIn, getQuestsState, isPlayerEligibleForQuest } from '@/lib/runner/cauldron-of-fire/quests';
 import { QuestInstance } from '@/lib/runner/cauldron-of-fire/quest-types';
 import { acceptCauldronQuest, claimCauldronQuestReward } from '@/lib/runner/cauldron-of-fire/server-actions';
 import { getCombatStats } from '@/lib/store/playerStats';
-import { GameState, PlayerState } from '@/lib/store/types';
+import { GameState, NPCState, PlayerState } from '@/lib/store/types';
 import CoinDisplay from '../coin-display';
 import playerStatsSyncService from '../player-stats-sync.service';
 import usePlayerStatsSnapshot from '../use-player-stats-snapshot';
@@ -50,7 +52,24 @@ export default function CauldronQuests({
   const [dismissedArrivalKey, setDismissedArrivalKey] = useState<string | null>(null);
   const [submittingQuestId, setSubmittingQuestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liveUpdate, setLiveUpdate] = useState<{
+    gameState: GameState;
+    quests: QuestInstance[];
+    npcs: NPCState[];
+  } | null>(null);
   const actionPending = useRef(false);
+
+  const topicId = getGameTopicId(boardId, mapId);
+
+  useEffect(() => {
+    return QuestsTopicService.subscribe(topicId, message => {
+      setLiveUpdate({
+        gameState,
+        quests: message.quests,
+        npcs: message.npcs ?? gameState.npcs,
+      });
+    });
+  }, [topicId, gameState]);
 
   const statsSnapshot = usePlayerStatsSnapshot();
   const targetPlayerId = playerProp?.id ?? playerId ?? '';
@@ -65,25 +84,29 @@ export default function CauldronQuests({
     return null;
   }
 
-  const questsState = getQuestsState(gameState);
-  const allQuests = questsState.quests;
+  const allQuests =
+    liveUpdate && liveUpdate.gameState === gameState
+      ? liveUpdate.quests
+      : getQuestsState(gameState).quests;
+  const currentNpcs =
+    liveUpdate && liveUpdate.gameState === gameState ? liveUpdate.npcs : gameState.npcs;
 
+  // Only show quests that are shared or assigned specifically to this character
   const availableHere = allQuests.filter(
-    q => q.status === 'available' && q.offerLocation === player.location.id,
+    q =>
+      q.status === 'available' &&
+      q.offerLocation === player.location.id &&
+      isPlayerEligibleForQuest(q, player.id),
   );
 
   const activeQuests = allQuests.filter(
-    q => q.status === 'active' && (q.scope === 'shared' || q.assignedPlayerId === player.id),
-  );
-
-  const otherPlayersActiveQuests = allQuests.filter(
-    q => q.status === 'active' && q.scope === 'player' && q.assignedPlayerId && q.assignedPlayerId !== player.id,
+    q => q.status === 'active' && isPlayerEligibleForQuest(q, player.id),
   );
 
   const finishedQuests = allQuests.filter(
     q =>
       (q.status === 'completed' || q.status === 'failed') &&
-      (q.scope === 'shared' || !q.assignedPlayerId || q.assignedPlayerId === player.id),
+      isPlayerEligibleForQuest(q, player.id),
   );
 
   const arrivalKey = `${gameState.turn}:${player.location.id}`;
@@ -109,6 +132,11 @@ export default function CauldronQuests({
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to accept quest.');
       }
+      setLiveUpdate({
+        gameState,
+        quests: response.data.quests,
+        npcs: response.data.npcs,
+      });
       if (response.data.playerInventory) {
         playerStatsSyncService.updateInventory(response.data.playerInventory, resolvedSourcePlayer ?? player);
       }
@@ -133,6 +161,11 @@ export default function CauldronQuests({
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to claim quest reward.');
       }
+      setLiveUpdate({
+        gameState,
+        quests: response.data.quests,
+        npcs: response.data.npcs,
+      });
       if (response.data.playerInventory) {
         playerStatsSyncService.updateInventory(response.data.playerInventory, resolvedSourcePlayer ?? player);
       }
@@ -152,7 +185,7 @@ export default function CauldronQuests({
           player.equipment.some(
             i => i.id === quest.spawnedItemId || (!quest.spawnedItemId && i.type === quest.itemType),
           ) ||
-          gameState.npcs.some(
+          currentNpcs.some(
             n =>
               n.masterId === player.id &&
               n.health > 0 &&
@@ -182,7 +215,7 @@ export default function CauldronQuests({
       }
 
       case 'escort_npc': {
-        const npc = gameState.npcs.find(n => n.id === quest.spawnedNpcId);
+        const npc = currentNpcs.find(n => n.id === quest.spawnedNpcId);
         const dest = quest.destinationLocation ?? quest.offerLocation;
         const dir = getCompassHint(player.location.id, dest);
         const maxHp = npc?.baseStats ? getCombatStats(npc).health : npc?.health || 0;
@@ -191,7 +224,7 @@ export default function CauldronQuests({
       }
 
       case 'rescue_npc': {
-        const npc = gameState.npcs.find(n => n.id === quest.spawnedNpcId);
+        const npc = currentNpcs.find(n => n.id === quest.spawnedNpcId);
         const dest = quest.destinationLocation ?? quest.offerLocation;
         if (quest.npcRescued || npc?.masterId) {
           const dir = getCompassHint(player.location.id, dest);
@@ -335,7 +368,7 @@ export default function CauldronQuests({
                   {activeQuests.map(quest => {
                     const canClaim =
                       isPlayerEligibleForQuest(quest, player.id) &&
-                      canClaimItemQuestTurnIn(quest, player, gameState.npcs);
+                      canClaimItemQuestTurnIn(quest, player, currentNpcs);
                     return (
                       <li key={quest.id} className={styles.questCard}>
                         <div className={styles.questHeader}>
@@ -373,32 +406,6 @@ export default function CauldronQuests({
                 </ul>
               )}
             </section>
-
-            {otherPlayersActiveQuests.length > 0 && (
-              <section className={styles.section} aria-label="Other Heroes' Quests">
-                <h4 className={styles.sectionTitle}>
-                  Other Heroes&apos; Personal Quests ({otherPlayersActiveQuests.length})
-                </h4>
-                <ul className={styles.questList}>
-                  {otherPlayersActiveQuests.map(quest => {
-                    const assignedHero = gameState.players.find(p => p.id === quest.assignedPlayerId);
-                    return (
-                      <li key={quest.id} className={styles.questCard}>
-                        <div className={styles.questHeader}>
-                          <span className={styles.questTitle}>{quest.title}</span>
-                          <div className={styles.badges}>
-                            <span className={styles.scopeBadgePlayer}>
-                              {assignedHero ? `${assignedHero.name}'s Quest` : 'Personal Quest'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className={styles.objectiveBox}>{renderObjectiveSummary(quest)}</div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            )}
 
             {finishedQuests.length > 0 && (
               <section className={styles.section} aria-label="Completed and Failed Quests">

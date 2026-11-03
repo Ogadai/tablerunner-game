@@ -1,5 +1,6 @@
 /** @jest-environment node */
 import { SpecialIds } from '@/lib/games/items';
+import { GameTopicMessageType } from '@/lib/message-types';
 import { publishMessage } from '@/lib/messages/message-publisher';
 import {
   getGameStateFromRedis,
@@ -41,7 +42,7 @@ describe('Cauldron of Fire Quest Server Actions', () => {
     jest.mocked(publishMessage).mockResolvedValue();
   });
 
-  it('accepts an available quest at the player location and persists state', async () => {
+  it('accepts an available quest at the player location without broadcasting GameStateUpdated', async () => {
     const player = createPlayer({ id: 'barbarian', location: { id: 10, description: '', move: [] } });
     const gameState = createGame({ gameId: 'cauldronfire', players: [player] });
     const locationsState = createLocations();
@@ -56,6 +57,7 @@ describe('Cauldron of Fire Quest Server Actions', () => {
           description: 'Deliver ledger to 22.',
           category: 'deliver_item',
           scope: 'player',
+          assignedPlayerId: 'barbarian',
           tier: 'early',
           status: 'available',
           offerLocation: 10,
@@ -78,7 +80,14 @@ describe('Cauldron of Fire Quest Server Actions', () => {
     );
     expect(setPlayerInventoryInRedis).toHaveBeenCalled();
     expect(setLocationsStateInRedis).toHaveBeenCalled();
-    expect(setGameStateInRedis).toHaveBeenCalled();
+    expect(setGameStateInRedis).toHaveBeenCalledWith('board-1', 'map-1', gameState, { notify: false });
+    expect(publishMessage).toHaveBeenCalledWith(
+      'board-1',
+      'map-1',
+      expect.objectContaining({
+        type: GameTopicMessageType.QuestsUpdated,
+      }),
+    );
     expect(releaseLocationsLock).toHaveBeenCalled();
     expect(releaseGameLock).toHaveBeenCalled();
   });
@@ -108,9 +117,9 @@ describe('Cauldron of Fire Quest Server Actions', () => {
           description: 'Deliver ledger to 22.',
           category: 'deliver_item',
           scope: 'player',
+          assignedPlayerId: 'barbarian',
           tier: 'early',
           status: 'active',
-          assignedPlayerId: 'barbarian',
           offerLocation: 10,
           destinationLocation: 22,
           itemType: SpecialIds.questRoyalLedger,
@@ -128,6 +137,8 @@ describe('Cauldron of Fire Quest Server Actions', () => {
     expect(res.success).toBe(true);
     expect(getQuestsState(res.data!.gameState).quests[0].status).toBe('completed');
     expect(res.data?.playerInventory?.equipment).toHaveLength(0);
+    expect(res.data?.playerInventory?.coins).toBe(50);
     expect(player.coins).toBe(50);
+    expect(setGameStateInRedis).toHaveBeenCalledWith('board-1', 'map-1', gameState, { notify: false });
   });
 });
