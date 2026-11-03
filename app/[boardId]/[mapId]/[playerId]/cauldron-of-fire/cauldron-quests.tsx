@@ -287,11 +287,6 @@ export default function CauldronQuests({
         <CoinDisplay coins={quest.reward.coins} />
         <span className={styles.rewardXp}>+{quest.reward.points} XP</span>
         {rewardItemName && <span className={styles.rewardItem}>+ {rewardItemName}</span>}
-        <span className={styles.rewardScopeHint}>
-          {quest.scope === 'shared'
-            ? '(Coins & XP to all heroes; item to completer)'
-            : '(Personal reward)'}
-        </span>
       </div>
     );
   };
