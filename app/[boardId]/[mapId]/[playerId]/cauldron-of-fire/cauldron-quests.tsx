@@ -40,6 +40,22 @@ export function getCompassHint(fromLocation: number, toLocation: number): string
   return `${vertical}${horizontal}`;
 }
 
+export function formatLocations(
+  locations: number[] | undefined,
+  fromLocation?: number,
+): string {
+  const locs = locations || [];
+  const prefix = locs.length === 1 ? 'Location' : 'Locations';
+  if (locs.length === 0) return prefix;
+  const formatted = locs
+    .map(loc => {
+      const dir = fromLocation !== undefined ? getCompassHint(fromLocation, loc) : '';
+      return `${loc}${dir ? ` (${dir})` : ''}`;
+    })
+    .join(', ');
+  return `${prefix} ${formatted}`;
+}
+
 export default function CauldronQuests({
   boardId,
   mapId,
@@ -205,68 +221,46 @@ export default function CauldronQuests({
           );
 
         if (hasItem) {
-          const dir = getCompassHint(player.location.id, quest.offerLocation);
-          return `You have the ${itemName}! Return to Location ${quest.offerLocation}${dir ? ` (${dir})` : ''} to claim your reward.`;
+          return `You have the ${itemName}! Return to ${formatLocations([quest.offerLocation], player.location.id)} to claim your reward.`;
         }
-        const hints = (quest.hintLocations || [])
-          .map(loc => {
-            const dir = getCompassHint(player.location.id, loc);
-            return `${loc}${dir ? ` (${dir})` : ''}`;
-          })
-          .join(', ');
-        return `Search Locations ${hints} for the ${itemName}, then bring it back to Location ${quest.offerLocation}.`;
+        return `Search ${formatLocations(quest.hintLocations, player.location.id)} for the ${itemName}, then bring it back to Location ${quest.offerLocation}.`;
       }
 
       case 'deliver_item': {
         const itemName = (quest.itemType && allItems[quest.itemType]?.name) || 'Quest Package';
         const dest = quest.destinationLocation ?? quest.offerLocation;
-        const dir = getCompassHint(player.location.id, dest);
-        return `Deliver the ${itemName} to Location ${dest}${dir ? ` (${dir})` : ''}.`;
+        return `Deliver the ${itemName} to ${formatLocations([dest], player.location.id)}.`;
       }
 
       case 'escort_npc': {
         const npc = currentNpcs.find(n => n.id === quest.spawnedNpcId);
         const dest = quest.destinationLocation ?? quest.offerLocation;
-        const dir = getCompassHint(player.location.id, dest);
         const maxHp = npc?.baseStats ? getCombatStats(npc).health : npc?.health || 0;
         const hpInfo = npc ? ` (HP: ${npc.health}/${maxHp}, at Location ${npc.location.id})` : '';
-        return `Escort ${quest.npcName || 'the traveller'}${hpInfo} safely to Location ${dest}${dir ? ` (${dir})` : ''}.`;
+        return `Escort ${quest.npcName || 'the traveller'}${hpInfo} safely to ${formatLocations([dest], player.location.id)}.`;
       }
 
       case 'rescue_npc': {
         const npc = currentNpcs.find(n => n.id === quest.spawnedNpcId);
         const dest = quest.destinationLocation ?? quest.offerLocation;
         if (quest.npcRescued || npc?.masterId) {
-          const dir = getCompassHint(player.location.id, dest);
           const master = gameState.players.find(p => p.id === npc?.masterId);
           const maxHp = npc?.baseStats ? getCombatStats(npc).health : npc?.health || 0;
           const followerInfo = master ? ` following ${master.name}` : '';
-          return `${quest.npcName || 'The captive'} (HP: ${npc?.health ?? 0}/${maxHp}${followerInfo}) is rescued! Escort them to Location ${dest}${dir ? ` (${dir})` : ''}.`;
+          return `${quest.npcName || 'The captive'} (HP: ${npc?.health ?? 0}/${maxHp}${followerInfo}) is rescued! Escort them to ${formatLocations([dest], player.location.id)}.`;
         }
-        const hints = (quest.hintLocations || [])
-          .map(loc => {
-            const dir = getCompassHint(player.location.id, loc);
-            return `${loc}${dir ? ` (${dir})` : ''}`;
-          })
-          .join(', ');
-        return `Find ${quest.npcName || 'the captive'} in Locations ${hints}, then escort them back to Location ${dest}.`;
+        return `Find ${quest.npcName || 'the captive'} in ${formatLocations(quest.hintLocations, player.location.id)}, then escort them back to Location ${dest}.`;
       }
 
       case 'clear_dungeon': {
         const targetLocs = quest.targetLocations || [];
         const firstTarget = targetLocs[0];
         const dir = firstTarget ? getCompassHint(player.location.id, firstTarget) : '';
-        return `Clear all monsters in ${quest.areaName || 'the target area'} (Locations ${targetLocs.join(', ')}${dir ? `, ${dir}` : ''}).`;
+        return `Clear all monsters in ${quest.areaName || 'the target area'} (${formatLocations(targetLocs)}${dir ? `, ${dir}` : ''}).`;
       }
 
       case 'slay_boss': {
-        const hints = (quest.hintLocations || [])
-          .map(loc => {
-            const dir = getCompassHint(player.location.id, loc);
-            return `${loc}${dir ? ` (${dir})` : ''}`;
-          })
-          .join(', ');
-        return `Track down and defeat ${quest.bossName || 'the boss monster'} in Locations ${hints}.`;
+        return `Track down and defeat ${quest.bossName || 'the boss monster'} in ${formatLocations(quest.hintLocations, player.location.id)}.`;
       }
 
       case 'scout_area': {
@@ -279,7 +273,8 @@ export default function CauldronQuests({
             return `${loc}${dir ? ` (${dir})` : ''}`;
           })
           .join(', ');
-        return `Visit Locations (${scouted.size}/${targetLocs.length}): ${details}.`;
+        const prefix = targetLocs.length === 1 ? 'Location' : 'Locations';
+        return `Visit ${prefix} (${scouted.size}/${targetLocs.length}): ${details}.`;
       }
     }
   };
@@ -412,21 +407,23 @@ export default function CauldronQuests({
                             )}
                           </div>
                         </div>
-                        <p className={styles.questDesc}>{quest.description}</p>
+                        {!quest.isMainQuest && <p className={styles.questDesc}>{quest.description}</p>}
                         <div className={styles.objectiveBox}>{renderObjectiveSummary(quest)}</div>
-                        <div className={styles.questFooter}>
-                          {renderRewardRow(quest)}
-                          {canClaim && (
-                            <button
-                              type="button"
-                              className="btn"
-                              disabled={processing || submittingQuestId !== null}
-                              onClick={() => handleClaimReward(quest.id)}
-                            >
-                              {submittingQuestId === quest.id ? 'Claiming...' : 'Claim Reward'}
-                            </button>
-                          )}
-                        </div>
+                        {(!quest.isMainQuest || canClaim) && (
+                          <div className={styles.questFooter}>
+                            {!quest.isMainQuest && renderRewardRow(quest)}
+                            {canClaim && (
+                              <button
+                                type="button"
+                                className="btn"
+                                disabled={processing || submittingQuestId !== null}
+                                onClick={() => handleClaimReward(quest.id)}
+                              >
+                                {submittingQuestId === quest.id ? 'Claiming...' : 'Claim Reward'}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </li>
                     );
                   })}

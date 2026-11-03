@@ -6,7 +6,7 @@ import { acceptCauldronQuest, claimCauldronQuestReward } from '@/lib/runner/caul
 import { createGame, createPlayer } from '@/lib/store/test-support/fixtures';
 import playerStatsSyncService from '../player-stats-sync.service';
 import gameStateLightingService from '@/app/[boardId]/[mapId]/game/game-state-lighting-service';
-import CauldronQuests from './cauldron-quests';
+import CauldronQuests, { formatLocations } from './cauldron-quests';
 
 jest.mock('@/app/[boardId]/[mapId]/game/game-state-lighting-service', () => ({
   __esModule: true,
@@ -224,6 +224,8 @@ describe('CauldronQuests UI Component', () => {
           isMainQuest: true,
           offerLocation: 224,
           actualTargetLocation: 224,
+          hintLocations: [224],
+          bossName: 'The Evil Lich King',
           reward: { coins: 500, points: 1000 },
         },
       ],
@@ -249,5 +251,45 @@ describe('CauldronQuests UI Component', () => {
     // Verify Main Story Quest is pinned at the top of the active quests list ahead of Side Bounty
     const titles = screen.getAllByText(/Defeat the Lich King|Side Bounty/).map(el => el.textContent);
     expect(titles[0]).toContain('Defeat the Lich King');
+
+    // Main story quest removes description line to save space, but keeps task line with singular Location
+    expect(screen.queryByText('Storm the northern castle and destroy the Evil Lich King!')).toBeNull();
+    expect(screen.getByText(/Track down and defeat The Evil Lich King in Location 224/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Locations 224/i)).toBeNull();
+
+    // Main story quest removes the reward coins and XP line
+    expect(screen.queryByText('+1000 XP')).toBeNull();
+    expect(screen.queryByText('500')).toBeNull();
+
+    // Regular active quest preserves its description and reward row
+    expect(screen.getByText('A regular side quest')).toBeInTheDocument();
+    expect(screen.getByText('+60 XP')).toBeInTheDocument();
+    expect(screen.getByText('30')).toBeInTheDocument();
+  });
+});
+
+describe('formatLocations helper', () => {
+  it('correctly uses singular "Location" for a single location with compass hint', () => {
+    const formatted = formatLocations([32], 10);
+    expect(formatted).toMatch(/^Location 32/);
+    expect(formatted).toContain('(');
+  });
+
+  it('correctly uses plural "Locations" for multiple locations with compass hints', () => {
+    const formatted = formatLocations([24, 35], 10);
+    expect(formatted).toMatch(/^Locations 24 \([A-Z]+\), 35 \([A-Z]+\)$/);
+  });
+
+  it('correctly uses singular "Location" without compass hint when fromLocation is omitted', () => {
+    expect(formatLocations([32])).toBe('Location 32');
+  });
+
+  it('correctly uses plural "Locations" without compass hint when fromLocation is omitted', () => {
+    expect(formatLocations([24, 35])).toBe('Locations 24, 35');
+  });
+
+  it('falls back to "Locations" for empty or undefined arrays', () => {
+    expect(formatLocations([])).toBe('Locations');
+    expect(formatLocations(undefined)).toBe('Locations');
   });
 });
