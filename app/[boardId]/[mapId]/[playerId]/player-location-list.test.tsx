@@ -54,6 +54,7 @@ describe('PlayerLocationList', () => {
       <span>{props.player.name}</span>
       <button onClick={() => props.onUseItem(sword)}>Use item</button>
       <button onClick={() => props.onLearnScroll({ id: 'scroll-1', type: 'spiritArrowScroll' })}>Learn scroll</button>
+      <button onClick={() => props.onLearnScroll({ id: 'brew-1', type: 'rageScroll' })}>Drink brew</button>
     </>);
     jest.mocked(takeItemAtLocation).mockReset().mockResolvedValue({ success: true, data: { equipment: [sword], equipped: {} } });
   });
@@ -208,13 +209,13 @@ describe('PlayerLocationList', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it.each(['Use item', 'Learn scroll'])('queues %s from the character card and closes it', async action => {
+  it.each(['Use item', 'Learn scroll', 'Drink brew'])('queues %s from the character card and closes it', async action => {
     const { props } = setup();
     fireEvent.click(screen.getByRole('listitem'));
     fireEvent.click(screen.getByRole('button', { name: action }));
     expect(props.addNewAction).toHaveBeenCalledWith(expect.objectContaining(action === 'Use item'
       ? { type: PlayerActionType.UseItem, itemId: sword.id }
-      : { type: PlayerActionType.ReadScroll, itemId: 'scroll-1' }));
+      : action === 'Drink brew' ? { type: PlayerActionType.ReadScroll, itemId: 'brew-1', description: 'Drink Brew of Rage' } : { type: PlayerActionType.ReadScroll, itemId: 'scroll-1', description: 'Learn Scroll of Spirit Arrow' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 

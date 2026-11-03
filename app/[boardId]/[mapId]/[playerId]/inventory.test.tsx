@@ -3,12 +3,12 @@ import Inventory from './inventory';
 import { makePlayer } from './test-fixtures';
 
 describe('Inventory', () => {
-  it.each(['Use', 'Drop', 'Learn'] as const)('forwards %s with the selected inventory item', action => {
-    const item = { id: 'selected-item', type: action === 'Learn' ? 'spiritArrowScroll' : 'healingPotion' };
+  it.each(['Use', 'Drop', 'Learn', 'Drink'] as const)('forwards %s with the selected inventory item', action => {
+    const item = { id: 'selected-item', type: action === 'Learn' ? 'spiritArrowScroll' : action === 'Drink' ? 'rageScroll' : 'healingPotion' };
     const onUseItem = jest.fn();
     const onDropItem = jest.fn();
     const onLearnScroll = jest.fn();
-    render(<Inventory player={makePlayer({ id: 'mage', equipment: [item] })} isSelf isDead={false}
+    render(<Inventory player={makePlayer({ id: action === 'Drink' ? 'barbarian' : 'mage', equipment: [item], baseStats: { health: 20, magic: 10, attack: 10, defence: 4, damage: 3, speed: 10 } })} isSelf isDead={false}
       actionPointsLeft={20} usedItemIds={[]} onEquipItem={jest.fn()}
       onUseItem={onUseItem} onDropItem={onDropItem} onLearnScroll={onLearnScroll} />);
     fireEvent.click(screen.getByRole('button'));

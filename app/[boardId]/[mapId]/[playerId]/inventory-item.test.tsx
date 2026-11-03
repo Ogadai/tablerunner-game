@@ -84,7 +84,9 @@ describe('InventoryItem', () => {
   it('learns a scroll with sufficient magic and actions', () => {
     const props = setup({ item: { id: 'scroll-1', type: 'spiritArrowScroll' }, characterType: 'mage', actionPointsLeft: 10 });
     expect(screen.getByText('Mage only')).toHaveClass('itemClassMatch');
+    expect(screen.queryByRole('button', { name: 'Drink' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Learn' }));
+
     expect(props.onLearnScroll).toHaveBeenCalledTimes(1);
     expect(allItems.spiritArrowScroll.iconXY).toEqual({ x: 7, y: 8 });
     expect(allItems.iceShardsScroll.iconXY).toEqual({ x: 8, y: 8 });
@@ -105,11 +107,23 @@ describe('InventoryItem', () => {
       actionPointsLeft: 10,
     });
     expect(screen.getByText('Barbarian only')).toHaveClass('itemClassMatch');
-    fireEvent.click(screen.getByRole('button', { name: 'Learn' }));
+    expect(screen.queryByRole('button', { name: 'Learn' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Drink' }));
     expect(props.onLearnScroll).toHaveBeenCalledTimes(1);
+
+    const rangerProps = setup({
+      item: { id: 'elixir-1', type: 'focusScroll' },
+      characterType: 'ranger',
+      baseStats: makeBaseStats({ attack: 10, magic: 0 }),
+      actionPointsLeft: 10,
+    });
+    expect(screen.getByText('Ranger only')).toHaveClass('itemClassMatch');
+    expect(screen.queryByRole('button', { name: 'Learn' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Drink' }));
+    expect(rangerProps.onLearnScroll).toHaveBeenCalledTimes(1);
   });
 
-  it('does not offer Learn for a barbarian Brew when attack is too low or class mismatches', () => {
+  it('does not offer Learn or Drink for a barbarian Brew when attack is too low or class mismatches', () => {
     setup({
       item: { id: 'brew-1', type: 'rageScroll' },
       characterType: 'ranger',
@@ -118,6 +132,7 @@ describe('InventoryItem', () => {
     });
     expect(screen.getByText('Barbarian only')).toHaveClass('itemClassMismatch');
     expect(screen.queryByRole('button', { name: 'Learn' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Drink' })).not.toBeInTheDocument();
   });
 
   it.each([

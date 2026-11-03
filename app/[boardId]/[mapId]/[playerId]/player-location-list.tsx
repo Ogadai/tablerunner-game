@@ -145,7 +145,7 @@ export default function PlayerLocationList({
 
     await addNewAction({
       type: PlayerActionType.ReadScroll,
-      description: `Learn ${allItems[item.type].name}`,
+      description: `${/\b(Brew|Elixir)\b/i.test(allItems[item.type].name) ? 'Drink' : 'Learn'} ${allItems[item.type].name}`,
       itemId: item.id
     } as Omit<PlayerActionReadScroll, 'id'>);
   }

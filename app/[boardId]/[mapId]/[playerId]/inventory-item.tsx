@@ -98,6 +98,11 @@ export default function InventoryItem({
     && !playerSpells?.includes((itemDef as ScrollItemDef).spellId as SpellIds)
     && actionPointsLeft >= LEARN_SCROLL_ACTION_COST;
 
+  const isDrinkable = /\b(Brew|Elixir)\b/i.test(itemDef.name)
+    || scrollSpell?.characterType === 'barbarian'
+    || scrollSpell?.characterType === 'ranger';
+  const learnButtonText = isDrinkable ? 'Drink' : 'Learn';
+
   const cannotBuy = !!onBuy && ((availableCoins || 0) < (allItems[item.type].value || 0));
   const coins = onSell ? Math.ceil((itemDef.value || 0) * SELL_COST_RATIO) : itemDef.value || 0;
 
@@ -171,7 +176,7 @@ export default function InventoryItem({
                 type="button"
                 className={`btn ${styles.equipButton}`}
                 onClick={onLearnScroll}
-              >Learn</button>
+              >{learnButtonText}</button>
             )}
             {isSelf && !isDead && canGive && (
               <button
