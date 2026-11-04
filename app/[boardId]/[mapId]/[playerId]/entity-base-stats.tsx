@@ -67,7 +67,7 @@ export default function EntityBaseStats({
       { showStat('magic') && (<tr><th>Magic</th><td>
         {getStat('magic')}
         
-        { current.magic && current.magic < baseStats.magic &&
+        { !!current.magic && current.magic < baseStats.magic &&
           <div className={styles.statBarBorder}>
             <div
               className={`${styles.statBar} ${getStatBarClass('magic')}`}
