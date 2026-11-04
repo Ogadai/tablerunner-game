@@ -122,6 +122,19 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       speed: 8,
     },
   },
+  'juvenilemimic': {
+    id: 'juvenilemimic',
+    name: 'Juvenile Mimic',
+    iconXY: { x: 9, y: 4 },
+    baseStats: {
+      attack: 10,
+      damage: 9,
+      defence: 9,
+      magic: 0,
+      health: 11,
+      speed: 6,
+    },
+  },
   'wildcat': {
     id: 'wildcat',
     name: 'Wildcat',
@@ -224,6 +237,19 @@ export const monsters: { [id: string]: MonsterListEntry } = {
       magic: 0,
       health: 22,
       speed: 4,
+    },
+  },
+  'mimic': {
+    id: 'mimic',
+    name: 'Mimic',
+    iconXY: { x: 0, y: 5 },
+    baseStats: {
+      attack: 13,
+      damage: 13,
+      defence: 11,
+      magic: 0,
+      health: 24,
+      speed: 5,
     },
   },
   'oculusfiend': {
@@ -448,4 +474,6 @@ export const mostersExcludeFromAutoPopulate: string[] = [
   'spiritbear',
   'skeletaldragon',
   'firespirit',
+  'juvenilemimic',
+  'mimic',
 ];

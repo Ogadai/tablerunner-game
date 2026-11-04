@@ -58,7 +58,7 @@ button.playerButton {
   height: 40px;
   background-image: url('/character-sheet.png');
   background-repeat: no-repeat;
-  background-size: 250px 200px;
+  background-size: 250px 240px;
 }
 
 .currentPlayerItem {

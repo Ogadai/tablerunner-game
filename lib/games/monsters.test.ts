@@ -48,5 +48,31 @@ describe('monsters', () => {
     expect(points).toBeGreaterThan(0);
     expect(points).toBeLessThan(getPointsForDamage('skeleton', 5));
   });
+
+  it('defines Juvenile Mimic and Mimic with purely physical stats and excludes them from auto-populate', () => {
+    const juvenileMimic = monsters.juvenilemimic;
+    expect(juvenileMimic).toBeDefined();
+    expect(juvenileMimic.id).toBe('juvenilemimic');
+    expect(juvenileMimic.name).toBe('Juvenile Mimic');
+    expect(juvenileMimic.iconXY).toEqual({ x: 9, y: 4 });
+    expect(juvenileMimic.baseStats.magic).toBe(0);
+    expect(juvenileMimic.spells).toBeUndefined();
+    expect(juvenileMimic.baseStats.attack).toBeGreaterThan(monsters.scorpion.baseStats.attack);
+    expect(juvenileMimic.baseStats.attack).toBeLessThan(monsters.zombie.baseStats.attack);
+
+    const mimic = monsters.mimic;
+    expect(mimic).toBeDefined();
+    expect(mimic.id).toBe('mimic');
+    expect(mimic.name).toBe('Mimic');
+    expect(mimic.iconXY).toEqual({ x: 0, y: 5 });
+    expect(mimic.baseStats.magic).toBe(0);
+    expect(mimic.spells).toBeUndefined();
+    expect(getMonsterStrength(mimic)).toBeGreaterThan(getMonsterStrength(monsters.ogre));
+    expect(getMonsterStrength(mimic)).toBeLessThan(getMonsterStrength(monsters.cyclops));
+
+    const available = getAvailableMonstersByStrength();
+    expect(available.find(m => m.id === 'juvenilemimic')).toBeUndefined();
+    expect(available.find(m => m.id === 'mimic')).toBeUndefined();
+  });
 });
 
