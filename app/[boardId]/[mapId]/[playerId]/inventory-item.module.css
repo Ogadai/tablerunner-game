@@ -12,6 +12,7 @@
   background: none;
   border: 2px solid var(--border-stone);
   border-radius: 3px;
+  position: relative;
 
   &:hover, &:active, &:focus-within, &:focus-visible {
     background: none;
@@ -98,4 +99,24 @@ p.itemClassMismatch {
   .equipButton {
     margin: 0 5px;
   }
+}
+
+.lockBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffcc00;
+  border-radius: 50%;
+  padding: 3px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.lockBadge svg {
+  width: 14px;
+  height: 14px;
 }

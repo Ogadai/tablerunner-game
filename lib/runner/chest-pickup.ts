@@ -1,5 +1,5 @@
 import { ApiResponse } from '../api-response';
-import { GameState, AllLocationsState, PlayerState, PlayerInventoryState, getDisplayName } from '../store/types';
+import { GameState, AllLocationsState, PlayerState, PlayerInventoryState, getDisplayName, ItemLocationState } from '../store/types';
 import { PlayerItem, ItemDef } from '../games/types';
 import { getCellCoordinates } from '../games/gridCells';
 import { sharedLocations } from '../games/maps/shared-locations';
@@ -94,6 +94,43 @@ export function getLootItemPool(
   return pool.length > 0 ? pool : lootItems;
 }
 
+export function generateChestLoot(
+  gameState: GameState,
+  locationId: number,
+  isHighTier: boolean,
+  options?: {
+    coinRoll?: number;
+    multiplierRoll?: number;
+    countRoll?: number;
+    itemRolls?: number[];
+  },
+): { coins: number; items: ItemLocationState[] } {
+  const difficulty = getAreaDifficulty(locationId);
+  const chestCoins = calculateChestCoins(difficulty, {
+    coinRoll: options?.coinRoll,
+    multiplierRoll: options?.multiplierRoll,
+  });
+
+  const pool = getLootItemPool(difficulty, isHighTier);
+
+  const itemCount = isHighTier
+    ? 1 + Math.floor((options?.countRoll ?? Math.random()) * 2)
+    : 3 + Math.floor((options?.countRoll ?? Math.random()) * 3);
+
+  const items: ItemLocationState[] = [];
+  for (let i = 0; i < itemCount; i++) {
+    const itemRoll = options?.itemRolls?.[i] ?? Math.random();
+    const chosenDef = pool[Math.floor(itemRoll * pool.length)] || lootItems[0];
+    const newItem = createItemForInventory(gameState, chosenDef);
+    items.push({
+      ...newItem,
+      location: locationId,
+    });
+  }
+
+  return { coins: chestCoins, items };
+}
+
 export interface HandleChestPickupParams {
   boardId: string;
   mapId: string;
@@ -127,7 +164,8 @@ export async function handleChestPickup({
   // Chest is removed from location and NOT added to player inventory
   locationsState.items = locationsState.items.filter(i => i.id !== chestItem.id);
 
-  const isMimic = (options?.outcomeRoll ?? Math.random()) < 0.25;
+  const isLockedChest = Boolean(chestItem.key);
+  const isMimic = !isLockedChest && ((options?.outcomeRoll ?? Math.random()) < 0.25);
 
   if (isMimic) {
     const isEasier = isEasierLocation(playerState.location.id);
@@ -168,29 +206,15 @@ export async function handleChestPickup({
       data: playerInventory,
     };
   } else {
-    // 75% loot outcome
-    const difficulty = getAreaDifficulty(playerState.location.id);
-    const chestCoins = calculateChestCoins(difficulty, {
-      coinRoll: options?.coinRoll,
-      multiplierRoll: options?.multiplierRoll,
-    });
-
-    const isHighTier = (options?.highTierRoll ?? Math.random()) >= 0.5;
-    const pool = getLootItemPool(difficulty, isHighTier);
-
-    const itemCount = isHighTier
-      ? 1 + Math.floor((options?.countRoll ?? Math.random()) * 2)
-      : 3 + Math.floor((options?.countRoll ?? Math.random()) * 3);
-
-    for (let i = 0; i < itemCount; i++) {
-      const itemRoll = options?.itemRolls?.[i] ?? Math.random();
-      const chosenDef = pool[Math.floor(itemRoll * pool.length)] || lootItems[0];
-      const newItem = createItemForInventory(gameState, chosenDef);
-      locationsState.items.push({
-        ...newItem,
-        location: playerState.location.id,
-      });
-    }
+    // 75% loot outcome (or 100% for locked chests)
+    const isHighTier = isLockedChest || ((options?.highTierRoll ?? Math.random()) >= 0.5);
+    const { coins: chestCoins, items: newItems } = generateChestLoot(
+      gameState,
+      playerState.location.id,
+      isHighTier,
+      options,
+    );
+    locationsState.items.push(...newItems);
 
     // Coins are added directly to all players currently at the location (each gets 100%, not shared)
     if (playerInventory.coins === undefined) {

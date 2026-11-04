@@ -120,6 +120,7 @@ export interface ItemDef {
     speed?: number;
     special?: string;
   };
+  key?: string;
 }
 
 export interface EquipableItemDef extends ItemDef {
@@ -139,6 +140,7 @@ export interface ScrollItemDef extends ItemDef {
 export interface PlayerItem {
   id: string
   type: string;
+  key?: string;
 }
 
 export enum SpellTargetType {

@@ -1,6 +1,7 @@
-import { allItems } from '@/lib/games/items';
+import { allItems, SpecialIds } from '@/lib/games/items';
 import styles from './inventory-item.module.css';
 import { PlayerItem } from '@/lib/games/types';
+import { LockClosedIcon } from '@radix-ui/react-icons';
 
 export default function LocationItemList({ items, onTakeItem }: {
   items: PlayerItem[];
@@ -9,13 +10,14 @@ export default function LocationItemList({ items, onTakeItem }: {
   
   const renderItem = (item: PlayerItem) => {
     const itemDef = allItems[item.type];
+    const isLockedChest = item.type === SpecialIds.chest && Boolean(item.key);
 
     return (<button
       key={item.id}
       type="button"
       className={styles.inventoryItem}
       aria-label={itemDef.name}
-      title={itemDef.name}
+      title={isLockedChest ? `${itemDef.name} (Locked)` : itemDef.name}
       onClick={() => onTakeItem(item.id)}
     >
       <span className={styles.itemIcon}
@@ -24,6 +26,11 @@ export default function LocationItemList({ items, onTakeItem }: {
           transform: itemDef.iconScale ? `scale(${itemDef.iconScale})` : undefined,
         } : undefined}
       />
+      {isLockedChest && (
+        <span className={styles.lockBadge} aria-label="Locked" data-testid="lock-icon">
+          <LockClosedIcon />
+        </span>
+      )}
     </button>);
   }
 

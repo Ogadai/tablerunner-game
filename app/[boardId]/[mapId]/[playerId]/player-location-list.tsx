@@ -12,6 +12,7 @@ import LocationItemList from "./location-item-list";
 import { takeItemAtLocation } from "@/lib/store/playerInventory";
 import { getSwalDefaultOptions } from "@/app/swal";
 import styles from './player-location-list.module.css';
+import usePlayerStatsSnapshot from './use-player-stats-snapshot';
 import playerStatsSyncService from "./player-stats-sync.service";
 import type { PlayerStats } from '@/lib/store/playerTurnStats';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
@@ -58,6 +59,7 @@ export default function PlayerLocationList({
   const [monsterOpen, setMonsterOpen] = useState<MonsterState | null>(null);
   const [characterOpen, setCharacterOpen] = useState<PlayerState | null>(null);
   const [npcOpen, setNpcOpen] = useState<NPCState | null>(null);
+  const statsSnapshot = usePlayerStatsSnapshot();
   const pickupRequest = useRef(0);
   const pendingPickups = useRef(new Set<string>());
   const onItemTakenRef = useRef(onItemTaken);
@@ -170,6 +172,26 @@ export default function PlayerLocationList({
         text: "You cannot pick up items while there are enemies.",
       });
       return;
+    }
+
+    const targetItem = optimisticItems.find(item => item.id === itemId);
+    if (targetItem?.key) {
+      const playerEquipment = statsSnapshot.inventoryState?.equipment
+        ?? statsSnapshot.sourcePlayer?.equipment
+        ?? player.equipment
+        ?? [];
+      const hasKey = playerEquipment.some(item => item.type === targetItem.key || item.id === targetItem.key);
+      if (!hasKey) {
+        const keyDef = allItems[targetItem.key];
+        const keyName = keyDef?.name || 'key';
+        await Swal.fire({
+          ...getSwalDefaultOptions(),
+          title: 'Chest locked!',
+          icon: 'warning',
+          text: `The chest is locked. Find the ${keyName}`,
+        });
+        return;
+      }
     }
 
     const pickup: ItemPickup = { itemId, context: pickupContext, requestId: pickupRequest.current };

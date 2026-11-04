@@ -1,4 +1,5 @@
-import { ConsumableIds, keyItems } from "../games/items";
+import { ConsumableIds, keyItems, SpecialIds } from "../games/items";
+import { generateChestLoot } from "./chest-pickup";
 import { INamedTarget } from "../store/types";
 import { BaseParams } from "./base-params";
 import { updateLockLeds } from "./game-action-move";
@@ -58,6 +59,27 @@ function applyKey(params: BaseParams, player: INamedTarget, keyItemType: string)
   const itemDef = keyItems[keyItemType];
   const playersAtLocation = params.gameState.players.filter(p => p.location.id === player.location.id);
   
+  const chest = params.items.find(i =>
+    i.location === player.location.id &&
+    i.type === SpecialIds.chest &&
+    i.key === keyItemType
+  );
+
+  if (chest) {
+    params.items = params.items.filter(i => i.id !== chest.id);
+    const { coins: chestCoins, items: newItems } = generateChestLoot(
+      params.gameState,
+      player.location.id,
+      true,
+    );
+    params.items.push(...newItems);
+    for (const p of playersAtLocation) {
+      p.coins = (p.coins || 0) + chestCoins;
+    }
+    playerMessageAtLocation(params, player.id, `**{player}** used the ${itemDef.name} to **open the locked chest**!`);
+    return true;
+  }
+
   let unlocked = false;
   for(const move of player.location.move) {
     if (!!move.blockDescription && move.keyItemType === keyItemType) {

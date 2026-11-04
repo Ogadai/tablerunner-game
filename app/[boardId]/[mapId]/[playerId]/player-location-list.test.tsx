@@ -6,6 +6,7 @@ import { PlayerActionType } from '@/lib/store/types';
 import PlayerLocationList from './player-location-list';
 import CharacterCard from './character-card';
 import sync from './player-stats-sync.service';
+import playerStatsStore from './player-stats-store';
 import { EntityItemClass } from './entity-list';
 import { makeEntity, makeGameState, makePlayer, makeStats } from './test-fixtures';
 import { createNpc } from '@/lib/runner/test-support/fixtures';
@@ -201,6 +202,26 @@ describe('PlayerLocationList', () => {
     expect(takeItemAtLocation).not.toHaveBeenCalled();
   });
 
+  it('blocks picking up a locked chest when the player does not have the key and shows warning popup', async () => {
+    const lockedChest = { id: 'c-1', type: 'chest', key: 'goldKey' };
+    const view = setup({ items: [lockedChest], player: makePlayer({ equipment: [] }) });
+    fireEvent.click(screen.getByRole('button', { name: 'Chest' }));
+    await waitFor(() => expect(Swal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Chest locked!',
+      icon: 'warning',
+      text: 'The chest is locked. Find the Gold Key',
+    })));
+    expect(takeItemAtLocation).not.toHaveBeenCalled();
+  });
+
+  it('allows picking up a locked chest when the player has the key', async () => {
+    const lockedChest = { id: 'c-1', type: 'chest', key: 'goldKey' };
+    const goldKey = { id: 'k-1', type: 'goldKey' };
+    setup({ items: [lockedChest], player: makePlayer({ equipment: [goldKey] }) });
+    fireEvent.click(screen.getByRole('button', { name: 'Chest' }));
+    await waitFor(() => expect(takeItemAtLocation).toHaveBeenCalledWith('board', 'map', 'warrior', 'c-1'));
+  });
+
   it('opens a monster and queues an attack on that instance', async () => {
     const { props } = setup({ entities: [makeEntity()], monsters: [monster] });
     fireEvent.click(screen.getByRole('listitem'));
@@ -217,6 +238,30 @@ describe('PlayerLocationList', () => {
       ? { type: PlayerActionType.UseItem, itemId: sword.id }
       : action === 'Drink brew' ? { type: PlayerActionType.ReadScroll, itemId: 'brew-1', description: 'Drink Brew of Rage' } : { type: PlayerActionType.ReadScroll, itemId: 'scroll-1', description: 'Learn Scroll of Spirit Arrow' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+
+  it('allows picking up a locked chest when statsSnapshot.inventoryState has the key even if initial player.equipment lacks it', async () => {
+    const lockedChest = { id: 'c-1', type: 'chest', key: 'goldKey' };
+    const goldKey = { id: 'k-1', type: 'goldKey' };
+    playerStatsStore.setSnapshot({
+      ...playerStatsStore.getSnapshot(),
+      inventoryState: { equipment: [goldKey], equipped: {} },
+    });
+    let view: ReturnType<typeof setup> | undefined;
+    try {
+      view = setup({ items: [lockedChest], player: makePlayer({ equipment: [] }) });
+      fireEvent.click(screen.getByRole('button', { name: 'Chest' }));
+      await waitFor(() => expect(takeItemAtLocation).toHaveBeenCalledWith('board', 'map', 'warrior', 'c-1'));
+    } finally {
+      view?.unmount();
+      act(() => {
+        playerStatsStore.setSnapshot({
+          ...playerStatsStore.getSnapshot(),
+          inventoryState: null,
+        });
+      });
+    }
   });
 
   it('refreshes an open character card when player props change', () => {

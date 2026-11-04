@@ -382,5 +382,39 @@ describe('chest-pickup', () => {
         'b1', 'm1', ally.id, expect.objectContaining({ coins: 30 + rewardCoins }),
       );
     });
+
+    it('never spawns a mimic and always provides high-tier loot for a locked chest', async () => {
+      const opener = createPlayer({ id: 'p1', location: { id: 10, description: '', move: [] } });
+      game.players.push(opener);
+      const lockedChest = { id: 'c_locked', type: SpecialIds.chest, location: opener.location.id, key: 'goldKey' };
+      locations.items.push(lockedChest);
+
+      // Force outcomeRoll: 0 (normally mimic) and highTierRoll: 0 (normally low tier)
+      const res = await handleChestPickup({
+        boardId: 'b1',
+        mapId: 'm1',
+        playerId: opener.id,
+        chestItem: lockedChest,
+        playerState: opener,
+        playerInventory: inventory,
+        gameState: game,
+        locationsState: locations,
+        options: {
+          outcomeRoll: 0.0,
+          highTierRoll: 0.0,
+          countRoll: 0.0,
+          itemRolls: [0.0],
+        },
+      });
+
+      expect(res.success).toBe(true);
+      // No mimic monster spawned
+      expect(locations.monsters).toHaveLength(0);
+      // High tier loot placed
+      expect(locations.items.length).toBeGreaterThanOrEqual(1);
+      const highTierPool = getLootItemPool('easy', true);
+      const droppedItem = locations.items[0];
+      expect(highTierPool.some(def => def.id === droppedItem.type)).toBe(true);
+    });
   });
 });

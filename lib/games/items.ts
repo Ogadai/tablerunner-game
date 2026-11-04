@@ -316,7 +316,7 @@ export const keyItems: Record<string, ConsumableItemDef> = {
     iconXY: { x: 1, y: 8 },
     value: 30,
     bonusStats: {
-      special: 'Unlock the green door'
+      special: 'Unlock the green door or chest'
     }
   },
   [KeyIds.blueKey]: {
@@ -327,7 +327,7 @@ export const keyItems: Record<string, ConsumableItemDef> = {
     iconXY: { x: 2, y: 8 },
     value: 50,
     bonusStats: {
-      special: 'Unlock the blue door'
+      special: 'Unlock the blue door or chest'
     }
   },
   [KeyIds.purpleKey]: {
@@ -338,7 +338,7 @@ export const keyItems: Record<string, ConsumableItemDef> = {
     iconXY: { x: 3, y: 8 },
     value: 75,
     bonusStats: {
-      special: 'Unlock the purple door'
+      special: 'Unlock the purple door or chest'
     }
   },
   [KeyIds.skeletonKey]: {
@@ -355,12 +355,12 @@ export const keyItems: Record<string, ConsumableItemDef> = {
   [KeyIds.goldKey]: {
     id: KeyIds.goldKey.toString(),
     type: PlayerItemType.consumable,
-    name: 'Fire Key',
+    name: 'Gold Key',
     useCost: 10,
     iconXY: { x: 5, y: 8 },
     value: 85,
     bonusStats: {
-      special: 'Unlock the golden gates'
+      special: 'Unlock the gold chest'
     }
   },
 };

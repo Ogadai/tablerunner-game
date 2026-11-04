@@ -1,11 +1,21 @@
 import { LocationMoveDirection } from "@/lib/games/types";
 import { BaseParams } from "../base-params";
 import { ProcessRunner } from "../types";
-import { allItems, EquipableIds, KeyIds, ScrollIds } from "@/lib/games/items";
+import { allItems, EquipableIds, KeyIds, ScrollIds, SpecialIds } from "@/lib/games/items";
 import { createItemForInventory } from "../apply-inventory";
 
 export const keyProcess: ProcessRunner = {
   async setup(params: BaseParams): Promise<void> {
+    // Randomly pick 1 or 2 of green, blue, purple keys for locked chests instead of locked doors
+    const randomKeys = [KeyIds.greenKey, KeyIds.blueKey, KeyIds.purpleKey];
+    const chestCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
+    const pool = [...randomKeys];
+    const chestKeys = new Set<string>([KeyIds.goldKey]);
+    for (let i = 0; i < chestCount; i++) {
+      const index = Math.floor(Math.random() * pool.length);
+      chestKeys.add(pool.splice(index, 1)[0]);
+    }
+
     // Bottom left dungeon
     setupKeyQuest(params, KeyIds.greenKey, [
       {
@@ -22,7 +32,7 @@ export const keyProcess: ProcessRunner = {
         prizeLocations: [35, 37],
         prizeItemIds: [EquipableIds.shieldLion, EquipableIds.necklaceRuby, EquipableIds.bootsSteel, ScrollIds.healingAura, ScrollIds.shieldWall]
       }
-    ]);
+    ], chestKeys.has(KeyIds.greenKey));
 
     // Middle left dungeon
     setupKeyQuest(params, KeyIds.blueKey, [
@@ -40,7 +50,7 @@ export const keyProcess: ProcessRunner = {
         prizeLocations: [75, 87, 73],
         prizeItemIds: [EquipableIds.shieldKnight, EquipableIds.swordArcane, EquipableIds.armourPlate, ScrollIds.lightning, ScrollIds.strengthAura]
       }
-    ]);
+    ], chestKeys.has(KeyIds.blueKey));
 
     // Middle right dungeon
     setupKeyQuest(params, KeyIds.purpleKey, [
@@ -58,7 +68,19 @@ export const keyProcess: ProcessRunner = {
         prizeLocations: [101],
         prizeItemIds: [EquipableIds.axeWar, EquipableIds.warhammer, EquipableIds.warhammer, ScrollIds.fireRain]
       }
-    ]);
+    ], chestKeys.has(KeyIds.purpleKey));
+
+    // Top left dungeon under the mountain (always for a chest)
+    setupKeyQuest(params, KeyIds.goldKey, [
+      {
+        keyLocations: [166, 194, 208, 168],
+        prizeLocations: [236, 232],
+      },
+      {
+        keyLocations: [236, 232, 192, 195],
+        prizeLocations: [166, 192],
+      }
+    ], true);
 
     // Castle
     setupKeyQuest(params, KeyIds.skeletonKey, [
@@ -70,7 +92,7 @@ export const keyProcess: ProcessRunner = {
         prizeLocations: [226, 223, 221, 214],
         prizeItemIds: [EquipableIds.swordInferno, EquipableIds.crossbow, EquipableIds.staffCrystal, EquipableIds.armourShadow]
       }
-    ]);
+    ], false);
     
     // Volcano
     setupKeyQuest(params, KeyIds.fireKey, [
@@ -82,34 +104,40 @@ export const keyProcess: ProcessRunner = {
         prizeLocations: [202],
         prizeItemIds: [EquipableIds.swordInferno, EquipableIds.crossbow, EquipableIds.staffCrystal, EquipableIds.armourShadow]
       }
-    ]);
+    ], false);
   },
 };
+
+interface KeyQuestOption {
+  location?: number;
+  description?: string;
+  directions?: LocationMoveDirection[];
+  keyLocations: number[];
+  prizeLocations: number[];
+  prizeItemIds?: string[];
+}
 
 const setupKeyQuest = (
   params: BaseParams,
   keyItemType: string,
-  possibleLocations: {
-    location: number,
-    description?: string,
-    directions: LocationMoveDirection[],
-    keyLocations: number[],
-    prizeLocations: number[],
-    prizeItemIds: string[] }[]
+  possibleLocations: KeyQuestOption[],
+  isChest?: boolean
 ) => {
   const { location, description, directions, keyLocations, prizeLocations, prizeItemIds } =
     possibleLocations[Math.floor(Math.random() * possibleLocations.length)];
 
   const keyItem = allItems[keyItemType];
 
-  // Lock the door(s)
-  for(const direction of directions) {
-    params.blockedMoves.push({
-      location,
-      direction,
-      description: description || `There is a locked door blocking this tunnel. Find the ${keyItem.name}`,
-      keyItemType
-    });
+  if (!isChest && location !== undefined && directions) {
+    // Lock the door(s)
+    for(const direction of directions) {
+      params.blockedMoves.push({
+        location,
+        direction,
+        description: description || `There is a locked door blocking this tunnel. Find the ${keyItem.name}`,
+        keyItemType
+      });
+    }
   }
 
   const keyLocation = keyLocations[Math.floor(Math.random() * keyLocations.length)];
@@ -121,11 +149,21 @@ const setupKeyQuest = (
 
   // Pick a prize and location
   const prizeLocation = prizeLocations[Math.floor(Math.random() * prizeLocations.length)];
-  const prizeItemId = prizeItemIds[Math.floor(Math.random() * prizeItemIds.length)];
 
-  // Add the prize
-  params.items.push({
-    ...createItemForInventory(params.gameState, allItems[prizeItemId]),
-    location: prizeLocation
-  });
+  if (isChest) {
+    const chestDef = allItems[SpecialIds.chest];
+    params.items.push({
+      ...createItemForInventory(params.gameState, chestDef),
+      location: prizeLocation,
+      key: keyItemType,
+    });
+  } else if (prizeItemIds && prizeItemIds.length > 0) {
+    const prizeItemId = prizeItemIds[Math.floor(Math.random() * prizeItemIds.length)];
+
+    // Add the prize
+    params.items.push({
+      ...createItemForInventory(params.gameState, allItems[prizeItemId]),
+      location: prizeLocation
+    });
+  }
 }

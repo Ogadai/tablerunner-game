@@ -241,6 +241,54 @@ describe('taking items', () => {
     expect(locations.items.find(i => i.id === 'chest-1')).toBeUndefined();
     expect(inventory.equipment).toEqual([]);
   });
+
+  it('rejects picking up a locked chest when the player does not have the key', async () => {
+    inventory.equipment = [];
+    game.players[0].equipment = [];
+    locations.items = [{ id: 'chest-locked', type: 'chest', location: 1, key: 'goldKey' }];
+
+    const result = await takeItemAtLocation('board', 'map', 'hero', 'chest-locked');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Find the Gold Key');
+    // Chest remains at location
+    expect(locations.items.find(i => i.id === 'chest-locked')).toBeDefined();
+    expect(storage.setGameStateInRedis).not.toHaveBeenCalled();
+  });
+
+  it('rejects picking up a locked chest when the player holds a different key', async () => {
+    inventory.equipment = [{ id: 'key-blue', type: 'blueKey' }];
+    game.players[0].equipment = [{ id: 'key-blue', type: 'blueKey' }];
+    locations.items = [{ id: 'chest-locked', type: 'chest', location: 1, key: 'goldKey' }];
+
+    const result = await takeItemAtLocation('board', 'map', 'hero', 'chest-locked');
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Find the Gold Key');
+    expect(locations.items.find(i => i.id === 'chest-locked')).toBeDefined();
+  });
+
+  it('consumes the key and opens the chest when the player has the key', async () => {
+    inventory.equipment = [{ id: 'key-1', type: 'goldKey' }];
+    game.players[0].equipment = [{ id: 'key-1', type: 'goldKey' }];
+    locations.items = [{ id: 'chest-locked', type: 'chest', location: 1, key: 'goldKey' }];
+
+    const result = await takeItemAtLocation('board', 'map', 'hero', 'chest-locked');
+    expect(result.success).toBe(true);
+    // Chest removed from location
+    expect(locations.items.find(i => i.id === 'chest-locked')).toBeUndefined();
+    // Key removed from equipment
+    expect(inventory.equipment.find(i => i.id === 'key-1')).toBeUndefined();
+  });
+
+  it('finds the key from playerState.equipment when inventory.equipment is null', async () => {
+    inventory.equipment = null;
+    game.players[0].equipment = [{ id: 'key-1', type: 'goldKey' }];
+    locations.items = [{ id: 'chest-locked', type: 'chest', location: 1, key: 'goldKey' }];
+
+    const result = await takeItemAtLocation('board', 'map', 'hero', 'chest-locked');
+    expect(result.success).toBe(true);
+    expect(locations.items.find(i => i.id === 'chest-locked')).toBeUndefined();
+    expect(inventory.equipment).toEqual([]);
+  });
 });
 
 describe('hiring NPCs', () => {

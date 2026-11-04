@@ -285,6 +285,27 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
     }
 
     if (item.type === SpecialIds.chest) {
+      if (item.key) {
+        const sourceEquipment = playerInventory.equipment != null
+          ? playerInventory.equipment
+          : playerState.equipment;
+        const matchingKey = sourceEquipment.find(i => i.type === item.key || i.id === item.key);
+
+        if (!matchingKey) {
+          const keyDef = allItems[item.key];
+          const keyName = keyDef?.name || 'key';
+          const lockMessage = `The chest is locked. Find the ${keyName}`;
+
+          return {
+            success: false,
+            error: lockMessage,
+          };
+        }
+
+        removeItemFromPlayer(playerState, playerInventory, matchingKey.id);
+        await setPlayerInventoryInRedis(boardId, mapId, playerId, playerInventory);
+      }
+
       return await handleChestPickup({
         boardId,
         mapId,
