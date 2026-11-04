@@ -35,7 +35,6 @@ jest.mock('./player-spells', () => ({ __esModule: true, default: () => null }));
 jest.mock('./player-store', () => ({ __esModule: true, default: () => <span>Store available</span> }));
 jest.mock('./player-portal', () => ({ __esModule: true, default: jest.fn(() => <span>Portal available</span>) }));
 jest.mock('./fast-travel', () => ({ __esModule: true, default: jest.fn(() => null) }));
-jest.mock('./player-video', () => ({ __esModule: true, default: () => null }));
 jest.mock('./warlords-of-fire/warlord-recruitment', () => ({ __esModule: true, default: jest.fn(({ children }: ComponentProps<typeof WarlordRecruitment>) =>
   <section aria-label="Recruitment queue">{children}</section>
 ) }));

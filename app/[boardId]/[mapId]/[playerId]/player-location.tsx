@@ -25,7 +25,6 @@ import playerStatsStore from './player-stats-store';
 import usePlayerStatsSnapshot from './use-player-stats-snapshot';
 import { emptyPlayerStats } from '@/lib/store/playerTurnStats';
 import FastTravel from './fast-travel';
-import PlayerVideo from './player-video';
 import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 import { getCombatStats, getPlayerActionsCosts, getPlayerActionsMagic } from '@/lib/store/playerStats';
 import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
@@ -330,7 +329,6 @@ export default function PlayerLocation(
 
   return (<>
     <div className={styles.playerLocationScreen}>
-      <PlayerVideo topicId={topicId} turn={gameState.turn} />
       <div className={styles.playerHeader}>
         <h3>{getDisplayName(playerState)}</h3>
         <h4>Location {playerState.location.id}</h4>

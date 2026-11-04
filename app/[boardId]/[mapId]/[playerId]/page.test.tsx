@@ -9,6 +9,8 @@ import PlayerLocation from './player-location';
 import Page from './page';
 import { makeGameState } from './test-fixtures';
 import { makePlayerSnapshot } from '../game/test-fixtures';
+import VideoTopicService from '@/app/message-bus/video-topic-service';
+import { GameTopicMessageType } from '@/lib/message-types';
 
 jest.mock('next/navigation', () => ({ useParams: jest.fn(), useRouter: jest.fn() }));
 jest.mock('@/lib/store/playerReadyState', () => ({ setPlayerReady: jest.fn() }));
@@ -118,5 +120,46 @@ describe('Player page', () => {
     expect(push).not.toHaveBeenCalled();
     expect(disposeProcessing).toHaveBeenCalledTimes(1);
     expect(disposeReady).toHaveBeenCalledTimes(1);
+  });
+
+  it('plays video across turn updates and allows replay until the turn ends', () => {
+    render(<Page />);
+
+    act(() => {
+      VideoTopicService.raiseVideoMessage('board-map', {
+        type: GameTopicMessageType.VideoPlay,
+        url: '/videos/lich-king.mp4',
+      });
+    });
+
+    expect(screen.getByRole('dialog', { name: 'Video playback' })).toBeInTheDocument();
+
+    // Advance turn while video is playing
+    act(() => gameService.set('board', 'map', makeGameState({ turn: 2 })));
+
+    // Video should not disappear
+    expect(screen.getByRole('dialog', { name: 'Video playback' })).toBeInTheDocument();
+
+    // Close the video
+    fireEvent.click(screen.getByRole('button', { name: 'Close video' }));
+    expect(screen.queryByRole('dialog', { name: 'Video playback' })).not.toBeInTheDocument();
+
+    // Replay button should be available
+    const replayButton = screen.getByRole('button', { name: 'Replay video' });
+    expect(replayButton).toBeInTheDocument();
+
+    // Clicking replay re-opens the video
+    fireEvent.click(replayButton);
+    expect(screen.getByRole('dialog', { name: 'Video playback' })).toBeInTheDocument();
+
+    // Close again
+    fireEvent.click(screen.getByRole('button', { name: 'Close video' }));
+    expect(screen.getByRole('button', { name: 'Replay video' })).toBeInTheDocument();
+
+    // Turn ends (turn 3 begins)
+    act(() => gameService.set('board', 'map', makeGameState({ turn: 3 })));
+
+    // Replay button should be removed
+    expect(screen.queryByRole('button', { name: 'Replay video' })).not.toBeInTheDocument();
   });
 });

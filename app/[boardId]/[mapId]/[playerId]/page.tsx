@@ -7,6 +7,7 @@ import useReadyStateSnapshot from '../game/use-ready-state-snapshot';
 
 import { LocationMoveDirection } from "@/lib/games/types";
 import PlayerLocation from './player-location';
+import PlayerVideo from './player-video';
 
 import gameStateSyncService from "../game/game-state-sync-service";
 import useGameStateSnapshot from '../game/use-game-state-snapshot';
@@ -72,6 +73,7 @@ export default function Page() {
 
   return (<div className={styles.playerScreen}>
     <div className={styles.playerScreenContent}>
+      <PlayerVideo topicId={topicId} turn={gameState.turn} />
       {turnError && <p role="alert">{turnError}</p>}
       <PlayerLocation
         key={`${boardId}:${mapId}:${playerId}`}

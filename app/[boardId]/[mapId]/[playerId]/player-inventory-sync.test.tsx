@@ -14,7 +14,6 @@ jest.mock('./player-spells', () => ({ __esModule: true, default: () => null }));
 jest.mock('./player-store', () => ({ __esModule: true, default: () => null }));
 jest.mock('./player-portal', () => ({ __esModule: true, default: () => null }));
 jest.mock('./fast-travel', () => ({ __esModule: true, default: () => null }));
-jest.mock('./player-video', () => ({ __esModule: true, default: () => null }));
 jest.mock('./warlords-of-fire/warlord-recruitment', () => ({ __esModule: true, default: () => null }));
 jest.mock('./warlords-of-fire/warlord-party', () => ({ __esModule: true, default: () => null }));
 
