@@ -7,7 +7,6 @@ import { Dialog } from "radix-ui";
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
-import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import styles from "./play-header-menu.module.css";
 
 import { deleteGameState, getBoardSettings, setBoardSettings } from "@/lib/store/gameState";
@@ -177,8 +176,8 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
       <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
 			<DropdownMenu.Trigger asChild>
 				<button className={`${styles.IconButton}`} aria-label="Settings">
-					<HamburgerMenuIcon />
-				</button>
+          <span className="material-symbols-outlined">menu</span>
+        </button>
 			</DropdownMenu.Trigger>
 
 			<DropdownMenu.Portal>

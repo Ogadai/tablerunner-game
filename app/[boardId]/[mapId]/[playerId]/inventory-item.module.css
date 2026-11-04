@@ -103,20 +103,21 @@ p.itemClassMismatch {
 
 .lockBadge {
   position: absolute;
-  top: 4px;
+  bottom: 4px;
   right: 4px;
   display: flex;
   align-items: center;
+  font-weight: bold;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.75);
-  color: #ffcc00;
+  background-color: var(--color-error);
+  color: var(--bg-card);
   border-radius: 50%;
   padding: 3px;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
   pointer-events: none;
-}
+  opacity: 0.7;
 
-.lockBadge svg {
-  width: 14px;
-  height: 14px;
+  span {
+    font-size: 16px;
+  }
 }

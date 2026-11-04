@@ -157,6 +157,8 @@ const setupKeyQuest = (
       location: prizeLocation,
       key: keyItemType,
     });
+
+    console.log(`Placed a ${chestDef.name} at location ${prizeLocation} that requires a ${keyItem.name}`);
   } else if (prizeItemIds && prizeItemIds.length > 0) {
     const prizeItemId = prizeItemIds[Math.floor(Math.random() * prizeItemIds.length)];
 

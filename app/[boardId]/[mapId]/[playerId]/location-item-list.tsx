@@ -1,7 +1,7 @@
 import { allItems, SpecialIds } from '@/lib/games/items';
 import styles from './inventory-item.module.css';
 import { PlayerItem } from '@/lib/games/types';
-import { LockClosedIcon } from '@radix-ui/react-icons';
+import "material-symbols/outlined.css"; // Options: outlined, rounded, or sharp
 
 export default function LocationItemList({ items, onTakeItem }: {
   items: PlayerItem[];
@@ -28,7 +28,7 @@ export default function LocationItemList({ items, onTakeItem }: {
       />
       {isLockedChest && (
         <span className={styles.lockBadge} aria-label="Locked" data-testid="lock-icon">
-          <LockClosedIcon />
+          <span className="material-symbols-outlined">lock</span>
         </span>
       )}
     </button>);
