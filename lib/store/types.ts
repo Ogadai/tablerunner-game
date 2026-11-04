@@ -186,12 +186,66 @@ export interface PlayerActionsState {
   actions: PlayerAction[];
 }
 
+export enum EntityItemClass {
+  self = 'self',
+  friendly = 'friendly',
+  npc = 'npc',
+  enemy = 'enemy',
+}
+
+export interface EntityItemDetail {
+  id: string;
+  name: string;
+  iconXY: { x: number, y: number };
+  className: EntityItemClass;
+  health: number;
+  maxHealth: number;
+  levelUp?: boolean;
+  cost?: number;
+  costUnaffordable?: boolean;
+}
+
+export interface CombatActionIcon {
+  sheet: 'spell' | 'item';
+  iconXY: { x: number; y: number };
+}
+
+export type CombatActionType = 'attack' | 'spell' | 'item' | 'effect' | 'defeat';
+
+export interface CombatEventTarget {
+  targetId: string;
+  targetName: string;
+  healthDelta: number;
+  resultHealth: number;
+  miss?: boolean;
+  defeated?: boolean;
+  resisted?: boolean;
+  vulnerable?: boolean;
+}
+
+export interface CombatEvent {
+  id: string;
+  initiatorId: string;
+  initiatorName: string;
+  actionType: CombatActionType;
+  actionName: string;
+  icon: CombatActionIcon;
+  targets: CombatEventTarget[];
+}
+
+export interface BattleReplay {
+  locationId: number;
+  initialEntities: EntityItemDetail[];
+  events: CombatEvent[];
+}
+
 export interface PlayerMessage {
-  text: string
+  text: string;
 }
 
 export interface PlayerMessagesState {
   messages: PlayerMessage[];
+  battleReplay?: BattleReplay;
 }
 
 export interface MonsterState extends ITarget {

@@ -14,6 +14,7 @@ import { getCombatStats } from "../store/playerStats";
 import { SpellDef } from "../games/types";
 import { getEnemies, isEnemy, isFriend } from './game-friends-or-enemies';
 import { getMonsterCombatant } from './monster-combatant';
+import { recordCombatAttack } from './combat-log';
 
 const MAXIMUM_COIN_DROP = 100;
 const AUTO_DROP_ITEMS: ItemIds[] = [
@@ -74,7 +75,18 @@ function genericAttackTarget(
 
   const damage = processAttackForDamage(attackStats, getCombatStats(target));
   if (damage > 0) {
+    const appliedDamage = Math.min(damage, target.health);
     target.health = Math.max(0, target.health - damage);
+    recordCombatAttack(
+      params,
+      attacker.location.id,
+      attacker,
+      target,
+      appliedDamage,
+      target.health,
+      true,
+      { defeated: target.health <= 0 }
+    );
     playerMessageAtLocation(params, target.id,
       `**${attacker.name}** hit **{player}** for **${damage}** damage`);
 
@@ -84,6 +96,15 @@ function genericAttackTarget(
     return true;
   }
 
+  recordCombatAttack(
+    params,
+    attacker.location.id,
+    attacker,
+    target,
+    0,
+    target.health,
+    false
+  );
   playerMessageAtLocation(params, target.id, `**${attacker.name}** missed **{player}**`);
   return false;
 }
@@ -105,6 +126,7 @@ export function monsterAttack(
     const damage = processAttackForDamage(monsterStats, getCombatStats(target));
 
     if (damage > 0) {
+      const appliedDamage = Math.min(damage, target.health);
       target.health -= damage;
       if (target.health <= 0) {
         target.health = 0;
@@ -114,11 +136,31 @@ export function monsterAttack(
         target.infected = ZOMBIE_TURNS;
       }
 
+      recordCombatAttack(
+        params,
+        monster.location,
+        getMonsterCombatant(monster),
+        target,
+        appliedDamage,
+        target.health,
+        true,
+        { defeated: target.health <= 0 }
+      );
+
       playerMessageAtLocation(params, target.id, `**${getMonsterName(monster)}** hit **{player}** for **${damage}** damage`);
       if (target.health <= 0) {
         handlePlayerIsDead(params, target);
       }
     } else {
+      recordCombatAttack(
+        params,
+        monster.location,
+        getMonsterCombatant(monster),
+        target,
+        0,
+        target.health,
+        false
+      );
       playerMessageAtLocation(params, target.id, `**${getMonsterName(monster)}** missed **{player}**`);
     }
   } catch(error) {
@@ -180,6 +222,19 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
           monsterDropCoins(params, player, monster);
         }
 
+        if (!attackStats.name) {
+          recordCombatAttack(
+            params,
+            player.location.id,
+            player,
+            monster,
+            appliedDamage,
+            monster.health,
+            true,
+            { resisted: !!resisted, vulnerable: !!vulnerable, defeated: monster.health <= 0 }
+          );
+        }
+
         // Share points with living players on the attacker's team at this location.
         const players = params.gameState.players.filter(p =>
           p.location.id === player.location.id && p.health > 0 && isFriend(player, p)
@@ -193,6 +248,18 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
         playerMessageAtLocation(params, player.id, `${attackName} hit **${getMonsterName(monster)}** for **${appliedDamage}** damage${resisted ? ' (**resisted**)' : ''}${monster.health <= 0 ? ' and *defeated it!*' : ''}`);
         return true;
       } else {
+        if (!attackStats.name) {
+          recordCombatAttack(
+            params,
+            player.location.id,
+            player,
+            monster,
+            0,
+            monster.health,
+            false,
+            { resisted: !!resisted, vulnerable: !!vulnerable }
+          );
+        }
         playerMessageAtLocation(params, player.id, `${attackName} missed **${getMonsterName(monster)}**`);
       }
     }

@@ -13,6 +13,7 @@ import { getMonsterStats } from './monster-stats';
 import { getCombatStats } from '../store/playerStats';
 import { joinWithAnd } from '../string-helpers';
 import { hasActiveFollower, isFollowerSpell } from './npc-followers';
+import { recordCombatSpell, CombatSpellTargetInput } from './combat-log';
 
 const MAX_RECENT_SPELLS = 2;
 
@@ -30,6 +31,9 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
   const targets = getSpellTargets(params, player, action);
 
   if (targets.length > 0) {
+    const healthBeforeMap = new Map(targets.map(t => [t.id, t.health]));
+    const casterHealthBefore = player.health;
+
     if (specialSpellActions[action.spellId]) {
       specialSpellActions[action.spellId](params, player, spell, targets);
     } else if (spell.bonusStats.damage! > 0 && spell.targetType === 'enemy') {
@@ -39,6 +43,30 @@ export function actionCastSpell(params: BaseParams, player: INamedTarget, action
       // Spell to apply effects to friend or foe
       applySpellEffects(params, player, spell, targets);
     }
+
+    const eventTargets: CombatSpellTargetInput[] = targets.map(t => {
+      const before = healthBeforeMap.get(t.id) ?? t.health;
+      const delta = t.health - before;
+      return {
+        target: t as INamedTarget | MonsterState,
+        healthDelta: delta,
+        resultHealth: t.health,
+        miss: delta === 0 && (spell.bonusStats.damage ?? 0) > 0,
+        defeated: t.health <= 0,
+      };
+    });
+
+    if (spell.id === SpellIds.bloodthirst && player.health > casterHealthBefore && !eventTargets.some(e => e.target.id === player.id)) {
+      eventTargets.push({
+        target: player,
+        healthDelta: player.health - casterHealthBefore,
+        resultHealth: player.health,
+        miss: false,
+        defeated: false,
+      });
+    }
+
+    recordCombatSpell(params, player.location.id, player, spell, eventTargets);
 
     const recentSpells: SpellIds[] = [
       action.spellId as SpellIds,

@@ -1,24 +1,8 @@
 import styles from './entity-list.module.css';
 import CoinDisplay from './coin-display';
+import { EntityItemClass, type EntityItemDetail } from '@/lib/store/types';
 
-export enum EntityItemClass {
-  self = 'self',
-  friendly = 'friendly',
-  npc = 'npc',
-  enemy = 'enemy',
-}
-
-export interface EntityItemDetail {
-  id: string;
-  name: string;
-  iconXY: { x: number, y: number },
-  className: EntityItemClass;
-  health: number;
-  maxHealth: number;
-  levelUp?: boolean;
-  cost?: number;
-  costUnaffordable?: boolean;
-}
+export { EntityItemClass, type EntityItemDetail };
 
 export default function EntityList({
   entities,

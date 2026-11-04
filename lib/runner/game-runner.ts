@@ -44,6 +44,7 @@ import { updateMonsterLeds } from './game-action-monsters';
 import { actionRespawn } from './game-action-move';
 import { handlePlayerIsDead } from './game-action-attack';
 import { playerMessageAtLocation } from './game-messages';
+import { finalizeCombatReplays, recordCombatEffect, getTargetLocationId } from './combat-log';
 
 export async function checkAllPlayersReady(boardId: string, mapId: string): Promise<void> {
   let gameStateLock: (() => Promise<void>) | null = null;
@@ -275,6 +276,8 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
       }
     }
 
+    finalizeCombatReplays(params);
+
     const newLocationsState: AllLocationsState = {
       monsters: params.monsters,
       items: params.items,
@@ -316,6 +319,10 @@ function processTargetEffects(params: BaseParams, targets: ITarget[]) {
         if (effect.health && effect.health < 0 && target.health > 0) {
           const damage = Math.min(target.health, -effect.health);
           target.health -= damage;
+          const combatLocationId = params.playerCombatLocations?.[target.id] ?? getTargetLocationId(target);
+          if (combatLocationId !== undefined) {
+            recordCombatEffect(params, combatLocationId, target as INamedTarget | MonsterState, effect.description, damage, target.health);
+          }
           playerMessageAtLocation(params, target.id,
             `**{player}** took **${damage}** damage from **${effect.description}**${target.health <= 0 && 'type' in target ? ' and *was defeated!*' : ''}`);
           if (target.health <= 0 && !('type' in target)) {

@@ -19,14 +19,15 @@ export function playerMessageAtLocation(params: BaseParams, playerId: string, me
       ?? params.monsters.find(m => m.id === recipientId)?.location;
     if (recipientId !== playerId && recipientLocation !== location) continue;
     const self = recipientId === playerId;
-    buffer.messages.push({ text: message
-      .replaceAll('**{player}**', self ? '*You*' : `**${name}**`)
-      .replaceAll('**{player}{possessive}**', self ? '*Your*' : `**${name}${name.endsWith('s') ? "'" : "'s"}**`)
-      .replaceAll('{player}', self ? 'You' : name)
-      .replaceAll('{playerNoun}', self ? 'are' : 'is')
-      .replaceAll('{ownership}', self ? 'have' : 'has')
-      .replaceAll('{self}', self ? 'yourself' : 'themself')
-      .replaceAll('{possessive}', self ? 'r' : name.endsWith('s') ? "'" : "'s")
+    buffer.messages.push({
+      text: message
+        .replaceAll('**{player}**', self ? '*You*' : `**${name}**`)
+        .replaceAll('**{player}{possessive}**', self ? '*Your*' : `**${name}${name.endsWith('s') ? "'" : "'s"}**`)
+        .replaceAll('{player}', self ? 'You' : name)
+        .replaceAll('{playerNoun}', self ? 'are' : 'is')
+        .replaceAll('{ownership}', self ? 'have' : 'has')
+        .replaceAll('{self}', self ? 'yourself' : 'themself')
+        .replaceAll('{possessive}', self ? 'r' : name.endsWith('s') ? "'" : "'s"),
     });
   }
 }
@@ -36,7 +37,7 @@ export function soloMessageAtLocation(params: BaseParams, playerId: string, mess
     text: message
       .replaceAll('**{player}**', '*You*')
       .replaceAll('{player}', 'You')
-      .replaceAll('{playerNoun}', 'are')
+      .replaceAll('{playerNoun}', 'are'),
   });
 }
 

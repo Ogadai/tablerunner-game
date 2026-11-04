@@ -5,6 +5,7 @@ import { playerMessageAtLocation } from './game-messages';
 import { allItems } from "../games/items";
 import { specialItemActions } from './special-item-actions';
 import { getCombatStats } from "../store/playerStats";
+import { recordCombatItem } from './combat-log';
 
 export function actionUseItem(params: BaseParams, player: INamedTarget, action: PlayerActionUseItem): void {
   const item = player.equipment.find(item => item.id === action.itemId);
@@ -12,6 +13,7 @@ export function actionUseItem(params: BaseParams, player: INamedTarget, action: 
 
   if (usableItem) {
     const characterStats = getCombatStats(player);
+    const healthBefore = player.health;
 
     const benefitDescriptions: string[] = [];
     // Apply benefit
@@ -34,27 +36,61 @@ export function actionUseItem(params: BaseParams, player: INamedTarget, action: 
       playerMessageAtLocation(params, player.id,
         `**{player}** drank **${usableItem.name}** for ${benefitDescriptions.join(' and ')}!`);
     }
-    
+
     let shouldRemoveItem = true;
     if (specialItemActions[usableItem.id]) {
-      shouldRemoveItem = specialItemActions[usableItem.id](params, player);
-    } else if (usableItem.bonusStats && usableItem.turns != undefined && usableItem.turns > 0) {
-      const { attack, damage, defence, speed } = usableItem.bonusStats;
-      const newEffect: CharacterEffect = {
-        description: usableItem.name,
-        turns: usableItem.turns + 1,
-        attack, damage, defence, speed
-      };
+      const candidates = [
+        ...params.gameState.players.filter(p => p.location.id === player.location.id),
+        ...params.gameState.npcs.filter(n => n.location.id === player.location.id),
+      ];
+      const healthBeforeMap = new Map(candidates.map(c => [c.id, c.health]));
 
-      if (!player.effects) {
-        player.effects = [];
+      shouldRemoveItem = specialItemActions[usableItem.id](params, player);
+
+      if (shouldRemoveItem) {
+        const affectedTargets = candidates
+          .filter(c => c.health !== healthBeforeMap.get(c.id))
+          .map(c => ({
+            target: c,
+            healthDelta: c.health - (healthBeforeMap.get(c.id) ?? c.health),
+            resultHealth: c.health,
+          }));
+
+        if (affectedTargets.length > 0) {
+          recordCombatItem(params, player.location.id, player, usableItem, affectedTargets);
+        }
       }
-      player.effects.push(newEffect);
+    } else {
+      recordCombatItem(
+        params,
+        player.location.id,
+        player,
+        usableItem,
+        [{
+          target: player,
+          healthDelta: player.health - healthBefore,
+          resultHealth: player.health,
+        }]
+      );
+
+      if (usableItem.bonusStats && usableItem.turns != undefined && usableItem.turns > 0) {
+        const { attack, damage, defence, speed } = usableItem.bonusStats;
+        const newEffect: CharacterEffect = {
+          description: usableItem.name,
+          turns: usableItem.turns + 1,
+          attack, damage, defence, speed
+        };
+
+        if (!player.effects) {
+          player.effects = [];
+        }
+        player.effects.push(newEffect);
+      }
     }
 
     // Remove from equipment
     if (shouldRemoveItem) {
-      player.equipment = player.equipment.filter(item => item.id !== action.itemId)
+      player.equipment = player.equipment.filter(item => item.id !== action.itemId);
     }
   }
 }

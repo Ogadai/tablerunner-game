@@ -34,6 +34,7 @@ import { playerMessageAtLocation } from './game-messages';
 import { getEnemies } from './game-friends-or-enemies';
 import { gameRunners } from './games';
 import { getNpcsInMasterOrder } from './npc-followers';
+import { snapshotPreCombatParticipants } from './combat-log';
 
 enum EntityActionEntityTypes {
   player,
@@ -77,6 +78,12 @@ export async function runGameActions(params: BaseParams, playerActions: Record<s
   };
 
   try {
+    params.playerCombatLocations = {};
+    for (const player of params.gameState.players) {
+      params.playerCombatLocations[player.id] = player.location.id;
+    }
+    snapshotPreCombatParticipants(params);
+
     // Release followers whose NPC master is defeated or belongs to another team.
     for (const monster of params.monsters.filter(monster => monster.masterId)) {
       const master = params.gameState.npcs.find(npc => npc.id === monster.masterId);
