@@ -9,6 +9,7 @@ import { getPlayerStats } from './playerStats';
 import { createItemForInventory } from "../runner/apply-inventory";
 import { pickCharacterName } from "../games/character-names";
 import { populateItemsForMap } from "../runner/populate-items";
+import { populateChestsForMap } from "../runner/populate-chests";
 import { createStoreInventoryState } from "./playerInventory";
 import { setupProcesses } from "../runner/game-processes";
 import { updatePortalAndShopLeds } from "../runner/game-action-portal";
@@ -92,10 +93,11 @@ export async function createNewGameState(boardId: string, mapId: string, gameId:
   updatePortalAndShopLeds(newGameState);
 
   const items = await populateItemsForMap(newGameState, mapId);
+  const chests = await populateChestsForMap(newGameState, mapId);
 
   const locationsState: AllLocationsState = {
     monsters: [],
-    items,
+    items: [...items, ...chests],
     coins: [],
     blockedMoves: [],
     npcs: newGameState.npcs,

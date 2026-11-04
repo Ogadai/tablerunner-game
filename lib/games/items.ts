@@ -366,6 +366,7 @@ export const keyItems: Record<string, ConsumableItemDef> = {
 };
 
 export enum SpecialIds {
+  chest = 'chest',
   fireCrystalShard = 'fireCrystalShard',
   questRelicSkull = 'questRelicSkull',
   questAlchemistBag = 'questAlchemistBag',
@@ -377,6 +378,12 @@ export enum SpecialIds {
   questEmeraldIdol = 'questEmeraldIdol',
 }
 export const specialItems: Record<string, ItemDef> = {
+  [SpecialIds.chest]: {
+    id: SpecialIds.chest.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Chest',
+    iconXY: { x: 9, y: 8 },
+  },
   [SpecialIds.questRelicSkull]: {
     id: SpecialIds.questRelicSkull.toString(),
     type: PlayerItemType.consumable,

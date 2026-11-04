@@ -8,6 +8,7 @@ import { games } from '../games/games';
 import { characters } from '../games/characters';
 import { allItems } from '../games/items';
 import { populateItemsForMap } from '../runner/populate-items';
+import { populateChestsForMap } from '../runner/populate-chests';
 import { setupProcesses } from '../runner/game-processes';
 import { createStoreInventoryState } from './playerInventory';
 import { pickCharacterName } from '../games/character-names';
@@ -20,6 +21,7 @@ jest.mock('./redis-access', () => ({
   getBoardSettingsFromRedis: jest.fn(), setBoardSettingsFromRedis: jest.fn(),
 }));
 jest.mock('../runner/populate-items', () => ({ populateItemsForMap: jest.fn() }));
+jest.mock('../runner/populate-chests', () => ({ populateChestsForMap: jest.fn() }));
 jest.mock('../runner/game-processes', () => ({ setupProcesses: jest.fn() }));
 jest.mock('../runner/cauldron-of-fire/processes', () => ({ cauldronOfFireProcesses: {} }));
 jest.mock('./playerInventory', () => ({ createStoreInventoryState: jest.fn() }));
@@ -40,6 +42,7 @@ beforeEach(() => {
   jest.resetAllMocks();
   mockRedis.getGameStateFromRedis.mockResolvedValue(createState());
   jest.mocked(populateItemsForMap).mockResolvedValue([]);
+  jest.mocked(populateChestsForMap).mockResolvedValue([]);
   jest.mocked(pickCharacterName).mockReturnValue('Test Hero');
 });
 
@@ -86,13 +89,17 @@ describe('createNewGameState', () => {
       success: false, error: "Couldn't find game id missing",
     });
     expect(populateItemsForMap).not.toHaveBeenCalled();
+    expect(populateChestsForMap).not.toHaveBeenCalled();
     expect(setupProcesses).not.toHaveBeenCalled();
     expect(mockRedis.setGameStateInRedis).not.toHaveBeenCalled();
   });
 
   it('initializes and persists the game, locations and every store', async () => {
     const items = [{ id: 'item-1', type: 'healingPotion', location: starterPlayer.location }];
+    const chests = [{ id: 'chest-1', type: 'chest', location: 35 }];
+    const allInitialItems = [...items, ...chests];
     jest.mocked(populateItemsForMap).mockResolvedValue(items);
+    jest.mocked(populateChestsForMap).mockResolvedValue(chests);
     jest.mocked(setupProcesses).mockImplementation(async params => {
       params.gameState.processState.test = { initialized: true };
       params.monsters.push({ id: 'monster-1', type: 'rat', health: 5, location: starterPlayer.location, team: 'monster' });
@@ -106,10 +113,11 @@ describe('createNewGameState', () => {
       counters: { itemId: 0, monsterId: 0 }, processState: { test: { initialized: true } },
     }) });
     expect(populateItemsForMap).toHaveBeenCalledWith(result.data, 'map');
-    expect(setupProcesses).toHaveBeenCalledWith(expect.objectContaining({ boardId: 'board', mapId: 'map', messages: {}, playerInstructions: {}, items }));
+    expect(populateChestsForMap).toHaveBeenCalledWith(result.data, 'map');
+    expect(setupProcesses).toHaveBeenCalledWith(expect.objectContaining({ boardId: 'board', mapId: 'map', messages: {}, playerInstructions: {}, items: allInitialItems }));
     expect(mockRedis.setGameStateInRedis).toHaveBeenCalledWith('board', 'map', result.data);
     expect(mockRedis.setLocationsStateInRedis).toHaveBeenCalledWith('board', 'map', {
-      items, monsters: [{ id: 'monster-1', type: 'rat', health: 5, location: starterPlayer.location, team: 'monster' }],
+      items: allInitialItems, monsters: [{ id: 'monster-1', type: 'rat', health: 5, location: starterPlayer.location, team: 'monster' }],
       coins: [], blockedMoves: [], npcs: [],
     });
     expect(createStoreInventoryState).toHaveBeenCalledTimes(Object.keys(game.storeItems).length);
