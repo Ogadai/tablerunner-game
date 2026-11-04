@@ -2,7 +2,7 @@
 
 import { ApiResponse } from "../api-response";
 import { LocationState } from "./types";
-import { getGameStateFromRedis, getLocationsStateFromRedis } from './redis-access';
+import { getGameStateFromRedis, getLocationAndInventoryFromRedis, getLocationsStateFromRedis } from './redis-access';
 import { games } from '../games/games';
 import { getFastTravelLocations } from '../runner/fast-travel-locations';
 
@@ -24,18 +24,27 @@ export async function getAvailableFastTravelLocations(boardId: string, mapId: st
   }
 }
 
-export async function getLocationState(boardId: string, mapId: string, location: number): Promise<ApiResponse<LocationState>> {
+export async function getLocationState(
+  boardId: string,
+  mapId: string,
+  location: number,
+  playerId?: string,
+): Promise<ApiResponse<LocationState>> {
   try {
-    const monsterState = await getLocationsStateFromRedis(boardId, mapId);
+    const { locations, inventory } = playerId
+      ? await getLocationAndInventoryFromRedis(boardId, mapId, playerId)
+      : { locations: await getLocationsStateFromRedis(boardId, mapId), inventory: undefined };
+
     const data: LocationState = {
-      monsters: monsterState.monsters.filter(m => m.location === location),
-      items: monsterState.items.filter(i => i.location === location),
-      npcs: (monsterState.npcs || []).filter(npc => npc.location.id === location),
+      monsters: locations.monsters.filter(m => m.location === location),
+      items: locations.items.filter(i => i.location === location),
+      npcs: (locations.npcs || []).filter(npc => npc.location.id === location),
+      ...(inventory ? { inventory } : {}),
     };
 
     return {
       success: true,
-      data
+      data,
     };
   } catch (error) {
     return {

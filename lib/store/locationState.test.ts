@@ -1,8 +1,12 @@
 import { getAvailableFastTravelLocations, getLocationState } from './locationState';
-import { getGameStateFromRedis, getLocationsStateFromRedis } from './redis-access';
+import { getGameStateFromRedis, getLocationAndInventoryFromRedis, getLocationsStateFromRedis } from './redis-access';
 import { createGame, createLocations, createNpc } from './test-support/fixtures';
 
-jest.mock('./redis-access', () => ({ getLocationsStateFromRedis: jest.fn(), getGameStateFromRedis: jest.fn() }));
+jest.mock('./redis-access', () => ({
+  getLocationsStateFromRedis: jest.fn(),
+  getGameStateFromRedis: jest.fn(),
+  getLocationAndInventoryFromRedis: jest.fn(),
+}));
 jest.mock('../games/games', () => ({ games: [{ id: 'test-game', locations: [
   { id: 1, description: '', move: [{ id: 2, direction: 'e' }] }, { id: 2, description: '', move: [] },
 ] }] }));
@@ -32,6 +36,19 @@ it('selects monsters, items and NPCs at the requested location, including dead e
   await expect(getLocationState('board', 'map', 1)).resolves.toEqual({ success: true, data: { monsters: [localMonster], items: [localItem], npcs: [localNpc] } });
   expect(getLocationsStateFromRedis).toHaveBeenCalledWith('board', 'map');
   expect(state.monsters).toHaveLength(2);
+});
+
+it('selects location entities and player inventory together when playerId is provided', async () => {
+  const localMonster = { id: 'rat', type: 'rat', health: 10, location: 1, team: 'monster' };
+  const state = createLocations({ monsters: [localMonster] });
+  const inventory = { equipped: null, equipment: [], coins: 50 };
+  jest.mocked(getLocationAndInventoryFromRedis).mockResolvedValue({ locations: state, inventory });
+
+  await expect(getLocationState('board', 'map', 1, 'hero')).resolves.toEqual({
+    success: true,
+    data: { monsters: [localMonster], items: [], npcs: [], inventory },
+  });
+  expect(getLocationAndInventoryFromRedis).toHaveBeenCalledWith('board', 'map', 'hero');
 });
 
 it('supports empty locations and older state without NPCs', async () => {

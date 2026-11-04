@@ -87,9 +87,12 @@ export default function PlayerLocation(
 
       async function fetchLocationState() {
         const currentRequest = ++requestId;
-        const state = await getLocationState(boardId, mapId, player!.location.id);
+        const state = await getLocationState(boardId, mapId, player!.location.id, playerId);
         if (!disposed && currentRequest === requestId && state.success && state.data) {
           setLocationUpdate({ snapshot: snapshot!, state: state.data });
+          if (state.data.inventory) {
+            playerStatsSyncService.updateInventory(state.data.inventory, player);
+          }
         }
       }
 

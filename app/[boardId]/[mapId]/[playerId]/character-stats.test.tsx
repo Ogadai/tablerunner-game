@@ -67,4 +67,21 @@ describe('CharacterStats', () => {
       expect(screen.getByAltText('Coins')).toBeInTheDocument();
     }
   });
+
+  it('renders refreshed inventory coins in the regular coin display', async () => {
+    const player = makePlayer({ id: sourcePlayer.id, coins: 10 });
+    // Update live inventory coins
+    sync.updateInventory({ equipped: null, equipment: [], coins: 75 }, sourcePlayer);
+
+    render(<CharacterStats boardId="board" mapId="map" player={player} playerStats={null} isSelf />);
+    await act(async () => {});
+    expect(screen.getByText('75')).toBeInTheDocument();
+
+    // Also supports inventory prop when viewing another character
+    const otherPlayer = makePlayer({ id: 'other', coins: 5 });
+    render(<CharacterStats boardId="board" mapId="map" player={otherPlayer} playerStats={null} isSelf={false}
+      inventory={{ equipped: null, equipment: [], coins: 120 }} />);
+    await act(async () => {});
+    expect(screen.getByText('120')).toBeInTheDocument();
+  });
 });

@@ -6,11 +6,12 @@ import { INamedTarget, NOTHING_EQUPPED, NpcInventoryTransfer, PlayerActionType, 
 import { getActionsStateFromRedis, getCharacterInventoriesFromRedis, getLocationsStateFromRedis, setCharacterInventoriesInRedis } from './redis-access';
 import { GameTopicMessageType, LocationUpdatedMessage, StoreUpdatedMessage } from "../message-types";
 import { publishMessage } from "../messages/message-publisher";
-import { allItems, SELL_COST_RATIO } from "../games/items";
+import { allItems, SELL_COST_RATIO, SpecialIds } from "../games/items";
 import { PlayerItem } from "../games/types";
 import { createItemForInventory } from "../runner/apply-inventory";
 import { getEnemies } from '../runner/game-friends-or-enemies';
 import { equipBestNpcItems } from './npcInventory';
+import { handleChestPickup } from "../runner/chest-pickup";
 
 async function publishLocationUpdated(boardId: string, mapId: string, locationId: number): Promise<void> {
   const msg: LocationUpdatedMessage = {
@@ -281,6 +282,19 @@ export async function takeItemAtLocation(boardId: string, mapId: string, playerI
     if (!item) {
       // Another player may have collected it while this request was in flight.
       return { success: true, data: playerInventory };
+    }
+
+    if (item.type === SpecialIds.chest) {
+      return await handleChestPickup({
+        boardId,
+        mapId,
+        playerId,
+        chestItem: item,
+        playerState,
+        playerInventory,
+        gameState,
+        locationsState,
+      });
     }
 
     addItemToPlayer(playerState, playerInventory, item);

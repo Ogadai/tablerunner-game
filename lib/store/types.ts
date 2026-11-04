@@ -239,6 +239,7 @@ export interface LocationState {
   monsters: MonsterState[];
   items: PlayerItem[];
   npcs: NPCState[];
+  inventory?: PlayerInventoryState;
 }
 
 export interface PlayerInventoryState {

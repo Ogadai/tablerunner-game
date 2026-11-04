@@ -28,7 +28,7 @@ jest.mock('@/lib/store/playerActionsState', () => ({ addPlayerAction: jest.fn(),
 jest.mock('@/lib/store/locationState', () => ({ getLocationState: jest.fn() }));
 jest.mock('@/app/message-bus/location-topic-service', () => ({ __esModule: true, default: { subscribe: jest.fn() } }));
 jest.mock('./player-stats-sync.service', () => ({ __esModule: true, default: {
-  updatePlayer: jest.fn(), updateActionsState: jest.fn(),
+  updatePlayer: jest.fn(), updateActionsState: jest.fn(), updateInventory: jest.fn(),
 } }));
 jest.mock('./player-location-list', () => ({ __esModule: true, default: jest.fn(() => null) }));
 jest.mock('./player-spells', () => ({ __esModule: true, default: () => null }));
@@ -324,12 +324,18 @@ describe('PlayerLocation', () => {
   });
 
   it('refreshes only matching location events and disposes subscriptions', async () => {
+    const updatedInventory = { equipped: null, equipment: [], coins: 150 };
+    jest.mocked(getLocationState).mockResolvedValue({
+      success: true,
+      data: { monsters: [], items: [], npcs: [], inventory: updatedInventory },
+    });
     const { unmount } = await setup();
     expect(getLocationState).not.toHaveBeenCalled();
     await act(async () => onLocation(2));
     expect(getLocationState).not.toHaveBeenCalled();
     await act(async () => onLocation(1));
-    expect(getLocationState).toHaveBeenCalledTimes(1);
+    expect(getLocationState).toHaveBeenCalledWith('board', 'map', 1, 'barbarian');
+    expect(sync.updateInventory).toHaveBeenCalledWith(updatedInventory, expect.objectContaining({ id: 'barbarian' }));
     unmount();
     expect(disposeLocation).toHaveBeenCalledTimes(1);
   });

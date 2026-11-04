@@ -414,6 +414,21 @@ export async function getLocationsStateFromRedis(boardId: string, mapId: string)
   return result || { monsters: [], items: [], coins: [], blockedMoves: [], npcs: [] };
 }
 
+export async function getLocationAndInventoryFromRedis(
+  boardId: string,
+  mapId: string,
+  playerId: string
+): Promise<{ locations: AllLocationsState; inventory: PlayerInventoryState }> {
+  const [locations, inventory] = await redis.mget<[AllLocationsState | null, PlayerInventoryState | null]>(
+    getLocationsKey(boardId, mapId),
+    getPlayerInventoryKey(boardId, mapId, playerId),
+  );
+  return {
+    locations: locations || { monsters: [], items: [], coins: [], blockedMoves: [], npcs: [] },
+    inventory: inventory || { equipped: null, equipment: null, hiredNpcIds: [] },
+  };
+}
+
 export async function setLocationsStateInRedis(boardId: string, mapId: string, monsterState: AllLocationsState): Promise<void> {
   await redis.set(getLocationsKey(boardId, mapId), monsterState, gameStateOptions);
 }

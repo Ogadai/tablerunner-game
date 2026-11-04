@@ -42,8 +42,10 @@ export default function CharacterStats({
   inventory?: PlayerInventoryState;
   processing?: boolean;
 }) {
-  const { sourcePlayer, addStatsState } = usePlayerStatsSnapshot();
+  const { sourcePlayer, addStatsState, inventoryState } = usePlayerStatsSnapshot();
   const playerAddStats = isSelf && sourcePlayer?.id === player.id ? addStatsState ?? emptyAddStats : emptyAddStats;
+  const liveInventory = isSelf && sourcePlayer?.id === player.id ? inventoryState : null;
+  const coins = liveInventory?.coins ?? inventory?.coins ?? player.coins;
 
   const baseStats = playerStats?.baseStats || player.baseStats!;
 
@@ -79,7 +81,7 @@ export default function CharacterStats({
       {gameState?.gameId === 'warlordsfire'
         ? <WarlordCoins key={`${player.id}:${gameState.turn}`} boardId={boardId} mapId={mapId} gameState={gameState} player={player}
             isSelf={isSelf} inventory={inventory} processing={processing} />
-        : <CoinDisplay coins={player.coins} />}
+        : <CoinDisplay coins={coins} />}
       { player.availableStats > 0 && <div className={ styles.availablePointsPrompt }>
         Assign points: <span className={ styles.availablePoints }>{ availablePoints }</span>
       </div> }

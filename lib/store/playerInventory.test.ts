@@ -10,6 +10,8 @@ jest.mock('./redis-access', () => ({
   lockStoreStateInRedis: jest.fn(), setGameStateInRedis: jest.fn(), setLocationsStateInRedis: jest.fn(),
   setPlayerInventoryInRedis: jest.fn(), setStoreStateInRedis: jest.fn(),
   getCharacterInventoriesFromRedis: jest.fn(), setCharacterInventoriesInRedis: jest.fn(), getActionsStateFromRedis: jest.fn(),
+  getPlayerMessagesFromRedis: jest.fn(() => Promise.resolve({ messages: [] })),
+  setPlayerMessagesInRedis: jest.fn(() => Promise.resolve()),
 }));
 jest.mock('../messages/message-publisher', () => ({ publishMessage: jest.fn() }));
 const storage = jest.mocked(redis);
@@ -31,6 +33,7 @@ beforeEach(() => {
   storage.getLocationsStateFromRedis.mockResolvedValue(locations);
   storage.getPlayerInventoryFromRedis.mockResolvedValue(inventory);
   storage.getStoreStateFromRedis.mockResolvedValue(store);
+  storage.getPlayerMessagesFromRedis.mockResolvedValue({ messages: [] });
   storage.lockGameStateInRedis.mockResolvedValue(releaseGame);
   storage.lockLocationsStateInRedis.mockResolvedValue(releaseLocations);
   storage.lockStoreStateInRedis.mockResolvedValue(releaseStore);
@@ -226,6 +229,17 @@ describe('taking items', () => {
     expect(inventory.equipment).toEqual([]);
     expectNoWrites();
     expect(releaseGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('triggers special chest pickup when picking up a chest item', async () => {
+    inventory.equipment = [];
+    locations.items = [{ id: 'chest-1', type: 'chest', location: 1 }];
+
+    const result = await takeItemAtLocation('board', 'map', 'hero', 'chest-1');
+    expect(result.success).toBe(true);
+    // Chest item is removed from location and not added to player inventory equipment
+    expect(locations.items.find(i => i.id === 'chest-1')).toBeUndefined();
+    expect(inventory.equipment).toEqual([]);
   });
 });
 
