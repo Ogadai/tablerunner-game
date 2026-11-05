@@ -345,8 +345,7 @@ export default function PlayerLocation(
   return (<>
     <div className={styles.playerLocationScreen}>
       <div className={styles.playerHeader}>
-        <h3>{getDisplayName(playerState)}</h3>
-        <h4>Location {playerState.location.id}</h4>
+        <h4>{playerState.location.id}</h4>
       </div>
       <LocationImage locationId={playerState.location.id} description={locationDescription || ''} />
       <PlayerLocationList

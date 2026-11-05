@@ -23,10 +23,19 @@
 }
 
 .playerHeader {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   line-height: 1;
+  background-color: var(--bg-card);
+  padding: 0 0 5px 5px;
+  border-left: 1px solid var(--border-stone);
+  border-bottom: 1px solid var(--border-stone);
+  border-bottom-left-radius: 10px;
 
   h2, h3, h4 {
     margin-top: auto;

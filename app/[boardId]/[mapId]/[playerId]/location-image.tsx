@@ -72,9 +72,7 @@ export default function LocationImage({ locationId, description }: LocationImage
           />
         </div>
       )}
-      {!showImage && (
-        <p className={styles.fallbackDescription}>{description}</p>
-      )}
+      <p className={styles.fallbackDescription}>{description}</p>
     </>
   );
 }
