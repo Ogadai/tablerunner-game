@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import type { ListBlobResultBlob } from '@vercel/blob';
 import { GameState, gameStateOptions, PlayerReadyState } from "./types";
 import { validateGameScope } from './savedGameTypes';
 import { getGameKey, getPlayersReadyKey, publishGameStateUpdated, publishReadyStateUpdated } from './redis-access';
@@ -74,4 +75,28 @@ export async function restoreGameSnapshotInRedis(boardId: string, mapId: string,
   await transaction.exec();
   await publishGameStateUpdated(boardId, mapId);
   await publishReadyStateUpdated(boardId, mapId, readyState as unknown as PlayerReadyState);
+}
+
+export const getSavedGamesCacheKey = (boardId: string, mapId: string) => `savedGamesCache:${boardId}:${mapId}`;
+
+export async function getSavedGamesCacheFromRedis(boardId: string, mapId: string): Promise<ListBlobResultBlob[] | null> {
+  validateGameScope(boardId, mapId);
+  const cached = await redis.get<ListBlobResultBlob[]>(getSavedGamesCacheKey(boardId, mapId));
+  if (!Array.isArray(cached)) {
+    return null;
+  }
+  return cached.map(blob => ({
+    ...blob,
+    uploadedAt: new Date(blob.uploadedAt),
+  }));
+}
+
+export async function setSavedGamesCacheInRedis(boardId: string, mapId: string, blobs: ListBlobResultBlob[]): Promise<void> {
+  validateGameScope(boardId, mapId);
+  await redis.set(getSavedGamesCacheKey(boardId, mapId), blobs, gameStateOptions);
+}
+
+export async function invalidateSavedGamesCacheInRedis(boardId: string, mapId: string): Promise<void> {
+  validateGameScope(boardId, mapId);
+  await redis.del(getSavedGamesCacheKey(boardId, mapId));
 }

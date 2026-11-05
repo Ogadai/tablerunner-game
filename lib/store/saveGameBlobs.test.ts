@@ -1,11 +1,23 @@
 /** @jest-environment node */
 import { get, list, put, type ListBlobResultBlob } from '@vercel/blob';
 import { listSavedGames, loadGameFromBlob, saveGameToBlob } from './saveGameBlobs';
-import { getGameSnapshotFromRedis, restoreGameSnapshotInRedis } from './redis-blob-saves';
+import {
+  getGameSnapshotFromRedis,
+  restoreGameSnapshotInRedis,
+  getSavedGamesCacheFromRedis,
+  setSavedGamesCacheInRedis,
+  invalidateSavedGamesCacheInRedis,
+} from './redis-blob-saves';
 import { createSave } from './test-support/fixtures';
 
 jest.mock('@vercel/blob', () => ({ get: jest.fn(), list: jest.fn(), put: jest.fn() }));
-jest.mock('./redis-blob-saves', () => ({ getGameSnapshotFromRedis: jest.fn(), restoreGameSnapshotInRedis: jest.fn() }));
+jest.mock('./redis-blob-saves', () => ({
+  getGameSnapshotFromRedis: jest.fn(),
+  restoreGameSnapshotInRedis: jest.fn(),
+  getSavedGamesCacheFromRedis: jest.fn(),
+  setSavedGamesCacheInRedis: jest.fn(),
+  invalidateSavedGamesCacheInRedis: jest.fn(),
+}));
 const uuid = '12345678-1234-4234-8234-123456789abc';
 const pathname = `saved-games/board/map/${uuid}_players-1_turn-3_name-My%20save.json`;
 
@@ -25,6 +37,9 @@ beforeEach(() => {
   jest.useFakeTimers({ doNotFake: ['queueMicrotask', 'nextTick'] }).setSystemTime(new Date('2026-09-25T12:00:00.000Z'));
   const save = createSave();
   jest.mocked(getGameSnapshotFromRedis).mockResolvedValue({ gameState: save.redisState['game:board:map'], redisState: save.redisState });
+  jest.mocked(getSavedGamesCacheFromRedis).mockResolvedValue(null);
+  jest.mocked(setSavedGamesCacheInRedis).mockResolvedValue();
+  jest.mocked(invalidateSavedGamesCacheInRedis).mockResolvedValue();
 });
 afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); });
 
@@ -35,23 +50,27 @@ describe('saving', () => {
     expect(put).toHaveBeenCalledWith(pathname, JSON.stringify(createSave()), {
       access: 'public', contentType: 'application/json', addRandomSuffix: false, allowOverwrite: false,
     });
+    expect(invalidateSavedGamesCacheInRedis).toHaveBeenCalledWith('board', 'map');
   });
 
   it('encodes scope and save-name path separators', async () => {
     await saveGameToBlob('board /', 'map %', '雪 / save');
     expect(jest.mocked(put).mock.calls[0][0]).toBe(`saved-games/board%20%2F/map%20%25/${uuid}_players-1_turn-3_name-%E9%9B%AA%20%2F%20save.json`);
+    expect(invalidateSavedGamesCacheInRedis).toHaveBeenCalledWith('board /', 'map %');
   });
 
   it.each(['', '   '])('rejects blank names before reading state', async name => {
     await expect(saveGameToBlob('board', 'map', name)).resolves.toEqual({ success: false, error: 'Board ID, map ID and save name are required' });
     expect(getGameSnapshotFromRedis).not.toHaveBeenCalled();
     expect(put).not.toHaveBeenCalled();
+    expect(invalidateSavedGamesCacheInRedis).not.toHaveBeenCalled();
   });
 
-  it.each([getGameSnapshotFromRedis, put])('reports save dependency failures', async dependency => {
+  it.each([getGameSnapshotFromRedis, put, invalidateSavedGamesCacheInRedis])('reports save dependency failures', async dependency => {
     jest.mocked(dependency).mockRejectedValue(new Error('Save failed'));
     await expect(saveGameToBlob('board', 'map', 'My save')).resolves.toEqual({ success: false, error: 'Save failed' });
     if (dependency === getGameSnapshotFromRedis) expect(put).not.toHaveBeenCalled();
+    if (dependency !== invalidateSavedGamesCacheInRedis) expect(invalidateSavedGamesCacheInRedis).not.toHaveBeenCalled();
   });
 });
 
@@ -68,6 +87,7 @@ describe('listing', () => {
     expect(result.data).toMatchObject({ cursor: '20', hasMore: true });
     expect(list).toHaveBeenNthCalledWith(1, { prefix: 'saved-games/board/map/', cursor: undefined, limit: 1000 });
     expect(list).toHaveBeenNthCalledWith(2, { prefix: 'saved-games/board/map/', cursor: 'blob-next', limit: 1000 });
+    expect(setSavedGamesCacheInRedis).toHaveBeenNthCalledWith(1, 'board', 'map', [...blobs].reverse());
     jest.mocked(list).mockResolvedValue({ blobs, hasMore: false });
     const lastPage = await listSavedGames('board', 'map', '20');
     expect(lastPage.data!.games.map(game => game.turn)).toEqual([1, 0]);
@@ -97,6 +117,33 @@ describe('listing', () => {
   it('reports listing failures', async () => {
     jest.mocked(list).mockRejectedValue(new Error('List failed'));
     await expect(listSavedGames('board', 'map')).resolves.toEqual({ success: false, error: 'List failed' });
+  });
+
+  it('returns cached saves from Redis without querying Blob list', async () => {
+    const cachedBlobs = [blob(pathname, '2026-09-25T12:00:00Z')];
+    jest.mocked(getSavedGamesCacheFromRedis).mockResolvedValue(cachedBlobs);
+    const result = await listSavedGames('board', 'map');
+    expect(result.success).toBe(true);
+    expect(result.data!.games).toHaveLength(1);
+    expect(result.data!.games[0]).toMatchObject({ saveName: 'My save', savedAt: '2026-09-25T12:00:00.000Z' });
+    expect(getSavedGamesCacheFromRedis).toHaveBeenCalledWith('board', 'map');
+    expect(list).not.toHaveBeenCalled();
+    expect(setSavedGamesCacheInRedis).not.toHaveBeenCalled();
+  });
+
+  it('returns cached empty list without querying Blob', async () => {
+    jest.mocked(getSavedGamesCacheFromRedis).mockResolvedValue([]);
+    const result = await listSavedGames('board', 'map');
+    expect(result).toEqual({ success: true, data: { games: [], cursor: undefined, hasMore: false } });
+    expect(getSavedGamesCacheFromRedis).toHaveBeenCalledWith('board', 'map');
+    expect(list).not.toHaveBeenCalled();
+    expect(setSavedGamesCacheInRedis).not.toHaveBeenCalled();
+  });
+
+  it.each([getSavedGamesCacheFromRedis, setSavedGamesCacheInRedis])('reports cache dependency failures', async dependency => {
+    jest.mocked(list).mockResolvedValue({ blobs: [], hasMore: false });
+    jest.mocked(dependency).mockRejectedValue(new Error('Cache error'));
+    await expect(listSavedGames('board', 'map')).resolves.toEqual({ success: false, error: 'Cache error' });
   });
 });
 

@@ -2,7 +2,13 @@
 
 import { ApiResponse } from "../api-response";
 import { get, list, put, type ListBlobResultBlob } from '@vercel/blob';
-import { getGameSnapshotFromRedis, restoreGameSnapshotInRedis } from './redis-blob-saves';
+import {
+  getGameSnapshotFromRedis,
+  restoreGameSnapshotInRedis,
+  getSavedGamesCacheFromRedis,
+  setSavedGamesCacheInRedis,
+  invalidateSavedGamesCacheInRedis,
+} from './redis-blob-saves';
 import { savedGameSchema, SavedGameList, validateGameScope } from './savedGameTypes';
 
 function getSavePrefix(boardId: string, mapId: string): string {
@@ -85,6 +91,7 @@ export async function saveGameToBlob(boardId: string, mapId: string, saveName: s
       addRandomSuffix: false,
       allowOverwrite: false,
     });
+    await invalidateSavedGamesCacheInRedis(boardId, mapId);
 
     return {
       success: true
@@ -109,15 +116,21 @@ export async function listSavedGames(boardId: string, mapId: string, cursor?: st
       throw new Error('Invalid saved game cursor');
     }
     const prefix = getSavePrefix(boardId, mapId);
-    const blobs: ListBlobResultBlob[] = [];
-    let blobCursor: string | undefined;
-    // Blob pages are in pathname order, so collect them before sorting and paginating.
-    do {
-      const result = await list({ prefix, cursor: blobCursor, limit: 1000 });
-      blobs.push(...result.blobs);
-      blobCursor = result.hasMore ? result.cursor : undefined;
-    } while (blobCursor);
-    blobs.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime() || a.pathname.localeCompare(b.pathname));
+    let blobs = await getSavedGamesCacheFromRedis(boardId, mapId);
+    if (blobs === null) {
+      blobs = [];
+      let blobCursor: string | undefined;
+      // Blob pages are in pathname order, so collect them before sorting and paginating.
+      do {
+        const result = await list({ prefix, cursor: blobCursor, limit: 1000 });
+        blobs.push(...result.blobs);
+        blobCursor = result.hasMore ? result.cursor : undefined;
+      } while (blobCursor);
+      blobs.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime() || a.pathname.localeCompare(b.pathname));
+      await setSavedGamesCacheInRedis(boardId, mapId, blobs);
+    } else {
+      blobs.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime() || a.pathname.localeCompare(b.pathname));
+    }
     const nextOffset = offset + 20;
     const games = blobs.slice(offset, nextOffset).map(blob => {
       const metadata = parseSavePathname(boardId, mapId, blob.pathname);

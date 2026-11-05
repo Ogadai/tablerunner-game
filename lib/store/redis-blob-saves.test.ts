@@ -1,10 +1,28 @@
 /** @jest-environment node */
 import { Redis } from '@upstash/redis';
-import { getGameSnapshotFromRedis, restoreGameSnapshotInRedis } from './redis-blob-saves';
+import {
+  getGameSnapshotFromRedis,
+  restoreGameSnapshotInRedis,
+  getSavedGamesCacheKey,
+  getSavedGamesCacheFromRedis,
+  setSavedGamesCacheInRedis,
+  invalidateSavedGamesCacheInRedis,
+} from './redis-blob-saves';
 import { publishGameStateUpdated, publishReadyStateUpdated } from './redis-access';
 import { createGame } from './test-support/fixtures';
 
-jest.mock('@upstash/redis', () => ({ Redis: { fromEnv: jest.fn(() => ({ scan: jest.fn(), mget: jest.fn(), multi: jest.fn() })) } }));
+jest.mock('@upstash/redis', () => ({
+  Redis: {
+    fromEnv: jest.fn(() => ({
+      scan: jest.fn(),
+      mget: jest.fn(),
+      multi: jest.fn(),
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+    })),
+  },
+}));
 jest.mock('./redis-access', () => ({
   getGameKey: (board: string, map: string) => `game:${board}:${map}`,
   getPlayersReadyKey: (board: string, map: string) => `playersReady:${board}:${map}`,
@@ -12,7 +30,7 @@ jest.mock('./redis-access', () => ({
 }));
 // Reuse the client created by the module, without opening a real connection.
 const client = jest.mocked(Redis.fromEnv).mock.results[0].value as {
-  scan: jest.Mock; mget: jest.Mock; multi: jest.Mock;
+  scan: jest.Mock; mget: jest.Mock; multi: jest.Mock; get: jest.Mock; set: jest.Mock; del: jest.Mock;
 };
 const transaction = { del: jest.fn(), set: jest.fn(), exec: jest.fn() };
 beforeEach(() => {
@@ -21,13 +39,16 @@ beforeEach(() => {
   client.mget.mockReset();
   client.multi.mockReturnValue(transaction);
   transaction.exec.mockReset().mockResolvedValue([]);
+  client.get.mockReset();
+  client.set.mockReset();
+  client.del.mockReset();
 });
 
 it('scans all pages, deduplicates keys, includes orphan queues, and excludes locks and other games', async () => {
   const game = createGame();
   client.scan.mockResolvedValueOnce(['42', [
     'game:board:map', 'playerActions:board:map:removed', 'game:board:map-other',
-    'gameStateLock:board:map', 'playerActions:board:map:', 'unknown:board:map',
+    'gameStateLock:board:map', 'playerActions:board:map:', 'unknown:board:map', 'savedGamesCache:board:map',
   ]]).mockResolvedValueOnce(['0', ['playerActions:board:map:removed', 'store:board:map:1', 'playersReady:board:map:extra']]);
   client.mget.mockResolvedValue([game, { actions: [] }, null]);
   await expect(getGameSnapshotFromRedis('board', 'map')).resolves.toEqual({ gameState: game,
@@ -131,6 +152,63 @@ it('does not publish after a failed commit', async () => {
 it('rejects invalid scope before any Redis operation', async () => {
   await expect(getGameSnapshotFromRedis('bad:board', 'map')).rejects.toThrow('A valid board ID and map ID are required');
   await expect(restoreGameSnapshotInRedis('', 'map', {})).rejects.toThrow('A valid board ID and map ID are required');
+  await expect(getSavedGamesCacheFromRedis('bad:board', 'map')).rejects.toThrow('A valid board ID and map ID are required');
+  await expect(setSavedGamesCacheInRedis('', 'map', [])).rejects.toThrow('A valid board ID and map ID are required');
+  await expect(invalidateSavedGamesCacheInRedis('board', 'bad:map')).rejects.toThrow('A valid board ID and map ID are required');
   expect(client.scan).not.toHaveBeenCalled();
   expect(client.multi).not.toHaveBeenCalled();
+  expect(client.get).not.toHaveBeenCalled();
+  expect(client.set).not.toHaveBeenCalled();
+  expect(client.del).not.toHaveBeenCalled();
+});
+
+describe('saved games list cache', () => {
+  it('generates the expected cache key', () => {
+    expect(getSavedGamesCacheKey('board1', 'map2')).toBe('savedGamesCache:board1:map2');
+  });
+
+  it('returns null when cache is absent or not an array', async () => {
+    client.get.mockResolvedValue(null);
+    await expect(getSavedGamesCacheFromRedis('board', 'map')).resolves.toBeNull();
+    expect(client.get).toHaveBeenCalledWith('savedGamesCache:board:map');
+
+    client.get.mockResolvedValue('not-an-array');
+    await expect(getSavedGamesCacheFromRedis('board', 'map')).resolves.toBeNull();
+  });
+
+  it('deserializes cached blobs with Date instances for uploadedAt', async () => {
+    client.get.mockResolvedValue([
+      {
+        pathname: 'saved-games/board/map/save1.json',
+        uploadedAt: '2026-09-25T12:00:00.000Z',
+        size: 500,
+        url: 'https://example.test/save1.json',
+        downloadUrl: 'https://example.test/save1.json',
+      },
+    ]);
+    const result = await getSavedGamesCacheFromRedis('board', 'map');
+    expect(result).toHaveLength(1);
+    expect(result![0].uploadedAt).toBeInstanceOf(Date);
+    expect(result![0].uploadedAt.toISOString()).toBe('2026-09-25T12:00:00.000Z');
+    expect(result![0].pathname).toBe('saved-games/board/map/save1.json');
+  });
+
+  it('caches blobs in Redis with the 1-week expiry', async () => {
+    const blobs = [
+      {
+        pathname: 'saved-games/board/map/save1.json',
+        uploadedAt: new Date('2026-09-25T12:00:00.000Z'),
+        size: 500,
+        url: 'https://example.test/save1.json',
+        downloadUrl: 'https://example.test/save1.json',
+      },
+    ];
+    await setSavedGamesCacheInRedis('board', 'map', blobs);
+    expect(client.set).toHaveBeenCalledWith('savedGamesCache:board:map', blobs, { ex: 604800 });
+  });
+
+  it('deletes the cache key when invalidating', async () => {
+    await invalidateSavedGamesCacheInRedis('board', 'map');
+    expect(client.del).toHaveBeenCalledWith('savedGamesCache:board:map');
+  });
 });
