@@ -10,6 +10,7 @@ import {
   recordCombatEffect,
   finalizeCombatReplays,
   isCombatMessage,
+  isActualBattle,
   snapshotPreCombatParticipants,
   getTargetLocationId,
 } from './combat-log';
@@ -232,5 +233,114 @@ describe('combat-log event recording and finalization', () => {
     expect(isCombatMessage('*You* found a Chest!')).toBe(false);
     expect(isCombatMessage('Blue team captured the Watchtower!')).toBe(false);
     expect(isCombatMessage('*You* learned **Fireball**')).toBe(false);
+  });
+
+  describe('isActualBattle', () => {
+    it('returns false when replay or events are missing or empty', () => {
+      expect(isActualBattle(undefined)).toBe(false);
+      expect(isActualBattle({ locationId: 1, initialEntities: [], events: [] })).toBe(false);
+    });
+
+    it('returns false for self buff actions and drinking potions when no enemies are involved', () => {
+      const potionReplay = {
+        locationId: 1,
+        initialEntities: [
+          { id: 'p1', name: 'Hero', className: EntityItemClass.self, health: 15, maxHealth: 20, iconXY: { x: 0, y: 0 } },
+        ],
+        events: [
+          {
+            id: 'e1',
+            initiatorId: 'p1',
+            initiatorName: 'Hero',
+            actionType: 'item' as const,
+            actionName: 'Health Potion',
+            icon: { sheet: 'item' as const, iconXY: { x: 0, y: 0 } },
+            targets: [{ targetId: 'p1', targetName: 'Hero', healthDelta: 10, resultHealth: 20 }],
+          },
+        ],
+      };
+      expect(isActualBattle(potionReplay)).toBe(false);
+
+      const buffReplay = {
+        locationId: 1,
+        initialEntities: [
+          { id: 'p1', name: 'Hero', className: EntityItemClass.self, health: 20, maxHealth: 20, iconXY: { x: 0, y: 0 } },
+          { id: 'ally', name: 'Ally', className: EntityItemClass.friendly, health: 20, maxHealth: 20, iconXY: { x: 0, y: 0 } },
+        ],
+        events: [
+          {
+            id: 'e2',
+            initiatorId: 'p1',
+            initiatorName: 'Hero',
+            actionType: 'spell' as const,
+            actionName: 'Bless',
+            icon: { sheet: 'spell' as const, iconXY: { x: 0, y: 0 } },
+            targets: [{ targetId: 'ally', targetName: 'Ally', healthDelta: 0, resultHealth: 20 }],
+          },
+        ],
+      };
+      expect(isActualBattle(buffReplay)).toBe(false);
+    });
+
+    it('returns true when an attack action occurs', () => {
+      const attackReplay = {
+        locationId: 1,
+        initialEntities: [],
+        events: [
+          {
+            id: 'e1',
+            initiatorId: 'p1',
+            initiatorName: 'Hero',
+            actionType: 'attack' as const,
+            actionName: 'Slash',
+            icon: { sheet: 'spell' as const, iconXY: { x: 0, y: 0 } },
+            targets: [{ targetId: 'm1', targetName: 'Monster', healthDelta: -5, resultHealth: 5 }],
+          },
+        ],
+      };
+      expect(isActualBattle(attackReplay)).toBe(true);
+    });
+
+    it('returns true when an enemy initiates an action or is targeted', () => {
+      const enemyReplay = {
+        locationId: 1,
+        initialEntities: [
+          { id: 'p1', name: 'Hero', className: EntityItemClass.self, health: 20, maxHealth: 20, iconXY: { x: 0, y: 0 } },
+          { id: 'm1', name: 'Goblin', className: EntityItemClass.enemy, health: 10, maxHealth: 10, iconXY: { x: 0, y: 0 } },
+        ],
+        events: [
+          {
+            id: 'e1',
+            initiatorId: 'p1',
+            initiatorName: 'Hero',
+            actionType: 'spell' as const,
+            actionName: 'Fireball',
+            icon: { sheet: 'spell' as const, iconXY: { x: 0, y: 0 } },
+            targets: [{ targetId: 'm1', targetName: 'Goblin', healthDelta: -8, resultHealth: 2 }],
+          },
+        ],
+      };
+      expect(isActualBattle(enemyReplay)).toBe(true);
+
+      const enemyCastReplay = {
+        locationId: 1,
+        initialEntities: [
+          { id: 'p1', name: 'Hero', className: EntityItemClass.self, health: 20, maxHealth: 20, iconXY: { x: 0, y: 0 } },
+          { id: 'm1', name: 'Shaman', className: EntityItemClass.enemy, health: 10, maxHealth: 10, iconXY: { x: 0, y: 0 } },
+        ],
+        events: [
+          {
+            id: 'e2',
+            initiatorId: 'm1',
+            initiatorName: 'Shaman',
+            actionType: 'spell' as const,
+            actionName: 'Curse',
+            icon: { sheet: 'spell' as const, iconXY: { x: 0, y: 0 } },
+            targets: [{ targetId: 'p1', targetName: 'Hero', healthDelta: 0, resultHealth: 20 }],
+          },
+        ],
+      };
+      expect(isActualBattle(enemyCastReplay)).toBe(true);
+    });
   });
 });

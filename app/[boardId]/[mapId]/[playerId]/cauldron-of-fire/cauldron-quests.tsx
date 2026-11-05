@@ -404,6 +404,7 @@ export default function CauldronQuests({
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className={`DialogContent ${styles.questsDialog}`}>
+          <Dialog.Title className="DialogTitle">Quests</Dialog.Title>
           <div className={styles.dialogBody}>
             {error && (
               <div role="alert" className={styles.errorBanner}>
@@ -413,9 +414,6 @@ export default function CauldronQuests({
 
             {locationQuests.length > 0 && (
               <section className={styles.section} aria-label="Available Quests at This Location">
-                <h4 className={styles.sectionTitle}>
-                  Quests at Location {player.location.id} ({locationQuests.length})
-                </h4>
                 <ul className={styles.questList}>
                   {locationQuests.map(quest => {
                     const isAccepted = quest.status === 'active';
@@ -459,7 +457,6 @@ export default function CauldronQuests({
             )}
 
             <section className={styles.section} aria-label="Active Quests">
-              <h4 className={styles.sectionTitle}>Active Quests ({activeQuests.length})</h4>
               {activeQuests.length === 0 ? (
                 <div className={styles.emptyNotice}>
                   No active quests right now. Explore villages, taverns, and camps across the realm to discover quests!
@@ -529,9 +526,6 @@ export default function CauldronQuests({
 
             {finishedQuests.length > 0 && (
               <section className={styles.section} aria-label="Completed and Failed Quests">
-                <h4 className={styles.sectionTitle}>
-                  Completed / Failed ({finishedQuests.length})
-                </h4>
                 <ul className={styles.questList}>
                   {finishedQuests.map(quest => {
                     const completer = gameState.players.find(p => p.id === quest.completedByPlayerId);

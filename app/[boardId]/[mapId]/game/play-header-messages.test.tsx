@@ -154,4 +154,56 @@ describe('PlayHeaderMessages', () => {
     // Redundant combat message is suppressed
     expect(screen.queryByText('Hero hit Goblin for 8 damage')).not.toBeInTheDocument();
   });
+
+  it('does not display battle replay and shows normal messages when no actual battle happened (e.g. drank potion or cast buff)', async () => {
+    messages = {
+      messages: [
+        { text: 'Hero drank **Healing Potion** for **20** health!' },
+        { text: 'Hero cast **Bless** on **Hero**!' },
+      ],
+      battleReplay: {
+        locationId: 1,
+        initialEntities: [
+          {
+            id: 'p1',
+            name: 'Hero',
+            iconXY: { x: 0, y: 0 },
+            className: EntityItemClass.self,
+            health: 20,
+            maxHealth: 20,
+          },
+        ],
+        events: [
+          {
+            id: 'ev-item',
+            initiatorId: 'p1',
+            initiatorName: 'Hero',
+            actionType: 'item',
+            actionName: 'Healing Potion',
+            icon: { sheet: 'item', iconXY: { x: 0, y: 0 } },
+            targets: [{ targetId: 'p1', targetName: 'Hero', healthDelta: 20, resultHealth: 20 }],
+          },
+          {
+            id: 'ev-spell',
+            initiatorId: 'p1',
+            initiatorName: 'Hero',
+            actionType: 'spell',
+            actionName: 'Bless',
+            icon: { sheet: 'spell', iconXY: { x: 0, y: 0 } },
+            targets: [{ targetId: 'p1', targetName: 'Hero', healthDelta: 0, resultHealth: 20 }],
+          },
+        ],
+      },
+    };
+    await mount();
+    await act(async () => { await jest.advanceTimersByTimeAsync(500); });
+
+    // Battle replay is NOT displayed
+    expect(screen.queryByRole('button', { name: 'Restart replay' })).not.toBeInTheDocument();
+    expect(document.querySelector('.hasReplay')).not.toBeInTheDocument();
+
+    // Normal messages are displayed instead
+    expect(screen.getByText('Hero drank **Healing Potion** for **20** health!')).toBeInTheDocument();
+    expect(screen.getByText('Hero cast **Bless** on **Hero**!')).toBeInTheDocument();
+  });
 });

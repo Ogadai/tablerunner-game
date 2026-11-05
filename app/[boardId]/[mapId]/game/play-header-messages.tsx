@@ -6,7 +6,7 @@ import Markdown from 'react-markdown';
 
 import styles from './play-header-messages.module.css';
 import { PlayerMessagesState } from '@/lib/store/types';
-import { isCombatMessage } from '@/lib/runner/combat-log';
+import { isCombatMessage, isActualBattle } from '@/lib/runner/combat-log';
 import BattleReplay from './battle-replay';
 
 export default function PlayHeaderMessages({
@@ -17,7 +17,7 @@ export default function PlayHeaderMessages({
   const [isOpen, setIsOpen] = useState(false);
 
   const hasReplay = Boolean(
-    playerMessages?.battleReplay && playerMessages.battleReplay.events.length > 0
+    playerMessages?.battleReplay && isActualBattle(playerMessages.battleReplay)
   );
   const rawMessages = playerMessages?.messages || [];
 

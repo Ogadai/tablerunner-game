@@ -402,6 +402,31 @@ export function isCombatMessage(text: string): boolean {
   return COMBAT_MESSAGE_PATTERNS.some(pattern => pattern.test(text));
 }
 
+export function isActualBattle(replay?: BattleReplay): boolean {
+  if (!replay || !replay.events || replay.events.length === 0) {
+    return false;
+  }
+
+  const enemyIds = new Set(
+    replay.initialEntities
+      ?.filter(e => e.className === EntityItemClass.enemy)
+      .map(e => e.id) ?? []
+  );
+
+  return replay.events.some(event => {
+    if (event.actionType === 'attack') {
+      return true;
+    }
+    if (enemyIds.has(event.initiatorId)) {
+      return true;
+    }
+    if (event.targets?.some(t => enemyIds.has(t.targetId))) {
+      return true;
+    }
+    return false;
+  });
+}
+
 export function finalizeCombatReplays(params: BaseParams): void {
   if (!params.combatLogs) return;
 

@@ -316,9 +316,7 @@ describe('CauldronQuests UI Component', () => {
 
     // The Quests popup MUST stay open for Mage, and keep the quest in "...at location" with a disabled Accepted button
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Quests at Location 22 (1)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
-    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
 
     // Closing and re-opening the popup moves it to Active Quests
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -326,8 +324,6 @@ describe('CauldronQuests UI Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Quests' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
-    expect(screen.queryByText(/Quests at Location 22/)).not.toBeInTheDocument();
   });
 
   it('keeps the quests popup open continuously without closing when the player accepts a quest', async () => {
@@ -384,7 +380,6 @@ describe('CauldronQuests UI Component', () => {
     // Dialog must STILL be open (never closed!) and keep quest in location section with disabled Accepted button
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
-    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
 
     // Now server response resolves
     await act(async () => {
@@ -401,9 +396,7 @@ describe('CauldronQuests UI Component', () => {
 
     // Dialog remains open and keeps quest in location section with disabled Accepted button
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Quests at Location 22 (1)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
-    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
 
     // Closing and re-opening the popup moves it to Active Quests
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -411,8 +404,6 @@ describe('CauldronQuests UI Component', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Quests' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
-    expect(screen.queryByText(/Quests at Location 22/)).not.toBeInTheDocument();
   });
 
   it('keeps the accepted quest in place when multiple quests exist at location', async () => {
@@ -464,7 +455,6 @@ describe('CauldronQuests UI Component', () => {
       />,
     );
 
-    expect(screen.getByText('Quests at Location 22 (2)')).toBeInTheDocument();
     const acceptButtons = screen.getAllByRole('button', { name: 'Accept Quest' });
     expect(acceptButtons).toHaveLength(2);
 
@@ -476,7 +466,6 @@ describe('CauldronQuests UI Component', () => {
     });
 
     // Still in location section: first quest is disabled "Accepted", second quest is still "Accept Quest"
-    expect(screen.getByText('Quests at Location 22 (2)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Accept Quest' })).toBeEnabled();
 
@@ -485,16 +474,9 @@ describe('CauldronQuests UI Component', () => {
     expect(titles[0]).toBe('First Quest');
     expect(titles[1]).toBe('Second Quest');
 
-    // Active Quests is still 0
-    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
-
     // Close and re-open
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     fireEvent.click(screen.getByRole('button', { name: 'Quests' }));
-
-    // Now First Quest is in Active Quests, and Second Quest is in Quests at Location 22 (1)
-    expect(screen.getByText('Quests at Location 22 (1)')).toBeInTheDocument();
-    expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
   });
 });
 
