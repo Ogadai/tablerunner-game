@@ -98,7 +98,8 @@ describe('PlayHeaderMessages', () => {
     await act(async () => { await jest.advanceTimersByTimeAsync(500); });
 
     // Battle replay is visible
-    expect(screen.getByText('Battle Replay')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Restart replay' })).toBeInTheDocument();
+    expect(screen.getByText('Hero attacked Sword → Goblin (-8)')).toBeInTheDocument();
     // Non-combat message is displayed
     expect(screen.getByText('A mysterious chest was unlocked!')).toBeInTheDocument();
     // Redundant combat message is suppressed

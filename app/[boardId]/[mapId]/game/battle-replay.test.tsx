@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import BattleReplay, { formatEventDescription } from './battle-replay';
+import BattleReplay, { formatEventDescription, REPLAY_SPEED_STORAGE_KEY } from './battle-replay';
 import { BattleReplay as BattleReplayType, CombatEvent, EntityItemClass } from '@/lib/store/types';
 
 describe('formatEventDescription', () => {
@@ -99,10 +99,12 @@ describe('formatEventDescription', () => {
 describe('BattleReplay Component', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    localStorage.clear();
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    localStorage.clear();
   });
 
   const sampleReplay: BattleReplayType = {
@@ -190,30 +192,39 @@ describe('BattleReplay Component', () => {
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
 
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(800);
+      await jest.advanceTimersByTimeAsync(1000);
     });
     expect(screen.getByText('2 / 2')).toBeInTheDocument();
 
     // At the end, auto-play finishes and pause button turns to play button
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(800);
+      await jest.advanceTimersByTimeAsync(1000);
     });
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
   });
 
-  it('toggles speed between 1x, 1.5x, and 2x', () => {
+  it('toggles speed between 1x, 2x, and 3x and persists to localStorage', () => {
     render(<BattleReplay replay={sampleReplay} />);
-    const speedButton = screen.getByRole('button', { name: /Playback speed/ });
-    expect(speedButton).toHaveTextContent('1x');
+    const speedButton = screen.getByRole('button', { name: 'Playback speed 1x' });
+    expect(speedButton).toBeInTheDocument();
 
     fireEvent.click(speedButton);
-    expect(speedButton).toHaveTextContent('1.5x');
+    expect(screen.getByRole('button', { name: 'Playback speed 2x' })).toBeInTheDocument();
+    expect(localStorage.getItem(REPLAY_SPEED_STORAGE_KEY)).toBe('2');
 
-    fireEvent.click(speedButton);
-    expect(speedButton).toHaveTextContent('2x');
+    fireEvent.click(screen.getByRole('button', { name: 'Playback speed 2x' }));
+    expect(screen.getByRole('button', { name: 'Playback speed 3x' })).toBeInTheDocument();
+    expect(localStorage.getItem(REPLAY_SPEED_STORAGE_KEY)).toBe('3');
 
-    fireEvent.click(speedButton);
-    expect(speedButton).toHaveTextContent('1x');
+    fireEvent.click(screen.getByRole('button', { name: 'Playback speed 3x' }));
+    expect(screen.getByRole('button', { name: 'Playback speed 1x' })).toBeInTheDocument();
+    expect(localStorage.getItem(REPLAY_SPEED_STORAGE_KEY)).toBe('1');
+  });
+
+  it('restores saved playback speed from localStorage on load', () => {
+    localStorage.setItem(REPLAY_SPEED_STORAGE_KEY, '2');
+    render(<BattleReplay replay={sampleReplay} />);
+    expect(screen.getByRole('button', { name: 'Playback speed 2x' })).toBeInTheDocument();
   });
 
   it('does not display a health delta number for actions with 0 healthDelta', () => {

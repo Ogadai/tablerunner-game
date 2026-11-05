@@ -5,6 +5,9 @@ import EntityList, { EntityTargetOverlay } from '@/app/[boardId]/[mapId]/[player
 import { BattleReplay as BattleReplayType, CombatEvent, EntityItemClass, EntityItemDetail } from '@/lib/store/types';
 import styles from './battle-replay.module.css';
 
+export const REPLAY_SPEED_STORAGE_KEY = 'battle_replay_speed';
+export const REPLAY_SPEEDS = [1, 2, 3];
+
 interface TrajectoryLine {
   id: string;
   x1: number;
@@ -59,11 +62,38 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
   const { initialEntities = [], events = [] } = replay;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(events.length > 0);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(REPLAY_SPEED_STORAGE_KEY);
+        if (saved) {
+          const parsed = parseFloat(saved);
+          if (REPLAY_SPEEDS.includes(parsed)) {
+            return parsed;
+          }
+        }
+      } catch {
+        // ignore storage errors
+      }
+    }
+    return 1;
+  });
   const [lines, setLines] = useState<TrajectoryLine[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const speeds = [1, 2, 3];
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(REPLAY_SPEED_STORAGE_KEY);
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (REPLAY_SPEEDS.includes(parsed)) {
+          setPlaybackSpeed(parsed);
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   // Auto-advance playback
   useEffect(() => {
@@ -228,8 +258,14 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
 
   const handleToggleSpeed = () => {
     setPlaybackSpeed(prev => {
-      const nextIdx = (speeds.indexOf(prev) + 1) % speeds.length;
-      return speeds[nextIdx];
+      const nextIdx = (REPLAY_SPEEDS.indexOf(prev) + 1) % REPLAY_SPEEDS.length;
+      const nextSpeed = REPLAY_SPEEDS[nextIdx];
+      try {
+        localStorage.setItem(REPLAY_SPEED_STORAGE_KEY, String(nextSpeed));
+      } catch {
+        // ignore storage errors
+      }
+      return nextSpeed;
     });
   };
 
