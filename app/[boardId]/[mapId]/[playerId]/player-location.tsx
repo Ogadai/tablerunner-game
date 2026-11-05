@@ -30,6 +30,7 @@ import { getEnemies, isEnemy } from '@/lib/runner/game-friends-or-enemies';
 import { getCombatStats, getPlayerActionsCosts, getPlayerActionsMagic } from '@/lib/store/playerStats';
 import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
 import WarlordParty from './warlords-of-fire/warlord-party';
+import LocationImage from './location-image';
 
 export default function PlayerLocation(
   {
@@ -347,7 +348,7 @@ export default function PlayerLocation(
         <h3>{getDisplayName(playerState)}</h3>
         <h4>Location {playerState.location.id}</h4>
       </div>
-      <p>{locationDescription}</p>
+      <LocationImage locationId={playerState.location.id} description={locationDescription || ''} />
       <PlayerLocationList
         boardId={boardId}
         mapId={mapId}

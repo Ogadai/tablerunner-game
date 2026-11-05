@@ -23,6 +23,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-markdown": "^10.1.0",
+    "sharp": "^0.35.3",
     "sweetalert2": "^11.26.25",
     "sweetalert2-react-content": "^5.1.2",
     "zod": "^4.5.4"

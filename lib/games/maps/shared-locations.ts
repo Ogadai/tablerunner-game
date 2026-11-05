@@ -905,7 +905,7 @@ export const sharedLocations: Location[] = [
   },
   {
     "id": 58,
-    "description": "The village tavern",
+    "description": "Inside the village tavern",
     "move": [
       {
         "direction": "s",
@@ -1729,7 +1729,7 @@ export const sharedLocations: Location[] = [
   },
   {
     "id": 110,
-    "description": "The village tavern. The exit is to the South. The back door goes North",
+    "description": "Inside the village tavern. The exit is to the South. The back door goes North",
     "move": [
       {
         "direction": "s",
