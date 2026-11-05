@@ -286,7 +286,7 @@ describe('BattleReplay Component', () => {
     };
     const { container } = render(<BattleReplay replay={aoeReplay} />);
     expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero cast Chain Lightning → Goblin 1 (-5), Goblin 2 (-6)');
-    expect(screen.getByText('-5')).toBeInTheDocument();
-    expect(screen.getByText('-6')).toBeInTheDocument();
+    expect(screen.getAllByText('-5')).toHaveLength(2);
+    expect(screen.getAllByText('-6')).toHaveLength(2);
   });
 });

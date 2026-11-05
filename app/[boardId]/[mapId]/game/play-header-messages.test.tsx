@@ -55,6 +55,55 @@ describe('PlayHeaderMessages', () => {
     expect(screen.queryByText('Next turn')).not.toBeInTheDocument();
   });
 
+  it('re-opens automatically when new turn messages or replay arrive after being closed by user', async () => {
+    const view = await mount();
+    // Turn 1: Opens after 500ms
+    await act(async () => { await jest.advanceTimersByTimeAsync(500); });
+    expect(screen.getByText('A dragon approaches')).toBeInTheDocument();
+
+    // User closes the popover
+    fireEvent.click(screen.getByRole('button', { name: 'close' }));
+    expect(screen.queryByText('A dragon approaches')).not.toBeInTheDocument();
+
+    // Turn 2 arrives with battle replay or new messages (hasContent is still true!)
+    await act(async () => {
+      view.rerender(
+        <PlayHeaderMessages
+          playerMessages={{
+            messages: [{ text: 'You were defeated in battle!' }],
+            battleReplay: {
+              locationId: 1,
+              initialEntities: [],
+              events: [
+                {
+                  id: 'e1',
+                  initiatorId: 'm1',
+                  initiatorName: 'Dragon',
+                  actionType: 'attack',
+                  actionName: 'Breathe Fire',
+                  icon: { sheet: 'spell', iconXY: { x: 0, y: 0 } },
+                  targets: [
+                    {
+                      targetId: 'p1',
+                      targetName: 'Hero',
+                      healthDelta: -20,
+                      resultHealth: 0,
+                      defeated: true,
+                    },
+                  ],
+                },
+              ],
+            },
+          }}
+        />
+      );
+    });
+
+    // Popover re-opens automatically after 500ms!
+    await act(async () => { await jest.advanceTimersByTimeAsync(500); });
+    expect(screen.getByRole('button', { name: 'Restart replay' })).toBeInTheDocument();
+  });
+
   it('displays battle replay and filters combat messages when replay is present', async () => {
     messages = {
       messages: [

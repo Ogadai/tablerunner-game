@@ -33,7 +33,7 @@ export default function PlayHeaderMessages({
       const timer = setTimeout(() => setIsOpen(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [hasContent]);
+  }, [playerMessages, hasContent]);
 
   return (
     <>
