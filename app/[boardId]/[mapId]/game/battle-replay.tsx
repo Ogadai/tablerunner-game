@@ -24,7 +24,7 @@ export function formatEventDescription(event: CombatEvent): React.ReactNode {
       ? 'used'
       : event.actionType === 'effect'
       ? 'triggered'
-      : 'attacked';
+      : '';
 
   if (
     event.actionType === 'item' &&

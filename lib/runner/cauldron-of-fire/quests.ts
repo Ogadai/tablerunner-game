@@ -708,22 +708,6 @@ export const questProcess: ProcessRunner = {
       }
     }
 
-    // Notify living players if they are at a location offering an available quest
-    for (const player of params.gameState.players) {
-      if (player.health <= 0) continue;
-      const availableHere = state.quests.filter(
-        q => q.status === 'available' && q.offerLocation === player.location.id && isPlayerEligibleForQuest(q, player.id),
-      );
-      if (availableHere.length > 0) {
-        const titles = availableHere.map(q => `**${q.title}**`).join(', ');
-        soloMessageAtLocation(
-          params,
-          player.id,
-          `A quest is available at this location: ${titles}. Open **Quests** to view and accept it!`,
-        );
-      }
-    }
-
     updateQuestLeds(params.gameState, state.quests);
     saveQuestsState(params.gameState, state);
   },

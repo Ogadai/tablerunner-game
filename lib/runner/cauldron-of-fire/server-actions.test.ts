@@ -81,6 +81,11 @@ describe('Cauldron of Fire Quest Server Actions', () => {
     expect(setPlayerInventoryInRedis).toHaveBeenCalled();
     expect(setLocationsStateInRedis).toHaveBeenCalled();
     expect(setGameStateInRedis).toHaveBeenCalledWith('board-1', 'map-1', gameState, { notify: false });
+    expect(publishMessage).not.toHaveBeenCalledWith(
+      'board-1',
+      'map-1',
+      expect.objectContaining({ type: GameTopicMessageType.GameStateUpdated }),
+    );
     expect(publishMessage).toHaveBeenCalledWith(
       'board-1',
       'map-1',
@@ -154,5 +159,10 @@ describe('Cauldron of Fire Quest Server Actions', () => {
     expect(res.data?.playerInventory?.coins).toBe(50);
     expect(player.coins).toBe(50);
     expect(setGameStateInRedis).toHaveBeenCalledWith('board-1', 'map-1', gameState, { notify: false });
+    expect(publishMessage).not.toHaveBeenCalledWith(
+      'board-1',
+      'map-1',
+      expect.objectContaining({ type: GameTopicMessageType.GameStateUpdated }),
+    );
   });
 });

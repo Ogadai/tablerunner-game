@@ -65,8 +65,35 @@ export default function CauldronQuests({
   gameState,
   processing = false,
 }: CauldronQuestsProps) {
+  const statsSnapshot = usePlayerStatsSnapshot();
+  const targetPlayerId = playerProp?.id ?? playerId ?? '';
+  const resolvedSourcePlayer = sourcePlayerProp ?? gameState.players.find(p => p.id === targetPlayerId);
+  const player =
+    playerProp ??
+    (statsSnapshot.sourcePlayer === resolvedSourcePlayer && statsSnapshot.activePlayer
+      ? statsSnapshot.activePlayer
+      : resolvedSourcePlayer);
+
+  const initialArrivalKey = player ? `${gameState.turn}:${player.location.id}` : '';
+  const initialQuests = getQuestsState(gameState).quests;
+  const initialShouldAutoOpen = Boolean(
+    player &&
+      player.health > 0 &&
+      initialQuests.some(
+        q =>
+          q.status === 'available' &&
+          q.offerLocation === player.location.id &&
+          isPlayerEligibleForQuest(q, player.id),
+      ),
+  );
+
+  const [isOpen, setIsOpen] = useState(() => initialShouldAutoOpen);
   const [manualOpen, setManualOpen] = useState(false);
+  const [autoOpenedArrivalKey, setAutoOpenedArrivalKey] = useState<string | null>(() =>
+    initialShouldAutoOpen ? initialArrivalKey : null,
+  );
   const [dismissedArrivalKey, setDismissedArrivalKey] = useState<string | null>(null);
+  const [prevArrivalKey, setPrevArrivalKey] = useState<string>(initialArrivalKey);
   const [submittingQuestId, setSubmittingQuestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [liveUpdate, setLiveUpdate] = useState<{
@@ -90,15 +117,6 @@ export default function CauldronQuests({
       });
     });
   }, [topicId, gameState, boardId, mapId]);
-
-  const statsSnapshot = usePlayerStatsSnapshot();
-  const targetPlayerId = playerProp?.id ?? playerId ?? '';
-  const resolvedSourcePlayer = sourcePlayerProp ?? gameState.players.find(p => p.id === targetPlayerId);
-  const player =
-    playerProp ??
-    (statsSnapshot.sourcePlayer === resolvedSourcePlayer && statsSnapshot.activePlayer
-      ? statsSnapshot.activePlayer
-      : resolvedSourcePlayer);
 
   if (!player) {
     return null;
@@ -130,10 +148,33 @@ export default function CauldronQuests({
   );
 
   const arrivalKey = `${gameState.turn}:${player.location.id}`;
-  const shouldAutoOpen = player.health > 0 && availableHere.length > 0 && dismissedArrivalKey !== arrivalKey;
-  const isOpen = manualOpen || shouldAutoOpen;
+
+  if (arrivalKey !== prevArrivalKey) {
+    setPrevArrivalKey(arrivalKey);
+    const shouldAuto =
+      player.health > 0 &&
+      availableHere.length > 0 &&
+      dismissedArrivalKey !== arrivalKey;
+    if (shouldAuto) {
+      setAutoOpenedArrivalKey(arrivalKey);
+      setIsOpen(true);
+      setManualOpen(false);
+    } else if (!manualOpen && isOpen) {
+      setIsOpen(false);
+    }
+  } else if (
+    !isOpen &&
+    player.health > 0 &&
+    availableHere.length > 0 &&
+    dismissedArrivalKey !== arrivalKey &&
+    autoOpenedArrivalKey !== arrivalKey
+  ) {
+    setAutoOpenedArrivalKey(arrivalKey);
+    setIsOpen(true);
+  }
 
   const handleOpenChange = (nextOpen: boolean) => {
+    setIsOpen(nextOpen);
     setManualOpen(nextOpen);
     if (!nextOpen) {
       setDismissedArrivalKey(arrivalKey);

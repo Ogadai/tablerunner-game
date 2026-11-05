@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import QuestsTopicService from '@/app/message-bus/quests-topic-service';
+import { getGameTopicId, GameTopicMessageType } from '@/lib/message-types';
 import { EquipableIds, SpecialIds } from '@/lib/games/items';
 import { saveQuestsState } from '@/lib/runner/cauldron-of-fire/quests';
 import { acceptCauldronQuest, claimCauldronQuestReward } from '@/lib/runner/cauldron-of-fire/server-actions';
@@ -265,6 +267,126 @@ describe('CauldronQuests UI Component', () => {
     expect(screen.getByText('A regular side quest')).toBeInTheDocument();
     expect(screen.getByText('+60 XP')).toBeInTheDocument();
     expect(screen.getByText('30')).toBeInTheDocument();
+  });
+
+  it('keeps the quests popup open for other players when a quest is accepted via real-time update', () => {
+    const mage = createPlayer({ id: 'mage', location: { id: 22, description: '', move: [] } });
+    const barbarian = createPlayer({ id: 'barbarian', location: { id: 22, description: '', move: [] } });
+    const gameState = createGame({ gameId: 'cauldronfire', turn: 3, players: [mage, barbarian] });
+    const quest = {
+      id: 'q-shared',
+      templateId: 'retrieve-1',
+      title: 'Shared Sun Medallion',
+      description: 'Find the Sun Medallion.',
+      category: 'retrieve_item' as const,
+      scope: 'shared' as const,
+      tier: 'early' as const,
+      status: 'available' as const,
+      offerLocation: 22,
+      actualTargetLocation: 18,
+      hintLocations: [18, 20],
+      itemType: SpecialIds.questSunMedallion,
+      reward: { coins: 50, points: 100 },
+    };
+    saveQuestsState(gameState, { quests: [quest] });
+
+    render(
+      <CauldronQuests
+        boardId="b1"
+        mapId="m1"
+        player={mage}
+        gameState={gameState}
+        processing={false}
+      />,
+    );
+
+    // Mage auto-opens because of available quest at location 22
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Shared Sun Medallion')).toBeInTheDocument();
+
+    // Barbarian accepts the quest, broadcasting QuestsUpdated
+    act(() => {
+      QuestsTopicService.raiseQuestsUpdated(getGameTopicId('b1', 'm1'), {
+        type: GameTopicMessageType.QuestsUpdated,
+        quests: [{ ...quest, status: 'active' }],
+      });
+    });
+
+    // The Quests popup MUST stay open for Mage, and show the quest now as Active
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
+    expect(screen.getByText('Shared Sun Medallion')).toBeInTheDocument();
+  });
+
+  it('keeps the quests popup open continuously without closing when the player accepts a quest', async () => {
+    const player = createPlayer({ id: 'barbarian', location: { id: 22, description: '', move: [] } });
+    const gameState = createGame({ gameId: 'cauldronfire', turn: 3, players: [player] });
+    const quest = {
+      id: 'q-1',
+      templateId: 'retrieve-1',
+      title: 'Stolen Sun Medallion',
+      description: 'Find the Sun Medallion in Locations 18, 20.',
+      category: 'retrieve_item' as const,
+      scope: 'shared' as const,
+      tier: 'early' as const,
+      status: 'available' as const,
+      offerLocation: 22,
+      actualTargetLocation: 18,
+      hintLocations: [18, 20],
+      itemType: SpecialIds.questSunMedallion,
+      reward: { coins: 50, points: 100 },
+    };
+    saveQuestsState(gameState, { quests: [quest] });
+
+    // Mock acceptCauldronQuest to simulate the QuestsUpdated message arriving before the HTTP response returns
+    let resolveAction!: (val: any) => void;
+    jest.mocked(acceptCauldronQuest).mockImplementation(() => {
+      return new Promise(resolve => {
+        resolveAction = resolve;
+      });
+    });
+
+    render(
+      <CauldronQuests
+        boardId="b1"
+        mapId="m1"
+        player={player}
+        gameState={gameState}
+        processing={false}
+      />,
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Accept Quest' }));
+
+    // While request is in-flight, QuestsUpdated arrives via message bus
+    act(() => {
+      QuestsTopicService.raiseQuestsUpdated(getGameTopicId('b1', 'm1'), {
+        type: GameTopicMessageType.QuestsUpdated,
+        quests: [{ ...quest, status: 'active' }],
+      });
+    });
+
+    // Dialog must STILL be open (never closed!)
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // Now server response resolves
+    await act(async () => {
+      resolveAction({
+        success: true,
+        data: {
+          gameState,
+          quests: [{ ...quest, status: 'active' }],
+          npcs: [],
+          playerInventory: { equipped: null, equipment: [], hiredNpcIds: [] },
+        },
+      });
+    });
+
+    // Dialog remains open and displays active quest
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
   });
 });
 
