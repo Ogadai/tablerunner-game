@@ -17,6 +17,36 @@
   display: block;
 }
 
+@keyframes placeholderPulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.placeholderContainer {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 3 / 1;
+  max-height: 200px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-stone);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  animation: placeholderPulse 1.8s ease-in-out infinite;
+}
+
+.placeholderIcon {
+  font-size: 32px;
+  color: var(--color-text-muted);
+}
+
 .fallbackDescription {
   margin: 4px 0 0 0;
   line-height: 1.4;

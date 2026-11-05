@@ -41,6 +41,10 @@ jest.mock('./warlords-of-fire/warlord-recruitment', () => ({ __esModule: true, d
   <section aria-label="Recruitment queue">{children}</section>
 ) }));
 jest.mock('./warlords-of-fire/warlord-party', () => ({ __esModule: true, default: jest.fn(() => null) }));
+jest.mock('./location-image', () => ({
+  __esModule: true,
+  default: ({ description }: { description: string }) => <p>{description}</p>,
+}));
 
 describe('PlayerLocation', () => {
   const push = jest.fn();

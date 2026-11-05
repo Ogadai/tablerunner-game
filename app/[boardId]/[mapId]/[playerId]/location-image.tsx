@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, use, useMemo, useState } from 'react';
 import styles from './location-image.module.css';
 
 export interface LocationImageProps {
@@ -8,72 +8,67 @@ export interface LocationImageProps {
   description: string;
 }
 
-export default function LocationImage({ locationId, description }: LocationImageProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+export function LocationImagePlaceholder() {
+  return (
+    <div
+      className={styles.placeholderContainer}
+      aria-hidden="true"
+      data-testid="location-image-placeholder"
+    >
+      <span className={`material-symbols-outlined ${styles.placeholderIcon}`}>image</span>
+    </div>
+  );
+}
+
+async function fetchLocationImageUrl(locationId: number): Promise<string | null> {
+  if (typeof fetch !== 'function') {
+    return null;
+  }
+  try {
+    const res = await fetch(`/api/locations/${locationId}/image`);
+    if (!res.ok) {
+      return null;
+    }
+    const data = await res.json();
+    return data?.url || null;
+  } catch {
+    return null;
+  }
+}
+
+function LocationImageContent({ promise, description }: { promise: Promise<string | null>; description: string }) {
+  const imageUrl = use(promise);
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
+  if (!imageUrl || hasError) {
+    return null;
+  }
 
-    setImageUrl(null);
-    setIsLoaded(false);
-    setHasError(false);
+  return (
+    <div className={styles.locationImageContainer}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imageUrl}
+        alt={description}
+        title={description}
+        className={styles.locationImage}
+        onError={() => setHasError(true)}
+      />
+    </div>
+  );
+}
 
-    if (typeof fetch !== 'function') {
-      setHasError(true);
-      return;
-    }
-
-    fetch(`/api/locations/${locationId}/image`, { signal: controller.signal })
-      .then(async res => {
-        if (!res.ok) {
-          throw new Error(`Failed to load image: ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (!active) return;
-        if (data?.url) {
-          setImageUrl(data.url);
-        } else {
-          setHasError(true);
-        }
-      })
-      .catch(err => {
-        if (!active || err.name === 'AbortError') return;
-        setHasError(true);
-      });
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [locationId]);
-
-  const showImage = imageUrl && !hasError && isLoaded;
+export default function LocationImage({ locationId, description }: LocationImageProps) {
+  const imagePromise = useMemo(() => fetchLocationImageUrl(locationId), [locationId]);
 
   return (
     <>
-      {imageUrl && !hasError && (
-        <div
-          className={styles.locationImageContainer}
-          style={{ display: showImage ? 'flex' : 'none' }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={description}
-            title={description}
-            className={styles.locationImage}
-            onLoad={() => setIsLoaded(true)}
-            onError={() => setHasError(true)}
-          />
-        </div>
-      )}
+      <Suspense fallback={<LocationImagePlaceholder />}>
+        <LocationImageContent key={locationId} promise={imagePromise} description={description} />
+      </Suspense>
       <p className={styles.fallbackDescription}>{description}</p>
     </>
   );
 }
+
 
