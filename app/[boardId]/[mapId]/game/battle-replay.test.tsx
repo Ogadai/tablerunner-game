@@ -1,0 +1,272 @@
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import BattleReplay, { formatEventDescription } from './battle-replay';
+import { BattleReplay as BattleReplayType, CombatEvent, EntityItemClass } from '@/lib/store/types';
+
+describe('formatEventDescription', () => {
+  it('formats attack hits, misses, and defeats', () => {
+    const hitEvent: CombatEvent = {
+      id: 'e1',
+      initiatorId: 'p1',
+      initiatorName: 'Hero',
+      actionType: 'attack',
+      actionName: 'Melee Attack',
+      icon: { sheet: 'spell', iconXY: { x: 6, y: 4 } },
+      targets: [
+        {
+          targetId: 'm1',
+          targetName: 'Goblin',
+          healthDelta: -8,
+          resultHealth: 2,
+        },
+      ],
+    };
+    expect(formatEventDescription(hitEvent)).toBe('Hero attacked Melee Attack → Goblin (-8)');
+
+    const defeatEvent: CombatEvent = {
+      ...hitEvent,
+      targets: [
+        {
+          targetId: 'm1',
+          targetName: 'Goblin',
+          healthDelta: -10,
+          resultHealth: 0,
+          defeated: true,
+        },
+      ],
+    };
+    expect(formatEventDescription(defeatEvent)).toBe('Hero attacked Melee Attack → Goblin (-10 💀)');
+
+    const missEvent: CombatEvent = {
+      ...hitEvent,
+      targets: [
+        {
+          targetId: 'm1',
+          targetName: 'Goblin',
+          healthDelta: 0,
+          resultHealth: 10,
+          miss: true,
+        },
+      ],
+    };
+    expect(formatEventDescription(missEvent)).toBe('Hero attacked Melee Attack → Goblin (missed)');
+  });
+
+  it('formats spells with multiple targets', () => {
+    const spellEvent: CombatEvent = {
+      id: 'e2',
+      initiatorId: 'p1',
+      initiatorName: 'Mage',
+      actionType: 'spell',
+      actionName: 'Fireball',
+      icon: { sheet: 'spell', iconXY: { x: 0, y: 0 } },
+      targets: [
+        { targetId: 'm1', targetName: 'Orc', healthDelta: -12, resultHealth: 8 },
+        { targetId: 'm2', targetName: 'Troll', healthDelta: -14, resultHealth: 20 },
+      ],
+    };
+    expect(formatEventDescription(spellEvent)).toBe('Mage cast Fireball → Orc (-12), Troll (-14)');
+  });
+
+  it('formats consumable self-use', () => {
+    const itemEvent: CombatEvent = {
+      id: 'e3',
+      initiatorId: 'p1',
+      initiatorName: 'Hero',
+      actionType: 'item',
+      actionName: 'Health Potion',
+      icon: { sheet: 'item', iconXY: { x: 1, y: 1 } },
+      targets: [
+        { targetId: 'p1', targetName: 'Hero', healthDelta: 15, resultHealth: 25 },
+      ],
+    };
+    expect(formatEventDescription(itemEvent)).toBe('Hero used Health Potion (+15)');
+  });
+
+  it('formats non-damaging spells without health numbers', () => {
+    const fearEvent: CombatEvent = {
+      id: 'e4',
+      initiatorId: 'p1',
+      initiatorName: 'Mage',
+      actionType: 'spell',
+      actionName: 'Fear',
+      icon: { sheet: 'spell', iconXY: { x: 2, y: 3 } },
+      targets: [{ targetId: 'm1', targetName: 'Goblin', healthDelta: 0, resultHealth: 15 }],
+    };
+    expect(formatEventDescription(fearEvent)).toBe('Mage cast Fear → Goblin');
+  });
+});
+
+describe('BattleReplay Component', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  const sampleReplay: BattleReplayType = {
+    locationId: 42,
+    initialEntities: [
+      {
+        id: 'p1',
+        name: 'Hero',
+        iconXY: { x: 0, y: 0 },
+        className: EntityItemClass.self,
+        health: 20,
+        maxHealth: 20,
+      },
+      {
+        id: 'm1',
+        name: 'Goblin',
+        iconXY: { x: 1, y: 1 },
+        className: EntityItemClass.enemy,
+        health: 15,
+        maxHealth: 15,
+      },
+    ],
+    events: [
+      {
+        id: 'ev-1',
+        initiatorId: 'p1',
+        initiatorName: 'Hero',
+        actionType: 'attack',
+        actionName: 'Sword Slash',
+        icon: { sheet: 'spell', iconXY: { x: 6, y: 4 } },
+        targets: [
+          { targetId: 'm1', targetName: 'Goblin', healthDelta: -6, resultHealth: 9 },
+        ],
+      },
+      {
+        id: 'ev-2',
+        initiatorId: 'm1',
+        initiatorName: 'Goblin',
+        actionType: 'attack',
+        actionName: 'Bite',
+        icon: { sheet: 'spell', iconXY: { x: 6, y: 4 } },
+        targets: [
+          { targetId: 'p1', targetName: 'Hero', healthDelta: -4, resultHealth: 16 },
+        ],
+      },
+    ],
+  };
+
+  it('renders notice when replay has no events', () => {
+    render(<BattleReplay replay={{ locationId: 1, initialEntities: [], events: [] }} />);
+    expect(screen.getByText('No combat actions recorded.')).toBeInTheDocument();
+  });
+
+  it('renders replay header, allies, and enemies sections', () => {
+    render(<BattleReplay replay={sampleReplay} />);
+    expect(screen.getByText('Hero attacked Sword Slash → Goblin (-6)')).toBeInTheDocument();
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+  });
+
+  it('navigates with Next, Prev, and Restart controls', () => {
+    render(<BattleReplay replay={sampleReplay} />);
+
+    // Pause auto-play first to test manual buttons
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    // Click Next
+    fireEvent.click(screen.getByRole('button', { name: 'Next action' }));
+    expect(screen.getByText('Goblin attacked Bite → Hero (-4)')).toBeInTheDocument();
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+
+    // Click Prev
+    fireEvent.click(screen.getByRole('button', { name: 'Previous action' }));
+    expect(screen.getByText('Hero attacked Sword Slash → Goblin (-6)')).toBeInTheDocument();
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+
+    // Click Restart
+    fireEvent.click(screen.getByRole('button', { name: 'Next action' }));
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Restart replay' }));
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+  });
+
+  it('automatically advances steps and pauses at the end', async () => {
+    render(<BattleReplay replay={sampleReplay} />);
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(800);
+    });
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+
+    // At the end, auto-play finishes and pause button turns to play button
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(800);
+    });
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
+  });
+
+  it('toggles speed between 1x, 1.5x, and 2x', () => {
+    render(<BattleReplay replay={sampleReplay} />);
+    const speedButton = screen.getByRole('button', { name: /Playback speed/ });
+    expect(speedButton).toHaveTextContent('1x');
+
+    fireEvent.click(speedButton);
+    expect(speedButton).toHaveTextContent('1.5x');
+
+    fireEvent.click(speedButton);
+    expect(speedButton).toHaveTextContent('2x');
+
+    fireEvent.click(speedButton);
+    expect(speedButton).toHaveTextContent('1x');
+  });
+
+  it('does not display a health delta number for actions with 0 healthDelta', () => {
+    const fearReplay: BattleReplayType = {
+      locationId: 1,
+      initialEntities: [
+        { id: 'p1', name: 'Hero', iconXY: { x: 0, y: 0 }, className: EntityItemClass.self, health: 20, maxHealth: 20 },
+        { id: 'm1', name: 'Goblin', iconXY: { x: 1, y: 1 }, className: EntityItemClass.enemy, health: 15, maxHealth: 15 },
+      ],
+      events: [
+        {
+          id: 'ev-fear',
+          initiatorId: 'p1',
+          initiatorName: 'Hero',
+          actionType: 'spell',
+          actionName: 'Fear',
+          icon: { sheet: 'spell', iconXY: { x: 2, y: 3 } },
+          targets: [{ targetId: 'm1', targetName: 'Goblin', healthDelta: 0, resultHealth: 15 }],
+        },
+      ],
+    };
+    const { container } = render(<BattleReplay replay={fearReplay} />);
+    expect(screen.getByText('Hero cast Fear → Goblin')).toBeInTheDocument();
+    expect(container.querySelector('.actionIconSpell')).toBeInTheDocument();
+    expect(container.querySelector('.deltaText')).toBeNull();
+  });
+
+  it('handles multi-target spells simultaneously', () => {
+    const aoeReplay: BattleReplayType = {
+      locationId: 1,
+      initialEntities: [
+        { id: 'p1', name: 'Hero', iconXY: { x: 0, y: 0 }, className: EntityItemClass.self, health: 20, maxHealth: 20 },
+        { id: 'm1', name: 'Goblin 1', iconXY: { x: 1, y: 1 }, className: EntityItemClass.enemy, health: 15, maxHealth: 15 },
+        { id: 'm2', name: 'Goblin 2', iconXY: { x: 1, y: 1 }, className: EntityItemClass.enemy, health: 12, maxHealth: 12 },
+      ],
+      events: [
+        {
+          id: 'ev-aoe',
+          initiatorId: 'p1',
+          initiatorName: 'Hero',
+          actionType: 'spell',
+          actionName: 'Chain Lightning',
+          icon: { sheet: 'spell', iconXY: { x: 0, y: 0 } },
+          targets: [
+            { targetId: 'm1', targetName: 'Goblin 1', healthDelta: -5, resultHealth: 10 },
+            { targetId: 'm2', targetName: 'Goblin 2', healthDelta: -6, resultHealth: 6 },
+          ],
+        },
+      ],
+    };
+    render(<BattleReplay replay={aoeReplay} />);
+    expect(screen.getByText('Hero cast Chain Lightning → Goblin 1 (-5), Goblin 2 (-6)')).toBeInTheDocument();
+    expect(screen.getByText('-5')).toBeInTheDocument();
+    expect(screen.getByText('-6')).toBeInTheDocument();
+  });
+});

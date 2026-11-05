@@ -31,4 +31,34 @@ describe('EntityList', () => {
     fireEvent.click(screen.getAllByRole('listitem')[1]);
     expect(onClickEntity).toHaveBeenCalledWith(entities[1]);
   });
+
+  it('applies active initiator highlight and target overlay with delta text', () => {
+    const entities = [
+      makeEntity({ id: 'attacker', name: 'Attacker' }),
+      makeEntity({ id: 'target', name: 'Target' }),
+    ];
+    const { container } = render(
+      <EntityList
+        entities={entities}
+        activeEntityId="attacker"
+        targetOverlays={{
+          target: {
+            icon: { sheet: 'spell', iconXY: { x: 6, y: 4 } },
+            text: '-10',
+            isDamage: true,
+          },
+        }}
+      />
+    );
+
+    const attackerItem = screen.getByRole('listitem', { name: 'Attacker' });
+    expect(attackerItem).toHaveClass('activeInitiator');
+
+    const targetItem = screen.getByRole('listitem', { name: 'Target' });
+    expect(targetItem).toHaveClass('targetEntity');
+    expect(targetItem).toHaveTextContent('-10');
+    expect(container.querySelector('.actionIconSpell')).toHaveStyle({
+      backgroundPosition: '-240px -160px',
+    });
+  });
 });

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import type { PlayerMessagesState } from '@/lib/store/types';
+import { EntityItemClass, type PlayerMessagesState } from '@/lib/store/types';
 import PlayHeaderMessages from './play-header-messages';
 // Markdown is ESM-only; keep these tests focused on displaying messages.
 jest.mock('react-markdown', () => ({ __esModule: true, default: ({ children }: { children: ReactNode }) => <p>{children}</p> }));
@@ -53,5 +53,55 @@ describe('PlayHeaderMessages', () => {
     await act(async () => view.rerender(<PlayHeaderMessages playerMessages={{ messages: [] }} />));
     expect(screen.queryByRole('button', { name: 'mail' })).not.toBeInTheDocument();
     expect(screen.queryByText('Next turn')).not.toBeInTheDocument();
+  });
+
+  it('displays battle replay and filters combat messages when replay is present', async () => {
+    messages = {
+      messages: [
+        { text: 'Hero hit Goblin for 8 damage' },
+        { text: 'A mysterious chest was unlocked!' },
+      ],
+      battleReplay: {
+        locationId: 10,
+        initialEntities: [
+          {
+            id: 'p1',
+            name: 'Hero',
+            iconXY: { x: 0, y: 0 },
+            className: EntityItemClass.self,
+            health: 20,
+            maxHealth: 20,
+          },
+          {
+            id: 'm1',
+            name: 'Goblin',
+            iconXY: { x: 1, y: 1 },
+            className: EntityItemClass.enemy,
+            health: 10,
+            maxHealth: 10,
+          },
+        ],
+        events: [
+          {
+            id: 'ev-1',
+            initiatorId: 'p1',
+            initiatorName: 'Hero',
+            actionType: 'attack',
+            actionName: 'Sword',
+            icon: { sheet: 'spell', iconXY: { x: 6, y: 4 } },
+            targets: [{ targetId: 'm1', targetName: 'Goblin', healthDelta: -8, resultHealth: 2 }],
+          },
+        ],
+      },
+    };
+    await mount();
+    await act(async () => { await jest.advanceTimersByTimeAsync(500); });
+
+    // Battle replay is visible
+    expect(screen.getByText('Battle Replay')).toBeInTheDocument();
+    // Non-combat message is displayed
+    expect(screen.getByText('A mysterious chest was unlocked!')).toBeInTheDocument();
+    // Redundant combat message is suppressed
+    expect(screen.queryByText('Hero hit Goblin for 8 damage')).not.toBeInTheDocument();
   });
 });
