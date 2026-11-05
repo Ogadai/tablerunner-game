@@ -376,6 +376,8 @@ export enum SpecialIds {
   questGoldenCrest = 'questGoldenCrest',
   questSapphireScepter = 'questSapphireScepter',
   questEmeraldIdol = 'questEmeraldIdol',
+  questSacredChalice = 'questSacredChalice',
+  questDragonHorn = 'questDragonHorn',
 }
 export const specialItems: Record<string, ItemDef> = {
   [SpecialIds.chest]: {
@@ -388,7 +390,7 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questRelicSkull.toString(),
     type: PlayerItemType.consumable,
     name: 'Ancient Skull Relic',
-    iconXY: { x: 9, y: 5 },
+    iconXY: { x: 0, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }
@@ -397,7 +399,7 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questAlchemistBag.toString(),
     type: PlayerItemType.consumable,
     name: 'Alchemist\'s Satchel',
-    iconXY: { x: 9, y: 6 },
+    iconXY: { x: 1, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }
@@ -406,7 +408,7 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questRoyalLedger.toString(),
     type: PlayerItemType.consumable,
     name: 'Sealed Royal Ledger',
-    iconXY: { x: 5, y: 7 },
+    iconXY: { x: 2, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }
@@ -415,7 +417,7 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questSunMedallion.toString(),
     type: PlayerItemType.consumable,
     name: 'Sunstone Medallion',
-    iconXY: { x: 9, y: 7 },
+    iconXY: { x: 3, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }
@@ -424,7 +426,7 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questMoonAmulet.toString(),
     type: PlayerItemType.consumable,
     name: 'Moonstone Amulet',
-    iconXY: { x: 8, y: 7 },
+    iconXY: { x: 4, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }
@@ -433,7 +435,7 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questGoldenCrest.toString(),
     type: PlayerItemType.consumable,
     name: 'Golden Aegis Crest',
-    iconXY: { x: 7, y: 2 },
+    iconXY: { x: 5, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }
@@ -442,7 +444,7 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questSapphireScepter.toString(),
     type: PlayerItemType.consumable,
     name: 'Sapphire Scepter',
-    iconXY: { x: 0, y: 1 },
+    iconXY: { x: 6, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }
@@ -451,7 +453,25 @@ export const specialItems: Record<string, ItemDef> = {
     id: SpecialIds.questEmeraldIdol.toString(),
     type: PlayerItemType.consumable,
     name: 'Emerald Forest Idol',
-    iconXY: { x: 3, y: 1 },
+    iconXY: { x: 7, y: 9 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questSacredChalice]: {
+    id: SpecialIds.questSacredChalice.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Sacred Chalice',
+    iconXY: { x: 8, y: 9 },
+    bonusStats: {
+      special: 'Quest item: Deliver to claim your reward'
+    }
+  },
+  [SpecialIds.questDragonHorn]: {
+    id: SpecialIds.questDragonHorn.toString(),
+    type: PlayerItemType.consumable,
+    name: 'Ancient Dragon Horn',
+    iconXY: { x: 9, y: 9 },
     bonusStats: {
       special: 'Quest item: Deliver to claim your reward'
     }

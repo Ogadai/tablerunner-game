@@ -1,5 +1,5 @@
 /** @jest-environment node */
-import { EquipableIds, SpecialIds } from '@/lib/games/items';
+import { EquipableIds, SpecialIds, allItems } from '@/lib/games/items';
 import { createLocations } from '@/lib/store/test-support/fixtures';
 import { createGame, createParams, createPlayer } from '../test-support/fixtures';
 import { QuestInstance } from './quest-types';
@@ -622,5 +622,45 @@ describe('Cauldron of Fire Quests', () => {
 
     const completedLeds = gameState.leds.filter(l => l.owner === QUEST_LED_OWNER);
     expect(completedLeds).toHaveLength(0);
+  });
+
+  it('assigns dedicated row 9 icons on item-sheet.png for all quest items distinct from player equipment', () => {
+    const questItemIds = [
+      SpecialIds.questRelicSkull,
+      SpecialIds.questAlchemistBag,
+      SpecialIds.questRoyalLedger,
+      SpecialIds.questSunMedallion,
+      SpecialIds.questMoonAmulet,
+      SpecialIds.questGoldenCrest,
+      SpecialIds.questSapphireScepter,
+      SpecialIds.questEmeraldIdol,
+      SpecialIds.questSacredChalice,
+      SpecialIds.questDragonHorn,
+    ];
+
+    const nonQuestDefs = Object.values(allItems).filter(
+      item => !questItemIds.includes(item.id as SpecialIds)
+    );
+
+    const nonQuestIconCoords = new Set(
+      nonQuestDefs.filter(item => item.iconXY).map(item => `${item.iconXY.x},${item.iconXY.y}`)
+    );
+
+    const seenQuestCoords = new Set<string>();
+
+    for (const questId of questItemIds) {
+      const itemDef = allItems[questId];
+      expect(itemDef).toBeDefined();
+      expect(itemDef.iconXY).toBeDefined();
+      expect(itemDef.iconXY.y).toBe(9);
+      expect(itemDef.iconXY.x).toBeGreaterThanOrEqual(0);
+      expect(itemDef.iconXY.x).toBeLessThan(10);
+
+      const coordKey = `${itemDef.iconXY.x},${itemDef.iconXY.y}`;
+      expect(seenQuestCoords.has(coordKey)).toBe(false);
+      seenQuestCoords.add(coordKey);
+
+      expect(nonQuestIconCoords.has(coordKey)).toBe(false);
+    }
   });
 });

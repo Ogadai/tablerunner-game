@@ -28,6 +28,8 @@ const AUTO_DROP_ITEMS: ItemIds[] = [
   SpecialIds.questGoldenCrest,
   SpecialIds.questSapphireScepter,
   SpecialIds.questEmeraldIdol,
+  SpecialIds.questSacredChalice,
+  SpecialIds.questDragonHorn,
 ];
 const PLAYER_ZOMBIE_RISK = 0.1;
 const ZOMBIE_TURNS = 3;

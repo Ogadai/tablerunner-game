@@ -32,6 +32,8 @@ const QUEST_ITEMS_ALL: SpecialIds[] = [
   SpecialIds.questGoldenCrest,
   SpecialIds.questSapphireScepter,
   SpecialIds.questEmeraldIdol,
+  SpecialIds.questSacredChalice,
+  SpecialIds.questDragonHorn,
 ];
 
 const EARLY_REWARD_ITEMS: string[] = [
@@ -116,7 +118,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     offerLocations: [38, 4, 31],
     targetLocations: [1, 3, 35, 36, 37, 41, 44],
     hintCount: 3,
-    itemPool: [SpecialIds.questRelicSkull, SpecialIds.questGoldenCrest, SpecialIds.questSunMedallion],
+    itemPool: [SpecialIds.questRelicSkull, SpecialIds.questGoldenCrest, SpecialIds.questSunMedallion, SpecialIds.questSacredChalice],
   },
   {
     id: 'retrieve-se-village-heirloom',
@@ -224,7 +226,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
     offerLocations: [153, 154, 165, 197],
     targetLocations: [156, 160, 192, 198, 200, 205, 206, 232, 236],
     hintCount: 3,
-    itemPool: [SpecialIds.questRelicSkull, SpecialIds.questSunMedallion, SpecialIds.questSapphireScepter],
+    itemPool: [SpecialIds.questRelicSkull, SpecialIds.questSunMedallion, SpecialIds.questSapphireScepter, SpecialIds.questDragonHorn],
   },
   {
     id: 'retrieve-castle-heirloom',
