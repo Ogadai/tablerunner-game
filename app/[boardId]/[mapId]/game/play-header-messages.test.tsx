@@ -148,7 +148,7 @@ describe('PlayHeaderMessages', () => {
 
     // Battle replay is visible
     expect(screen.getByRole('button', { name: 'Restart replay' })).toBeInTheDocument();
-    expect(document.querySelector('.eventDescription')).toHaveTextContent('Hero attacked Sword → Goblin (-8)');
+    expect(document.querySelector('.eventDescription')).toHaveTextContent('Hero Sword → Goblin (-8)');
     // Non-combat message is displayed
     expect(screen.getByText('A mysterious chest was unlocked!')).toBeInTheDocument();
     // Redundant combat message is suppressed

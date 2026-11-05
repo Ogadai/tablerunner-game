@@ -21,7 +21,7 @@ describe('formatEventDescription', () => {
       ],
     };
     const { container: hitView } = render(<>{formatEventDescription(hitEvent)}</>);
-    expect(hitView).toHaveTextContent('Hero attacked Melee Attack → Goblin (-8)');
+    expect(hitView).toHaveTextContent('Hero Melee Attack → Goblin (-8)');
 
     const defeatEvent: CombatEvent = {
       ...hitEvent,
@@ -36,7 +36,7 @@ describe('formatEventDescription', () => {
       ],
     };
     const { container: defeatView } = render(<>{formatEventDescription(defeatEvent)}</>);
-    expect(defeatView).toHaveTextContent('Hero attacked Melee Attack → Goblin (-10 skull)');
+    expect(defeatView).toHaveTextContent('Hero Melee Attack → Goblin (-10 skull)');
     const skull = defeatView.querySelector('.defeatedSkull');
     expect(skull).toBeInTheDocument();
     expect(skull).toHaveClass('material-symbols-outlined');
@@ -54,7 +54,7 @@ describe('formatEventDescription', () => {
       ],
     };
     const { container: missView } = render(<>{formatEventDescription(missEvent)}</>);
-    expect(missView).toHaveTextContent('Hero attacked Melee Attack → Goblin (miss)');
+    expect(missView).toHaveTextContent('Hero Melee Attack → Goblin (miss)');
   });
 
   it('formats spells with multiple targets', () => {
@@ -169,7 +169,7 @@ describe('BattleReplay Component', () => {
 
   it('renders replay header, allies, and enemies sections', () => {
     const { container } = render(<BattleReplay replay={sampleReplay} />);
-    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero attacked Sword Slash → Goblin (-6)');
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero Sword Slash → Goblin (-6)');
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
   });
 
@@ -181,12 +181,12 @@ describe('BattleReplay Component', () => {
 
     // Click Next
     fireEvent.click(screen.getByRole('button', { name: 'Next action' }));
-    expect(container.querySelector('.eventDescription')).toHaveTextContent('Goblin attacked Bite → Hero (-4)');
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Goblin Bite → Hero (-4)');
     expect(screen.getByText('2 / 2')).toBeInTheDocument();
 
     // Click Prev
     fireEvent.click(screen.getByRole('button', { name: 'Previous action' }));
-    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero attacked Sword Slash → Goblin (-6)');
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero Sword Slash → Goblin (-6)');
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
 
     // Click Restart
