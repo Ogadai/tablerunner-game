@@ -745,7 +745,7 @@ export const sharedLocations: Location[] = [
   },
   {
     "id": 48,
-    "description": "Inside a dense copse of trees",
+    "description": "A dense copse of trees",
     "move": [
       {
         "direction": "e",
@@ -895,7 +895,7 @@ export const sharedLocations: Location[] = [
   },
   {
     "id": 57,
-    "description": "A small shop",
+    "description": "Inside a small shop",
     "move": [
       {
         "direction": "s",
@@ -1265,7 +1265,7 @@ export const sharedLocations: Location[] = [
   },
   {
     "id": 80,
-    "description": "The witch's hut",
+    "description": "Inside the witch's hut",
     "move": [
       {
         "direction": "e",

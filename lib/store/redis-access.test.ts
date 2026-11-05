@@ -374,12 +374,14 @@ describe('locks', () => {
     ['processingLock', () => store.lockForProcessing('b', 'm'), 30000],
     ['playerActionsLock:b:m:hero', () => store.lockPlayerActionsInRedis('b', 'm', 'hero'), 5000],
     ['playerActionsLock:b:m:hero', () => store.lockPlayerActionsInRedis('b', 'm', 'hero', 30000, 0), 30000],
+    ['locationImageLock:42', () => store.lockLocationImageInRedis(42), 10000],
+    ['locationImageLock:42', () => store.lockLocationImageInRedis(42, 5000, 0), 5000],
   ] as const)('acquires and atomically releases %s (case %#)', async (type, lock, ttl) => {
     const release = await lock();
     const token = client.set.mock.calls[0][1];
     expect(typeof token).toBe('string');
     expect(token.length).toBeGreaterThan(0);
-    const key = type.startsWith('playerActionsLock:') ? type : `${type}:b:m`;
+    const key = type.includes(':') ? type : `${type}:b:m`;
     expect(client.set).toHaveBeenCalledWith(key, token, { nx: true, px: ttl });
     await release();
     expect(client.eval).toHaveBeenCalledWith(expect.stringContaining('redis.call("get", KEYS[1]) == ARGV[1]'), [key], [token]);
@@ -406,6 +408,7 @@ describe('locks', () => {
     () => store.lockLocationsStateInRedis('b', 'm'),
     () => store.lockStoreStateInRedis('b', 'm'),
     () => store.lockPlayerActionsInRedis('b', 'm', 'hero'),
+    () => store.lockLocationImageInRedis(42),
   ])('retries a user lock and releases it using the acquired token', async lock => {
     jest.useFakeTimers();
     client.set.mockResolvedValueOnce(null).mockResolvedValueOnce('OK');

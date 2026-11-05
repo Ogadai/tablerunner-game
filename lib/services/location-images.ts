@@ -4,6 +4,12 @@ import { put, list } from '@vercel/blob';
 import sharp from 'sharp';
 import { sharedLocations } from '@/lib/games/maps/shared-locations';
 import { getCellCoordinates } from '@/lib/games/gridCells';
+import {
+  lockLocationImageInRedis,
+  RedisLockError,
+  locationImageLockTTL,
+  locationImageLockWaitMs,
+} from '@/lib/store/redis-access';
 
 export interface LocationRegionInfo {
   row: number;
@@ -51,11 +57,15 @@ export function getLocationRegionInfo(locationId: number, underground?: boolean)
 }
 
 export function buildLocationImagePrompt(description: string, locationId: number, underground?: boolean): string {
+  const fantastMood = 'detailed fantasy digital art style, atmospheric lighting, cinematic mood';
+  if (description.toLocaleLowerCase().startsWith('inside')) {
+    return `Indoor fantasy setting: ${description.trim()}. ${fantastMood}.`;
+  }
   const { regionDescription } = getLocationRegionInfo(locationId, underground);
   const settingType = underground ? 'Subterranean fantasy underground location' : 'Outdoor fantasy landscape';
   const orientation = underground ? '' : 'Camera facing North, looking northward into the landscape. ';
 
-  return `${settingType}: ${description.trim()}. Location setting: Located ${regionDescription}. ${orientation}Environment only, establishing shot. Wide panoramic composition, detailed fantasy digital art style, atmospheric lighting, cinematic mood. Strictly empty scenery: do NOT include any people, characters, humanoids, monsters, animals, or living creatures in the scene.`;
+  return `${settingType}: ${description.trim()}. Location setting: Located ${regionDescription}. ${orientation}Environment only, establishing shot. Wide panoramic composition, ${fantastMood}. Strictly empty scenery: do NOT include any people, characters, humanoids, monsters, animals, or living creatures in the scene.`;
 }
 
 export function getLocationImageBlobPath(locationId: number): string {
@@ -72,18 +82,24 @@ export async function resizeImageToLocationDimensions(inputBuffer: Buffer | Uint
     .toBuffer();
 }
 
+async function findExistingLocationImageUrl(pathname: string): Promise<string | null> {
+  try {
+    const existing = await list({ prefix: pathname });
+    const match = existing?.blobs?.find(b => b.pathname === pathname);
+    return match ? match.url : null;
+  } catch (error) {
+    console.warn(`Unable to check existing blob for ${pathname}:`, error);
+    return null;
+  }
+}
+
 export async function getOrGenerateLocationImage(locationId: number): Promise<{ url: string; cached: boolean }> {
   const pathname = getLocationImageBlobPath(locationId);
 
   // 1. Check if the image has already been generated and uploaded to Vercel Blob
-  try {
-    const existing = await list({ prefix: pathname });
-    const match = existing.blobs.find(b => b.pathname === pathname);
-    if (match) {
-      return { url: match.url, cached: true };
-    }
-  } catch (error) {
-    console.warn(`Unable to check existing blob for location ${locationId}:`, error);
+  const existingUrl = await findExistingLocationImageUrl(pathname);
+  if (existingUrl) {
+    return { url: existingUrl, cached: true };
   }
 
   // 2. Lookup the location details
@@ -92,26 +108,76 @@ export async function getOrGenerateLocationImage(locationId: number): Promise<{ 
     throw new Error(`Location ${locationId} not found`);
   }
 
-  // 3. Build evocative prompt with biome, castle specificity, and empty scene constraints
-  const prompt = buildLocationImagePrompt(location.description, locationId, location.underground);
-  const imageModel = process.env.GOOGLE_IMAGE_MODEL || 'gemini-2.5-flash-image';
+  // 3. Acquire Redis lock keyed on locationId (fail-fast to let the first requester generate)
+  let releaseLock: (() => Promise<void>) | null = null;
+  try {
+    releaseLock = await lockLocationImageInRedis(locationId, locationImageLockTTL, 0);
+  } catch (error) {
+    if (error instanceof RedisLockError) {
+      // 2nd and later requests wait for the first request to complete
+      let releaseWaitLock: (() => Promise<void>) | null = null;
+      try {
+        releaseWaitLock = await lockLocationImageInRedis(
+          locationId,
+          locationImageLockTTL,
+          locationImageLockWaitMs
+        );
+      } catch (waitError) {
+        if (waitError instanceof RedisLockError) {
+          throw new Error(`Timeout waiting for location ${locationId} image generation`);
+        }
+        throw waitError;
+      }
 
-  // 4. Generate the image with Gemini Image model
-  const { image } = await generateImage({
-    model: google.image(imageModel),
-    prompt,
-    aspectRatio: '16:9',
-  });
+      try {
+        // First request completed; check if the newly generated image is now in Blob store
+        const matchUrl = await findExistingLocationImageUrl(pathname);
+        if (matchUrl) {
+          return { url: matchUrl, cached: true };
+        }
+        throw new Error(`Location ${locationId} image generation failed or image not found`);
+      } finally {
+        if (releaseWaitLock) {
+          await releaseWaitLock();
+        }
+      }
+    }
+    throw error;
+  }
 
-  // 5. Scale image to 600px * 200px before uploading to Blob storage
-  const scaledImageBuffer = await resizeImageToLocationDimensions(image.uint8Array);
+  // 4. We are the first requester; generate image and upload to Blob store
+  try {
+    // Double-check blob store in case it was uploaded just before lock acquisition
+    const currentUrl = await findExistingLocationImageUrl(pathname);
+    if (currentUrl) {
+      return { url: currentUrl, cached: true };
+    }
 
-  // 6. Upload scaled image to Vercel Blob storage
-  const blob = await put(pathname, scaledImageBuffer, {
-    access: 'public',
-    contentType: 'image/png',
-  });
+    // Build evocative prompt with biome, castle specificity, and empty scene constraints
+    const prompt = buildLocationImagePrompt(location.description, locationId, location.underground);
+    const imageModel = process.env.GOOGLE_IMAGE_MODEL || 'gemini-2.5-flash-image';
 
-  return { url: blob.url, cached: false };
+    // Generate the image with Gemini Image model
+    const { image } = await generateImage({
+      model: google.image(imageModel),
+      prompt,
+      aspectRatio: '16:9',
+    });
+
+    // Scale image to 600px * 200px before uploading to Blob storage
+    const scaledImageBuffer = await resizeImageToLocationDimensions(image.uint8Array);
+
+    // Upload scaled image to Vercel Blob storage
+    const blob = await put(pathname, scaledImageBuffer, {
+      access: 'public',
+      contentType: 'image/png',
+    });
+
+    return { url: blob.url, cached: false };
+  } finally {
+    if (releaseLock) {
+      await releaseLock();
+    }
+  }
 }
 

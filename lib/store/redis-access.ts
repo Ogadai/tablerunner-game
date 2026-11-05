@@ -40,6 +40,8 @@ const getBoardSettingsKey = (boardId: string, mapId: string) => `boardSettings:$
 const getProcessingKey = (boardId: string, mapId: string) => `processingTurn:${boardId}:${mapId}`;
 const getProcessingLock = (boardId: string, mapId: string) => `processingLock:${boardId}:${mapId}`;
 
+export const getLocationImageLockKey = (locationId: number) => `locationImageLock:${locationId}`;
+
 /* Overall Game State */
 
 export async function getGameStateFromRedis(boardId: string, mapId: string): Promise<GameState> {
@@ -509,6 +511,19 @@ export async function setProcessingTurnInRedis(boardId: string, mapId: string, m
 
 export async function deleteProcessingTurnFromRedis(boardId: string, mapId: string): Promise<void> {
   await redis.del(getProcessingKey(boardId, mapId));
+}
+
+/* Location image locking */
+
+export const locationImageLockTTL = 10000;
+export const locationImageLockWaitMs = 10000;
+
+export async function lockLocationImageInRedis(
+  locationId: number,
+  ttl: number = locationImageLockTTL,
+  waitMs: number = locationImageLockWaitMs,
+): Promise<() => Promise<void>> {
+  return getLock(getLocationImageLockKey(locationId), ttl, waitMs);
 }
 
 /* Generic locking */
