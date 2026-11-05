@@ -94,6 +94,19 @@ export default function CauldronQuests({
   );
   const [dismissedArrivalKey, setDismissedArrivalKey] = useState<string | null>(null);
   const [prevArrivalKey, setPrevArrivalKey] = useState<string>(initialArrivalKey);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  const [openLocationQuestIds, setOpenLocationQuestIds] = useState<string[]>(() =>
+    initialShouldAutoOpen && player
+      ? initialQuests
+          .filter(
+            q =>
+              q.status === 'available' &&
+              q.offerLocation === player.location.id &&
+              isPlayerEligibleForQuest(q, player.id),
+          )
+          .map(q => q.id)
+      : [],
+  );
   const [submittingQuestId, setSubmittingQuestId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [liveUpdate, setLiveUpdate] = useState<{
@@ -137,16 +150,6 @@ export default function CauldronQuests({
       isPlayerEligibleForQuest(q, player.id),
   );
 
-  const activeQuests = allQuests
-    .filter(q => q.status === 'active' && isPlayerEligibleForQuest(q, player.id))
-    .sort((a, b) => (b.isMainQuest ? 1 : 0) - (a.isMainQuest ? 1 : 0));
-
-  const finishedQuests = allQuests.filter(
-    q =>
-      (q.status === 'completed' || q.status === 'failed') &&
-      isPlayerEligibleForQuest(q, player.id),
-  );
-
   const arrivalKey = `${gameState.turn}:${player.location.id}`;
 
   if (arrivalKey !== prevArrivalKey) {
@@ -159,8 +162,12 @@ export default function CauldronQuests({
       setAutoOpenedArrivalKey(arrivalKey);
       setIsOpen(true);
       setManualOpen(false);
+      setOpenLocationQuestIds(availableHere.map(q => q.id));
     } else if (!manualOpen && isOpen) {
       setIsOpen(false);
+      setOpenLocationQuestIds([]);
+    } else if (isOpen) {
+      setOpenLocationQuestIds(availableHere.map(q => q.id));
     }
   } else if (
     !isOpen &&
@@ -171,6 +178,25 @@ export default function CauldronQuests({
   ) {
     setAutoOpenedArrivalKey(arrivalKey);
     setIsOpen(true);
+    setOpenLocationQuestIds(availableHere.map(q => q.id));
+  }
+
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
+    if (!isOpen) {
+      if (openLocationQuestIds.length > 0) {
+        setOpenLocationQuestIds([]);
+      }
+    } else {
+      setOpenLocationQuestIds(availableHere.map(q => q.id));
+    }
+  } else if (isOpen) {
+    const unlistedAvailableIds = availableHere
+      .filter(q => !openLocationQuestIds.includes(q.id))
+      .map(q => q.id);
+    if (unlistedAvailableIds.length > 0) {
+      setOpenLocationQuestIds(prev => [...prev, ...unlistedAvailableIds]);
+    }
   }
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -179,8 +205,37 @@ export default function CauldronQuests({
     if (!nextOpen) {
       setDismissedArrivalKey(arrivalKey);
       setError(null);
+      setOpenLocationQuestIds([]);
+    } else {
+      setOpenLocationQuestIds(availableHere.map(q => q.id));
     }
   };
+
+  const locationQuests = openLocationQuestIds
+    .map(id => allQuests.find(q => q.id === id))
+    .filter(
+      (q): q is QuestInstance =>
+        Boolean(
+          q &&
+            isPlayerEligibleForQuest(q, player.id) &&
+            (q.status === 'available' || q.status === 'active'),
+        ),
+    );
+
+  const activeQuests = allQuests
+    .filter(
+      q =>
+        q.status === 'active' &&
+        isPlayerEligibleForQuest(q, player.id) &&
+        !openLocationQuestIds.includes(q.id),
+    )
+    .sort((a, b) => (b.isMainQuest ? 1 : 0) - (a.isMainQuest ? 1 : 0));
+
+  const finishedQuests = allQuests.filter(
+    q =>
+      (q.status === 'completed' || q.status === 'failed') &&
+      isPlayerEligibleForQuest(q, player.id),
+  );
 
   const handleAcceptQuest = async (questId: string) => {
     if (processing || actionPending.current || player.health <= 0) return;
@@ -356,42 +411,49 @@ export default function CauldronQuests({
               </div>
             )}
 
-            {availableHere.length > 0 && (
+            {locationQuests.length > 0 && (
               <section className={styles.section} aria-label="Available Quests at This Location">
                 <h4 className={styles.sectionTitle}>
-                  Quests at Location {player.location.id} ({availableHere.length})
+                  Quests at Location {player.location.id} ({locationQuests.length})
                 </h4>
                 <ul className={styles.questList}>
-                  {availableHere.map(quest => (
-                    <li key={quest.id} className={`${styles.questCard} ${styles.questCardAvailable}`}>
-                      <div className={styles.questHeader}>
-                        <span className={styles.questTitle}>{quest.title}</span>
-                        <div className={styles.badges}>
-                          <span
-                            className={
-                              quest.scope === 'shared'
-                                ? styles.scopeBadgeShared
-                                : styles.scopeBadgePlayer
-                            }
-                          >
-                            {quest.scope === 'shared' ? 'Shared Quest' : 'Personal Quest'}
-                          </span>
+                  {locationQuests.map(quest => {
+                    const isAccepted = quest.status === 'active';
+                    return (
+                      <li key={quest.id} className={`${styles.questCard} ${styles.questCardAvailable}`}>
+                        <div className={styles.questHeader}>
+                          <span className={styles.questTitle}>{quest.title}</span>
+                          <div className={styles.badges}>
+                            <span
+                              className={
+                                quest.scope === 'shared'
+                                  ? styles.scopeBadgeShared
+                                  : styles.scopeBadgePlayer
+                              }
+                            >
+                              {quest.scope === 'shared' ? 'Shared Quest' : 'Personal Quest'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <p className={styles.questDesc}>{quest.description}</p>
-                      <div className={styles.questFooter}>
-                        {renderRewardRow(quest)}
-                        <button
-                          type="button"
-                          className="btn"
-                          disabled={processing || submittingQuestId !== null || player.health <= 0}
-                          onClick={() => handleAcceptQuest(quest.id)}
-                        >
-                          {submittingQuestId === quest.id ? 'Accepting...' : 'Accept Quest'}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
+                        <p className={styles.questDesc}>{quest.description}</p>
+                        <div className={styles.questFooter}>
+                          {renderRewardRow(quest)}
+                          <button
+                            type="button"
+                            className="btn"
+                            disabled={isAccepted || processing || submittingQuestId !== null || player.health <= 0}
+                            onClick={isAccepted ? undefined : () => handleAcceptQuest(quest.id)}
+                          >
+                            {isAccepted
+                              ? 'Accepted'
+                              : submittingQuestId === quest.id
+                                ? 'Accepting...'
+                                : 'Accept Quest'}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </section>
             )}

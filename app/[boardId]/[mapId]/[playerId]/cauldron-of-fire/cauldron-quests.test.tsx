@@ -303,19 +303,31 @@ describe('CauldronQuests UI Component', () => {
     // Mage auto-opens because of available quest at location 22
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Shared Sun Medallion')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accept Quest' })).toBeEnabled();
 
     // Barbarian accepts the quest, broadcasting QuestsUpdated
     act(() => {
       QuestsTopicService.raiseQuestsUpdated(getGameTopicId('b1', 'm1'), {
         type: GameTopicMessageType.QuestsUpdated,
         quests: [{ ...quest, status: 'active' }],
+        npcs: [],
       });
     });
 
-    // The Quests popup MUST stay open for Mage, and show the quest now as Active
+    // The Quests popup MUST stay open for Mage, and keep the quest in "...at location" with a disabled Accepted button
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Quests at Location 22 (1)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
+    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
+
+    // Closing and re-opening the popup moves it to Active Quests
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quests' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
-    expect(screen.getByText('Shared Sun Medallion')).toBeInTheDocument();
+    expect(screen.queryByText(/Quests at Location 22/)).not.toBeInTheDocument();
   });
 
   it('keeps the quests popup open continuously without closing when the player accepts a quest', async () => {
@@ -365,11 +377,14 @@ describe('CauldronQuests UI Component', () => {
       QuestsTopicService.raiseQuestsUpdated(getGameTopicId('b1', 'm1'), {
         type: GameTopicMessageType.QuestsUpdated,
         quests: [{ ...quest, status: 'active' }],
+        npcs: [],
       });
     });
 
-    // Dialog must STILL be open (never closed!)
+    // Dialog must STILL be open (never closed!) and keep quest in location section with disabled Accepted button
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
+    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
 
     // Now server response resolves
     await act(async () => {
@@ -384,8 +399,101 @@ describe('CauldronQuests UI Component', () => {
       });
     });
 
-    // Dialog remains open and displays active quest
+    // Dialog remains open and keeps quest in location section with disabled Accepted button
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Quests at Location 22 (1)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
+    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
+
+    // Closing and re-opening the popup moves it to Active Quests
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quests' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
+    expect(screen.queryByText(/Quests at Location 22/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the accepted quest in place when multiple quests exist at location', async () => {
+    const player = createPlayer({ id: 'barbarian', location: { id: 22, description: '', move: [] } });
+    const gameState = createGame({ gameId: 'cauldronfire', turn: 1, players: [player] });
+    const quest1 = {
+      id: 'q-1',
+      templateId: 'retrieve-1',
+      title: 'First Quest',
+      description: 'First quest description',
+      category: 'retrieve_item' as const,
+      scope: 'shared' as const,
+      tier: 'early' as const,
+      status: 'available' as const,
+      offerLocation: 22,
+      reward: { coins: 50, points: 100 },
+    };
+    const quest2 = {
+      id: 'q-2',
+      templateId: 'retrieve-2',
+      title: 'Second Quest',
+      description: 'Second quest description',
+      category: 'retrieve_item' as const,
+      scope: 'shared' as const,
+      tier: 'early' as const,
+      status: 'available' as const,
+      offerLocation: 22,
+      reward: { coins: 30, points: 60 },
+    };
+    saveQuestsState(gameState, { quests: [quest1, quest2] });
+
+    jest.mocked(acceptCauldronQuest).mockResolvedValue({
+      success: true,
+      data: {
+        gameState,
+        quests: [{ ...quest1, status: 'active' }, quest2],
+        npcs: [],
+        playerInventory: { equipped: null, equipment: [], hiredNpcIds: [] },
+      },
+    });
+
+    render(
+      <CauldronQuests
+        boardId="b1"
+        mapId="m1"
+        player={player}
+        gameState={gameState}
+        processing={false}
+      />,
+    );
+
+    expect(screen.getByText('Quests at Location 22 (2)')).toBeInTheDocument();
+    const acceptButtons = screen.getAllByRole('button', { name: 'Accept Quest' });
+    expect(acceptButtons).toHaveLength(2);
+
+    // Accept first quest
+    fireEvent.click(acceptButtons[0]);
+
+    await waitFor(() => {
+      expect(acceptCauldronQuest).toHaveBeenCalledWith('b1', 'm1', 'barbarian', 'q-1');
+    });
+
+    // Still in location section: first quest is disabled "Accepted", second quest is still "Accept Quest"
+    expect(screen.getByText('Quests at Location 22 (2)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accepted' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Accept Quest' })).toBeEnabled();
+
+    // Titles remain in original order
+    const titles = screen.getAllByText(/First Quest|Second Quest/).map(el => el.textContent);
+    expect(titles[0]).toBe('First Quest');
+    expect(titles[1]).toBe('Second Quest');
+
+    // Active Quests is still 0
+    expect(screen.getByText('Active Quests (0)')).toBeInTheDocument();
+
+    // Close and re-open
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Quests' }));
+
+    // Now First Quest is in Active Quests, and Second Quest is in Quests at Location 22 (1)
+    expect(screen.getByText('Quests at Location 22 (1)')).toBeInTheDocument();
     expect(screen.getByText('Active Quests (1)')).toBeInTheDocument();
   });
 });
