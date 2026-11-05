@@ -349,8 +349,6 @@ export default function CauldronQuests({
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className={`DialogContent ${styles.questsDialog}`}>
-          <Dialog.Title className="DialogTitle">Quests</Dialog.Title>
-
           <div className={styles.dialogBody}>
             {error && (
               <div role="alert" className={styles.errorBanner}>
@@ -361,7 +359,7 @@ export default function CauldronQuests({
             {availableHere.length > 0 && (
               <section className={styles.section} aria-label="Available Quests at This Location">
                 <h4 className={styles.sectionTitle}>
-                  Available at Location {player.location.id} ({availableHere.length})
+                  Quests at Location {player.location.id} ({availableHere.length})
                 </h4>
                 <ul className={styles.questList}>
                   {availableHere.map(quest => (

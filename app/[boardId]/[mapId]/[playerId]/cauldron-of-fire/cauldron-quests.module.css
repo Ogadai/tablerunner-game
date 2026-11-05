@@ -12,6 +12,7 @@
 }
 
 .questsDialog {
+  padding-top: 12px;
   min-width: 320px;
   max-width: 560px;
   width: 92vw;
@@ -40,8 +41,6 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-section-heading);
-  border-bottom: 1px solid var(--border-stone);
-  padding-bottom: 4px;
 }
 
 .questList {
