@@ -13,6 +13,7 @@ export enum GameTopicMessageType {
   LocationUpdated = 'location_updated',
   StoreUpdated = 'store_updated',
   QuestsUpdated = 'quests_updated',
+  MimicWarning = 'mimic_warning',
   VideoPreload = 'video_preload',
   VideoPlay = 'video_play',
 }
@@ -62,6 +63,16 @@ export interface QuestsUpdatedMessage extends GameTopicMessageBase {
   quests: QuestInstance[];
   npcs: NPCState[];
   leds?: LedState[];
+}
+
+export interface MimicWarningMessage extends GameTopicMessageBase {
+  type: GameTopicMessageType.MimicWarning;
+  locationId: number;
+  openerPlayerId: string;
+  openerPlayerName: string;
+  monsterName: string;
+  monsterType: string;
+  message?: string;
 }
 
 export interface VideoPreloadMessage extends GameTopicMessageBase {

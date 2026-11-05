@@ -137,9 +137,17 @@ describe('chest-pickup', () => {
       expect(spawned?.health).toBe(11);
       expect(spawned?.team).toBe('monster');
 
-      // Full game state update triggered
-      expect(redis.setGameStateInRedis).toHaveBeenCalledWith('b1', 'm1', game);
+      // Save game state without full refresh
+      expect(redis.setGameStateInRedis).toHaveBeenCalledWith('b1', 'm1', game, { notify: false });
       expect(redis.setLocationsStateInRedis).toHaveBeenCalledWith('b1', 'm1', locations);
+      expect(publishMessage).toHaveBeenCalledWith('b1', 'm1', {
+        type: GameTopicMessageType.MimicWarning,
+        locationId: 10,
+        openerPlayerId: game.players[0].id,
+        openerPlayerName: game.players[0].name,
+        monsterName: 'Juvenile Mimic',
+        monsterType: 'juvenilemimic',
+      });
       expect(publishMessage).toHaveBeenCalledWith('b1', 'm1', {
         type: GameTopicMessageType.LocationUpdated,
         locationId: 10,
@@ -170,9 +178,18 @@ describe('chest-pickup', () => {
       expect(spawned?.type).toBe('mimic');
       expect(spawned?.health).toBe(24);
       expect(spawned?.team).toBe('monster');
+
+      expect(publishMessage).toHaveBeenCalledWith('b1', 'm1', {
+        type: GameTopicMessageType.MimicWarning,
+        locationId: 240,
+        openerPlayerId: game.players[0].id,
+        openerPlayerName: game.players[0].name,
+        monsterName: 'Mimic',
+        monsterType: 'mimic',
+      });
     });
 
-    it('adds suitable messages for all players at the location', async () => {
+    it('publishes a mimic warning topic message and location update without writing to player messages or full game state refresh', async () => {
       const opener = game.players[0]; // Hero
       opener.location = { id: 10, description: '', move: [] };
       const allyAtLocation = createPlayer({ id: 'ally', name: 'Mage', location: { id: 10, description: '', move: [] } });
@@ -194,22 +211,25 @@ describe('chest-pickup', () => {
         options: { outcomeRoll: 0.05 },
       });
 
-      // Opener message
-      expect(redis.setPlayerMessagesInRedis).toHaveBeenCalledWith(
-        'b1', 'm1', opener.id,
-        { messages: [{ text: '*You* opened the chest, but it was a **Juvenile Mimic**! Prepare for battle!' }] },
-      );
+      // Does NOT write to player messages in redis (prevents message popup and battle replay loop)
+      expect(redis.setPlayerMessagesInRedis).not.toHaveBeenCalled();
 
-      // Ally at same location message
-      expect(redis.setPlayerMessagesInRedis).toHaveBeenCalledWith(
-        'b1', 'm1', allyAtLocation.id,
-        { messages: [{ text: `**${opener.name}** opened the chest, but it was a **Juvenile Mimic**! Prepare for battle!` }] },
-      );
+      // Does NOT trigger full GameState update
+      expect(redis.setGameStateInRedis).toHaveBeenCalledWith('b1', 'm1', game, { notify: false });
 
-      // Distant player does NOT receive message
-      expect(redis.setPlayerMessagesInRedis).not.toHaveBeenCalledWith(
-        'b1', 'm1', distantPlayer.id, expect.anything(),
-      );
+      // Publishes mimic warning topic message and location update
+      expect(publishMessage).toHaveBeenCalledWith('b1', 'm1', {
+        type: GameTopicMessageType.MimicWarning,
+        locationId: 10,
+        openerPlayerId: opener.id,
+        openerPlayerName: opener.name,
+        monsterName: 'Juvenile Mimic',
+        monsterType: 'juvenilemimic',
+      });
+      expect(publishMessage).toHaveBeenCalledWith('b1', 'm1', {
+        type: GameTopicMessageType.LocationUpdated,
+        locationId: 10,
+      });
     });
   });
 

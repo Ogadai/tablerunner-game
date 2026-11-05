@@ -5,6 +5,7 @@ import GameTopicService from './game-topic-service';
 import RaceTeamTopicService from './race-team-topic-service';
 import VideoTopicService from './video-topic-service';
 import StoreTopicService from './store-topic-service';
+import MimicTopicService from './mimic-topic-service';
 import { GameTopicMessageType } from '../../lib/message-types';
 
 const mockPresence = {
@@ -216,6 +217,29 @@ describe('GameTopic', () => {
     expect(gameListener).not.toHaveBeenCalled();
     unsubscribeGame();
     unsubscribeStore();
+  });
+
+  it('routes mimic warning updates through MimicTopicService without triggering a game refresh', () => {
+    const gameListener = jest.fn();
+    const mimicListener = jest.fn();
+    const unsubscribeGame = GameTopicService.subscribe(topicId, gameListener);
+    const unsubscribeMimic = MimicTopicService.subscribe(topicId, mimicListener);
+    render(<GameTopic topicId={topicId} playerId={playerId} />);
+    const data = {
+      type: GameTopicMessageType.MimicWarning,
+      locationId: 10,
+      openerPlayerId: 'hero',
+      openerPlayerName: 'Hero',
+      monsterName: 'Juvenile Mimic',
+      monsterType: 'juvenilemimic',
+    };
+
+    mockChannel.subscribe.mock.calls[0][0]({ name: data.type, data });
+
+    expect(mimicListener).toHaveBeenCalledWith(data);
+    expect(gameListener).not.toHaveBeenCalled();
+    unsubscribeGame();
+    unsubscribeMimic();
   });
 
   it('raises video messages through VideoTopicService', () => {

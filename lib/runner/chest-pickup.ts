@@ -9,15 +9,25 @@ import { lootItems } from '../games/items';
 import { createItemForInventory } from './apply-inventory';
 import { updateMonsterLeds } from './game-action-monsters';
 import {
-  getPlayerMessagesFromRedis,
-  setPlayerMessagesInRedis,
   setLocationsStateInRedis,
   setGameStateInRedis,
   getPlayerInventoryFromRedis,
   setPlayerInventoryInRedis,
 } from '../store/redis-access';
-import { GameTopicMessageType, LocationUpdatedMessage } from '../message-types';
+import { GameTopicMessageType, LocationUpdatedMessage, MimicWarningMessage } from '../message-types';
 import { publishMessage } from '../messages/message-publisher';
+
+export async function publishMimicWarning(
+  boardId: string,
+  mapId: string,
+  warning: Omit<MimicWarningMessage, 'type'>
+): Promise<void> {
+  const msg: MimicWarningMessage = {
+    type: GameTopicMessageType.MimicWarning,
+    ...warning,
+  };
+  await publishMessage(boardId, mapId, msg);
+}
 
 export async function publishLocationUpdated(boardId: string, mapId: string, locationId: number): Promise<void> {
   const msg: LocationUpdatedMessage = {
@@ -182,23 +192,18 @@ export async function handleChestPickup({
     locationsState.monsters.push(mimicMonster);
     updateMonsterLeds(gameState, locationsState.monsters);
 
-    // Add a suitable message for players at this location
     const openerName = getDisplayName(playerState);
-    for (const player of gameState.players) {
-      if (player.location.id === playerState.location.id) {
-        const storedMessages = await getPlayerMessagesFromRedis(boardId, mapId, player.id);
-        const messagesState = storedMessages?.messages ? storedMessages : { messages: [] };
-        const text = player.id === playerId
-          ? `*You* opened the chest, but it was a **${monsterDef.name}**! Prepare for battle!`
-          : `**${openerName}** opened the chest, but it was a **${monsterDef.name}**! Prepare for battle!`;
-        messagesState.messages.push({ text });
-        await setPlayerMessagesInRedis(boardId, mapId, player.id, messagesState);
-      }
-    }
 
     await setLocationsStateInRedis(boardId, mapId, locationsState);
-    // Mimic needs full game state update (notify: true) so players see messages and re-enter combat phase
-    await setGameStateInRedis(boardId, mapId, gameState);
+    // Avoid full game state update; notify via MimicWarning message and trigger location update
+    await setGameStateInRedis(boardId, mapId, gameState, { notify: false });
+    await publishMimicWarning(boardId, mapId, {
+      locationId: playerState.location.id,
+      openerPlayerId: playerId,
+      openerPlayerName: openerName,
+      monsterName: monsterDef.name,
+      monsterType,
+    });
     await publishLocationUpdated(boardId, mapId, playerState.location.id);
 
     return {

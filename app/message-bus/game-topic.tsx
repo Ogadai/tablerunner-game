@@ -12,6 +12,7 @@ import StoreTopicService from './store-topic-service';
 import QuestsTopicService from './quests-topic-service';
 import GameProcessingStartedService from './game-processing-service';
 import VideoTopicService from './video-topic-service';
+import MimicTopicService from './mimic-topic-service';
 
 let _ably: Ably.Realtime | null = null;
 function connectToAbly(playerId: string): Ably.Realtime {
@@ -112,6 +113,8 @@ export default function GameTopic({
           topicId,
           message.data?.locationId
         );
+      } else if (message.name === GameTopicMessageType.MimicWarning) {
+        MimicTopicService.raiseMimicWarning(topicId, message.data);
       } else if (
         message.name === GameTopicMessageType.VideoPreload ||
         message.name === GameTopicMessageType.VideoPlay

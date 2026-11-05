@@ -13,6 +13,7 @@ import { getLocationState } from '@/lib/store/locationState';
 import PlayerLocationList from './player-location-list';
 import LocationTopicService from "@/app/message-bus/location-topic-service";
 import StoreTopicService from "@/app/message-bus/store-topic-service";
+import MimicTopicService from "@/app/message-bus/mimic-topic-service";
 import { getGameTopicId } from "@/lib/message-types";
 import PlayerSpells from './player-spells';
 import PlayerStore from './player-store';
@@ -104,6 +105,19 @@ export default function PlayerLocation(
         LocationTopicService.subscribe(topicId, locationId => {
           if (locationId === player.location.id) {
             fetchLocationState();
+          }
+        }),
+        MimicTopicService.subscribe(topicId, async message => {
+          if (message.locationId === player.location.id) {
+            const text = message.message || (message.openerPlayerId === playerId
+              ? `You opened the chest, but it was a ${message.monsterName}! Prepare for battle!`
+              : `${message.openerPlayerName} opened the chest, but it was a ${message.monsterName}! Prepare for battle!`);
+            await Swal.fire({
+              ...getSwalDefaultOptions(),
+              title: 'Mimic!',
+              icon: 'warning',
+              text,
+            });
           }
         }),
       ];

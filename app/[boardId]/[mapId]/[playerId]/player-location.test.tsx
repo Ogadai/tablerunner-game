@@ -5,6 +5,8 @@ import Swal from 'sweetalert2';
 import { addPlayerAction, removePlayerAction } from '@/lib/store/playerActionsState';
 import { getLocationState } from '@/lib/store/locationState';
 import locationTopic from '@/app/message-bus/location-topic-service';
+import MimicTopicService from '@/app/message-bus/mimic-topic-service';
+import { GameTopicMessageType } from '@/lib/message-types';
 import { PlayerActionType, type LocationState, type PlayerActionsState } from '@/lib/store/types';
 import PlayerLocation from './player-location';
 import PlayerLocationList from './player-location-list';
@@ -337,5 +339,57 @@ describe('PlayerLocation', () => {
     expect(sync.updateInventory).toHaveBeenCalledWith(updatedInventory, expect.objectContaining({ id: 'barbarian' }));
     unmount();
     expect(disposeLocation).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows mimic warning popover when a mimic warning arrives for the current location', async () => {
+    await setup();
+    expect(Swal.fire).not.toHaveBeenCalled();
+
+    // Warning for another location does not trigger popup
+    await act(async () => {
+      MimicTopicService.raiseMimicWarning('board-map', {
+        type: GameTopicMessageType.MimicWarning,
+        locationId: 99,
+        openerPlayerId: 'barbarian',
+        openerPlayerName: 'Barbarian',
+        monsterName: 'Juvenile Mimic',
+        monsterType: 'juvenilemimic',
+      });
+    });
+    expect(Swal.fire).not.toHaveBeenCalled();
+
+    // Warning for current location (player is opener)
+    await act(async () => {
+      MimicTopicService.raiseMimicWarning('board-map', {
+        type: GameTopicMessageType.MimicWarning,
+        locationId: 1,
+        openerPlayerId: 'barbarian',
+        openerPlayerName: 'Barbarian',
+        monsterName: 'Juvenile Mimic',
+        monsterType: 'juvenilemimic',
+      });
+    });
+    expect(Swal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Mimic!',
+      icon: 'warning',
+      text: 'You opened the chest, but it was a Juvenile Mimic! Prepare for battle!',
+    }));
+
+    // Warning for current location (ally is opener)
+    await act(async () => {
+      MimicTopicService.raiseMimicWarning('board-map', {
+        type: GameTopicMessageType.MimicWarning,
+        locationId: 1,
+        openerPlayerId: 'mage',
+        openerPlayerName: 'Mage',
+        monsterName: 'Mimic',
+        monsterType: 'mimic',
+      });
+    });
+    expect(Swal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Mimic!',
+      icon: 'warning',
+      text: 'Mage opened the chest, but it was a Mimic! Prepare for battle!',
+    }));
   });
 });

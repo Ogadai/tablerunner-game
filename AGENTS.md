@@ -24,9 +24,13 @@ TypeScript. It is designed for deployment to Vercel.
 - Follow existing naming conventions.
 - Match existing coding styles.
 - Avoid introducing unnecessary dependencies.
+- Color styles should use color vars from globals.css. Prefer using existing vars if the name is suitable. Otherwise, create new vars when necessary.
 
 ## Development Rules
 - Read existing code before modifying it.
 - Make the smallest changes necessary.
-- Preserve existing functionality unless
-  explicitly instructed otherwise.
+- Preserve existing functionality unless explicitly instructed otherwise.
+
+## Tests
+- All new features should have sufficient test coverage
+- When running tests, prefer to use the jest-tester sub-agent if available
