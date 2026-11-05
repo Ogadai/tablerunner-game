@@ -237,7 +237,7 @@
 }
 
 .damageText {
-  color: var(--color-error);
+  color: var(--red-antique);
 }
 
 .healText {

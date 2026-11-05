@@ -16,24 +16,7 @@ interface TrajectoryLine {
   y2: number;
 }
 
-export function formatEventDescription(event: CombatEvent): string {
-  const targetSummaries = event.targets
-    .map(t => {
-      let outcome = '';
-      if (t.miss) {
-        outcome = 'missed';
-      } else if (t.healthDelta < 0) {
-        outcome = `${t.healthDelta}`;
-      } else if (t.healthDelta > 0) {
-        outcome = `+${t.healthDelta}`;
-      }
-      if (t.defeated) {
-        outcome = outcome ? `${outcome} 💀` : '💀';
-      }
-      return outcome ? `${t.targetName} (${outcome})` : t.targetName;
-    })
-    .join(', ');
-
+export function formatEventDescription(event: CombatEvent): React.ReactNode {
   const verb =
     event.actionType === 'spell'
       ? 'cast'
@@ -49,13 +32,62 @@ export function formatEventDescription(event: CombatEvent): string {
     event.targets[0].targetId === event.initiatorId
   ) {
     const delta = event.targets[0].healthDelta;
-    return `${event.initiatorName} used ${event.actionName}${delta !== 0 ? ` (${delta > 0 ? `+${delta}` : delta})` : ''}`;
+    return (
+      <>
+        {event.initiatorName} used {event.actionName}
+        {delta !== 0 && ` (${delta > 0 ? `+${delta}` : delta})`}
+      </>
+    );
   }
 
-  if (targetSummaries) {
-    return `${event.initiatorName} ${verb} ${event.actionName} → ${targetSummaries}`;
-  }
-  return `${event.initiatorName} ${verb} ${event.actionName}`;
+  return (
+    <>
+      {event.initiatorName} {verb} {event.actionName}
+      {event.targets.length > 0 && (
+        <>
+          {' → '}
+          {event.targets.map((t, idx) => {
+            let outcome: string | null = null;
+            let outcomeClass: string = '';
+            if (t.miss) {
+              outcome = 'miss';
+              outcomeClass = styles.outcomeMiss;
+            } else if (t.healthDelta < 0) {
+              outcome = `${t.healthDelta}`;
+              outcomeClass = styles.outcomeDamage;
+            } else if (t.healthDelta > 0) {
+              outcome = `+${t.healthDelta}`;
+              outcomeClass = styles.outcomeHeal;
+            }
+
+            return (
+              <span key={t.targetId || idx}>
+                {idx > 0 && ', '}
+                {t.targetName}
+                {(outcome !== null || t.defeated) && (
+                  <>
+                    {' ('}
+                    <span className={outcomeClass}>{outcome}</span>
+                    {outcome !== null && t.defeated && ' '}
+                    {t.defeated && (
+                      <span
+                        className={`${styles.defeatedSkull} material-symbols-outlined`}
+                        aria-label="defeated"
+                        title="Defeated"
+                      >
+                        skull
+                      </span>
+                    )}
+                    {')'}
+                  </>
+                )}
+              </span>
+            );
+          })}
+        </>
+      )}
+    </>
+  );
 }
 
 export default function BattleReplay({ replay }: { replay: BattleReplayType }) {

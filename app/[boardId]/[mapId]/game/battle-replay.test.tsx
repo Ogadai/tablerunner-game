@@ -20,7 +20,8 @@ describe('formatEventDescription', () => {
         },
       ],
     };
-    expect(formatEventDescription(hitEvent)).toBe('Hero attacked Melee Attack → Goblin (-8)');
+    const { container: hitView } = render(<>{formatEventDescription(hitEvent)}</>);
+    expect(hitView).toHaveTextContent('Hero attacked Melee Attack → Goblin (-8)');
 
     const defeatEvent: CombatEvent = {
       ...hitEvent,
@@ -34,7 +35,11 @@ describe('formatEventDescription', () => {
         },
       ],
     };
-    expect(formatEventDescription(defeatEvent)).toBe('Hero attacked Melee Attack → Goblin (-10 💀)');
+    const { container: defeatView } = render(<>{formatEventDescription(defeatEvent)}</>);
+    expect(defeatView).toHaveTextContent('Hero attacked Melee Attack → Goblin (-10 skull)');
+    const skull = defeatView.querySelector('.defeatedSkull');
+    expect(skull).toBeInTheDocument();
+    expect(skull).toHaveClass('material-symbols-outlined');
 
     const missEvent: CombatEvent = {
       ...hitEvent,
@@ -48,7 +53,8 @@ describe('formatEventDescription', () => {
         },
       ],
     };
-    expect(formatEventDescription(missEvent)).toBe('Hero attacked Melee Attack → Goblin (missed)');
+    const { container: missView } = render(<>{formatEventDescription(missEvent)}</>);
+    expect(missView).toHaveTextContent('Hero attacked Melee Attack → Goblin (miss)');
   });
 
   it('formats spells with multiple targets', () => {
@@ -64,7 +70,8 @@ describe('formatEventDescription', () => {
         { targetId: 'm2', targetName: 'Troll', healthDelta: -14, resultHealth: 20 },
       ],
     };
-    expect(formatEventDescription(spellEvent)).toBe('Mage cast Fireball → Orc (-12), Troll (-14)');
+    const { container } = render(<>{formatEventDescription(spellEvent)}</>);
+    expect(container).toHaveTextContent('Mage cast Fireball → Orc (-12), Troll (-14)');
   });
 
   it('formats consumable self-use', () => {
@@ -79,7 +86,8 @@ describe('formatEventDescription', () => {
         { targetId: 'p1', targetName: 'Hero', healthDelta: 15, resultHealth: 25 },
       ],
     };
-    expect(formatEventDescription(itemEvent)).toBe('Hero used Health Potion (+15)');
+    const { container } = render(<>{formatEventDescription(itemEvent)}</>);
+    expect(container).toHaveTextContent('Hero used Health Potion (+15)');
   });
 
   it('formats non-damaging spells without health numbers', () => {
@@ -92,7 +100,8 @@ describe('formatEventDescription', () => {
       icon: { sheet: 'spell', iconXY: { x: 2, y: 3 } },
       targets: [{ targetId: 'm1', targetName: 'Goblin', healthDelta: 0, resultHealth: 15 }],
     };
-    expect(formatEventDescription(fearEvent)).toBe('Mage cast Fear → Goblin');
+    const { container } = render(<>{formatEventDescription(fearEvent)}</>);
+    expect(container).toHaveTextContent('Mage cast Fear → Goblin');
   });
 });
 
@@ -159,25 +168,25 @@ describe('BattleReplay Component', () => {
   });
 
   it('renders replay header, allies, and enemies sections', () => {
-    render(<BattleReplay replay={sampleReplay} />);
-    expect(screen.getByText('Hero attacked Sword Slash → Goblin (-6)')).toBeInTheDocument();
+    const { container } = render(<BattleReplay replay={sampleReplay} />);
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero attacked Sword Slash → Goblin (-6)');
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
   });
 
   it('navigates with Next, Prev, and Restart controls', () => {
-    render(<BattleReplay replay={sampleReplay} />);
+    const { container } = render(<BattleReplay replay={sampleReplay} />);
 
     // Pause auto-play first to test manual buttons
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
 
     // Click Next
     fireEvent.click(screen.getByRole('button', { name: 'Next action' }));
-    expect(screen.getByText('Goblin attacked Bite → Hero (-4)')).toBeInTheDocument();
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Goblin attacked Bite → Hero (-4)');
     expect(screen.getByText('2 / 2')).toBeInTheDocument();
 
     // Click Prev
     fireEvent.click(screen.getByRole('button', { name: 'Previous action' }));
-    expect(screen.getByText('Hero attacked Sword Slash → Goblin (-6)')).toBeInTheDocument();
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero attacked Sword Slash → Goblin (-6)');
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
 
     // Click Restart
@@ -247,7 +256,7 @@ describe('BattleReplay Component', () => {
       ],
     };
     const { container } = render(<BattleReplay replay={fearReplay} />);
-    expect(screen.getByText('Hero cast Fear → Goblin')).toBeInTheDocument();
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero cast Fear → Goblin');
     expect(container.querySelector('.actionIconSpell')).toBeInTheDocument();
     expect(container.querySelector('.deltaText')).toBeNull();
   });
@@ -275,8 +284,8 @@ describe('BattleReplay Component', () => {
         },
       ],
     };
-    render(<BattleReplay replay={aoeReplay} />);
-    expect(screen.getByText('Hero cast Chain Lightning → Goblin 1 (-5), Goblin 2 (-6)')).toBeInTheDocument();
+    const { container } = render(<BattleReplay replay={aoeReplay} />);
+    expect(container.querySelector('.eventDescription')).toHaveTextContent('Hero cast Chain Lightning → Goblin 1 (-5), Goblin 2 (-6)');
     expect(screen.getByText('-5')).toBeInTheDocument();
     expect(screen.getByText('-6')).toBeInTheDocument();
   });
