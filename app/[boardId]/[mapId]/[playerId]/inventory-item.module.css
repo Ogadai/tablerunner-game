@@ -48,7 +48,7 @@ p.itemClassMismatch {
   height: 60px;
   background-image: url('/item-sheet.png');
   background-repeat: no-repeat;
-  background-size: 600px 600px;
+  background-size: 600px 660px;
 }
 
 .equippedItem {

@@ -63,7 +63,7 @@ export const equipableItems: Record<string, EquipableItemDef> = {
     id: EquipableIds.swordRusty.toString(),
     type: PlayerItemType.weapon,
     name: 'Rusty Sword',
-    iconXY: { x: 0, y: 0 },
+    iconXY: { x: 8, y: 0 },
     value: 10,
     bonusStats: {
       attack: 1,
@@ -71,17 +71,17 @@ export const equipableItems: Record<string, EquipableItemDef> = {
     }
   },
   [EquipableIds.swordSteel]: { id: 'swordSteel', type: PlayerItemType.weapon, name: 'Steel Sword', iconXY: { x: 0, y: 0 }, value: 25, bonusStats: { attack: 2, damage: 2 } },
-  [EquipableIds.swordLegendary]: { id: 'swordLegendary', type: PlayerItemType.weapon, name: 'Legendary Sword', iconXY: { x: 0, y: 0 }, value: 60, bonusStats: { attack: 4, damage: 4 } },
+  [EquipableIds.swordLegendary]: { id: 'swordLegendary', type: PlayerItemType.weapon, name: 'Legendary Sword', iconXY: { x: 9, y: 0 }, value: 60, bonusStats: { attack: 4, damage: 4 } },
   [EquipableIds.swordArcane]: { id: 'swordArcane', type: PlayerItemType.weapon, name: 'Arcane Sword', iconXY: { x: 1, y: 0 }, value: 180, bonusStats: { attack: 5, damage: 6, magic: 2 } },
   [EquipableIds.swordInferno]: { id: 'swordInferno', type: PlayerItemType.weapon, name: 'Inferno Sword', iconXY: { x: 2, y: 0 }, value: 250, bonusStats: { attack: 10, damage: 12, magic: 5 } },
-  [EquipableIds.swordDragon]: { id: 'swordDragon', type: PlayerItemType.weapon, name: 'Dragon Sword', iconXY: { x: 2, y: 0 }, value: 450, bonusStats: { attack: 15, damage: 18 } },
+  [EquipableIds.swordDragon]: { id: 'swordDragon', type: PlayerItemType.weapon, name: 'Dragon Sword', iconXY: { x: 7, y: 10 }, value: 450, bonusStats: { attack: 15, damage: 18 } },
   [EquipableIds.axeHand]: { id: 'axeHand', type: PlayerItemType.weapon, name: 'Hand Axe', iconXY: { x: 3, y: 0 }, value: 20, bonusStats: { attack: 2, damage: 2 } },
-  [EquipableIds.axeBattle]: { id: 'axeBattle', type: PlayerItemType.weapon, name: 'Battle Axe', iconXY: { x: 3, y: 0 }, value: 35, bonusStats: { attack: 3, damage: 4 } },
-  [EquipableIds.axeWar]: { id: 'axeWar', type: PlayerItemType.weapon, name: 'War Axe', iconXY: { x: 3, y: 0 }, value: 70, bonusStats: { attack: 5, damage: 6 } },
+  [EquipableIds.axeBattle]: { id: 'axeBattle', type: PlayerItemType.weapon, name: 'Battle Axe', iconXY: { x: 0, y: 10 }, value: 35, bonusStats: { attack: 3, damage: 4 } },
+  [EquipableIds.axeWar]: { id: 'axeWar', type: PlayerItemType.weapon, name: 'War Axe', iconXY: { x: 1, y: 10 }, value: 70, bonusStats: { attack: 5, damage: 6 } },
   [EquipableIds.hammer]: { id: 'hammer', type: PlayerItemType.weapon, name: 'War Hammer', iconXY: { x: 4, y: 0 }, value: 55, bonusStats: { attack: 2, damage: 4 } },
-  [EquipableIds.warhammer]: { id: 'warhammer', type: PlayerItemType.weapon, name: 'Great Hammer', iconXY: { x: 4, y: 0 }, value: 90, bonusStats: { attack: 4, damage: 6, speed: -1 } },
+  [EquipableIds.warhammer]: { id: 'warhammer', type: PlayerItemType.weapon, name: 'Great Hammer', iconXY: { x: 2, y: 10 }, value: 90, bonusStats: { attack: 4, damage: 6, speed: -1 } },
   [EquipableIds.dagger]: { id: 'dagger', type: PlayerItemType.weapon, name: 'Iron Dagger', iconXY: { x: 5, y: 0 }, value: 18, bonusStats: { attack: 2, damage: 1, speed: 1 } },
-  [EquipableIds.daggerVenom]: { id: 'daggerVenom', type: PlayerItemType.weapon, name: 'Venom Dagger', iconXY: { x: 5, y: 0 }, value: 50, bonusStats: { attack: 4, damage: 2, speed: 2 } },
+  [EquipableIds.daggerVenom]: { id: 'daggerVenom', type: PlayerItemType.weapon, name: 'Venom Dagger', iconXY: { x: 3, y: 10 }, value: 50, bonusStats: { attack: 4, damage: 2, speed: 2 } },
   [EquipableIds.bowWarped]: {
     id: EquipableIds.bowWarped.toString(),
     type: PlayerItemType.weapon,
@@ -94,10 +94,10 @@ export const equipableItems: Record<string, EquipableItemDef> = {
       damage: 1
     }
   },
-  [EquipableIds.bowLong]: { id: 'bowLong', type: PlayerItemType.weapon, name: 'Long Bow', ranged: true, iconXY: { x: 6, y: 0 }, value: 30, bonusStats: { attack: 2, damage: 3, speed: 1 } },
-  [EquipableIds.bowElven]: { id: 'bowElven', type: PlayerItemType.weapon, name: 'Elven Bow', ranged: true, iconXY: { x: 6, y: 0 }, value: 75, bonusStats: { attack: 4, damage: 4, speed: 2 } },
+  [EquipableIds.bowLong]: { id: 'bowLong', type: PlayerItemType.weapon, name: 'Long Bow', ranged: true, iconXY: { x: 4, y: 10 }, value: 30, bonusStats: { attack: 2, damage: 3, speed: 1 } },
+  [EquipableIds.bowElven]: { id: 'bowElven', type: PlayerItemType.weapon, name: 'Elven Bow', ranged: true, iconXY: { x: 5, y: 10 }, value: 75, bonusStats: { attack: 4, damage: 4, speed: 2 } },
   [EquipableIds.crossbow]: { id: 'crossbow', type: PlayerItemType.weapon, name: 'Heavy Crossbow', ranged: true, iconXY: { x: 7, y: 0 }, value: 110, bonusStats: { attack: 5, damage: 6, speed: -1 } },
-  [EquipableIds.bowLegendary]: { id: 'bowLegendary', type: PlayerItemType.weapon, name: 'Legendary Bow', ranged: true, iconXY: { x: 6, y: 0 }, value: 170, bonusStats: { attack: 10, damage: 12, speed: 2 } },
+  [EquipableIds.bowLegendary]: { id: 'bowLegendary', type: PlayerItemType.weapon, name: 'Legendary Bow', ranged: true, iconXY: { x: 6, y: 10 }, value: 170, bonusStats: { attack: 10, damage: 12, speed: 2 } },
   [EquipableIds.staffSkull]: {
     id: EquipableIds.staffSkull.toString(),
     type: PlayerItemType.weapon,
