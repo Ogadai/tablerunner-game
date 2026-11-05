@@ -103,6 +103,35 @@ describe('formatEventDescription', () => {
     const { container } = render(<>{formatEventDescription(fearEvent)}</>);
     expect(container).toHaveTextContent('Mage cast Fear → Goblin');
   });
+
+  it('formats barbarian and ranger skills with "activated" instead of "cast"', () => {
+    const barbarianSkillEvent: CombatEvent = {
+      id: 'e5',
+      initiatorId: 'barbarian',
+      initiatorName: 'Barbarian',
+      actionType: 'spell',
+      actionName: 'Iron Skin',
+      icon: { sheet: 'spell', iconXY: { x: 0, y: 0 } },
+      targets: [{ targetId: 'barbarian', targetName: 'Barbarian', healthDelta: 4, resultHealth: 14 }],
+    };
+    const { container: barbView } = render(<>{formatEventDescription(barbarianSkillEvent)}</>);
+    expect(barbView).toHaveTextContent('Barbarian activated Iron Skin → Barbarian (+4)');
+
+    const rangerSkillEvent: CombatEvent = {
+      id: 'e6',
+      initiatorId: 'ranger',
+      initiatorName: 'Ranger',
+      actionType: 'spell',
+      actionName: 'Multi-Shot',
+      icon: { sheet: 'spell', iconXY: { x: 0, y: 0 } },
+      targets: [
+        { targetId: 'm1', targetName: 'Orc', healthDelta: -6, resultHealth: 4 },
+        { targetId: 'm2', targetName: 'Goblin', healthDelta: -6, resultHealth: 0, defeated: true },
+      ],
+    };
+    const { container: rangerView } = render(<>{formatEventDescription(rangerSkillEvent)}</>);
+    expect(rangerView).toHaveTextContent('Ranger activated Multi-Shot → Orc (-6), Goblin (-6 skull)');
+  });
 });
 
 describe('BattleReplay Component', () => {

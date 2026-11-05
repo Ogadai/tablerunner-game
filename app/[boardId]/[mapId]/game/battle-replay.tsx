@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import EntityList, { EntityTargetOverlay } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
+import { isSkillSpell, spells } from '@/lib/games/spells';
 import { BattleReplay as BattleReplayType, CombatEvent, EntityItemClass, EntityItemDetail } from '@/lib/store/types';
 import styles from './battle-replay.module.css';
 
@@ -17,9 +18,15 @@ interface TrajectoryLine {
 }
 
 export function formatEventDescription(event: CombatEvent): React.ReactNode {
+  const isSkill =
+    event.actionType === 'spell' &&
+    isSkillSpell(Object.values(spells).find(s => s.name.toLowerCase() === event.actionName.toLowerCase()));
+
   const verb =
     event.actionType === 'spell'
-      ? 'cast'
+      ? isSkill
+        ? 'activated'
+        : 'cast'
       : event.actionType === 'item'
       ? 'used'
       : event.actionType === 'effect'
