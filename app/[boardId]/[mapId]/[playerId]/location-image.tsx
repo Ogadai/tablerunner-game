@@ -25,13 +25,17 @@ async function fetchLocationImageUrl(locationId: number): Promise<string | null>
     return null;
   }
   try {
-    const res = await fetch(`/api/locations/${locationId}/image`);
+    const res = await fetch(`/api/locations/${locationId}/image`, {
+      cache: 'no-store',
+    });
     if (!res.ok) {
+      console.error(`Failed to fetch image for location ${locationId}: status ${res.status}`);
       return null;
     }
     const data = await res.json();
     return data?.url || null;
-  } catch {
+  } catch (error) {
+    console.error(`Error fetching image for location ${locationId}:`, error);
     return null;
   }
 }
@@ -52,7 +56,10 @@ function LocationImageContent({ promise, description }: { promise: Promise<strin
         alt={description}
         title={description}
         className={styles.locationImage}
-        onError={() => setHasError(true)}
+        onError={() => {
+          console.error(`Failed to load location image at ${imageUrl}`);
+          setHasError(true);
+        }}
       />
     </div>
   );

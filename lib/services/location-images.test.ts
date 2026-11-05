@@ -2,11 +2,14 @@ import {
   getLocationRegionInfo,
   buildLocationImagePrompt,
   getLocationImageBlobPath,
+  getLocationImageRootUrl,
+  getLocationImageUrl,
+  checkLocationImageExists,
   resizeImageToLocationDimensions,
   getOrGenerateLocationImage,
 } from './location-images';
 import { generateImage } from 'ai';
-import { list, put } from '@vercel/blob';
+import { put } from '@vercel/blob';
 import { lockLocationImageInRedis, RedisLockError } from '@/lib/store/redis-access';
 
 jest.mock('@/lib/store/redis-access', () => {
@@ -49,7 +52,6 @@ jest.mock('@ai-sdk/google', () => ({
 }));
 
 jest.mock('@vercel/blob', () => ({
-  list: jest.fn(),
   put: jest.fn(),
 }));
 
@@ -150,6 +152,62 @@ describe('location-images service', () => {
     });
   });
 
+  describe('getLocationImageRootUrl & getLocationImageUrl', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      process.env = { ...originalEnv };
+      delete process.env.LOCATION_IMAGE_BASE_URL;
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('returns LOCATION_IMAGE_BASE_URL when set', () => {
+      process.env.LOCATION_IMAGE_BASE_URL = 'https://custom-blob.example.com/';
+      expect(getLocationImageRootUrl()).toBe('https://custom-blob.example.com');
+      expect(getLocationImageUrl(42)).toBe('https://custom-blob.example.com/location-images/location-42.png');
+    });
+
+    it('defaults to known game public store root URL', () => {
+      expect(getLocationImageRootUrl()).toBe('https://eivregtw0c7oknqs.public.blob.vercel-storage.com');
+      expect(getLocationImageUrl(1)).toBe('https://eivregtw0c7oknqs.public.blob.vercel-storage.com/location-images/location-1.png');
+    });
+  });
+
+  describe('checkLocationImageExists', () => {
+    const originalFetch = global.fetch;
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    it('returns true when HEAD request returns ok', async () => {
+      global.fetch = jest.fn().mockResolvedValueOnce({ ok: true, status: 200 } as any);
+      const exists = await checkLocationImageExists('https://blob.example.com/location-images/location-1.png');
+      expect(exists).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith('https://blob.example.com/location-images/location-1.png', {
+        method: 'HEAD',
+        cache: 'no-store',
+      });
+    });
+
+    it('returns false when HEAD request returns 404', async () => {
+      global.fetch = jest.fn().mockResolvedValueOnce({ ok: false, status: 404 } as any);
+      const exists = await checkLocationImageExists('https://blob.example.com/location-images/location-1.png');
+      expect(exists).toBe(false);
+    });
+
+    it('returns false when fetch rejects with a network error', async () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      global.fetch = jest.fn().mockRejectedValueOnce(new Error('Network error'));
+      const exists = await checkLocationImageExists('https://blob.example.com/location-images/location-1.png');
+      expect(exists).toBe(false);
+      warnSpy.mockRestore();
+    });
+  });
+
   describe('resizeImageToLocationDimensions', () => {
     it('scales input buffer to 600px by 200px', async () => {
       const input = Buffer.from([1, 2, 3]);
@@ -168,32 +226,36 @@ describe('location-images service', () => {
   describe('getOrGenerateLocationImage', () => {
     const releaseLock = jest.fn();
     const releaseWaitLock = jest.fn();
+    const originalFetch = global.fetch;
 
     beforeEach(() => {
       releaseLock.mockResolvedValue(undefined);
       releaseWaitLock.mockResolvedValue(undefined);
       jest.mocked(lockLocationImageInRedis).mockResolvedValue(releaseLock);
-      jest.mocked(list).mockResolvedValue({ blobs: [], hasMore: false } as any);
+      global.fetch = jest.fn().mockImplementation(async (url: any) => {
+        if (typeof url === 'string' && url.includes('?v=')) {
+          return { ok: true, status: 200 };
+        }
+        return { ok: false, status: 404 };
+      });
     });
 
-    it('returns cached blob URL if it already exists in Vercel Blob', async () => {
-      jest.mocked(list).mockResolvedValueOnce({
-        blobs: [
-          {
-            pathname: 'location-images/location-224.png',
-            url: 'https://blob.vercel-storage.com/cached-224.png',
-            size: 1024,
-            uploadedAt: new Date(),
-            downloadUrl: 'https://blob.vercel-storage.com/cached-224.png',
-          },
-        ],
-        hasMore: false,
-      } as any);
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
 
+    it('returns cached blob URL if it already exists via HEAD request', async () => {
+      jest.mocked(global.fetch).mockResolvedValueOnce({ ok: true, status: 200 } as any);
+
+      const expectedUrl = getLocationImageUrl(224);
       const result = await getOrGenerateLocationImage(224);
       expect(result).toEqual({
-        url: 'https://blob.vercel-storage.com/cached-224.png',
+        url: expectedUrl,
         cached: true,
+      });
+      expect(global.fetch).toHaveBeenCalledWith(expectedUrl, {
+        method: 'HEAD',
+        cache: 'no-store',
       });
       expect(lockLocationImageInRedis).not.toHaveBeenCalled();
       expect(generateImage).not.toHaveBeenCalled();
@@ -201,8 +263,6 @@ describe('location-images service', () => {
     });
 
     it('generates an image and uploads to blob when not cached and lock is acquired', async () => {
-      jest.mocked(list).mockResolvedValueOnce({ blobs: [], hasMore: false } as any);
-
       const fakeUint8 = new Uint8Array([1, 2, 3]);
       jest.mocked(generateImage).mockResolvedValueOnce({
         image: {
@@ -210,17 +270,16 @@ describe('location-images service', () => {
         },
       } as any);
 
+      const expectedUrl = getLocationImageUrl(1);
       jest.mocked(put).mockResolvedValueOnce({
-        url: 'https://blob.vercel-storage.com/new-image-1.png',
+        url: expectedUrl,
         pathname: 'location-images/location-1.png',
       } as any);
 
       const result = await getOrGenerateLocationImage(1);
 
-      expect(result).toEqual({
-        url: 'https://blob.vercel-storage.com/new-image-1.png',
-        cached: false,
-      });
+      expect(result.cached).toBe(false);
+      expect(result.url).toMatch(new RegExp(`^${expectedUrl}\\?v=\\d+$`));
 
       expect(lockLocationImageInRedis).toHaveBeenCalledWith(1, 10000, 0);
       expect(releaseLock).toHaveBeenCalledTimes(1);
@@ -237,40 +296,28 @@ describe('location-images service', () => {
         {
           access: 'public',
           contentType: 'image/png',
+          addRandomSuffix: false,
         }
       );
     });
 
     it('waits for first request to complete and returns cached image when 2nd request arrives', async () => {
-      // First list call: not yet cached
-      jest.mocked(list).mockResolvedValueOnce({ blobs: [], hasMore: false } as any);
-
       // Lock acquisition with waitMs = 0 fails because another request holds the lock
       jest.mocked(lockLocationImageInRedis).mockRejectedValueOnce(new RedisLockError());
 
       // Lock acquisition with waitMs = 10000 succeeds once the first request finishes
       jest.mocked(lockLocationImageInRedis).mockResolvedValueOnce(releaseWaitLock);
 
-      // Subsequent list call after lock release: first request has uploaded the image!
-      jest.mocked(list).mockResolvedValueOnce({
-        blobs: [
-          {
-            pathname: 'location-images/location-1.png',
-            url: 'https://blob.vercel-storage.com/generated-by-first-request-1.png',
-            size: 2048,
-            uploadedAt: new Date(),
-            downloadUrl: 'https://blob.vercel-storage.com/generated-by-first-request-1.png',
-          },
-        ],
-        hasMore: false,
-      } as any);
+      // Subsequent HEAD check after lock release returns ok: true (first request uploaded it)
+      jest.mocked(global.fetch)
+        .mockResolvedValueOnce({ ok: false, status: 404 } as any) // first check
+        .mockResolvedValueOnce({ ok: true, status: 200 } as any);  // check after wait
 
+      const expectedUrl = getLocationImageUrl(1);
       const result = await getOrGenerateLocationImage(1);
 
-      expect(result).toEqual({
-        url: 'https://blob.vercel-storage.com/generated-by-first-request-1.png',
-        cached: true,
-      });
+      expect(result.cached).toBe(true);
+      expect(result.url).toMatch(new RegExp(`^${expectedUrl}\\?v=\\d+$`));
 
       expect(lockLocationImageInRedis).toHaveBeenNthCalledWith(1, 1, 10000, 0);
       expect(lockLocationImageInRedis).toHaveBeenNthCalledWith(2, 1, 10000, 10000);
@@ -280,8 +327,6 @@ describe('location-images service', () => {
     });
 
     it('assumes error and does not regenerate if second request times out waiting for the lock', async () => {
-      jest.mocked(list).mockResolvedValueOnce({ blobs: [], hasMore: false } as any);
-
       // Initial fail-fast lock fails
       jest.mocked(lockLocationImageInRedis).mockRejectedValueOnce(new RedisLockError());
       // Wait lock also times out (10s elapsed)
@@ -294,16 +339,13 @@ describe('location-images service', () => {
     });
 
     it('treats missing image after lock release as error and does not regenerate', async () => {
-      // Not cached initially
-      jest.mocked(list).mockResolvedValueOnce({ blobs: [], hasMore: false } as any);
-
       // Initial fail-fast lock fails
       jest.mocked(lockLocationImageInRedis).mockRejectedValueOnce(new RedisLockError());
       // Wait lock succeeds
       jest.mocked(lockLocationImageInRedis).mockResolvedValueOnce(releaseWaitLock);
 
-      // Blob check after waiting still returns empty (first requester failed)
-      jest.mocked(list).mockResolvedValueOnce({ blobs: [], hasMore: false } as any);
+      // HEAD check after waiting still returns 404 (first requester failed)
+      jest.mocked(global.fetch).mockResolvedValue({ ok: false, status: 404 } as any);
 
       await expect(getOrGenerateLocationImage(1)).rejects.toThrow('Location 1 image generation failed or image not found');
 
@@ -313,7 +355,6 @@ describe('location-images service', () => {
     });
 
     it('releases lock even when image generation fails', async () => {
-      jest.mocked(list).mockResolvedValueOnce({ blobs: [], hasMore: false } as any);
       jest.mocked(generateImage).mockRejectedValueOnce(new Error('AI Service Unavailable'));
 
       await expect(getOrGenerateLocationImage(1)).rejects.toThrow('AI Service Unavailable');
@@ -321,8 +362,6 @@ describe('location-images service', () => {
     });
 
     it('throws an error if location does not exist in sharedLocations', async () => {
-      jest.mocked(list).mockResolvedValueOnce({ blobs: [], hasMore: false } as any);
-
       await expect(getOrGenerateLocationImage(9999)).rejects.toThrow('Location 9999 not found');
       expect(lockLocationImageInRedis).not.toHaveBeenCalled();
     });
