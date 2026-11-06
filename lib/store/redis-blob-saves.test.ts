@@ -199,6 +199,7 @@ describe('saved games list cache', () => {
         pathname: 'saved-games/board/map/save1.json',
         uploadedAt: new Date('2026-09-25T12:00:00.000Z'),
         size: 500,
+        etag: 'test-etag',
         url: 'https://example.test/save1.json',
         downloadUrl: 'https://example.test/save1.json',
       },

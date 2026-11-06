@@ -1,7 +1,13 @@
 import { generateImage } from 'ai';
 import { google } from '@ai-sdk/google';
-import { put } from '@vercel/blob';
 import sharp from 'sharp';
+import {
+  uploadToR2,
+  getR2DownloadUrl,
+  downloadFromR2,
+  checkR2ObjectExists,
+  getR2Client,
+} from './r2-storage';
 import { sharedLocations } from '@/lib/games/maps/shared-locations';
 import { getCellCoordinates } from '@/lib/games/gridCells';
 import {
@@ -195,19 +201,17 @@ export async function getOrGenerateLocationImage(locationId: number): Promise<{ 
       aspectRatio: '16:9',
     });
 
-    // Scale image to 600px * 200px before uploading to Blob storage
+    // Scale image to 600px * 200px before uploading to Cloudflare R2
     const scaledImageBuffer = await resizeImageToLocationDimensions(image.uint8Array);
 
-    // Upload scaled image to Vercel Blob storage with addRandomSuffix: false
-    const blob = await put(pathname, scaledImageBuffer, {
-      access: 'public',
+    // Upload scaled image to Cloudflare R2 storage
+    const uploadResult = await uploadToR2(pathname, scaledImageBuffer, {
       contentType: 'image/png',
-      addRandomSuffix: false,
     });
 
     // Append cache-buster query parameter to newly generated URL so the client browser avoids
     // any edge CDN 404 response cached prior to the upload completing.
-    const newImageUrl = `${blob.url || imageUrl}?v=${Date.now()}`;
+    const newImageUrl = `${uploadResult.url || imageUrl}?v=${Date.now()}`;
 
     // Verify the newly uploaded blob is publicly readable on the CDN before returning the URL
     // to prevent race conditions with edge replication where the client requests the image too early.
@@ -226,4 +230,28 @@ export async function getOrGenerateLocationImage(locationId: number): Promise<{ 
     }
   }
 }
+
+/**
+ * Downloads a location image directly from Cloudflare R2 storage.
+ */
+export async function downloadLocationImage(locationId: number): Promise<Buffer> {
+  const pathname = getLocationImageBlobPath(locationId);
+  return downloadFromR2(pathname);
+}
+
+/**
+ * Generates a presigned download URL for a location image using @aws-sdk/s3-request-presigner.
+ */
+export async function getLocationImagePresignedUrl(locationId: number, expiresIn?: number): Promise<string> {
+  const pathname = getLocationImageBlobPath(locationId);
+  return getR2DownloadUrl(pathname, { expiresIn });
+}
+
+export {
+  getR2Client,
+  uploadToR2,
+  getR2DownloadUrl,
+  downloadFromR2,
+  checkR2ObjectExists,
+};
 

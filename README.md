@@ -22,19 +22,19 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Saved games
 
-`saveGameToBlob(boardId, mapId, saveName)` writes a new JSON snapshot to a
-**private** Vercel Blob store. Configure `BLOB_READ_WRITE_TOKEN` for that store
+`saveGameToBlob(boardId, mapId, saveName)` writes a new JSON snapshot to
+Cloudflare R2 storage. Configure the `R2_*` environment variables
 alongside the existing Upstash Redis environment variables.
 
 Saves use the prefix
 `saved-games/${encodeURIComponent(boardId)}/${encodeURIComponent(mapId)}/`.
 `listSavedGames(boardId, mapId, cursor?)` returns an `ApiResponse` whose `data`
-contains `{ games, cursor, hasMore }`. Each page contains up to 20 saves in Blob
-pathname order. Pass the returned cursor while `hasMore` is true. Each entry
+contains `{ games, cursor, hasMore }`. Each page contains up to 20 saves in
+order (newest first). Pass the returned cursor while `hasMore` is true. Each entry
 includes `pathname`, save UUID, board/map IDs, name, player count and turn parsed
-from the pathname, plus `savedAt` from Blob upload time. Listing does not download
-snapshots. `gameId` remains in the snapshot and is not returned by listings.
-An invalid pathname returns an error for the page.
+from the pathname, plus `savedAt` from upload time. Listing is cached in Redis
+to avoid repetitive queries and does not download snapshots. `gameId` remains in the
+snapshot and is not returned by listings. An invalid pathname returns an error for the page.
 
 New filenames contain the save UUID, player count, turn and URL-encoded name:
 `<uuid>_players-<count>_turn-<turn>_name-<encoded-name>.json`.

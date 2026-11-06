@@ -1,7 +1,7 @@
 'use server'
 
 import { ApiResponse } from "../api-response";
-import { get, list, put, type ListBlobResultBlob } from '@vercel/blob';
+import { uploadToR2, downloadFromR2, listObjectsFromR2 } from "@/lib/services/r2-storage";
 import {
   getGameSnapshotFromRedis,
   restoreGameSnapshotInRedis,
@@ -40,14 +40,25 @@ function parseSavePathname(boardId: string, mapId: string, pathname: string) {
 
 async function readSavedGame(boardId: string, mapId: string, pathname: string) {
   const pathMetadata = parseSavePathname(boardId, mapId, pathname);
-  // get() inserts the pathname directly into a URL. Encode each stored segment
-  // so literal escapes in blob names (e.g. %20) are requested as %2520.
-  const requestPathname = pathname.split('/').map(segment => encodeURIComponent(segment)).join('/');
-  const blob = await get(requestPathname, { access: 'public' });
-  if (!blob || blob.statusCode !== 200) {
-    throw new Error('Saved game could not be found or read');
+  let buffer: Buffer;
+  try {
+    buffer = await downloadFromR2(pathname);
+  } catch (error: unknown) {
+    const err = error as { name?: string; message?: string; $metadata?: { httpStatusCode?: number } };
+    if (err?.name === 'NoSuchKey' || err?.name === 'NotFound' || err?.$metadata?.httpStatusCode === 404 || err?.message?.includes('Empty response body')) {
+      throw new Error('Saved game could not be found or read');
+    }
+    throw error;
   }
-  const snapshot = savedGameSchema.parse(await new Response(blob.stream).json());
+
+  let json: unknown;
+  try {
+    json = JSON.parse(buffer.toString('utf-8'));
+  } catch {
+    throw new Error('Saved game contains invalid game state');
+  }
+
+  const snapshot = savedGameSchema.parse(json);
   const { metadata, redisState } = snapshot;
   if (metadata.boardId !== boardId || metadata.mapId !== mapId ||
       metadata.id !== pathMetadata.id || metadata.playerCount !== pathMetadata.playerCount ||
@@ -85,11 +96,8 @@ export async function saveGameToBlob(boardId: string, mapId: string, saveName: s
       turn: gameState.turn,
     };
     const pathname = getSavePathname(boardId, mapId, metadata);
-    await put(pathname, JSON.stringify({ schemaVersion: 1, metadata, redisState }), {
-      access: 'public',
+    await uploadToR2(pathname, JSON.stringify({ schemaVersion: 1, metadata, redisState }), {
       contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: false,
     });
     await invalidateSavedGamesCacheInRedis(boardId, mapId);
 
@@ -118,14 +126,8 @@ export async function listSavedGames(boardId: string, mapId: string, cursor?: st
     const prefix = getSavePrefix(boardId, mapId);
     let blobs = await getSavedGamesCacheFromRedis(boardId, mapId);
     if (blobs === null) {
-      blobs = [];
-      let blobCursor: string | undefined;
-      // Blob pages are in pathname order, so collect them before sorting and paginating.
-      do {
-        const result = await list({ prefix, cursor: blobCursor, limit: 1000 });
-        blobs.push(...result.blobs);
-        blobCursor = result.hasMore ? result.cursor : undefined;
-      } while (blobCursor);
+      // Only call list on Cloudflare R2 if not cached in Redis (or flushed by a save)
+      blobs = await listObjectsFromR2(prefix);
       blobs.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime() || a.pathname.localeCompare(b.pathname));
       await setSavedGamesCacheInRedis(boardId, mapId, blobs);
     } else {

@@ -7,9 +7,11 @@ import {
   checkLocationImageExists,
   resizeImageToLocationDimensions,
   getOrGenerateLocationImage,
+  downloadLocationImage,
+  getLocationImagePresignedUrl,
 } from './location-images';
 import { generateImage } from 'ai';
-import { put } from '@vercel/blob';
+import { uploadToR2, getR2DownloadUrl, downloadFromR2 } from './r2-storage';
 import { lockLocationImageInRedis, RedisLockError } from '@/lib/store/redis-access';
 
 jest.mock('@/lib/store/redis-access', () => {
@@ -51,8 +53,12 @@ jest.mock('@ai-sdk/google', () => ({
   },
 }));
 
-jest.mock('@vercel/blob', () => ({
-  put: jest.fn(),
+jest.mock('./r2-storage', () => ({
+  uploadToR2: jest.fn(),
+  getR2DownloadUrl: jest.fn(),
+  downloadFromR2: jest.fn(),
+  checkR2ObjectExists: jest.fn(),
+  getR2Client: jest.fn(),
 }));
 
 describe('location-images service', () => {
@@ -259,10 +265,10 @@ describe('location-images service', () => {
       });
       expect(lockLocationImageInRedis).not.toHaveBeenCalled();
       expect(generateImage).not.toHaveBeenCalled();
-      expect(put).not.toHaveBeenCalled();
+      expect(uploadToR2).not.toHaveBeenCalled();
     });
 
-    it('generates an image and uploads to blob when not cached and lock is acquired', async () => {
+    it('generates an image and uploads to Cloudflare R2 when not cached and lock is acquired', async () => {
       const fakeUint8 = new Uint8Array([1, 2, 3]);
       jest.mocked(generateImage).mockResolvedValueOnce({
         image: {
@@ -271,10 +277,10 @@ describe('location-images service', () => {
       } as any);
 
       const expectedUrl = getLocationImageUrl(1);
-      jest.mocked(put).mockResolvedValueOnce({
+      jest.mocked(uploadToR2).mockResolvedValueOnce({
         url: expectedUrl,
-        pathname: 'location-images/location-1.png',
-      } as any);
+        key: 'location-images/location-1.png',
+      });
 
       const result = await getOrGenerateLocationImage(1);
 
@@ -290,13 +296,11 @@ describe('location-images service', () => {
         })
       );
 
-      expect(put).toHaveBeenCalledWith(
+      expect(uploadToR2).toHaveBeenCalledWith(
         'location-images/location-1.png',
         Buffer.from([10, 20, 30]),
         {
-          access: 'public',
           contentType: 'image/png',
-          addRandomSuffix: false,
         }
       );
     });
@@ -323,7 +327,7 @@ describe('location-images service', () => {
       expect(lockLocationImageInRedis).toHaveBeenNthCalledWith(2, 1, 10000, 10000);
       expect(releaseWaitLock).toHaveBeenCalledTimes(1);
       expect(generateImage).not.toHaveBeenCalled();
-      expect(put).not.toHaveBeenCalled();
+      expect(uploadToR2).not.toHaveBeenCalled();
     });
 
     it('assumes error and does not regenerate if second request times out waiting for the lock', async () => {
@@ -335,7 +339,7 @@ describe('location-images service', () => {
       await expect(getOrGenerateLocationImage(1)).rejects.toThrow('Timeout waiting for location 1 image generation');
 
       expect(generateImage).not.toHaveBeenCalled();
-      expect(put).not.toHaveBeenCalled();
+      expect(uploadToR2).not.toHaveBeenCalled();
     });
 
     it('treats missing image after lock release as error and does not regenerate', async () => {
@@ -351,7 +355,7 @@ describe('location-images service', () => {
 
       expect(releaseWaitLock).toHaveBeenCalledTimes(1);
       expect(generateImage).not.toHaveBeenCalled();
-      expect(put).not.toHaveBeenCalled();
+      expect(uploadToR2).not.toHaveBeenCalled();
     });
 
     it('releases lock even when image generation fails', async () => {
@@ -364,6 +368,25 @@ describe('location-images service', () => {
     it('throws an error if location does not exist in sharedLocations', async () => {
       await expect(getOrGenerateLocationImage(9999)).rejects.toThrow('Location 9999 not found');
       expect(lockLocationImageInRedis).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('downloadLocationImage & getLocationImagePresignedUrl', () => {
+    it('downloads location image buffer using downloadFromR2', async () => {
+      const mockBuffer = Buffer.from([1, 2, 3]);
+      jest.mocked(downloadFromR2).mockResolvedValueOnce(mockBuffer);
+
+      const result = await downloadLocationImage(42);
+      expect(result).toBe(mockBuffer);
+      expect(downloadFromR2).toHaveBeenCalledWith('location-images/location-42.png');
+    });
+
+    it('generates presigned download url using getR2DownloadUrl', async () => {
+      jest.mocked(getR2DownloadUrl).mockResolvedValueOnce('https://r2.example.com/presigned-42');
+
+      const result = await getLocationImagePresignedUrl(42, 1800);
+      expect(result).toBe('https://r2.example.com/presigned-42');
+      expect(getR2DownloadUrl).toHaveBeenCalledWith('location-images/location-42.png', { expiresIn: 1800 });
     });
   });
 });
