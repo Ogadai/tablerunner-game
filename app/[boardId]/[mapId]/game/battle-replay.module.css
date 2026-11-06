@@ -61,6 +61,17 @@
   color: var(--gold-bright);
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.soundButton span {
+  letter-spacing: normal;
+  margin-left: 0;
+}
+
 .speedButton {
   width: auto;
   min-width: 32px;

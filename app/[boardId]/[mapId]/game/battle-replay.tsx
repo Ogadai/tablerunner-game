@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import EntityList, { EntityTargetOverlay } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
 import { isSkillSpell, spells } from '@/lib/games/spells';
+import { getCombatEventSound, playCombatSound, stopAllCombatSounds, REPLAY_SOUND_STORAGE_KEY } from '@/lib/sound/battle-sounds';
 import { BattleReplay as BattleReplayType, CombatEvent, EntityItemClass, EntityItemDetail } from '@/lib/store/types';
 import styles from './battle-replay.module.css';
 
@@ -118,7 +119,21 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
     return 1;
   });
   const [lines, setLines] = useState<TrajectoryLine[]>([]);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(REPLAY_SOUND_STORAGE_KEY);
+        if (saved !== null) {
+          return saved === 'true';
+        }
+      } catch {
+        // ignore storage errors
+      }
+    }
+    return true;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
+  const prevSoundIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -128,6 +143,14 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
         if (REPLAY_SPEEDS.includes(parsed)) {
           setPlaybackSpeed(parsed);
         }
+      }
+    } catch {
+      // ignore storage errors
+    }
+    try {
+      const savedSound = localStorage.getItem(REPLAY_SOUND_STORAGE_KEY);
+      if (savedSound !== null) {
+        setSoundEnabled(savedSound === 'true');
       }
     } catch {
       // ignore storage errors
@@ -271,27 +294,48 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
     return () => window.removeEventListener('resize', updateLines);
   }, [currentIndex, currentEvent]);
 
+  // Trigger sound effect for current combat event
+  useEffect(() => {
+    if (!soundEnabled || !currentEvent) return;
+    if (prevSoundIndexRef.current === currentIndex) return;
+    prevSoundIndexRef.current = currentIndex;
+
+    const soundUrl = getCombatEventSound(currentEvent);
+    if (soundUrl) {
+      playCombatSound(soundUrl);
+    }
+  }, [currentIndex, currentEvent, soundEnabled]);
+
   const handleRestart = () => {
+    stopAllCombatSounds();
+    prevSoundIndexRef.current = null;
     setCurrentIndex(0);
     setIsPlaying(true);
   };
 
   const handlePrev = () => {
+    stopAllCombatSounds();
     setIsPlaying(false);
     setCurrentIndex(prev => Math.max(0, prev - 1));
   };
 
   const handleNext = () => {
+    stopAllCombatSounds();
     setIsPlaying(false);
     setCurrentIndex(prev => Math.min(events.length - 1, prev + 1));
   };
 
   const handlePlayPause = () => {
-    if (!isPlaying && currentIndex >= events.length - 1) {
+    if (isPlaying) {
+      stopAllCombatSounds();
+      setIsPlaying(false);
+    } else if (currentIndex >= events.length - 1) {
+      stopAllCombatSounds();
+      prevSoundIndexRef.current = null;
       setCurrentIndex(0);
       setIsPlaying(true);
     } else {
-      setIsPlaying(prev => !prev);
+      setIsPlaying(true);
     }
   };
 
@@ -305,6 +349,18 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
         // ignore storage errors
       }
       return nextSpeed;
+    });
+  };
+
+  const handleToggleSound = () => {
+    setSoundEnabled(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem(REPLAY_SOUND_STORAGE_KEY, String(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
     });
   };
 
@@ -366,6 +422,17 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
           </button>
         </div>
         <div className={styles.headerRight}>
+          <button
+            type="button"
+            className={`${styles.controlButton} ${styles.soundButton}`}
+            onClick={handleToggleSound}
+            title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+            aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+          >
+            <span className="material-symbols-outlined">
+              {soundEnabled ? 'volume_up' : 'volume_off'}
+            </span>
+          </button>
           <button
             type="button"
             className={`${styles.controlButton} ${styles.speedButton}`}

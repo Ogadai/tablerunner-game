@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import BattleReplay, { formatEventDescription, REPLAY_SPEED_STORAGE_KEY } from './battle-replay';
+import { REPLAY_SOUND_STORAGE_KEY } from '@/lib/sound/battle-sounds';
 import { BattleReplay as BattleReplayType, CombatEvent, EntityItemClass } from '@/lib/store/types';
 
 describe('formatEventDescription', () => {
@@ -257,6 +258,26 @@ describe('BattleReplay Component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Playback speed 3x' }));
     expect(screen.getByRole('button', { name: 'Playback speed 1x' })).toBeInTheDocument();
     expect(localStorage.getItem(REPLAY_SPEED_STORAGE_KEY)).toBe('1');
+  });
+
+  it('toggles sound on and off and persists to localStorage', () => {
+    render(<BattleReplay replay={sampleReplay} />);
+    const soundButton = screen.getByRole('button', { name: 'Mute sounds' });
+    expect(soundButton).toBeInTheDocument();
+
+    fireEvent.click(soundButton);
+    expect(screen.getByRole('button', { name: 'Enable sounds' })).toBeInTheDocument();
+    expect(localStorage.getItem(REPLAY_SOUND_STORAGE_KEY)).toBe('false');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enable sounds' }));
+    expect(screen.getByRole('button', { name: 'Mute sounds' })).toBeInTheDocument();
+    expect(localStorage.getItem(REPLAY_SOUND_STORAGE_KEY)).toBe('true');
+  });
+
+  it('restores saved sound preference from localStorage on load', () => {
+    localStorage.setItem(REPLAY_SOUND_STORAGE_KEY, 'false');
+    render(<BattleReplay replay={sampleReplay} />);
+    expect(screen.getByRole('button', { name: 'Enable sounds' })).toBeInTheDocument();
   });
 
   it('restores saved playback speed from localStorage on load', () => {
