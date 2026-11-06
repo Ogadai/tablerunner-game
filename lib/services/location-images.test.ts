@@ -150,6 +150,22 @@ describe('location-images service', () => {
       );
       expect(lowercasePrompt).not.toContain('Subterranean fantasy underground location');
     });
+
+    it('formats castle interior locations without outdoor cues or north orientation', () => {
+      // Cell 224 is in row 11, col 16 (inside castle)
+      const prompt = buildLocationImagePrompt('The castle grand ballroom. Exits are East and West', 224, false);
+      expect(prompt).toContain('Interior castle fantasy setting: The castle grand ballroom. Exits are East and West.');
+      expect(prompt).toContain('inside the grand stone halls of the evil castle of the Lich King');
+      expect(prompt).not.toContain('Outdoor fantasy landscape');
+      expect(prompt).not.toContain('Camera facing North');
+      expect(prompt).not.toContain('looking northward into the landscape');
+
+      const undergroundPrompt = buildLocationImagePrompt('Dungeon corridor', 224, true);
+      expect(undergroundPrompt).toContain('Subterranean fantasy castle dungeon: Dungeon corridor.');
+      expect(undergroundPrompt).toContain('inside the dark stone dungeons and ancient catacombs beneath the evil castle');
+      expect(undergroundPrompt).not.toContain('Outdoor fantasy landscape');
+      expect(undergroundPrompt).not.toContain('Camera facing North');
+    });
   });
 
   describe('getLocationImageBlobPath', () => {

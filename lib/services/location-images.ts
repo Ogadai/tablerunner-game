@@ -78,9 +78,11 @@ export function buildLocationImagePrompt(description: string, locationId: number
   if (description.toLocaleLowerCase().startsWith('inside')) {
     return `Indoor fantasy setting: ${description.trim()}. ${fantastMood}.`;
   }
-  const { regionDescription } = getLocationRegionInfo(locationId, underground);
-  const settingType = underground ? 'Subterranean fantasy underground location' : 'Outdoor fantasy landscape';
-  const orientation = underground ? '' : 'Camera facing North, looking northward into the landscape. ';
+  const { regionDescription, isInsideCastle } = getLocationRegionInfo(locationId, underground);
+  const settingType = isInsideCastle
+    ? (underground ? 'Subterranean fantasy castle dungeon' : 'Interior castle fantasy setting')
+    : (underground ? 'Subterranean fantasy underground location' : 'Outdoor fantasy landscape');
+  const orientation = (underground || isInsideCastle) ? '' : 'Camera facing North, looking northward into the landscape. ';
 
   return `${settingType}: ${description.trim()}. Location setting: Located ${regionDescription}. ${orientation}Environment only, establishing shot. Wide panoramic composition, ${fantastMood}. Strictly empty scenery: do NOT include any people, characters, humanoids, monsters, animals, or living creatures in the scene.`;
 }
