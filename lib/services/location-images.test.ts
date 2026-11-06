@@ -164,6 +164,7 @@ describe('location-images service', () => {
     beforeEach(() => {
       process.env = { ...originalEnv };
       delete process.env.LOCATION_IMAGE_BASE_URL;
+      delete process.env.NEXT_PUBLIC_LOCATION_IMAGE_BASE_URL;
     });
 
     afterEach(() => {

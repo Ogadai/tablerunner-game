@@ -16,6 +16,17 @@ import {
   locationImageLockTTL,
   locationImageLockWaitMs,
 } from '@/lib/store/redis-access';
+import {
+  getLocationImageBlobPath,
+  getLocationImageRootUrl,
+  getLocationImageUrl,
+} from './location-image-urls';
+
+export {
+  getLocationImageBlobPath,
+  getLocationImageRootUrl,
+  getLocationImageUrl,
+};
 
 export interface LocationRegionInfo {
   row: number;
@@ -74,10 +85,6 @@ export function buildLocationImagePrompt(description: string, locationId: number
   return `${settingType}: ${description.trim()}. Location setting: Located ${regionDescription}. ${orientation}Environment only, establishing shot. Wide panoramic composition, ${fantastMood}. Strictly empty scenery: do NOT include any people, characters, humanoids, monsters, animals, or living creatures in the scene.`;
 }
 
-export function getLocationImageBlobPath(locationId: number): string {
-  return `location-images/location-${locationId}.png`;
-}
-
 export async function resizeImageToLocationDimensions(inputBuffer: Buffer | Uint8Array): Promise<Buffer> {
   return sharp(inputBuffer)
     .resize(600, 200, {
@@ -86,19 +93,6 @@ export async function resizeImageToLocationDimensions(inputBuffer: Buffer | Uint
     })
     .png({ quality: 85, compressionLevel: 8 })
     .toBuffer();
-}
-
-export function getLocationImageRootUrl(): string {
-  if (process.env.LOCATION_IMAGE_BASE_URL) {
-    return process.env.LOCATION_IMAGE_BASE_URL.replace(/\/+$/, '');
-  }
-  return 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com';
-}
-
-export function getLocationImageUrl(locationId: number): string {
-  const rootUrl = getLocationImageRootUrl();
-  const pathname = getLocationImageBlobPath(locationId);
-  return `${rootUrl}/${pathname}`;
 }
 
 export async function checkLocationImageExists(url: string): Promise<boolean> {

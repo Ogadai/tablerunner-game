@@ -1,7 +1,8 @@
 'use client';
 
-import { Suspense, use, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './location-image.module.css';
+import { getLocationImageUrl } from '@/lib/services/location-image-urls';
 
 export interface LocationImageProps {
   locationId: number;
@@ -20,7 +21,7 @@ export function LocationImagePlaceholder() {
   );
 }
 
-async function fetchLocationImageUrl(locationId: number): Promise<string | null> {
+export async function fetchLocationImageUrl(locationId: number): Promise<string | null> {
   if (typeof fetch !== 'function') {
     return null;
   }
@@ -40,25 +41,66 @@ async function fetchLocationImageUrl(locationId: number): Promise<string | null>
   }
 }
 
-function LocationImageContent({ promise, description }: { promise: Promise<string | null>; description: string }) {
-  const imageUrl = use(promise);
-  const [hasError, setHasError] = useState(false);
+type ImageStatus =
+  | { stage: 'direct'; url: string }
+  | { stage: 'generating' }
+  | { stage: 'loaded'; url: string }
+  | { stage: 'error' };
 
-  if (!imageUrl || hasError) {
+function LocationImageContent({
+  locationId,
+  description,
+}: {
+  locationId: number;
+  description: string;
+}) {
+  const [status, setStatus] = useState<ImageStatus>(() => ({
+    stage: 'direct',
+    url: getLocationImageUrl(locationId),
+  }));
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (status.stage === 'generating') {
+      fetchLocationImageUrl(locationId).then((url) => {
+        if (isCancelled) return;
+        if (url) {
+          setStatus({ stage: 'loaded', url });
+        } else {
+          setStatus({ stage: 'error' });
+        }
+      });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [status.stage, locationId]);
+
+  if (status.stage === 'error') {
     return null;
+  }
+
+  if (status.stage === 'generating') {
+    return <LocationImagePlaceholder />;
   }
 
   return (
     <div className={styles.locationImageContainer}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={imageUrl}
+        src={status.url}
         alt={description}
         title={description}
         className={styles.locationImage}
         onError={() => {
-          console.error(`Failed to load location image at ${imageUrl}`);
-          setHasError(true);
+          if (status.stage === 'direct') {
+            setStatus({ stage: 'generating' });
+          } else {
+            console.error(`Failed to load location image at ${status.url}`);
+            setStatus({ stage: 'error' });
+          }
         }}
       />
     </div>
@@ -66,16 +108,14 @@ function LocationImageContent({ promise, description }: { promise: Promise<strin
 }
 
 export default function LocationImage({ locationId, description }: LocationImageProps) {
-  const imagePromise = useMemo(() => fetchLocationImageUrl(locationId), [locationId]);
+  if (!locationId || locationId <= 0 || isNaN(locationId)) {
+    return <p className={styles.fallbackDescription}>{description}</p>;
+  }
 
   return (
     <>
-      <Suspense fallback={<LocationImagePlaceholder />}>
-        <LocationImageContent key={locationId} promise={imagePromise} description={description} />
-      </Suspense>
+      <LocationImageContent key={locationId} locationId={locationId} description={description} />
       <p className={styles.fallbackDescription}>{description}</p>
     </>
   );
 }
-
-
