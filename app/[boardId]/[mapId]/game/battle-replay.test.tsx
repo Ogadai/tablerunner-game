@@ -260,24 +260,26 @@ describe('BattleReplay Component', () => {
     expect(localStorage.getItem(REPLAY_SPEED_STORAGE_KEY)).toBe('1');
   });
 
-  it('toggles sound on and off and persists to localStorage', () => {
+  it('defaults sound to off (muted), toggles sound on and off, and persists to localStorage', () => {
     render(<BattleReplay replay={sampleReplay} />);
-    const soundButton = screen.getByRole('button', { name: 'Mute sounds' });
-    expect(soundButton).toBeInTheDocument();
+    const soundCheckbox = screen.getByRole('checkbox', { name: 'Sound' });
+    expect(soundCheckbox).toBeInTheDocument();
+    expect(soundCheckbox).not.toBeChecked();
 
-    fireEvent.click(soundButton);
-    expect(screen.getByRole('button', { name: 'Enable sounds' })).toBeInTheDocument();
-    expect(localStorage.getItem(REPLAY_SOUND_STORAGE_KEY)).toBe('false');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Enable sounds' }));
-    expect(screen.getByRole('button', { name: 'Mute sounds' })).toBeInTheDocument();
+    fireEvent.click(soundCheckbox);
+    expect(soundCheckbox).toBeChecked();
     expect(localStorage.getItem(REPLAY_SOUND_STORAGE_KEY)).toBe('true');
+
+    fireEvent.click(soundCheckbox);
+    expect(soundCheckbox).not.toBeChecked();
+    expect(localStorage.getItem(REPLAY_SOUND_STORAGE_KEY)).toBe('false');
   });
 
   it('restores saved sound preference from localStorage on load', () => {
-    localStorage.setItem(REPLAY_SOUND_STORAGE_KEY, 'false');
+    localStorage.setItem(REPLAY_SOUND_STORAGE_KEY, 'true');
     render(<BattleReplay replay={sampleReplay} />);
-    expect(screen.getByRole('button', { name: 'Enable sounds' })).toBeInTheDocument();
+    const soundCheckbox = screen.getByRole('checkbox', { name: 'Sound' });
+    expect(soundCheckbox).toBeChecked();
   });
 
   it('restores saved playback speed from localStorage on load', () => {

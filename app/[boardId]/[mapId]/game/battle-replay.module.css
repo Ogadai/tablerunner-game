@@ -67,9 +67,37 @@
   gap: 4px;
 }
 
-.soundButton span {
-  letter-spacing: normal;
-  margin-left: 0;
+.soundToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding-right: 6px;
+  margin: 0;
+  background-color: var(--bg-input);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.soundCheckbox {
+  cursor: pointer;
+  margin: 0;
+  accent-color: var(--gold-bright, #ffd700);
+  width: 14px;
+  height: 14px;
+}
+
+.soundIcon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.soundLabel {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .speedButton {

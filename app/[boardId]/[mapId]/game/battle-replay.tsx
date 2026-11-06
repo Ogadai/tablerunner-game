@@ -3,7 +3,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import EntityList, { EntityTargetOverlay } from '@/app/[boardId]/[mapId]/[playerId]/entity-list';
 import { isSkillSpell, spells } from '@/lib/games/spells';
-import { getCombatEventSound, playCombatSound, stopAllCombatSounds, REPLAY_SOUND_STORAGE_KEY } from '@/lib/sound/battle-sounds';
+import {
+  getCombatEventSound,
+  playCombatSound,
+  stopAllCombatSounds,
+  unlockAudio,
+  REPLAY_SOUND_STORAGE_KEY,
+} from '@/lib/sound/battle-sounds';
 import { BattleReplay as BattleReplayType, CombatEvent, EntityItemClass, EntityItemDetail } from '@/lib/store/types';
 import styles from './battle-replay.module.css';
 
@@ -130,7 +136,7 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
         // ignore storage errors
       }
     }
-    return true;
+    return false;
   });
   const containerRef = useRef<HTMLDivElement>(null);
   const prevSoundIndexRef = useRef<number | null>(null);
@@ -307,6 +313,9 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
   }, [currentIndex, currentEvent, soundEnabled]);
 
   const handleRestart = () => {
+    if (soundEnabled) {
+      unlockAudio();
+    }
     stopAllCombatSounds();
     prevSoundIndexRef.current = null;
     setCurrentIndex(0);
@@ -314,18 +323,27 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
   };
 
   const handlePrev = () => {
+    if (soundEnabled) {
+      unlockAudio();
+    }
     stopAllCombatSounds();
     setIsPlaying(false);
     setCurrentIndex(prev => Math.max(0, prev - 1));
   };
 
   const handleNext = () => {
+    if (soundEnabled) {
+      unlockAudio();
+    }
     stopAllCombatSounds();
     setIsPlaying(false);
     setCurrentIndex(prev => Math.min(events.length - 1, prev + 1));
   };
 
   const handlePlayPause = () => {
+    if (soundEnabled) {
+      unlockAudio();
+    }
     if (isPlaying) {
       stopAllCombatSounds();
       setIsPlaying(false);
@@ -352,16 +370,27 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
     });
   };
 
-  const handleToggleSound = () => {
-    setSoundEnabled(prev => {
-      const next = !prev;
-      try {
-        localStorage.setItem(REPLAY_SOUND_STORAGE_KEY, String(next));
-      } catch {
-        // ignore storage errors
+  const handleToggleSound = (e?: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e ? e.target.checked : !soundEnabled;
+    if (next) {
+      // Direct user gesture: unlock audio permissions on Android / mobile browsers
+      unlockAudio();
+      if (currentEvent) {
+        const soundUrl = getCombatEventSound(currentEvent);
+        if (soundUrl) {
+          playCombatSound(soundUrl);
+          prevSoundIndexRef.current = currentIndex;
+        }
       }
-      return next;
-    });
+    } else {
+      stopAllCombatSounds();
+    }
+    setSoundEnabled(next);
+    try {
+      localStorage.setItem(REPLAY_SOUND_STORAGE_KEY, String(next));
+    } catch {
+      // ignore storage errors
+    }
   };
 
   if (events.length === 0) {
@@ -378,6 +407,22 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
     <div className={styles.battleReplay}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
+          <label className={styles.soundToggle} title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}>
+            <input
+              type="checkbox"
+              className={styles.soundCheckbox}
+              checked={soundEnabled}
+              onChange={handleToggleSound}
+              aria-label="Sound"
+            />
+            <span
+              className={`material-symbols-outlined ${styles.soundIcon}`}
+              aria-hidden="true"
+            >
+              {soundEnabled ? 'volume_up' : 'volume_off'}
+            </span>
+          </label>
+
           <button
             type="button"
             className={styles.controlButton}
@@ -422,17 +467,6 @@ export default function BattleReplay({ replay }: { replay: BattleReplayType }) {
           </button>
         </div>
         <div className={styles.headerRight}>
-          <button
-            type="button"
-            className={`${styles.controlButton} ${styles.soundButton}`}
-            onClick={handleToggleSound}
-            title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
-            aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
-          >
-            <span className="material-symbols-outlined">
-              {soundEnabled ? 'volume_up' : 'volume_off'}
-            </span>
-          </button>
           <button
             type="button"
             className={`${styles.controlButton} ${styles.speedButton}`}

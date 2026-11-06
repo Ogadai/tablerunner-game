@@ -153,6 +153,79 @@ export function getCombatEventRelativeUrl(event: CombatEvent | undefined): strin
 // Active audio instances for polyphonic playback tracking
 const activeAudios = new Set<HTMLAudioElement>();
 
+let sharedAudioContext: AudioContext | null = null;
+
+export function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  if (!sharedAudioContext) {
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioContextClass) {
+      try {
+        sharedAudioContext = new AudioContextClass();
+      } catch {
+        // Ignore initialization failure
+      }
+    }
+  }
+  return sharedAudioContext;
+}
+
+/**
+ * Unlocks audio permissions in mobile browsers (like Chrome on Android or iOS Safari).
+ * Must be invoked from within a direct user interaction event (such as click or change).
+ * Resumes any suspended AudioContext and plays a momentary silent buffer / audio element
+ * to prime the browser's audio engine and satisfy autoplay policy restrictions.
+ */
+export function unlockAudio(): void {
+  if (typeof window === 'undefined') return;
+
+  // In test environments (like jsdom), skip audio hardware priming
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
+    return;
+  }
+
+  // 1. Resume / prime Web Audio API AudioContext
+  try {
+    const ctx = getAudioContext();
+    if (ctx) {
+      if (ctx.state === 'suspended') {
+        void ctx.resume();
+      }
+      // Play a short silent buffer to prime audio hardware
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    }
+  } catch {
+    // Ignore audio context errors
+  }
+
+  // 2. Prime HTMLAudioElement playback with a silent audio data URL
+  try {
+    if (typeof Audio !== 'undefined') {
+      const silentAudio = new Audio(
+        'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
+      );
+      const playPromise = silentAudio.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise
+          .then(() => {
+            silentAudio.pause();
+          })
+          .catch(() => {
+            // Ignore failure
+          });
+      }
+    }
+  } catch {
+    // Ignore audio initialization errors
+  }
+}
+
 /**
  * Safely plays a combat sound using HTMLAudioElement.
  * Allows polyphonic overlapping so longer sounds (like War Cry or roars)
