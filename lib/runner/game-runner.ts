@@ -65,20 +65,20 @@ export async function checkAllPlayersReady(boardId: string, mapId: string): Prom
       throw error;
     }
     // Inventory writes must also stay excluded for the full turn-processing window.
-    gameStateLock = await lockGameStateInRedis(boardId, mapId, processingLockTTL, 0);
+    gameStateLock = await lockGameStateInRedis(boardId, mapId, processingLockTTL);
     const gameState = await getGameStateFromRedis(boardId, mapId);
     if (!gameState) return;
 
-    readyLock = await lockReadyStateInRedis(boardId, mapId, 0);
+    readyLock = await lockReadyStateInRedis(boardId, mapId);
     const readyState = await getReadyStateFromRedis(boardId, mapId);
 
     const allPlayersDead = gameState.players.every(player => player.health <= 0);
     const allPlayersReady = gameState.players.every(player => player.health === 0 || readyState.readyPlayerIds.includes(player.id));
     if (allPlayersDead || allPlayersReady) {
       // Freeze every queue before reading inputs, including paused-game respawns.
-      // Fail fast on contention; finally releases any locks already acquired.
+      // Wait on contention; finally releases any locks already acquired.
       for (const playerId of gameState.players.map(player => player.id).sort()) {
-        actionsLocks.push(await lockPlayerActionsInRedis(boardId, mapId, playerId, processingLockTTL, 0));
+        actionsLocks.push(await lockPlayerActionsInRedis(boardId, mapId, playerId, processingLockTTL));
       }
     }
 

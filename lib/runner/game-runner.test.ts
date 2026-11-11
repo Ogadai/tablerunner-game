@@ -1,5 +1,7 @@
 /** @jest-environment node */
 import { checkAllPlayersReady, processGameTurn, runGameActionsBetweenTurns } from './game-runner';
+import { setPlayerReady } from '../store/playerReadyState';
+import type { PlayerReadyState } from '../store/types';
 import * as redis from '../store/redis-access';
 import { runGameActions } from './game-actions';
 import { initialiseProcessesForTurn, executeProcessesBetweenTurns, executeProcessesForTurn } from './game-processes';
@@ -64,8 +66,8 @@ afterEach(() => jest.restoreAllMocks());
 
 it('releases all locks without processing an unready game', async () => {
   await checkAllPlayersReady('board', 'map');
-  expect(redis.lockGameStateInRedis).toHaveBeenCalledWith('board', 'map', redis.processingLockTTL, 0);
-  expect(redis.lockReadyStateInRedis).toHaveBeenCalledWith('board', 'map', 0);
+  expect(redis.lockGameStateInRedis).toHaveBeenCalledWith('board', 'map', redis.processingLockTTL);
+  expect(redis.lockReadyStateInRedis).toHaveBeenCalledWith('board', 'map');
   expect(redis.commitGameTurnInRedis).not.toHaveBeenCalled();
   expect(redis.lockPlayerActionsInRedis).not.toHaveBeenCalled();
   expect(releaseGame).toHaveBeenCalledTimes(1);
@@ -78,7 +80,7 @@ it('commits a ready turn, releasing readiness before execution and other locks b
   jest.mocked(redis.getReadyStateFromRedis).mockResolvedValue({ readyPlayerIds: ['hero'] });
   await checkAllPlayersReady('board', 'map');
   expect(redis.commitGameTurnInRedis).toHaveBeenCalledTimes(1);
-  expect(redis.lockPlayerActionsInRedis).toHaveBeenCalledWith('board', 'map', 'hero', redis.processingLockTTL, 0);
+  expect(redis.lockPlayerActionsInRedis).toHaveBeenCalledWith('board', 'map', 'hero', redis.processingLockTTL);
   expect(jest.mocked(redis.lockPlayerActionsInRedis).mock.invocationCallOrder[0])
     .toBeLessThan(jest.mocked(redis.getPlayerTurnInputsFromRedis).mock.invocationCallOrder[0]);
   expect(jest.mocked(redis.commitGameTurnInRedis).mock.invocationCallOrder[0])
@@ -111,7 +113,7 @@ it('clears respawn delays in an all-dead game without advancing the turn', async
   expect(game.players[0].respawnTurns).toBe(0);
   expect(game.turn).toBe(3);
   expect(redis.commitPausedGameInRedis).toHaveBeenCalledWith('board', 'map', game, []);
-  expect(redis.lockPlayerActionsInRedis).toHaveBeenCalledWith('board', 'map', 'hero', redis.processingLockTTL, 0);
+  expect(redis.lockPlayerActionsInRedis).toHaveBeenCalledWith('board', 'map', 'hero', redis.processingLockTTL);
   expect(jest.mocked(redis.commitPausedGameInRedis).mock.invocationCallOrder[0])
     .toBeLessThan(releaseActions.mock.invocationCallOrder[0]);
   expect(runGameActions).not.toHaveBeenCalled();
@@ -126,8 +128,8 @@ it('releases partially acquired action locks and skips processing on contention'
   jest.mocked(redis.lockPlayerActionsInRedis).mockResolvedValueOnce(releaseActions).mockRejectedValueOnce(error);
 
   await expect(checkAllPlayersReady('board', 'map')).rejects.toBe(error);
-  expect(redis.lockPlayerActionsInRedis).toHaveBeenNthCalledWith(1, 'board', 'map', 'a', redis.processingLockTTL, 0);
-  expect(redis.lockPlayerActionsInRedis).toHaveBeenNthCalledWith(2, 'board', 'map', 'b', redis.processingLockTTL, 0);
+  expect(redis.lockPlayerActionsInRedis).toHaveBeenNthCalledWith(1, 'board', 'map', 'a', redis.processingLockTTL);
+  expect(redis.lockPlayerActionsInRedis).toHaveBeenNthCalledWith(2, 'board', 'map', 'b', redis.processingLockTTL);
   expect(releaseActions).toHaveBeenCalledTimes(1);
   expect(releaseGame).toHaveBeenCalledTimes(1);
   expect(releaseReady).toHaveBeenCalledTimes(1);
@@ -135,6 +137,59 @@ it('releases partially acquired action locks and skips processing on contention'
   expect(redis.getPlayerTurnInputsFromRedis).not.toHaveBeenCalled();
   expect(redis.commitGameTurnInRedis).not.toHaveBeenCalled();
   expect(redis.publishGameProcessingStarted).not.toHaveBeenCalled();
+});
+
+it('processes the turn when two players press Ready concurrently', async () => {
+  jest.mocked(redis.getGameStateFromRedis).mockResolvedValue(createGame({
+    players: [createPlayer({ id: 'a' }), createPlayer({ id: 'b' })],
+  }));
+  let readyState: PlayerReadyState = { readyPlayerIds: [] };
+  let readyLockHeld = false;
+  let processingLockHeld = false;
+  const readyWaiters: (() => void)[] = [];
+  let notifyCheckWaiting!: () => void;
+  const checkWaiting = new Promise<void>(resolve => { notifyCheckWaiting = resolve; });
+  let releaseSecondPublish!: () => void;
+  const secondPublish = new Promise<void>(resolve => { releaseSecondPublish = resolve; });
+
+  jest.mocked(redis.lockForProcessing).mockImplementation(async () => {
+    if (processingLockHeld) throw new redis.RedisLockError();
+    processingLockHeld = true;
+    return async () => { processingLockHeld = false; };
+  });
+  jest.mocked(redis.lockReadyStateInRedis).mockImplementation(async (_boardId, _mapId, waitMs = 1000) => {
+    while (readyLockHeld) {
+      if (waitMs <= 0) throw new redis.RedisLockError();
+      if (processingLockHeld) notifyCheckWaiting();
+      await new Promise<void>(resolve => readyWaiters.push(resolve));
+    }
+    readyLockHeld = true;
+    return async () => {
+      readyLockHeld = false;
+      readyWaiters.shift()?.();
+    };
+  });
+  jest.mocked(redis.getReadyStateFromRedis).mockImplementation(async () => ({
+    readyPlayerIds: [...readyState.readyPlayerIds],
+    readyPlayerDirection: { ...readyState.readyPlayerDirection },
+  }));
+  jest.mocked(redis.setReadyStateInRedis).mockImplementation(async (_boardId, _mapId, next) => {
+    readyState = next;
+  });
+  jest.mocked(redis.publishReadyStateUpdated).mockImplementation(async (_boardId, _mapId, next) => {
+    if (next.readyPlayerIds.includes('b')) {
+      await checkWaiting;
+      await secondPublish;
+    }
+  });
+
+  const first = setPlayerReady('board', 'map', 'a', true);
+  const second = setPlayerReady('board', 'map', 'b', true);
+  await checkWaiting;
+  releaseSecondPublish();
+
+  await expect(Promise.all([first, second])).resolves.toEqual([{ success: true }, { success: true }]);
+  expect(redis.commitGameTurnInRedis).toHaveBeenCalledTimes(1);
 });
 
 it('does not report a committed turn as failed when publishing its update fails', async () => {
