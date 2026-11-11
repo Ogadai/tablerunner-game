@@ -15,7 +15,7 @@ import { BaseParams } from '../base-params';
 import { updateMonsterLeds } from '../game-action-monsters';
 import { broadcastMessage, soloMessageAtLocation } from '../game-messages';
 import { levelUpPlayer } from '../level-up';
-import { getNpcEquipment, getNpcSpells, getNpcStats } from '../shared-processes/npcs';
+import { createNpcProgression, getNpcEquipment, getNpcSpells } from '../shared-processes/npcs';
 import { ProcessRunner } from '../types';
 import { generateQuestsForGame } from './quest-templates';
 import { CauldronQuestsState, QuestInstance, QuestTier } from './quest-types';
@@ -183,17 +183,12 @@ function buildQuestNpc(
 ): NPCState {
   const characterType = quest.npcCharacterType || 'ranger';
   const tierCost = quest.tier === 'early' ? 45 : quest.tier === 'mid' ? 65 : 85;
-  const statsBuilder = getNpcStats[characterType] || getNpcStats.ranger;
-  const rawStats = statsBuilder(tierCost);
-  const baseStats = {
-    ...rawStats,
-    health: Math.max(12, rawStats.health),
-  };
 
   const npcId = `quest-npc-${quest.id}`;
   const equipment = getNpcEquipment(npcId, characterType);
   const equipped = equipment.length > 0 ? { weapon: equipment[0].id } : {};
-  const computedStats = getNamedTargetStats(baseStats, { equipment, equipped });
+  const progression = createNpcProgression(characterType, tierCost, equipment, equipped, { minResilience: 12 });
+  const computedStats = getNamedTargetStats(progression.baseStats!, { equipment, equipped });
 
   return {
     id: npcId,
@@ -205,7 +200,7 @@ function buildQuestNpc(
     spells: getNpcSpells(characterType, tierCost).slice(0, 2),
     equipment,
     equipped,
-    baseStats,
+    ...progression,
     hireCost: 0,
     iconXY: quest.npcIconXY || { x: 0, y: 0 },
     health: computedStats.health,

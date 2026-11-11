@@ -1,7 +1,7 @@
 import { allItems } from '../games/items';
 import { getSpellActionCost, spells } from '../games/spells';
-import { BaseStats, ConsumableItemDef, EquipableItemDef } from '../games/types';
-import { INamedTarget, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
+import { BaseStats, CharacterStats, ConsumableItemDef, EquipableItemDef } from '../games/types';
+import { INamedTarget, NPCState, PlayerActionCast, PlayerActionsState, PlayerActionType, PlayerActionUseItem, PlayerState } from './types';
 
 const BASE_ACTIONS_PER_TURN = 20;
 const BASE_MOVE_ACTION_COST = 18;
@@ -147,21 +147,36 @@ export function getCombatStats(target: INamedTarget): BaseStats {
     : target.baseStats!;
 }
 
-export function getPlayerStats(playerState: PlayerState): BaseStats {
-  const weaponId = playerState.equipped.weapon;
-  const weapon = !!weaponId && playerState.equipment.find(e => e.id == weaponId);
+export function isEquippedWeaponRanged(target: Pick<INamedTarget, 'equipped' | 'equipment'>): boolean {
+  const weaponId = target.equipped.weapon;
+  const weapon = !!weaponId && target.equipment.find(e => e.id == weaponId);
   const weaponType = weapon && allItems[weapon.type] as EquipableItemDef;
-  const ranged = !!weaponType && !!weaponType.ranged;
+  return !!weaponType && !!weaponType.ranged;
+}
 
-  const pStats = playerState.characterStats;
-  const baseStats: BaseStats = {
-    attack: ranged ? pStats.skill : pStats.strength,
-    damage: ranged ? pStats.skill : pStats.strength,
-    defence: Math.ceil((pStats.reactions + pStats.skill + pStats.strength) / 3),
-    magic: pStats.intelligence,
-    health: pStats.resiliance,
-    speed: pStats.reactions
+export function getCharacterBaseStats(
+  characterStats: CharacterStats,
+  target: Pick<INamedTarget, 'equipped' | 'equipment'>,
+): BaseStats {
+  const ranged = isEquippedWeaponRanged(target);
+
+  return {
+    attack: ranged ? characterStats.skill : characterStats.strength,
+    damage: ranged ? characterStats.skill : characterStats.strength,
+    defence: Math.ceil((characterStats.reactions + characterStats.skill + characterStats.strength) / 3),
+    magic: characterStats.intelligence,
+    health: characterStats.resiliance,
+    speed: characterStats.reactions,
   };
+}
 
+export function getPlayerStats(playerState: PlayerState): BaseStats {
+  const baseStats = getCharacterBaseStats(playerState.characterStats, playerState);
   return getNamedTargetStats(baseStats, playerState);
+}
+
+/** Keep NPC baseStats raw; getCombatStats applies equipment and effects at read time. */
+export function syncNpcBaseStats(npc: NPCState): void {
+  if (!npc.characterStats || npc.monsterType || npc.turnsLeft) return;
+  npc.baseStats = getCharacterBaseStats(npc.characterStats, npc);
 }

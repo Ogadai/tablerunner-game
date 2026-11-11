@@ -27,6 +27,10 @@ it.each([[0, 11, true], [0.5, 17, false]] as const)('generates populated NPCs at
   expect(new Set(generated.map(n => n.location.id))).toEqual(new Set([110, 91, 58, 22, 121, 23]));
   for (const npc of generated) {
     expect(npc.characterType).toBe(caster ? 'witch' : 'ranger');
+    expect(npc.level).toBeGreaterThanOrEqual(1);
+    expect(npc.points).toBeGreaterThanOrEqual(0);
+    expect(npc.availableStats).toBe(0);
+    expect(npc.characterStats).toBeDefined();
     const weaponBonuses = allItems[npc.equipment[0].type].bonusStats;
     expect(npc.health).toBe(npc.baseStats!.health + (weaponBonuses?.health ?? 0));
     expect(npc.magic).toBe(npc.baseStats!.magic + (weaponBonuses?.magic ?? 0));
@@ -37,6 +41,28 @@ it.each([[0, 11, true], [0.5, 17, false]] as const)('generates populated NPCs at
     expect(npc.equipment.some(item => item.type === ConsumableIds.manaPotion)).toBe(caster);
     expect(npc.spells.length).toBeGreaterThan(0);
   }
+});
+
+it('derives starting NPC level, XP points, and allocated characterStats from hireCost', async () => {
+  const { calculateNpcLevelFromCost, createNpcProgression } = await import('./npcs');
+  const { INITIAL_NPC_AVAILABLE_STATS, pointsForLevel, STATS_PER_LEVEL } = await import('../level-up');
+  const { characters } = await import('../../games/characters');
+
+  jest.spyOn(Math, 'random').mockReturnValue(0.5);
+  const lowCostLevel = calculateNpcLevelFromCost(45);
+  const highCostLevel = calculateNpcLevelFromCost(80);
+  expect(lowCostLevel).toBe(1);
+  expect(highCostLevel).toBeGreaterThan(lowCostLevel);
+
+  const prog = createNpcProgression('barbarian', 80, [], {});
+  expect(prog.level).toBe(highCostLevel);
+  expect(prog.points).toBe(pointsForLevel(highCostLevel));
+  expect(prog.availableStats).toBe(0);
+
+  const baseSum = Object.values(characters.barbarian.characterStats).reduce((a, b) => a + b, 0);
+  const actualSum = Object.values(prog.characterStats!).reduce((a, b) => a + b, 0);
+  expect(actualSum).toBe(baseSum + INITIAL_NPC_AVAILABLE_STATS + (highCostLevel - 1) * STATS_PER_LEVEL);
+  expect(prog.baseStats!.health).toBe(prog.characterStats!.resiliance);
 });
 
 it.each([

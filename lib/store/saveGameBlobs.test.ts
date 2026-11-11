@@ -167,6 +167,74 @@ describe('loading', () => {
     expect(restoreGameSnapshotInRedis).toHaveBeenCalledWith('board', 'map', save.redisState);
   });
 
+  it('retro-fits legacy NPCs in saved game and locations snapshots while skipping summons and migrated NPCs', async () => {
+    const save = createSave();
+    const { NPC_DATA } = await import('@/lib/games/npc-details');
+    const rangerTemplate = NPC_DATA.find(n => n.type === 'ranger')!;
+
+    const legacyNpc = {
+      id: 'legacy-npc',
+      name: 'Old Ranger',
+      masterId: 'warrior',
+      team: 'good',
+      hireCost: 50,
+      iconXY: rangerTemplate.iconXY,
+      location: { id: 1, description: 'Town', move: [] },
+      health: 12,
+      magic: 6,
+      spells: [],
+      equipment: [{ id: 'bow', type: 'bowElven' }],
+      equipped: { weapon: 'bow' },
+      baseStats: {
+        health: 12, magic: 6, strength: 0, attack: 11, defence: 7, damage: 11,
+        speed: 8, actions: 0, move: 0, spell: 0, range: 0, actionsUsed: 0,
+      },
+    };
+    const summonNpc = {
+      ...legacyNpc,
+      id: 'summon-spirit',
+      hireCost: 0,
+      turnsLeft: 3,
+    };
+    const migratedNpc = {
+      ...legacyNpc,
+      id: 'migrated-npc',
+      characterType: 'ranger',
+      level: 2,
+      points: 100,
+      availableStats: 2,
+      characterStats: { strength: 5, skill: 12, reactions: 8, resiliance: 10, intelligence: 6 },
+    };
+
+    const snapshot = save.redisState as Record<string, unknown>;
+    save.redisState['game:board:map'].npcs = [legacyNpc, summonNpc, migratedNpc] as unknown as typeof save.redisState['game:board:map']['npcs'];
+    snapshot['monsters:board:map'] = {
+      monsters: [],
+      items: [],
+      npcs: [{ ...legacyNpc }, { ...summonNpc }],
+    };
+
+    serve(save);
+    await expect(loadGameFromBlob('board', 'map', pathname)).resolves.toEqual({ success: true });
+
+    const restored = jest.mocked(restoreGameSnapshotInRedis).mock.calls[0][2] as Record<string, unknown>;
+    const restoredGame = restored['game:board:map'] as { npcs: Array<Record<string, unknown>> };
+    const restoredLocations = restored['monsters:board:map'] as { npcs: Array<Record<string, unknown>> };
+
+    const migratedLegacy = restoredGame.npcs[0];
+    expect(migratedLegacy.characterType).toBe('ranger');
+    expect(migratedLegacy.characterStats).toMatchObject({ skill: 11, intelligence: 6, reactions: 8, resiliance: 12 });
+    expect(migratedLegacy.availableStats).toBe(0);
+    expect(migratedLegacy.level).toBeGreaterThanOrEqual(1);
+
+    expect(restoredGame.npcs[1].characterStats).toBeUndefined();
+    expect(restoredGame.npcs[2].availableStats).toBe(2);
+
+    expect(restoredLocations.npcs[0].characterStats).toBeDefined();
+    expect(restoredLocations.npcs[0].availableStats).toBe(0);
+    expect(restoredLocations.npcs[1].characterStats).toBeUndefined();
+  });
+
   it.each([
     pathname.replace('/board/', '/other/'), pathname.replace('/map/', '/map2/'), `${pathname}/extra`,
     pathname.replace('players-1', 'players-9007199254740992'), pathname.replace('My%20save', '%20'),

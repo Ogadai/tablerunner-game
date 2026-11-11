@@ -31,6 +31,7 @@
 
   --color-text-primary: #2b221a;
   --color-text-muted: #5c4e40;
+  --color-text-disabled: #404040;
 
   --gold-bright: #d4af37;
   --gold-antique: #8c6d31;
@@ -113,6 +114,7 @@
 
     --color-text-primary: #e6dfd3;
     --color-text-muted: #a69d8d;
+    --color-text-disabled: #606060;
 
     --gold-bright: #ffd700;
     --gold-antique: #c5a059;
@@ -374,8 +376,8 @@ button:disabled,
 .btn:disabled {
   filter: grayscale();
   pointer-events: none;
-  border-color: #8c8070;
-  color: #8c8070;
+  border-color: var(--color-text-disabled);
+  color: var(--color-text-disabled);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -385,8 +387,8 @@ button:disabled,
 
   button:disabled,
   .btn:disabled {
-    border-color: #54493d;
-    color: #54493d;
+    border-color: var(--color-text-disabled);
+    color: var(--color-text-disabled);
   }
 }
 

@@ -35,8 +35,9 @@ import {
 import { BaseParams } from './base-params';
 import { runGameActions } from './game-actions';
 import { getNpcsInMasterOrder } from './npc-followers';
-import { levelUpPlayer, applyPlayerAddedStats } from './level-up';
+import { levelUpPlayer, levelUpNpc, applyPlayerAddedStats, assignNpcAvailableStats, ensureNpcCharacterStats } from './level-up';
 import { applyCharacterInventory, applyPlayerInventory } from "./apply-inventory";
+import { syncNpcBaseStats } from "../store/playerStats";
 import { executeProcessesBetweenTurns, executeProcessesForTurn, initialiseProcessesForTurn } from "./game-processes";
 import { populateMonsters } from "./populate-monsters";
 import { updatePortalAndShopLeds } from "./game-action-portal";
@@ -240,6 +241,14 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
     const npcInventories = await getCharacterInventoriesFromRedis(params.boardId, params.mapId, npcInventoryIds);
     for (const npc of params.gameState.npcs) {
       applyCharacterInventory(npc, npcInventories[npc.id]);
+      ensureNpcCharacterStats(npc);
+      if (npc.characterStats) {
+        if (npc.health > 0 && (npc.availableStats ?? 0) > 0) {
+          assignNpcAvailableStats(npc);
+        } else {
+          syncNpcBaseStats(npc);
+        }
+      }
     }
 
     const playerActions: Record<string, PlayerActionsState> = {};
@@ -261,7 +270,14 @@ export async function processGameTurn(params: BaseParams): Promise<void> {
           params.gameState.visitedPortals.push(player.location.id);
         }
       }
-      levelUpPlayer(params, player);
+      await levelUpPlayer(params, player);
+    }
+
+    for (const npc of params.gameState.npcs) {
+      await levelUpNpc(params, npc);
+      if (npc.characterStats && npc.health > 0 && (npc.availableStats ?? 0) > 0) {
+        assignNpcAvailableStats(npc);
+      }
     }
 
     updatePortalAndShopLeds(params.gameState);

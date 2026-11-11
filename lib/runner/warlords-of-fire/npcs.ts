@@ -9,7 +9,7 @@ import { commitNpcPlansInRedis, getGameStateFromRedis, getLocationsStateFromRedi
 import { BaseParams } from "../base-params";
 import { getPlayerLocation } from "../game-location";
 import { playerMessageAtLocation, soloMessageAtLocation } from "../game-messages";
-import { getNpcEquipment, getNpcSpells, getNpcStats } from "../shared-processes/npcs";
+import { createNpcProgression, getNpcEquipment, getNpcSpells } from "../shared-processes/npcs";
 import { ProcessRunner } from "../types";
 import { START_LOCATIONS } from "./game-creation";
 import { playerMonsters } from "./monsters";
@@ -111,10 +111,10 @@ export const npcProcesses: ProcessRunner = {
         && name.gender === npcDef.gender && !params.gameState.npcs.some(npc => npc.name === name.name));
       const name = names[Math.floor(Math.random() * names.length)].name;
       const cost = 80 + Math.floor(Math.random() * 81);
-      const baseStats = getNpcStats[npcDef.type](cost);
       const equipment = getNpcEquipment(npcId, npcDef.type);
       const equipped = { weapon: equipment[0].id };
-      const stats = getNamedTargetStats(baseStats, { equipment, equipped });
+      const progression = createNpcProgression(npcDef.type, cost, equipment, equipped);
+      const stats = getNamedTargetStats(progression.baseStats!, { equipment, equipped });
       const location = locations[index];
 
       params.gameState.npcs.push({
@@ -128,7 +128,7 @@ export const npcProcesses: ProcessRunner = {
         spells: getNpcSpells(npcDef.type, cost),
         equipment,
         equipped,
-        baseStats,
+        ...progression,
         hireCost: cost,
         iconXY: { ...npcDef.iconXY },
         health: stats.health,

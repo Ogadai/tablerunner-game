@@ -458,3 +458,85 @@ describe('monsterAttack and player death', () => {
     expect(fragile.effects).toBeUndefined();
   });
 });
+
+describe('NPC battle experience sharing', () => {
+  const makeTestNpc = (overrides: Partial<NPCState> = {}): NPCState => ({
+    ...createPlayer('npc'),
+    masterId: null,
+    hireCost: 0,
+    iconXY: { x: 0, y: 0 },
+    turnsLeft: undefined,
+    ...overrides,
+  });
+  const attackTarget = (target: string, id = 1) => ({
+    id, type: PlayerActionType.Attack as const, description: '', target,
+  });
+
+  it('awards bonus XP to hired, escorted, and scripted allied NPCs without reducing player XP', () => {
+    const soloPlayer = createPlayer('p1');
+    const soloMonster = createMonster('m-solo', 'orc', 1);
+    const soloParams = createParams([soloMonster], [soloPlayer]);
+    hit();
+    actionAttack(soloParams, soloPlayer, attackTarget(soloMonster.id));
+    const expectedSoloXp = soloPlayer.points;
+    expect(expectedSoloXp).toBeGreaterThan(0);
+
+    const player = createPlayer('p1');
+    const secondPlayer = createPlayer('p2');
+    const monster = createMonster('m1', 'orc', 1);
+
+    const hiredNpc = makeTestNpc({ id: 'hired', masterId: player.id, team: player.team, points: 0 });
+    const escortNpc = makeTestNpc({ id: 'escort', masterId: secondPlayer.id, team: player.team, points: 0 });
+    const warlordNpc = makeTestNpc({
+      id: 'warlord',
+      masterId: null,
+      scriptedActions: true,
+      team: player.team,
+      points: 0,
+    });
+    const summonNpc = makeTestNpc({ id: 'summon', masterId: player.id, team: player.team, points: 0, turnsLeft: 3 });
+    const zombieNpc = makeTestNpc({
+      id: 'zombie',
+      masterId: player.id,
+      team: player.team,
+      points: 0,
+      monsterType: 'zombie' as unknown as NPCState['monsterType'],
+    });
+    const unhiredNpc = makeTestNpc({
+      id: 'neutral',
+      masterId: null,
+      scriptedActions: false,
+      team: null,
+      points: 0,
+    });
+    const deadNpc = makeTestNpc({ id: 'dead', masterId: player.id, team: player.team, health: 0, points: 0 });
+    const enemyNpc = makeTestNpc({ id: 'enemy', masterId: null, scriptedActions: true, team: 'enemy', points: 0 });
+    const legacyNpc = makeTestNpc({
+      id: 'legacy',
+      masterId: player.id,
+      team: player.team,
+      points: 0,
+      characterStats: undefined,
+    });
+
+    const params = createParams([monster], [player, secondPlayer]);
+    params.gameState.npcs = [hiredNpc, escortNpc, warlordNpc, summonNpc, zombieNpc, unhiredNpc, deadNpc, enemyNpc, legacyNpc];
+
+    hit();
+    actionAttack(params, player, attackTarget(monster.id));
+
+    const expectedPerCombatant = Math.ceil(expectedSoloXp / 2);
+    expect(player.points).toBe(expectedPerCombatant);
+    expect(secondPlayer.points).toBe(expectedPerCombatant);
+    expect(hiredNpc.points).toBe(expectedPerCombatant);
+    expect(escortNpc.points).toBe(expectedPerCombatant);
+    expect(warlordNpc.points).toBe(expectedPerCombatant);
+
+    expect(summonNpc.points).toBe(0);
+    expect(zombieNpc.points).toBe(0);
+    expect(unhiredNpc.points).toBe(0);
+    expect(deadNpc.points).toBe(0);
+    expect(enemyNpc.points).toBe(0);
+    expect(legacyNpc.points).toBe(0);
+  });
+});

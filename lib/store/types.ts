@@ -89,6 +89,10 @@ export interface PlayerState extends INamedTarget {
 
 export interface NPCState extends INamedTarget {
   characterType?: 'barbarian' | 'witch' | 'ranger' | 'mage';
+  characterStats?: CharacterStats;
+  level?: number;
+  points?: number;
+  availableStats?: number;
   startLocation?: number;
   /** Include this NPC's location in turn processing even without players. */
   scriptedActions?: boolean;

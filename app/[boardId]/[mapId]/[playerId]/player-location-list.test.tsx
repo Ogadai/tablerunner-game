@@ -264,6 +264,16 @@ describe('PlayerLocationList', () => {
     }
   });
 
+  it('shows the NPC level in the dialog subtitle when an NPC with a level is opened', () => {
+    const npc = createNpc({ id: 'npc-1', name: 'Aldric', level: 3, team: 'good', masterId: 'warrior' });
+    setup({
+      npcs: [npc],
+      entities: [makeEntity({ id: npc.id, name: npc.name, className: EntityItemClass.friendly })],
+    });
+    fireEvent.click(screen.getByRole('listitem'));
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Aldric Level 3');
+  });
+
   it('refreshes an open character card when player props change', () => {
     const { props, rerender } = setup();
     fireEvent.click(screen.getByRole('listitem'));

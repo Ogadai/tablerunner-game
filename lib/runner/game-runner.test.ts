@@ -29,7 +29,11 @@ jest.mock('./apply-inventory', () => ({
   ...jest.requireActual('./apply-inventory'), applyPlayerInventory: jest.fn(),
   applyCharacterInventory: jest.fn(jest.requireActual('./apply-inventory').applyCharacterInventory),
 }));
-jest.mock('./level-up', () => ({ levelUpPlayer: jest.fn(), applyPlayerAddedStats: jest.fn() }));
+jest.mock('./level-up', () => ({
+  ...jest.requireActual('./level-up'),
+  levelUpPlayer: jest.fn(),
+  applyPlayerAddedStats: jest.fn(),
+}));
 jest.mock('./game-processes', () => ({ initialiseProcessesForTurn: jest.fn(), executeProcessesForTurn: jest.fn(), executeProcessesBetweenTurns: jest.fn() }));
 jest.mock('./populate-monsters', () => ({ populateMonsters: jest.fn() }));
 
@@ -490,4 +494,51 @@ it.each([2, 3])('runs between-turn work once per turn and always rechecks readin
   expect(redis.setProcessingTurnInRedis).toHaveBeenCalledTimes(turn === 3 ? 0 : 1);
   expect(redis.getReadyStateFromRedis).toHaveBeenCalledTimes(1);
   expect(releaseProcessing).toHaveBeenCalledTimes(2);
+});
+
+it('retro-fits a legacy NPC, levels it up on XP gain, and raises stats toward an unlearned scroll', async () => {
+  const { ScrollIds } = await import('../games/items');
+  const { canCharacterLearnSpell, spells, SpellIds } = await import('../games/spells');
+  const { getCombatStats } = await import('../store/playerStats');
+  const { createNpc } = await import('./test-support/fixtures');
+
+  const npc = createNpc({
+    id: 'hired-barbarian',
+    characterType: 'barbarian',
+    masterId: 'hero',
+    team: 'good',
+    hireCost: 60,
+    iconXY: { x: 0, y: 0 },
+    equipment: [{ id: 'brew-1', type: ScrollIds.whirlwind }],
+    equipped: {},
+    spells: [],
+    baseStats: {
+      health: 10, magic: 2, attack: 10, defence: 6, damage: 10, speed: 5,
+    },
+    characterStats: undefined,
+    level: undefined,
+    points: undefined,
+    availableStats: undefined,
+  });
+
+  const params = createParams();
+  params.gameState.npcs = [npc];
+
+  expect(canCharacterLearnSpell(npc, getCombatStats(npc), spells[SpellIds.whirlwind])).toBe(false);
+
+  jest.mocked(runGameActions).mockImplementationOnce(async p => {
+    const activeNpc = p.gameState.npcs[0];
+    expect(activeNpc.characterStats).toBeDefined();
+    expect(activeNpc.availableStats).toBe(0);
+    activeNpc.points = (activeNpc.points ?? 0) + 10000;
+  });
+
+  await processGameTurn(params);
+
+  const updatedNpc = params.gameState.npcs[0];
+  expect(updatedNpc.level).toBeGreaterThan(1);
+  expect(updatedNpc.availableStats).toBe(0);
+  expect(updatedNpc.characterStats!.strength).toBeGreaterThan(10);
+  expect(updatedNpc.baseStats!.attack).toBeGreaterThanOrEqual(spells[SpellIds.whirlwind].intelligence);
+  expect(canCharacterLearnSpell(updatedNpc, getCombatStats(updatedNpc), spells[SpellIds.whirlwind])).toBe(true);
 });

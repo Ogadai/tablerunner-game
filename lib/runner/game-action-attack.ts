@@ -274,6 +274,24 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
           player.points += Math.ceil(totalPoints / players.length);
         }
 
+        // Hired/escorted NPCs and Warlords/sub-commanders earn bonus XP without reducing player XP.
+        const eligibleNpcs = params.gameState.npcs.filter(npc =>
+          npc.location.id === player.location.id
+          && npc.health > 0
+          && npc.team !== null
+          && isFriend(player, npc)
+          && !!npc.characterStats
+          && !npc.monsterType
+          && !npc.turnsLeft
+          && (npc.masterId !== null || !!npc.scriptedActions)
+        );
+        if (eligibleNpcs.length > 0) {
+          const npcPoints = Math.ceil(totalPoints / Math.max(1, players.length));
+          for (const npc of eligibleNpcs) {
+            npc.points = (npc.points ?? 0) + npcPoints;
+          }
+        }
+
         playerMessageAtLocation(params, player.id, `${attackName} hit **${getMonsterName(monster)}** for **${appliedDamage}** damage${resisted ? ' (**resisted**)' : ''}${monster.health <= 0 ? ' and *defeated it!*' : ''}`);
         return true;
       } else {

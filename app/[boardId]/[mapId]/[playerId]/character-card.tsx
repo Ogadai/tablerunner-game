@@ -218,7 +218,8 @@ export default function CharacterCard({
       equipment: pendingInventory.equipment ?? player.equipment,
       equipped: { ...player.equipped, ...pendingInventory.equipped },
     } : player;
-    const playerState = (displayPlayer as PlayerState).characterStats ? (displayPlayer as PlayerState) : null;
+    const isNpc = 'masterId' in displayPlayer;
+    const playerState = !isNpc && (displayPlayer as PlayerState).characterStats ? (displayPlayer as PlayerState) : null;
     const displayedPlayerState = playerState && pendingInventory ? {
       ...playerState,
       coins: pendingInventory.coins ?? playerState.coins,

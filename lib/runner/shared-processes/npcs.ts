@@ -1,11 +1,19 @@
 import { ConsumableIds, EquipableIds } from "@/lib/games/items";
+import { characters } from "@/lib/games/characters";
 import { BaseParams } from "../base-params";
 import { ProcessRunner } from "../types";
 import { NPC_DATA, NPC_NAMES } from '@/lib/games/npc-details';
-import { NPCState } from "@/lib/store/types";
-import { BaseStats, PlayerItem } from "@/lib/games/types";
+import { NPCState, PlayerInventoryEquipSlots } from "@/lib/store/types";
+import { CharacterStats, PlayerItem } from "@/lib/games/types";
 import { SpellIds, spells } from "@/lib/games/spells";
 import { getNamedTargetStats } from "@/lib/store/playerStats";
+import {
+  assignNpcAvailableStats,
+  INITIAL_NPC_AVAILABLE_STATS,
+  NpcCharacterType,
+  pointsForLevel,
+  STATS_PER_LEVEL,
+} from "../level-up";
 
 interface IMapNpc { location: number, min: number, max: number, from: number, to: number };
 
@@ -72,55 +80,53 @@ function pickName(
   return availableNames && availableNames[Math.floor(Math.random() * availableNames.length)].name;
 }
 
-const generateStat = (cost: number, importance: number): number => {
-  const max = 0.2 * cost * importance;
-  const min = max * 0.75;
+export function calculateNpcLevelFromCost(cost: number): number {
+  return Math.max(1, 1 + Math.round((cost - 45) / 7));
+}
 
-  return Math.ceil(min + Math.random() * (max - min));
-};
+export function createNpcProgression(
+  type: NpcCharacterType,
+  cost: number,
+  equipment: PlayerItem[],
+  equipped: PlayerInventoryEquipSlots,
+  { minResilience = 1 }: { minResilience?: number } = {},
+): Pick<NPCState, 'characterStats' | 'level' | 'points' | 'availableStats' | 'baseStats'> {
+  const level = calculateNpcLevelFromCost(cost);
+  const points = pointsForLevel(level);
+  const startingStats: CharacterStats = { ...characters[type].characterStats };
+  if (startingStats.resiliance < minResilience) {
+    startingStats.resiliance = minResilience;
+  }
 
-export const getNpcStats: { [type: string]: ((cost: number) => BaseStats) } = {
-  'barbarian': (cost: number) => {
-    return {
-      attack: generateStat(cost, 1),
-      defence: generateStat(cost, 1),
-      damage: generateStat(cost, 0.8),
-      health: generateStat(cost, 0.8),
-      magic: generateStat(cost, 0.1),
-      speed: generateStat(cost, 0.5),
-    };
-  },
-  'ranger': (cost: number) => {
-    return {
-      attack: generateStat(cost, 0.9),
-      defence: generateStat(cost, 0.8),
-      damage: generateStat(cost, 0.7),
-      health: generateStat(cost, 0.7),
-      magic: generateStat(cost, 0.1),
-      speed: generateStat(cost, 0.8),
-    };
-  },
-  'witch': (cost: number) => {
-    return {
-      attack: generateStat(cost, 0.3),
-      defence: generateStat(cost, 0.2),
-      damage: generateStat(cost, 0.3),
-      health: generateStat(cost, 0.4),
-      magic: generateStat(cost, 1),
-      speed: generateStat(cost, 0.6),
-    };
-  },
-  'mage': (cost: number) => {
-    return {
-      attack: generateStat(cost, 0.3),
-      defence: generateStat(cost, 0.2),
-      damage: generateStat(cost, 0.3),
-      health: generateStat(cost, 0.4),
-      magic: generateStat(cost, 1),
-      speed: generateStat(cost, 0.6),
-    };
-  },
-};
+  const draftNpc: NPCState = {
+    id: 'draft',
+    characterType: type,
+    masterId: null,
+    name: '',
+    location: { id: 0, description: '', move: [] },
+    magic: 0,
+    spells: [],
+    equipment,
+    equipped,
+    hireCost: cost,
+    iconXY: { x: 0, y: 0 },
+    health: 0,
+    team: null,
+    characterStats: startingStats,
+    level,
+    points,
+    availableStats: INITIAL_NPC_AVAILABLE_STATS + (level - 1) * STATS_PER_LEVEL,
+  };
+  assignNpcAvailableStats(draftNpc, { randomize: true });
+
+  return {
+    characterStats: draftNpc.characterStats!,
+    level,
+    points,
+    availableStats: draftNpc.availableStats!,
+    baseStats: draftNpc.baseStats!,
+  };
+}
 
 function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
   const magicUser = Math.random() < 0.33;
@@ -137,7 +143,6 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
   const iconXY = iconList[Math.floor(Math.random() * iconList.length)].iconXY;
 
   const cost = mapNpc.from + Math.floor(Math.random() * (mapNpc.to - mapNpc.from + 1));
-  const baseStats = getNpcStats[type](cost);
 
   const npcId = `npc-${params.gameState.npcs.length + 1}`;
   const name = pickName(params, type, race, gender);
@@ -147,7 +152,8 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
 
   const equipment = getNpcEquipment(npcId, type);
   const equipped = { weapon: equipment[0].id };
-  const stats = getNamedTargetStats(baseStats, { equipment, equipped });
+  const progression = createNpcProgression(type, cost, equipment, equipped);
+  const stats = getNamedTargetStats(progression.baseStats!, { equipment, equipped });
   return {
     id: npcId,
     characterType: type,
@@ -158,7 +164,7 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
     spells: getNpcSpells(type, cost),
     equipment: equipment,
     equipped: equipped,
-    baseStats: baseStats,
+    ...progression,
     hireCost: cost,
     iconXY: iconXY,
     health: stats.health,

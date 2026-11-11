@@ -207,7 +207,9 @@ export default function PlayerLocationList({
   const dialogTitle =  (monsterOpen !== null) ? getMonsterName(monsterOpen)
     : (npcOpen !== null) ? getDisplayName(npcOpen)
     : (openCharacter !== null) ? getDisplayName(openCharacter) : '';
-  const dialogSubTitle = (openCharacter !== null) ? `Level ${openCharacter.level}` : null;
+  const dialogSubTitle = (openCharacter !== null)
+    ? `Level ${openCharacter.level}`
+    : (npcOpen?.level !== undefined ? `Level ${npcOpen.level}` : null);
 
   const displayCharacter: INamedTarget | null = openCharacter || npcOpen;
   const followerNPCs = openCharacter

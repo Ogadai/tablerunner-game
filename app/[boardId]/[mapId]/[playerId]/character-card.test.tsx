@@ -63,6 +63,22 @@ describe('CharacterCard', () => {
     await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
   });
 
+  it('still renders NpcCard when an NPC has characterStats, level, and availableStats', async () => {
+    const npc = makeNpc({
+      characterType: 'barbarian',
+      level: 3,
+      points: 400,
+      availableStats: 2,
+      characterStats: { strength: 12, skill: 6, intelligence: 3, reactions: 6, resiliance: 9 },
+    });
+    await renderCard(<CharacterCard boardId="board" mapId="map" player={npc} viewer={makePlayer()} isSelf={false}
+      actionPointsLeft={20} playerStats={null} onUseItem={jest.fn()} onLearnScroll={jest.fn()}
+      usedItemIds={[]} onHired={jest.fn()} />);
+    expect(await screen.findByText('NPC stats')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Increase Strength' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+  });
+
   it('keeps the tabs available while loading and reuses the request when switching tabs', async () => {
     const pending = pendingInventory();
     jest.mocked(getPlayerInventory).mockReturnValueOnce(pending.promise);

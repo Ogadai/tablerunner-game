@@ -10,6 +10,8 @@ import {
   invalidateSavedGamesCacheInRedis,
 } from './redis-blob-saves';
 import { savedGameSchema, SavedGameList, validateGameScope } from './savedGameTypes';
+import { ensureNpcCharacterStats } from '../runner/level-up';
+import type { NPCState } from './types';
 
 function getSavePrefix(boardId: string, mapId: string): string {
   validateGameScope(boardId, mapId);
@@ -152,10 +154,31 @@ export async function listSavedGames(boardId: string, mapId: string, cursor?: st
   }
 }
 
+function migrateSavedSnapshotNpcs(
+  boardId: string,
+  mapId: string,
+  redisState: Record<string, Record<string, unknown>>,
+): void {
+  const game = redisState[`game:${boardId}:${mapId}`] as { npcs?: NPCState[] } | undefined;
+  if (Array.isArray(game?.npcs)) {
+    for (const npc of game.npcs) {
+      ensureNpcCharacterStats(npc);
+    }
+  }
+
+  const locations = redisState[`monsters:${boardId}:${mapId}`] as { npcs?: NPCState[] } | undefined;
+  if (Array.isArray(locations?.npcs)) {
+    for (const npc of locations.npcs) {
+      ensureNpcCharacterStats(npc);
+    }
+  }
+}
+
 /** Replaces the current game with a save returned by listSavedGames. */
 export async function loadGameFromBlob(boardId: string, mapId: string, pathname: string): Promise<ApiResponse<void>> {
   try {
     const snapshot = await readSavedGame(boardId, mapId, pathname);
+    migrateSavedSnapshotNpcs(boardId, mapId, snapshot.redisState);
     await restoreGameSnapshotInRedis(boardId, mapId, snapshot.redisState);
     return { success: true };
   } catch (error) {

@@ -1,6 +1,7 @@
-import { getCombatStats, getNamedTargetStats, getPlayerActionsCosts, getPlayerActionsMagic, getPlayerActionsPerTurn, getPlayerStats } from './playerStats';
+import { getCharacterBaseStats, getCombatStats, getNamedTargetStats, getPlayerActionsCosts, getPlayerActionsMagic, getPlayerActionsPerTurn, getPlayerStats, syncNpcBaseStats } from './playerStats';
 import { createNpc, createPlayer } from './test-support/fixtures';
-import { NOTHING_EQUPPED, PlayerActionType, type PlayerActionCast, type PlayerActionUseItem, type PlayerActionsState } from './types';
+import { NOTHING_EQUPPED, NPCState, PlayerActionType, type PlayerActionCast, type PlayerActionUseItem, type PlayerActionsState } from './types';
+import { allItems, EquipableIds } from '../games/items';
 
 describe('action budgets', () => {
   it.each([
@@ -88,5 +89,58 @@ describe('combat stats', () => {
     player.baseStats = getPlayerStats(player);
     expect(getCombatStats(player)).toBe(player.baseStats);
     expect(getCombatStats(player).attack).toBe(7);
+  });
+
+  it('syncs NPC baseStats from characterStats without double-applying equipment or effect bonuses', () => {
+    const npc = createNpc({
+      characterType: 'barbarian',
+      characterStats: { strength: 10, skill: 5, reactions: 6, resiliance: 8, intelligence: 3 },
+      equipment: [{ id: 'sword', type: EquipableIds.swordSteel }],
+      equipped: { weapon: 'sword' },
+      effects: [{ description: 'Blessing', turns: 2, attack: 2, damage: 1 }],
+    });
+
+    syncNpcBaseStats(npc);
+
+    expect(npc.baseStats).toMatchObject({
+      attack: 10,
+      damage: 10,
+      health: 8,
+      magic: 3,
+      speed: 6,
+      defence: Math.floor((10 + 5 + 6 + 2) / 3),
+    });
+
+    const raw = { ...npc.baseStats! };
+    const combat = getCombatStats(npc);
+    const swordBonuses = allItems[EquipableIds.swordSteel].bonusStats!;
+    expect(combat.attack).toBe(raw.attack + (swordBonuses.attack ?? 0) + 2);
+    expect(combat.damage).toBe(raw.damage + (swordBonuses.damage ?? 0) + 1);
+  });
+
+  it('computes ranged character baseStats using skill instead of strength and skips sync for summons/monsters', () => {
+    const ranger = createNpc({
+      characterType: 'ranger',
+      characterStats: { strength: 4, skill: 11, reactions: 7, resiliance: 6, intelligence: 5 },
+      equipment: [{ id: 'bow', type: EquipableIds.bowElven }],
+      equipped: { weapon: 'bow' },
+    });
+
+    expect(getCharacterBaseStats(ranger.characterStats!, ranger)).toMatchObject({
+      attack: 11,
+      damage: 11,
+      health: 6,
+      magic: 5,
+      speed: 7,
+    });
+
+    const originalBase = { ...ranger.baseStats! };
+    const summon = { ...ranger, turnsLeft: 3 };
+    syncNpcBaseStats(summon);
+    expect(summon.baseStats).toEqual(originalBase);
+
+    const monsterNpc = { ...ranger, monsterType: 'orc' as unknown as NPCState['monsterType'] };
+    syncNpcBaseStats(monsterNpc);
+    expect(monsterNpc.baseStats).toEqual(originalBase);
   });
 });

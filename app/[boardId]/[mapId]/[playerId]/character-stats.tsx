@@ -1,9 +1,9 @@
 import { CharacterStats as CharacterStatsType } from '@/lib/games/types';
 
 import styles from './character-stats.module.css';
-import statsStyles from './entity-base-stats.module.css';
 
 import { GameState, PlayerState, PlayerAddStatsState, PlayerInventoryState } from '@/lib/store/types';
+import CharacterAttributeTable from './character-attribute-table';
 import EntityBaseStats from './entity-base-stats';
 
 import { setPlayerAddStatsState } from '@/lib/store/playerStatsState';
@@ -88,43 +88,13 @@ export default function CharacterStats({
     </div>
 
     <div className={`card ${styles.statsCard}`}>
-      <table className={statsStyles.statsTable}><tbody>
-        {([
-          ['Strength', 'strength', [styles.swordIcon, styles.shieldIcon]],
-          ['Skill', 'skill', [styles.bowIcon, styles.shieldIcon]],
-          ['Intelligence', 'intelligence', [styles.magicIcon]],
-          ['Resilience', 'resiliance', [styles.healthIcon]],
-          ['Reactions', 'reactions', [styles.speedIcon, styles.shieldIcon]],
-        ] as [string, keyof CharacterStatsType, string[]][]).map(([label, stat, icons]) => {
-          const extraPoints = playerAddStats.characterStats?.[stat] || 0;
-
-          return <tr key={stat}>
-            <th>{label}</th>
-            <td className={ styles.statIconColumn }>{ icons.map(icon =>
-              <span key={icon} className={`${styles.statIcon} ${icon}`}></span>
-            )}</td>
-            <td className={styles.statActions}>
-              { isSelf && <button
-                type="button"
-                className={styles.statButton}
-                style={{ visibility: extraPoints > 0 ? 'visible' : 'hidden' }}
-                onClick={() => updateStat(stat, -1)}
-                aria-label={`Decrease ${label}`}
-              >-</button> }
-            </td>
-            <td className={styles.characterStat}>{player.characterStats[stat] + extraPoints}</td>
-            <td className={styles.statActions}>
-              { isSelf && <button
-                type="button"
-                className={styles.statButton}
-                style={{ visibility: availablePoints > 0 ? 'visible' : 'hidden' }}
-                onClick={() => updateStat(stat, 1)}
-                aria-label={`Increase ${label}`}
-              >+</button> }
-            </td>
-          </tr>;
-        })}
-      </tbody></table>
+      <CharacterAttributeTable
+        characterStats={player.characterStats}
+        addedStats={playerAddStats.characterStats ?? undefined}
+        editable={isSelf}
+        availablePoints={availablePoints}
+        onUpdateStat={updateStat}
+      />
     </div>
 
     <div className={`card ${styles.statsCard}`}>
