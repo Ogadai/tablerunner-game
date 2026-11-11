@@ -258,3 +258,60 @@ it('learns a barbarian brew when attack is high enough', () => {
   expect(player.equipment).toHaveLength(0);
   expect(player.spells).toEqual([SpellIds.rage]);
 });
+
+it('applies Poison Arrow initial damage and 3 turns of poison only when the attack hits and the target survives', () => {
+  const hitMonster = createMonster({ id: 'hit', health: 20 });
+  const missedMonster = createMonster({ id: 'missed', health: 20 });
+  const slainMonster = createMonster({ id: 'slain', health: 5 });
+  const enemyPlayer = createPlayer({ id: 'enemy', team: 'other', health: 20 });
+  const params = createParams({ monsters: [hitMonster, missedMonster, slainMonster] });
+  params.gameState.players.push(enemyPlayer);
+  const ranger = params.gameState.players[0];
+  ranger.id = 'ranger';
+  ranger.spells = [SpellIds.poisonArrow];
+
+  jest.mocked(genericAttackMonster).mockImplementation((_p, _player, _stats, monster) => {
+    if (monster.id === 'missed') return false;
+    if (monster.id === 'slain') monster.health = 0;
+    else monster.health -= 6;
+    return true;
+  });
+
+  actionCastSpell(params, ranger, { id: 1, type: PlayerActionType.Cast, description: '', spellId: SpellIds.poisonArrow, targetId: hitMonster.id });
+  expect(genericAttackMonster).toHaveBeenCalledWith(params, ranger, {
+    name: 'Poison Arrow',
+    attack: ranger.baseStats!.attack,
+    damage: ranger.baseStats!.damage + spells.poisonArrow.bonusStats.damage!,
+    damageType: undefined,
+  }, hitMonster);
+  expect(hitMonster.health).toBe(14);
+  expect(hitMonster.effects).toEqual([{
+    description: 'Poison Arrow',
+    turns: 3,
+    health: -4,
+  }]);
+
+  ranger.spellCooldowns = {};
+  actionCastSpell(params, ranger, { id: 2, type: PlayerActionType.Cast, description: '', spellId: SpellIds.poisonArrow, targetId: missedMonster.id });
+  expect(missedMonster.health).toBe(20);
+  expect(missedMonster.effects).toBeUndefined();
+
+  ranger.spellCooldowns = {};
+  actionCastSpell(params, ranger, { id: 3, type: PlayerActionType.Cast, description: '', spellId: SpellIds.poisonArrow, targetId: slainMonster.id });
+  expect(slainMonster.effects).toBeUndefined();
+
+  ranger.spellCooldowns = {};
+  jest.mocked(processAttackForDamage).mockReturnValueOnce(0).mockReturnValueOnce(5);
+  actionCastSpell(params, ranger, { id: 4, type: PlayerActionType.Cast, description: '', spellId: SpellIds.poisonArrow, targetId: enemyPlayer.id });
+  expect(enemyPlayer.health).toBe(20);
+  expect(enemyPlayer.effects).toBeUndefined();
+
+  ranger.spellCooldowns = {};
+  actionCastSpell(params, ranger, { id: 5, type: PlayerActionType.Cast, description: '', spellId: SpellIds.poisonArrow, targetId: enemyPlayer.id });
+  expect(enemyPlayer.health).toBe(15);
+  expect(enemyPlayer.effects).toEqual([{
+    description: 'Poison Arrow',
+    turns: 3,
+    health: -4,
+  }]);
+});

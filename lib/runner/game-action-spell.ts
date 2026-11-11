@@ -93,6 +93,7 @@ function applySpellEnemy(
   const isSkill = isSkillSpell(spell);
   const playerCombatStats = getCombatStats(player);
   let totalDamageDealt = 0;
+  const hitTargets: ITarget[] = [];
 
   for(const monster of targets) {
     const beforeHealth = monster.health;
@@ -106,11 +107,13 @@ function applySpellEnemy(
         : (spell.bonusStats.damage || 0),
       damageType: spell.damageType,
     };
+    let didHit = false;
     if ('type' in monster) {
-      genericAttackMonster(params, player, attackStats, monster as MonsterState);
+      didHit = genericAttackMonster(params, player, attackStats, monster as MonsterState);
     } else {
       const target = monster as INamedTarget;
       const damage = processAttackForDamage(attackStats, getCombatStats(target));
+      didHit = damage > 0;
       target.health = Math.max(0, target.health - damage);
 
       playerMessageAtLocation(params, target.id,
@@ -121,6 +124,9 @@ function applySpellEnemy(
       if (target.health <= 0) {
         handlePlayerIsDead(params, target);
       }
+    }
+    if (didHit && monster.health > 0) {
+      hitTargets.push(monster);
     }
     totalDamageDealt += Math.max(0, beforeHealth - monster.health);
   }
@@ -134,12 +140,12 @@ function applySpellEnemy(
     }
   }
 
-  if (spell.bonusStats.turns) {
+  if (spell.bonusStats.turns && hitTargets.length > 0) {
     const hasStatDebuff = spell.bonusStats.attack !== undefined
       || spell.bonusStats.defence !== undefined
       || spell.bonusStats.speed !== undefined;
     addEffectToTargets(
-      targets.filter(target => target.health > 0),
+      hitTargets,
       hasStatDebuff ? {
         turns: spell.bonusStats.turns,
         description: spell.name,
