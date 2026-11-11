@@ -69,4 +69,39 @@ describe('Inventory', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Equip' }));
     expect(onEquipItem).toHaveBeenCalledWith(items[1]);
   });
+
+  it('displays equipped items before unequipped items while preserving relative order', () => {
+    const items = [
+      { id: 'potion-1', type: 'healingPotion' },
+      { id: 'sword-unequipped', type: 'swordRusty' },
+      { id: 'sword-equipped', type: 'swordRusty' },
+      { id: 'helm-equipped', type: 'helmetLeather' },
+    ];
+    const onEquipItem = jest.fn();
+    render(<Inventory
+      player={makePlayer({ equipment: items, equipped: { weapon: 'sword-equipped', helmet: 'helm-equipped' } })}
+      isSelf
+      isDead={false}
+      actionPointsLeft={20}
+      usedItemIds={[]}
+      onEquipItem={onEquipItem}
+      onUseItem={jest.fn()}
+      onDropItem={jest.fn()}
+      onLearnScroll={jest.fn()}
+    />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.map(button => button.getAttribute('aria-label'))).toEqual([
+      'Rusty Sword',
+      'Leather Hood',
+      'Minor Healing Potion',
+      'Rusty Sword',
+    ]);
+    expect(buttons[0]).toHaveClass('equippedItem');
+    expect(buttons[1]).toHaveClass('equippedItem');
+    expect(buttons[2]).not.toHaveClass('equippedItem');
+    expect(buttons[3]).not.toHaveClass('equippedItem');
+    fireEvent.click(buttons[3]);
+    fireEvent.click(screen.getByRole('button', { name: 'Equip' }));
+    expect(onEquipItem).toHaveBeenCalledWith(items[1]);
+  });
 });

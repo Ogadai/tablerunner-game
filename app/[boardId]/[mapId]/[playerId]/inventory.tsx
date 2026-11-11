@@ -38,10 +38,11 @@ export default function Inventory({
   const isUsed = (item: PlayerItem) => {
     return usedItemIds.includes(item.id || '');
   };
+  const orderedEquipment = [...player.equipment].sort((a, b) => Number(isEquipped(b)) - Number(isEquipped(a)));
 
   return (
     <div className={styles.inventoryGrid}>
-      {player.equipment.map(item => {
+      {orderedEquipment.map(item => {
         return <InventoryItem
           isSelf={isSelf}
           disabled={disabled}
