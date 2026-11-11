@@ -578,6 +578,13 @@ select {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--gold-bright, #ffd700);
+  width: 26px;
+  height: 26px;
+}
+
 @media (prefers-color-scheme: dark) {
 
   input[type="text"],

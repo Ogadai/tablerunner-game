@@ -61,7 +61,7 @@
   color: var(--gold-bright);
 }
 
-.headerRight {
+.headerLeft, .headerRight {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -73,24 +73,18 @@
   gap: 4px;
   height: 28px;
   padding-right: 6px;
-  margin: 0;
-  background-color: var(--bg-input);
+  margin: 8px 4px 8px 0;
   color: var(--color-text-primary);
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .soundCheckbox {
-  cursor: pointer;
   margin: 0;
-  accent-color: var(--gold-bright, #ffd700);
-  width: 14px;
-  height: 14px;
 }
 
 .soundIcon {
-  font-size: 16px;
+  font-size: 24px;
   line-height: 1;
 }
 
