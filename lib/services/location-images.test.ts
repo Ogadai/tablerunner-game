@@ -2,7 +2,7 @@ import {
   getLocationRegionInfo,
   buildLocationImagePrompt,
   getLocationImageBlobPath,
-  getLocationImageRootUrl,
+  getResourceRootUrl,
   getLocationImageUrl,
   checkLocationImageExists,
   resizeImageToLocationDimensions,
@@ -174,7 +174,7 @@ describe('location-images service', () => {
     });
   });
 
-  describe('getLocationImageRootUrl & getLocationImageUrl', () => {
+  describe('getResourceRootUrl & getLocationImageUrl', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
@@ -189,12 +189,12 @@ describe('location-images service', () => {
 
     it('returns LOCATION_IMAGE_BASE_URL when set', () => {
       process.env.LOCATION_IMAGE_BASE_URL = 'https://custom-blob.example.com/';
-      expect(getLocationImageRootUrl()).toBe('https://custom-blob.example.com');
+      expect(getResourceRootUrl()).toBe('https://custom-blob.example.com');
       expect(getLocationImageUrl(42)).toBe('https://custom-blob.example.com/location-images/location-42.png');
     });
 
     it('defaults to known game public store root URL', () => {
-      expect(getLocationImageRootUrl()).toBe('https://eivregtw0c7oknqs.public.blob.vercel-storage.com');
+      expect(getResourceRootUrl()).toBe('https://eivregtw0c7oknqs.public.blob.vercel-storage.com');
       expect(getLocationImageUrl(1)).toBe('https://eivregtw0c7oknqs.public.blob.vercel-storage.com/location-images/location-1.png');
     });
   });

@@ -1,8 +1,7 @@
+import { getResourceRootUrl } from '../services/location-image-urls';
 import { CombatEvent } from '../store/types';
 
 export const REPLAY_SOUND_STORAGE_KEY = 'battle_replay_sound_enabled';
-
-const BASE_URL = process.env.LOCATION_IMAGE_BASE_URL || 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com';
 
 /**
  * Returns the sound file path for a given combat event, or null if no sound is associated.
@@ -11,8 +10,8 @@ const BASE_URL = process.env.LOCATION_IMAGE_BASE_URL || 'https://eivregtw0c7oknq
 export function getCombatEventSound(event: CombatEvent | undefined): string | null {
   const relativeUrl = getCombatEventRelativeUrl(event);
   if (!relativeUrl) return null;
-  
-  return `${BASE_URL}${relativeUrl}`;
+
+  return `${getResourceRootUrl()}${relativeUrl}`;
 }
 
 export function getCombatEventRelativeUrl(event: CombatEvent | undefined): string | null {

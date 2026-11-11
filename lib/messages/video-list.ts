@@ -1,3 +1,5 @@
+import { getResourceRootUrl } from "../services/location-images";
+
 export enum VideoNames {
   dragonWakes = 'dragon-wakes',
   juvenileDragon = 'juvenile-dragon',
@@ -18,7 +20,7 @@ export enum VideoNames {
   warlordsDefeat = 'warlords-defeat',
 }
 
-const videoBaseUrl = process.env.LOCATION_IMAGE_BASE_URL || 'https://eivregtw0c7oknqs.public.blob.vercel-storage.com';
+const videoBaseUrl = getResourceRootUrl();
 
 export const videoList: { [id: string]: string } = {
   'dragon-wakes': `${videoBaseUrl}/dragon-wakes.mp4`,

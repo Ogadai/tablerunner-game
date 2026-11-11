@@ -133,5 +133,44 @@ describe('battle-sounds', () => {
     expect(() => stopAllCombatSounds()).not.toThrow();
     expect(() => unlockAudio()).not.toThrow();
   });
+
+  describe('base URL resolution', () => {
+    const originalEnv = process.env;
+    const sampleEvent: CombatEvent = {
+      id: 'e-url',
+      initiatorId: 'p1',
+      initiatorName: 'Hero',
+      actionType: 'item',
+      actionName: 'Potion',
+      icon: { sheet: 'item', iconXY: { x: 0, y: 0 } },
+      targets: [],
+    };
+
+    beforeEach(() => {
+      process.env = { ...originalEnv };
+      delete process.env.LOCATION_IMAGE_BASE_URL;
+      delete process.env.NEXT_PUBLIC_LOCATION_IMAGE_BASE_URL;
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('uses NEXT_PUBLIC_LOCATION_IMAGE_BASE_URL in client environments and strips trailing slashes', () => {
+      process.env.NEXT_PUBLIC_LOCATION_IMAGE_BASE_URL = 'https://pub-example.r2.dev/';
+      expect(getCombatEventSound(sampleEvent)).toBe('https://pub-example.r2.dev/game-sounds/potion-drink.mp3');
+    });
+
+    it('uses LOCATION_IMAGE_BASE_URL when set', () => {
+      process.env.LOCATION_IMAGE_BASE_URL = 'https://custom-r2.example.com/';
+      expect(getCombatEventSound(sampleEvent)).toBe('https://custom-r2.example.com/game-sounds/potion-drink.mp3');
+    });
+
+    it('falls back to the default blob URL when neither env var is set', () => {
+      expect(getCombatEventSound(sampleEvent)).toBe(
+        'https://eivregtw0c7oknqs.public.blob.vercel-storage.com/game-sounds/potion-drink.mp3'
+      );
+    });
+  });
 });
 

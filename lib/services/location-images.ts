@@ -18,13 +18,13 @@ import {
 } from '@/lib/store/redis-access';
 import {
   getLocationImageBlobPath,
-  getLocationImageRootUrl,
+  getResourceRootUrl,
   getLocationImageUrl,
 } from './location-image-urls';
 
 export {
   getLocationImageBlobPath,
-  getLocationImageRootUrl,
+  getResourceRootUrl,
   getLocationImageUrl,
 };
 
