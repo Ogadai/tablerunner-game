@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Popover } from 'radix-ui';
 import styles from './inventory-item.module.css';
-import { BaseStats, ConsumableItemDef, ItemDef, PlayerItem, PlayerItemType, ScrollItemDef } from '@/lib/games/types';
+import { BaseStats, ConsumableItemDef, EquipableItemDef, ItemDef, OnHitEffectDef, PlayerItem, PlayerItemType, ScrollItemDef } from '@/lib/games/types';
 import { allItems, SELL_COST_RATIO } from '@/lib/games/items';
 import { LEARN_SCROLL_ACTION_COST } from '@/lib/store/playerStats';
 import { NOTHING_EQUPPED, PlayerInventoryEquipSlots } from '@/lib/store/types';
@@ -56,6 +56,10 @@ function getComparisonColorClass(value: number, otherValue: number): string {
   if (value > otherValue) return styles.statBetter;
   if (value < otherValue) return styles.statWorse;
   return styles.statEqual;
+}
+
+function formatOnHitEffect(effect?: OnHitEffectDef): string {
+  return effect ? `${effect.damage} dmg / ${effect.turns} turns` : '-';
 }
 
 export default function InventoryItem({
@@ -137,8 +141,11 @@ export default function InventoryItem({
     : undefined;
   const showComparison = !!equippedItemDef && equippedItemDef.type === itemDef.type;
   const statRows = getComparisonStatRows(itemDef, showComparison ? equippedItemDef : undefined);
+  const itemOnHit = (itemDef as EquipableItemDef).onHitEffect;
+  const equippedOnHit = showComparison ? (equippedItemDef as EquipableItemDef).onHitEffect : undefined;
+  const hasOnHitEffect = !!itemOnHit || !!equippedOnHit;
   const specialText = itemDef.bonusStats?.special;
-  const hasBonuses = statRows.length > 0 || !!specialText;
+  const hasBonuses = statRows.length > 0 || hasOnHitEffect || !!specialText;
 
   const isConsumable = itemDef.type === PlayerItemType.consumable;
   const scrollSpell = itemDef.type === PlayerItemType.scroll
@@ -238,6 +245,30 @@ export default function InventoryItem({
                     </tr>
                   );
                 })}
+                {hasOnHitEffect && (() => {
+                  const label = (itemOnHit ?? equippedOnHit)!.description;
+                  if (!showComparison) {
+                    return (
+                      <tr>
+                        <td className={styles.statName}>{label}</td>
+                        <td className={`${styles.statValue} ${styles.statValueThis}`}>{formatOnHitEffect(itemOnHit)}</td>
+                      </tr>
+                    );
+                  }
+                  const itemTotal = itemOnHit ? itemOnHit.damage * itemOnHit.turns : 0;
+                  const equippedTotal = equippedOnHit ? equippedOnHit.damage * equippedOnHit.turns : 0;
+                  return (
+                    <tr>
+                      <td className={styles.statName}>{label}</td>
+                      <td className={`${styles.statValue} ${getComparisonColorClass(equippedTotal, itemTotal)}`}>
+                        {formatOnHitEffect(equippedOnHit)}
+                      </td>
+                      <td className={`${styles.statValue} ${styles.statValueThis} ${getComparisonColorClass(itemTotal, equippedTotal)}`}>
+                        {formatOnHitEffect(itemOnHit)}
+                      </td>
+                    </tr>
+                  );
+                })()}
                 {specialText && (
                   <tr>
                     <td colSpan={showComparison ? 3 : 2} className={styles.statName}>{specialText}</td>

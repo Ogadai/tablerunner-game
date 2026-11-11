@@ -248,4 +248,27 @@ describe('InventoryItem', () => {
     expect(within(speedRow).getAllByRole('cell')[1]).toHaveClass('statBetter');
     expect(within(speedRow).getAllByRole('cell')[2]).toHaveClass('statWorse');
   });
+
+  it('displays Venom Dagger poison effect on the stats card and in weapon comparisons', () => {
+    setup({ item: { id: 'venom-1', type: 'daggerVenom' } });
+    const singleRows = screen.getAllByRole('row');
+    expect(singleRows.map(row => within(row).getAllByRole('cell').map(cell => cell.textContent))).toEqual([
+      ['attack', '+4'],
+      ['damage', '+2'],
+      ['speed', '+2'],
+      ['Poison', '4 dmg / 3 turns'],
+    ]);
+
+    setup({
+      item: { id: 'venom-2', type: 'daggerVenom' },
+      equippedItem: { id: 'steel-1', type: 'swordSteel' },
+    });
+    const compareRows = screen.getAllByRole('row').slice(1);
+    const poisonRow = compareRows.find(row => within(row).getAllByRole('cell')[0].textContent === 'Poison')!;
+    const [, equippedCell, itemCell] = within(poisonRow).getAllByRole('cell');
+    expect(equippedCell).toHaveTextContent('-');
+    expect(equippedCell).toHaveClass('statWorse');
+    expect(itemCell).toHaveTextContent('4 dmg / 3 turns');
+    expect(itemCell).toHaveClass('statBetter');
+  });
 });

@@ -2,19 +2,21 @@ import {
   MonsterState,
   PlayerActionAttack,
   INamedTarget,
+  ITarget,
   getMonsterName,
 } from "../store/types";
 import { monsters, getPointsForDamage, getMonsterStrength } from "../games/monsters";
 import { BaseParams } from './base-params';
 import { playerMessageAtLocation, soloMessageAtLocation } from './game-messages';
 import { getMonsterStats } from './monster-stats';
-import { ConsumableIds, consumableItems, ItemIds, lootItems, SpecialIds } from "../games/items";
+import { allItems, ConsumableIds, consumableItems, ItemIds, lootItems, SpecialIds } from "../games/items";
 import { createItemForInventory } from "./apply-inventory";
 import { getCombatStats } from "../store/playerStats";
-import { SpellDef } from "../games/types";
+import { EquipableItemDef, SpellDef } from "../games/types";
 import { getEnemies, isEnemy, isFriend } from './game-friends-or-enemies';
 import { getMonsterCombatant } from './monster-combatant';
 import { recordCombatAttack } from './combat-log';
+import { addEffectToTargets } from './target-effects';
 
 const MAXIMUM_COIN_DROP = 100;
 const AUTO_DROP_ITEMS: ItemIds[] = [
@@ -45,15 +47,33 @@ export function processAttackForDamage(attackerStats: { attack: number, damage: 
   return 0;
 }
 
+function applyWeaponOnHitEffects(attacker: Pick<INamedTarget, 'equipped' | 'equipment'>, target: ITarget): void {
+  if (target.health <= 0) return;
+  const weaponId = attacker.equipped?.weapon;
+  const weapon = weaponId ? attacker.equipment?.find(e => e.id === weaponId) : undefined;
+  const weaponDef = weapon ? (allItems[weapon.type] as EquipableItemDef | undefined) : undefined;
+  const onHit = weaponDef?.onHitEffect;
+  if (!onHit) return;
+
+  addEffectToTargets([target], {
+    description: onHit.description,
+    turns: onHit.turns,
+    health: -onHit.damage,
+  });
+}
+
 export function actionAttack(params: BaseParams, player: INamedTarget, action: PlayerActionAttack): void {
   if (player.health <= 0 || !getEnemies(params, player).some(target => target.id === action.target && target.health > 0)) return;
   const monster = params.monsters.find(m => m.id === action.target);
   if (monster) {
     const success = genericAttackMonster(params, player, getCombatStats(player), monster);
 
-    if (success && player.zombie && !monster.zombie) {
-      // Infected the monster
-      monster.infected = ZOMBIE_TURNS;
+    if (success) {
+      if (player.zombie && !monster.zombie) {
+        // Infected the monster
+        monster.infected = ZOMBIE_TURNS;
+      }
+      applyWeaponOnHitEffects(player, monster);
     }
     return;
   }
@@ -61,7 +81,10 @@ export function actionAttack(params: BaseParams, player: INamedTarget, action: P
   const target = params.gameState.players.find(p => p.id === action.target)
     || params.gameState.npcs.find(npc => npc.id === action.target);
   if (target) {
-    genericAttackTarget(params, player, getCombatStats(player), target);
+    const success = genericAttackTarget(params, player, getCombatStats(player), target);
+    if (success) {
+      applyWeaponOnHitEffects(player, target);
+    }
   }
 }
 
@@ -119,8 +142,12 @@ export function monsterAttack(
     if (monster.health <= 0 || target.health <= 0 || target.location.id !== monster.location || !isEnemy(monster, target)) return;
     const targetMonster = params.monsters.find(m => m.id === target.id);
     if (targetMonster) {
-      const hit = genericAttackMonster(params, getMonsterCombatant(monster), getMonsterStats(monster), targetMonster);
-      if (hit && monster.zombie && !targetMonster.zombie) targetMonster.infected = ZOMBIE_TURNS;
+      const monsterCombatant = getMonsterCombatant(monster);
+      const hit = genericAttackMonster(params, monsterCombatant, getMonsterStats(monster), targetMonster);
+      if (hit) {
+        if (monster.zombie && !targetMonster.zombie) targetMonster.infected = ZOMBIE_TURNS;
+        applyWeaponOnHitEffects(monsterCombatant, targetMonster);
+      }
       return;
     }
     const monsterStats = getMonsterStats(monster);
@@ -137,6 +164,7 @@ export function monsterAttack(
       if (monster.zombie && !target.zombie && Math.random() < PLAYER_ZOMBIE_RISK) {
         target.infected = ZOMBIE_TURNS;
       }
+      applyWeaponOnHitEffects(getMonsterCombatant(monster), target);
 
       recordCombatAttack(
         params,
@@ -220,8 +248,7 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
         monster.health -= appliedDamage;
         if (monster.health <= 0) {
           monster.health = 0;
-          monsterDropLoot(params, player, monster);
-          monsterDropCoins(params, player, monster);
+          dropMonsterRewards(params, player.location.id, monster, player);
         }
 
         if (!attackStats.name) {
@@ -272,8 +299,22 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
   return false;
 }
 
-function monsterDropCoins(params: BaseParams, player: INamedTarget, monster: MonsterState) {
-  const locationId = player.location.id;
+export function handleMonsterDefeated(params: BaseParams, monster: MonsterState): void {
+  monster.health = 0;
+  const collector = params.gameState.players.find(player =>
+    player.health > 0
+    && player.location.id === monster.location
+    && !getEnemies(params, player).some(enemy => enemy.health > 0)
+  );
+  dropMonsterRewards(params, monster.location, monster, collector);
+}
+
+function dropMonsterRewards(params: BaseParams, locationId: number, monster: MonsterState, collector?: INamedTarget) {
+  monsterDropLoot(params, locationId, monster);
+  monsterDropCoins(params, locationId, monster, collector);
+}
+
+function monsterDropCoins(params: BaseParams, locationId: number, monster: MonsterState, collector?: INamedTarget) {
   const monsterStrength = getMonsterStrength(monsters[monster.type]);
   const maximumCoins = Math.ceil(2 + monsterStrength * (MAXIMUM_COIN_DROP - 2));
   const droppedCoins = Math.ceil(Math.random() * maximumCoins);
@@ -285,10 +326,8 @@ function monsterDropCoins(params: BaseParams, player: INamedTarget, monster: Mon
     params.coins.push({ location: locationId, coins: droppedCoins });
   }
 
-  const hasLivingEnemy = getEnemies(params, player).some(target => target.health > 0);
-
-  if (!hasLivingEnemy) {
-    distributeLocationCoins(params, player);
+  if (collector && !getEnemies(params, collector).some(target => target.health > 0)) {
+    distributeLocationCoins(params, collector);
   }
 }
 
@@ -314,8 +353,7 @@ function distributeLocationCoins(params: BaseParams, actor: INamedTarget) {
   params.coins.splice(params.coins.indexOf(locationCoins), 1);
 }
 
-function monsterDropLoot(params: BaseParams, player: INamedTarget, monster: MonsterState) {
-  const locationId = player.location.id;
+function monsterDropLoot(params: BaseParams, locationId: number, monster: MonsterState) {
 
   const monsterStrength = getMonsterStrength(monsters[monster.type]);
 

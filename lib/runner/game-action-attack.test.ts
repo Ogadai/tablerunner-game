@@ -1,7 +1,7 @@
 import { actionAttack, genericAttackMonster, handlePlayerIsDead, monsterAttack, processAttackForDamage } from './game-action-attack';
 import { BaseParams } from './base-params';
 import { MonsterState, NPCState, PlayerActionAttack, PlayerActionType, PlayerState } from '../store/types';
-import { ConsumableIds } from '../games/items';
+import { ConsumableIds, EquipableIds } from '../games/items';
 import { createItemForInventory } from './apply-inventory';
 import { SpellDef } from '../games/types';
 import { getPointsForDamage } from '../games/monsters';
@@ -417,5 +417,44 @@ describe('monsterAttack and player death', () => {
     expect(params.items).toEqual([{ ...stone, location: 1 }, { ...shard, location: 1 }]);
     expect(player.respawnTurns).toBe(3);
     expect(params.messages.p1.messages).toEqual([{ text: '*You* fell into a trap' }]);
+  });
+
+  it('inflicts non-stacking 4-damage 3-turn poison on Venom Dagger hits and resets duration on repeat hits', () => {
+    const player = createPlayer('p1', 10);
+    player.equipment = [{ id: 'vd', type: EquipableIds.daggerVenom }];
+    player.equipped = { weapon: 'vd' };
+    const monster = createMonster('m1', 'rat', 20);
+    const enemyPlayer = createPlayer('p2', 20);
+    enemyPlayer.team = 'other';
+    const params = createParams([monster], [player, enemyPlayer]);
+
+    // Hit monster: applies Poison (4 dmg / 3 turns)
+    hit();
+    actionAttack(params, player, { id: 1, type: PlayerActionType.Attack, description: '', target: monster.id });
+    expect(monster.effects).toEqual([{ description: 'Poison', turns: 3, health: -4 }]);
+
+    // Simulate 2 turns passing, then hit again: resets to 3 turns without stacking
+    monster.effects = [{ description: 'Poison', turns: 1, health: -4 }];
+    hit();
+    actionAttack(params, player, { id: 2, type: PlayerActionType.Attack, description: '', target: monster.id });
+    expect(monster.effects).toEqual([{ description: 'Poison', turns: 3, health: -4 }]);
+
+    // Miss enemy player: does not apply Poison
+    jest.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.99);
+    actionAttack(params, player, { id: 3, type: PlayerActionType.Attack, description: '', target: enemyPlayer.id });
+    expect(enemyPlayer.effects).toBeUndefined();
+
+    // Hit enemy player: applies Poison
+    hit();
+    actionAttack(params, player, { id: 4, type: PlayerActionType.Attack, description: '', target: enemyPlayer.id });
+    expect(enemyPlayer.effects).toEqual([{ description: 'Poison', turns: 3, health: -4 }]);
+
+    // Lethal hit on monster: does not attach Poison
+    const fragile = createMonster('m2', 'rat', 1);
+    params.monsters.push(fragile);
+    hit();
+    actionAttack(params, player, { id: 5, type: PlayerActionType.Attack, description: '', target: fragile.id });
+    expect(fragile.health).toBe(0);
+    expect(fragile.effects).toBeUndefined();
   });
 });

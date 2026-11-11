@@ -81,7 +81,15 @@ export const equipableItems: Record<string, EquipableItemDef> = {
   [EquipableIds.hammer]: { id: 'hammer', type: PlayerItemType.weapon, name: 'War Hammer', iconXY: { x: 4, y: 0 }, value: 55, bonusStats: { attack: 2, damage: 4 } },
   [EquipableIds.warhammer]: { id: 'warhammer', type: PlayerItemType.weapon, name: 'Great Hammer', iconXY: { x: 2, y: 10 }, value: 90, bonusStats: { attack: 4, damage: 6, speed: -1 } },
   [EquipableIds.dagger]: { id: 'dagger', type: PlayerItemType.weapon, name: 'Iron Dagger', iconXY: { x: 5, y: 0 }, value: 18, bonusStats: { attack: 2, damage: 1, speed: 1 } },
-  [EquipableIds.daggerVenom]: { id: 'daggerVenom', type: PlayerItemType.weapon, name: 'Venom Dagger', iconXY: { x: 3, y: 10 }, value: 50, bonusStats: { attack: 4, damage: 2, speed: 2 } },
+  [EquipableIds.daggerVenom]: {
+    id: 'daggerVenom',
+    type: PlayerItemType.weapon,
+    name: 'Venom Dagger',
+    iconXY: { x: 3, y: 10 },
+    value: 50,
+    bonusStats: { attack: 4, damage: 2, speed: 2 },
+    onHitEffect: { description: 'Poison', damage: 4, turns: 3 },
+  },
   [EquipableIds.bowWarped]: {
     id: EquipableIds.bowWarped.toString(),
     type: PlayerItemType.weapon,

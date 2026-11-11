@@ -2,7 +2,7 @@ import { scrollItems } from "../games/items";
 import { monsters } from "../games/monsters";
 import { canCharacterLearnSpell, canCharacterUseSpell, isSkillSpell, SpellIds, spells } from "../games/spells";
 import { SpellDef } from "../games/types";
-import { CharacterEffect, INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll } from "../store/types";
+import { INamedTarget, ITarget, MonsterState, PlayerActionCast, PlayerActionReadScroll } from "../store/types";
 import { BaseParams } from "./base-params";
 import { genericAttackMonster, handlePlayerIsDead, processAttackForDamage } from "./game-action-attack";
 import { playerMessageAtLocation, soloMessageAtLocation } from "./game-messages";
@@ -14,6 +14,7 @@ import { getCombatStats } from '../store/playerStats';
 import { joinWithAnd } from '../string-helpers';
 import { hasActiveFollower, isFollowerSpell } from './npc-followers';
 import { recordCombatSpell, CombatSpellTargetInput } from './combat-log';
+import { addEffectToTargets } from './target-effects';
 
 const MAX_RECENT_SPELLS = 2;
 
@@ -240,14 +241,4 @@ export function getSpellTargets(params: BaseParams, player: INamedTarget, action
 
   return getAvailableSpellTargets(params, player, spell)
     .filter(target => !spell.pickTarget || target.id === action.targetId);
-}
-
-const addEffectToTargets = (targets: ITarget[], newEffect: CharacterEffect) => {
-  for(const target of targets) {
-    target.effects = [
-      ...(target.effects || [])
-        .filter(e => e.description !== newEffect.description),
-      { ...newEffect },
-    ];
-  }
 }

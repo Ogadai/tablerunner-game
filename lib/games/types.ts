@@ -123,9 +123,16 @@ export interface ItemDef {
   key?: string;
 }
 
+export interface OnHitEffectDef {
+  description: string;
+  damage: number;
+  turns: number;
+}
+
 export interface EquipableItemDef extends ItemDef {
   ranged?: boolean;
   staff?: boolean;
+  onHitEffect?: OnHitEffectDef;
 }
 
 export interface ConsumableItemDef extends ItemDef {

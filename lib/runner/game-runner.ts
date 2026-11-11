@@ -42,7 +42,7 @@ import { populateMonsters } from "./populate-monsters";
 import { updatePortalAndShopLeds } from "./game-action-portal";
 import { updateMonsterLeds } from './game-action-monsters';
 import { actionRespawn } from './game-action-move';
-import { handlePlayerIsDead } from './game-action-attack';
+import { handleMonsterDefeated, handlePlayerIsDead } from './game-action-attack';
 import { playerMessageAtLocation } from './game-messages';
 import { finalizeCombatReplays, recordCombatEffect, getTargetLocationId } from './combat-log';
 
@@ -325,8 +325,12 @@ function processTargetEffects(params: BaseParams, targets: ITarget[]) {
           }
           playerMessageAtLocation(params, target.id,
             `**{player}** took **${damage}** damage from **${effect.description}**${target.health <= 0 && 'type' in target ? ' and *was defeated!*' : ''}`);
-          if (target.health <= 0 && !('type' in target)) {
-            handlePlayerIsDead(params, target as INamedTarget);
+          if (target.health <= 0) {
+            if ('type' in target) {
+              handleMonsterDefeated(params, target as MonsterState);
+            } else {
+              handlePlayerIsDead(params, target as INamedTarget);
+            }
           }
         }
       }

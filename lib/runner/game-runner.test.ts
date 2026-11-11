@@ -221,6 +221,25 @@ it('expires effects and summons, records portals, and commits destroyed shops wi
     expect.objectContaining({ monsters: params.monsters, npcs: [] }), params.messages, [1], ['summon', 'undead'], params.playerInstructions);
 });
 
+it('drops loot and distributes coins when a monster is defeated by damage over time', async () => {
+  const rat = createMonster({ id: 'm1', type: 'rat', health: 3, location: 1, effects: [{ description: 'Poison', turns: 3, health: -4 }] });
+  const distantSpider = createMonster({ id: 'm2', type: 'spider', health: 2, location: 2, effects: [{ description: 'Poison', turns: 2, health: -4 }] });
+  const params = createParams({ monsters: [rat, distantSpider] });
+  params.gameState.players[0].coins = 0;
+  jest.spyOn(Math, 'random').mockReturnValue(0.1);
+
+  await processGameTurn(params);
+
+  expect(rat.health).toBe(0);
+  expect(distantSpider.health).toBe(0);
+  // Living player at location 1 collects coins from rat; distantSpider's coins remain on location 2.
+  expect(params.gameState.players[0].coins).toBeGreaterThan(0);
+  expect(params.coins).toEqual([{ location: 2, coins: expect.any(Number) }]);
+  // Both monsters roll loot at their respective locations.
+  expect(params.items.filter(i => i.location === 1).length).toBeGreaterThan(0);
+  expect(params.items.filter(i => i.location === 2).length).toBeGreaterThan(0);
+});
+
 it('applies pending NPC inventory before combat and consumes it even if the NPC expires', async () => {
   const npc = createNpc({ id: 'follower', turnsLeft: 1, expiryAction: 'remove' });
   const params = createParams();
