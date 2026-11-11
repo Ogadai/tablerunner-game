@@ -187,4 +187,19 @@ describe('GameTips', () => {
     await mount({ turn: 0, reviewOpen: true, allowPopup: false });
     expect(screen.getByText('No tips are available yet.')).toBeInTheDocument();
   });
+
+  it('suspends the review dialog while suppressOpen is true and restores it afterward', async () => {
+    const onReviewClose = jest.fn();
+    const view = await mount({ turn: 2, reviewOpen: true, allowPopup: false, onReviewClose });
+    expect(screen.getByRole('dialog', { name: 'Game Tips' })).toBeInTheDocument();
+
+    view.rerender(<GameTips {...defaultProps} turn={2} reviewOpen allowPopup={false} suppressOpen onReviewClose={onReviewClose} />);
+    await flush();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onReviewClose).not.toHaveBeenCalled();
+
+    view.rerender(<GameTips {...defaultProps} turn={2} reviewOpen allowPopup={false} suppressOpen={false} onReviewClose={onReviewClose} />);
+    await flush();
+    expect(screen.getByRole('dialog', { name: 'Game Tips' })).toBeInTheDocument();
+  });
 });

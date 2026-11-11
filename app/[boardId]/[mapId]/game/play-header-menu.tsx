@@ -28,12 +28,13 @@ const getFullscreenState = () => document.fullscreenElement
   ? 'fullscreen' : document.fullscreenEnabled ? 'normal' : 'unavailable';
 const getServerFullscreenState = () => 'unavailable';
 
-export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, onSnapshotChange }
+export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, allowAutoTips = true, onSnapshotChange }
   : {
     boardId: string;
     mapId: string;
     gameState?: GameState;
     snapshot?: PlayerSnapshot;
+    allowAutoTips?: boolean;
     onSnapshotChange?: (snapshot: PlayerSnapshot) => void;
   }
 ) {
@@ -261,7 +262,8 @@ export default function PlayHeaderMenu(  { boardId, mapId, gameState, snapshot, 
       character={snapshot?.playerId}
       tips={gameTips}
       reviewOpen={activeDialog === 'tips'}
-      allowPopup={!!snapshot && !menuOpen && activeDialog === null}
+      allowPopup={allowAutoTips && !!snapshot && !menuOpen && activeDialog === null}
+      suppressOpen={!allowAutoTips}
       onReviewClose={() => setActiveDialog(null)}
     />}
   </>);

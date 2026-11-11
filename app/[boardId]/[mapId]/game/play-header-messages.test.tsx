@@ -206,4 +206,77 @@ describe('PlayHeaderMessages', () => {
     expect(screen.getByText('Hero drank **Healing Potion** for **20** health!')).toBeInTheDocument();
     expect(screen.getByText('Hero cast **Bless** on **Hero**!')).toBeInTheDocument();
   });
+
+  it('defers auto-opening while allowAutoOpen is false and opens after it becomes true', async () => {
+    const onStateChange = jest.fn();
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(
+        <PlayHeaderMessages
+          playerMessages={messages}
+          allowAutoOpen={false}
+          onStateChange={onStateChange}
+        />,
+      );
+    });
+
+    await act(async () => { await jest.advanceTimersByTimeAsync(1000); });
+    expect(screen.queryByText('A dragon approaches')).not.toBeInTheDocument();
+    expect(onStateChange).toHaveBeenLastCalledWith({ isOpen: false, handledMessages: undefined });
+
+    await act(async () => {
+      view.rerender(
+        <PlayHeaderMessages
+          playerMessages={messages}
+          allowAutoOpen={true}
+          onStateChange={onStateChange}
+        />,
+      );
+    });
+
+    await act(async () => { await jest.advanceTimersByTimeAsync(500); });
+    expect(screen.getByText('A dragon approaches')).toBeInTheDocument();
+    expect(onStateChange).toHaveBeenLastCalledWith({ isOpen: true, handledMessages: messages });
+  });
+
+  it('temporarily hides the popover when suppressOpen is true and restores it afterward', async () => {
+    const onStateChange = jest.fn();
+    let view!: ReturnType<typeof render>;
+    await act(async () => {
+      view = render(
+        <PlayHeaderMessages
+          playerMessages={messages}
+          suppressOpen={false}
+          onStateChange={onStateChange}
+        />,
+      );
+    });
+
+    await act(async () => { await jest.advanceTimersByTimeAsync(500); });
+    expect(screen.getByText('A dragon approaches')).toBeInTheDocument();
+
+    await act(async () => {
+      view.rerender(
+        <PlayHeaderMessages
+          playerMessages={messages}
+          allowAutoOpen={false}
+          suppressOpen={true}
+          onStateChange={onStateChange}
+        />,
+      );
+    });
+    expect(screen.queryByText('A dragon approaches')).not.toBeInTheDocument();
+
+    await act(async () => {
+      view.rerender(
+        <PlayHeaderMessages
+          playerMessages={messages}
+          allowAutoOpen={true}
+          suppressOpen={false}
+          onStateChange={onStateChange}
+        />,
+      );
+    });
+    expect(screen.getByText('A dragon approaches')).toBeInTheDocument();
+  });
 });

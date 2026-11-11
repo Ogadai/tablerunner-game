@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { GameTopicMessageType } from '@/lib/message-types';
 import VideoTopicService, { VideoTopicMessage } from '@/app/message-bus/video-topic-service';
+import popupGateService from '../game/popup-gate-service';
 import styles from './player-video.module.css';
 
 export default function PlayerVideo({ topicId, turn }: { topicId: string; turn: number }) {
@@ -15,6 +16,11 @@ export default function PlayerVideo({ topicId, turn }: { topicId: string; turn: 
       setLastPlayedUrl(null);
     }
   }
+
+  useEffect(() => {
+    if (!playingUrl) return;
+    return popupGateService.enterWarning();
+  }, [playingUrl]);
 
   useEffect(() => VideoTopicService.subscribe(topicId, (message: VideoTopicMessage) => {
     if (message.type === GameTopicMessageType.VideoPreload) {

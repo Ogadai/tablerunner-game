@@ -478,6 +478,86 @@ describe('CauldronQuests UI Component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     fireEvent.click(screen.getByRole('button', { name: 'Quests' }));
   });
+
+  it('waits to auto-open until allowAutoOpen is true and suspends while suppressOpen is true', () => {
+    const player = createPlayer({ id: 'barbarian', location: { id: 22, description: '', move: [] } });
+    const gameState = createGame({ gameId: 'cauldronfire', turn: 3, players: [player] });
+    saveQuestsState(gameState, {
+      quests: [
+        {
+          id: 'q-1',
+          templateId: 'retrieve-1',
+          title: 'Stolen Sun Medallion',
+          description: 'Find the Sun Medallion.',
+          category: 'retrieve_item',
+          scope: 'shared',
+          tier: 'early',
+          status: 'available',
+          offerLocation: 22,
+          reward: { coins: 50, points: 100 },
+        },
+      ],
+    });
+    const onOpenChange = jest.fn();
+
+    const { rerender } = render(
+      <CauldronQuests
+        boardId="b1"
+        mapId="m1"
+        player={player}
+        gameState={gameState}
+        allowAutoOpen={false}
+        onOpenChange={onOpenChange}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+
+    rerender(
+      <CauldronQuests
+        boardId="b1"
+        mapId="m1"
+        player={player}
+        gameState={gameState}
+        allowAutoOpen={true}
+        onOpenChange={onOpenChange}
+      />,
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    rerender(
+      <CauldronQuests
+        boardId="b1"
+        mapId="m1"
+        player={player}
+        gameState={gameState}
+        allowAutoOpen={false}
+        suppressOpen={true}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    rerender(
+      <CauldronQuests
+        boardId="b1"
+        mapId="m1"
+        player={player}
+        gameState={gameState}
+        allowAutoOpen={true}
+        suppressOpen={false}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
 });
 
 describe('formatLocations helper', () => {

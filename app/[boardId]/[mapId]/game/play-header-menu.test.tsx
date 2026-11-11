@@ -86,6 +86,19 @@ describe('PlayHeaderMenu', () => {
       expect(screen.getByText(/Monsters are more dangerous/)).toBeInTheDocument();
       expect(screen.queryByText(/You need to have a strong party/)).not.toBeInTheDocument();
     });
+
+    it('suspends an open tips review dialog when allowAutoTips becomes false and restores it afterward', async () => {
+      const gameState = makeGameState({ gameId: 'cauldronfire', turn: 2 });
+      const view = render(<PlayHeaderMenu boardId="board" mapId="map" gameState={gameState} allowAutoTips />);
+      await select(/Game Tips/);
+      expect(screen.getByRole('dialog', { name: 'Game Tips' })).toBeInTheDocument();
+
+      view.rerender(<PlayHeaderMenu boardId="board" mapId="map" gameState={gameState} allowAutoTips={false} />);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+      view.rerender(<PlayHeaderMenu boardId="board" mapId="map" gameState={gameState} allowAutoTips />);
+      expect(screen.getByRole('dialog', { name: 'Game Tips' })).toBeInTheDocument();
+    });
   });
 
   describe('team selection', () => {

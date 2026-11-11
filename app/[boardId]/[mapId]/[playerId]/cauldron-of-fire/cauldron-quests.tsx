@@ -25,6 +25,9 @@ interface CauldronQuestsProps {
   sourcePlayer?: PlayerState;
   gameState: GameState;
   processing?: boolean;
+  allowAutoOpen?: boolean;
+  suppressOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export function getCompassHint(fromLocation: number, toLocation: number): string {
@@ -64,6 +67,9 @@ export default function CauldronQuests({
   sourcePlayer: sourcePlayerProp,
   gameState,
   processing = false,
+  allowAutoOpen = true,
+  suppressOpen = false,
+  onOpenChange,
 }: CauldronQuestsProps) {
   const statsSnapshot = usePlayerStatsSnapshot();
   const targetPlayerId = playerProp?.id ?? playerId ?? '';
@@ -77,7 +83,8 @@ export default function CauldronQuests({
   const initialArrivalKey = player ? `${gameState.turn}:${player.location.id}` : '';
   const initialQuests = getQuestsState(gameState).quests;
   const initialShouldAutoOpen = Boolean(
-    player &&
+    allowAutoOpen &&
+      player &&
       player.health > 0 &&
       initialQuests.some(
         q =>
@@ -115,6 +122,18 @@ export default function CauldronQuests({
     npcs: NPCState[];
   } | null>(null);
   const actionPending = useRef(false);
+  const onOpenChangeRef = useRef(onOpenChange);
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
+  useEffect(() => {
+    onOpenChangeRef.current?.(isOpen);
+  }, [isOpen]);
+
+  useEffect(() => () => {
+    onOpenChangeRef.current?.(false);
+  }, []);
 
   const topicId = getGameTopicId(boardId, mapId);
 
@@ -155,6 +174,7 @@ export default function CauldronQuests({
   if (arrivalKey !== prevArrivalKey) {
     setPrevArrivalKey(arrivalKey);
     const shouldAuto =
+      allowAutoOpen &&
       player.health > 0 &&
       availableHere.length > 0 &&
       dismissedArrivalKey !== arrivalKey;
@@ -170,6 +190,7 @@ export default function CauldronQuests({
       setOpenLocationQuestIds(availableHere.map(q => q.id));
     }
   } else if (
+    allowAutoOpen &&
     !isOpen &&
     player.health > 0 &&
     availableHere.length > 0 &&
@@ -390,7 +411,7 @@ export default function CauldronQuests({
   const hasAvailableHere = availableHere.length > 0;
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog.Root open={isOpen && !suppressOpen} onOpenChange={handleOpenChange}>
       <Dialog.Trigger asChild>
         <button
           type="button"

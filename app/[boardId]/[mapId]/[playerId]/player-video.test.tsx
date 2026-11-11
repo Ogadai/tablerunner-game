@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { GameTopicMessageType } from '@/lib/message-types';
 import VideoTopicService from '@/app/message-bus/video-topic-service';
+import popupGateService from '../game/popup-gate-service';
 import PlayerVideo from './player-video';
 
 describe('PlayerVideo', () => {
@@ -47,6 +48,7 @@ describe('PlayerVideo', () => {
   });
 
   it('shows a replay button after closing and removes it on the next turn', () => {
+    popupGateService.reset();
     const { rerender } = render(<PlayerVideo topicId={topicId} turn={turn} />);
 
     act(() => {
@@ -56,8 +58,11 @@ describe('PlayerVideo', () => {
       });
     });
 
+    expect(popupGateService.hasActiveWarning()).toBe(true);
+
     fireEvent.click(screen.getByRole('button', { name: 'Close video' }));
 
+    expect(popupGateService.hasActiveWarning()).toBe(false);
     expect(screen.getByRole('button', { name: 'Replay video' })).toBeInTheDocument();
 
     rerender(<PlayerVideo topicId={topicId} turn={turn + 1} />);

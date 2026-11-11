@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Popover } from 'radix-ui';
 import Markdown from 'react-markdown';
 
@@ -8,13 +8,30 @@ import styles from './play-header-messages.module.css';
 import { PlayerMessagesState } from '@/lib/store/types';
 import { isCombatMessage, isActualBattle } from '@/lib/runner/combat-log';
 import BattleReplay from './battle-replay';
+import { hasPlayerMessageContent } from './popup-gate-service';
+
+export interface PlayHeaderMessagesState {
+  isOpen: boolean;
+  handledMessages?: PlayerMessagesState;
+}
 
 export default function PlayHeaderMessages({
   playerMessages,
+  allowAutoOpen = true,
+  suppressOpen = false,
+  onStateChange,
 }: {
   playerMessages?: PlayerMessagesState;
+  allowAutoOpen?: boolean;
+  suppressOpen?: boolean;
+  onStateChange?: (state: PlayHeaderMessagesState) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [autoOpenedFor, setAutoOpenedFor] = useState<PlayerMessagesState | undefined>(undefined);
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
 
   const hasReplay = Boolean(
     playerMessages?.battleReplay && isActualBattle(playerMessages.battleReplay)
@@ -26,19 +43,44 @@ export default function PlayHeaderMessages({
     return rawMessages.filter(message => !isCombatMessage(message.text));
   }, [rawMessages, hasReplay]);
 
-  const hasContent = hasReplay || rawMessages.length > 0;
+  const hasContent = hasPlayerMessageContent(playerMessages);
+
+  if (!hasContent && isOpen) {
+    setIsOpen(false);
+  }
+
+  const effectiveOpen = hasContent && isOpen;
 
   useEffect(() => {
-    if (hasContent) {
-      const timer = setTimeout(() => setIsOpen(true), 500);
-      return () => clearTimeout(timer);
+    if (!hasContent || !allowAutoOpen || autoOpenedFor === playerMessages) {
+      return;
     }
-  }, [playerMessages, hasContent]);
+    const timer = setTimeout(() => {
+      setAutoOpenedFor(playerMessages);
+      setIsOpen(true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [playerMessages, hasContent, allowAutoOpen, autoOpenedFor]);
+
+  useEffect(() => {
+    onStateChangeRef.current?.({ isOpen: effectiveOpen, handledMessages: autoOpenedFor });
+  }, [effectiveOpen, autoOpenedFor]);
+
+  useEffect(() => () => {
+    onStateChangeRef.current?.({ isOpen: false });
+  }, []);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setAutoOpenedFor(playerMessages);
+    }
+    setIsOpen(nextOpen);
+  };
 
   return (
     <>
       {hasContent && (
-        <Popover.Root modal={true} open={isOpen} onOpenChange={setIsOpen}>
+        <Popover.Root modal={true} open={effectiveOpen && !suppressOpen} onOpenChange={handleOpenChange}>
           <Popover.Trigger asChild>
             <button className={styles.triggerButton + ' btn material-symbols-outlined'}>
               mail

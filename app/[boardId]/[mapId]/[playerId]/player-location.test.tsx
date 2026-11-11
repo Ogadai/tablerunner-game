@@ -19,6 +19,7 @@ import sync from './player-stats-sync.service';
 import playerStatsStore from './player-stats-store';
 import { makeGameState, makePlayer as makeTestPlayer, makeStats } from './test-fixtures';
 import { makePlayerSnapshot } from '../game/test-fixtures';
+import popupGateService from '../game/popup-gate-service';
 
 function makePlayer(overrides: Parameters<typeof makeTestPlayer>[0] = {}) {
   return makeTestPlayer({ id: 'barbarian', ...overrides });
@@ -395,5 +396,34 @@ describe('PlayerLocation', () => {
       icon: 'warning',
       text: 'Mage opened the chest, but it was a Mimic! Prepare for battle!',
     }));
+  });
+
+  it('registers an active popup warning while a mimic alert is open', async () => {
+    popupGateService.reset();
+    let resolveSwal!: () => void;
+    jest.mocked(Swal.fire).mockImplementationOnce(() => new Promise(resolve => {
+      resolveSwal = () => resolve({ isConfirmed: true, isDenied: false, isDismissed: false });
+    }));
+
+    await setup();
+    expect(popupGateService.hasActiveWarning()).toBe(false);
+
+    act(() => {
+      MimicTopicService.raiseMimicWarning('board-map', {
+        type: GameTopicMessageType.MimicWarning,
+        locationId: 1,
+        openerPlayerId: 'barbarian',
+        openerPlayerName: 'Barbarian',
+        monsterName: 'Mimic',
+        monsterType: 'mimic',
+      });
+    });
+
+    expect(popupGateService.hasActiveWarning()).toBe(true);
+
+    await act(async () => {
+      resolveSwal();
+    });
+    expect(popupGateService.hasActiveWarning()).toBe(false);
   });
 });

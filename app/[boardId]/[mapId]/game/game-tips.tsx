@@ -36,13 +36,14 @@ function seenTipCookie(gameId: string, tip: GameTip): string {
   return `tablerunner-tip-seen-${encodeURIComponent(gameId)}-${tip.turn}-${(hash >>> 0).toString(36)}${characterKey}`;
 }
 
-export default function GameTips({ gameId, turn, character, tips, reviewOpen, allowPopup, onReviewClose }: {
+export default function GameTips({ gameId, turn, character, tips, reviewOpen, allowPopup, suppressOpen = false, onReviewClose }: {
   gameId: string;
   turn: number;
   character?: string;
   tips: GameTip[];
   reviewOpen: boolean;
   allowPopup: boolean;
+  suppressOpen?: boolean;
   onReviewClose: () => void;
 }) {
   const [showTips, setShowTips] = useState(true);
@@ -54,7 +55,7 @@ export default function GameTips({ gameId, turn, character, tips, reviewOpen, al
     .sort((left, right) => left.turn - right.turn), [characterTips, turn]);
   const currentPopupTips = useMemo(() => popupTips.filter(tip => tip.turn === turn && characterTips.includes(tip)), [characterTips, popupTips, turn]);
   const automaticOpen = allowPopup && showTips && currentPopupTips.length > 0;
-  const open = reviewOpen || automaticOpen;
+  const open = !suppressOpen && (reviewOpen || automaticOpen);
   const visibleTips = reviewOpen ? reviewTips : currentPopupTips;
 
   useEffect(() => {

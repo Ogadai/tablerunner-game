@@ -31,6 +31,7 @@ import { getCombatStats, getPlayerActionsCosts, getPlayerActionsMagic } from '@/
 import WarlordRecruitment from './warlords-of-fire/warlord-recruitment';
 import WarlordParty from './warlords-of-fire/warlord-party';
 import LocationImage from './location-image';
+import popupGateService from '../game/popup-gate-service';
 
 export default function PlayerLocation(
   {
@@ -113,12 +114,17 @@ export default function PlayerLocation(
             const text = message.message || (message.openerPlayerId === playerId
               ? `You opened the chest, but it was a ${message.monsterName}! Prepare for battle!`
               : `${message.openerPlayerName} opened the chest, but it was a ${message.monsterName}! Prepare for battle!`);
-            await Swal.fire({
-              ...getSwalDefaultOptions(),
-              title: 'Mimic!',
-              icon: 'warning',
-              text,
-            });
+            const releaseWarning = popupGateService.enterWarning();
+            try {
+              await Swal.fire({
+                ...getSwalDefaultOptions(),
+                title: 'Mimic!',
+                icon: 'warning',
+                text,
+              });
+            } finally {
+              releaseWarning();
+            }
           }
         }),
       ];

@@ -11,6 +11,9 @@ import gameStateSyncService from './game-state-sync-service';
 import readyStateSyncService from './ready-state-sync-service';
 import PlayHeader from './play-header';
 import PlayHeaderMenu from './play-header-menu';
+import PlayHeaderMessages from './play-header-messages';
+import CauldronQuests from '../[playerId]/cauldron-of-fire/cauldron-quests';
+import popupGateService from './popup-gate-service';
 import { makeCharacter, makeGameState, makePlayer, makePlayerSnapshot } from './test-fixtures';
 
 jest.mock('next/navigation', () => ({ useParams: jest.fn(), useRouter: jest.fn() }));
@@ -25,10 +28,12 @@ jest.mock('./play-header-menu', () => ({
   default: jest.fn<ReturnType<typeof PlayHeaderMenu>, [ComponentProps<typeof PlayHeaderMenu>]>(() => <div>Game menu</div>),
 }));
 jest.mock('./play-header-messages', () => ({
-  __esModule: true, default: () => <div>Player messages</div>,
+  __esModule: true,
+  default: jest.fn<ReturnType<typeof PlayHeaderMessages>, [ComponentProps<typeof PlayHeaderMessages>]>(() => <div>Player messages</div>),
 }));
 jest.mock('../[playerId]/cauldron-of-fire/cauldron-quests', () => ({
-  __esModule: true, default: () => <div>Player quests</div>,
+  __esModule: true,
+  default: jest.fn<ReturnType<typeof CauldronQuests>, [ComponentProps<typeof CauldronQuests>]>(() => <div>Player quests</div>),
 }));
 
 describe('PlayHeader', () => {
@@ -319,5 +324,64 @@ describe('PlayHeader', () => {
     view.unmount();
     await act(async () => reject(new Error('aborted')));
     expect(error).not.toHaveBeenCalled();
+  });
+
+  it('gates messages, quests, and tips sequentially in priority order', async () => {
+    popupGateService.reset();
+    const cauldronGame = makeGameState({ gameId: 'cauldronfire', players: [makePlayer()] });
+    const messages = { messages: [{ text: 'Battle log entry' }] };
+    const snapshot = makePlayerSnapshot({ gameState: cauldronGame, messages });
+    jest.mocked(fetchPlayerSnapshot).mockResolvedValue(snapshot);
+
+    let releaseWarning!: () => void;
+    act(() => {
+      releaseWarning = popupGateService.enterWarning();
+    });
+
+    await mount();
+
+    // 1. While a warning is active, messages, quests, and tips are all blocked.
+    expect(jest.mocked(PlayHeaderMessages).mock.calls.at(-1)![0]).toMatchObject({
+      allowAutoOpen: false,
+      suppressOpen: true,
+    });
+    expect(jest.mocked(CauldronQuests).mock.calls.at(-1)![0]).toMatchObject({
+      allowAutoOpen: false,
+      suppressOpen: true,
+    });
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0]).toMatchObject({
+      allowAutoTips: false,
+    });
+
+    // 2. Warning closes: messages may auto-open, while quests and tips remain blocked by pending messages.
+    act(() => releaseWarning());
+    expect(jest.mocked(PlayHeaderMessages).mock.calls.at(-1)![0]).toMatchObject({
+      allowAutoOpen: true,
+      suppressOpen: false,
+    });
+    expect(jest.mocked(CauldronQuests).mock.calls.at(-1)![0]).toMatchObject({
+      allowAutoOpen: false,
+      suppressOpen: false,
+    });
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0]).toMatchObject({
+      allowAutoTips: false,
+    });
+
+    // 3. Messages opens and is dismissed: quests may now auto-open, while tips wait if quests opens.
+    const onMessagesStateChange = jest.mocked(PlayHeaderMessages).mock.calls.at(-1)![0].onStateChange!;
+    act(() => onMessagesStateChange({ isOpen: true, handledMessages: messages }));
+    expect(jest.mocked(CauldronQuests).mock.calls.at(-1)![0].allowAutoOpen).toBe(false);
+
+    act(() => onMessagesStateChange({ isOpen: false, handledMessages: messages }));
+    expect(jest.mocked(CauldronQuests).mock.calls.at(-1)![0].allowAutoOpen).toBe(true);
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].allowAutoTips).toBe(true);
+
+    // 4. While quests is open, tips remain blocked until quests closes.
+    const onQuestsOpenChange = jest.mocked(CauldronQuests).mock.calls.at(-1)![0].onOpenChange!;
+    act(() => onQuestsOpenChange(true));
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].allowAutoTips).toBe(false);
+
+    act(() => onQuestsOpenChange(false));
+    expect(jest.mocked(PlayHeaderMenu).mock.calls.at(-1)![0].allowAutoTips).toBe(true);
   });
 });

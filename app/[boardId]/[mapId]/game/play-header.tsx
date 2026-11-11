@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from 'next/navigation';
 import gameStateSyncService from "./game-state-sync-service";
 import readyStateSyncService from "./ready-state-sync-service";
@@ -7,16 +7,17 @@ import useGameStateSnapshot from './use-game-state-snapshot';
 import useReadyStateSnapshot from './use-ready-state-snapshot';
 import PlayHeaderMenu from './play-header-menu';
 import styles from './play-header.module.css';
-import { PlayerState } from "@/lib/store/types";
+import { PlayerMessagesState, PlayerState } from "@/lib/store/types";
 import { getGameTopicId } from "@/lib/message-types";
 import { getGameState } from "@/lib/store/gameState";
 import { getPlayerReadyState } from "@/lib/store/playerReadyState";
 import { setPlayerReady } from "@/lib/store/playerReadyState";
 import GameTopicService from '../../../message-bus/game-topic-service';
 import PlayerReadyTopicService from '../../../message-bus/playerReady-topic-service';
-import PlayHeaderMessages from "./play-header-messages";
+import PlayHeaderMessages, { type PlayHeaderMessagesState } from "./play-header-messages";
 import CauldronQuests from "../[playerId]/cauldron-of-fire/cauldron-quests";
 import { fetchPlayerSnapshot } from './player-snapshot';
+import { hasPlayerMessageContent, useHasActivePopupWarning } from './popup-gate-service';
 
 export default function PlayHeader(
   { boardId, mapId, onReadyCountdownChange }
@@ -30,6 +31,38 @@ export default function PlayHeader(
   const params = useParams();
   const playerId = params.playerId?.toString() || '';
   const topicId = getGameTopicId(boardId, mapId);
+  const playerKey = `${boardId}:${mapId}:${playerId}`;
+  const hasActiveWarning = useHasActivePopupWarning();
+  const [messagesState, setMessagesState] = useState<{
+    key: string;
+    isOpen: boolean;
+    handledMessages?: PlayerMessagesState;
+  }>({ key: '', isOpen: false });
+  const [questsState, setQuestsState] = useState<{ key: string; isOpen: boolean }>({ key: '', isOpen: false });
+
+  const handleMessagesStateChange = useCallback((state: PlayHeaderMessagesState) => {
+    setMessagesState(prev => {
+      if (!state.isOpen && prev.key !== '' && prev.key !== playerKey) {
+        return prev;
+      }
+      return {
+        key: playerKey,
+        isOpen: state.isOpen,
+        handledMessages: 'handledMessages' in state
+          ? state.handledMessages
+          : (prev.key === playerKey ? prev.handledMessages : undefined),
+      };
+    });
+  }, [playerKey]);
+
+  const handleQuestsOpenChange = useCallback((isOpen: boolean) => {
+    setQuestsState(prev => {
+      if (!isOpen && prev.key !== '' && prev.key !== playerKey) {
+        return prev;
+      }
+      return { key: playerKey, isOpen };
+    });
+  }, [playerKey]);
 
   useEffect(() => {
     const players = gameState?.players || [];
@@ -177,21 +210,41 @@ export default function PlayHeader(
       router.push(`/${boardId}/${mapId}/${player.id}`);
     };
   
+  const currentPlayerMessages = playerSnapshot?.playerId === playerId ? playerSnapshot.messages : undefined;
+  const activeMessagesState = messagesState.key === playerKey
+    ? messagesState
+    : { key: playerKey, isOpen: false, handledMessages: undefined };
+  const messagesBlocking = playerId.length > 0 && (
+    activeMessagesState.isOpen ||
+    (hasPlayerMessageContent(currentPlayerMessages) && activeMessagesState.handledMessages !== currentPlayerMessages)
+  );
+  const questsOpen = playerId.length > 0 &&
+    gameState.gameId === 'cauldronfire' &&
+    questsState.key === playerKey &&
+    questsState.isOpen;
+
   return (
     <div className={styles.headerContainerGame}>
       <div className={styles.headerLeftButtons}>
         { (gameState && playerId.length > 0) &&
-          <PlayHeaderMessages key={`${boardId}:${mapId}:${playerId}`} playerMessages={
-            playerSnapshot?.playerId === playerId ? playerSnapshot.messages : undefined
-          } />
+          <PlayHeaderMessages
+            key={playerKey}
+            playerMessages={currentPlayerMessages}
+            allowAutoOpen={!hasActiveWarning}
+            suppressOpen={hasActiveWarning}
+            onStateChange={handleMessagesStateChange}
+          />
         }
         { (gameState && playerId.length > 0 && gameState.gameId === 'cauldronfire') &&
           <CauldronQuests
-            key={`quests:${boardId}:${mapId}:${playerId}`}
+            key={`quests:${playerKey}`}
             boardId={boardId}
             mapId={mapId}
             playerId={playerId}
             gameState={gameState}
+            allowAutoOpen={!hasActiveWarning && !messagesBlocking}
+            suppressOpen={hasActiveWarning}
+            onOpenChange={handleQuestsOpenChange}
           />
         }
       </div>
@@ -226,6 +279,7 @@ export default function PlayHeader(
         gameState={gameState}
         snapshot={playerSnapshot?.playerId === playerId && playerSnapshot.gameState === gameState
           ? playerSnapshot : undefined}
+        allowAutoTips={!hasActiveWarning && !messagesBlocking && !questsOpen}
         onSnapshotChange={snapshot => {
           gameStateSyncService.set(boardId, mapId, snapshot.gameState || undefined, snapshot);
         }}
