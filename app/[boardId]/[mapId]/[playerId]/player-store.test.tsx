@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { buyAndSellInStore, getStoreInventoryState } from '@/lib/store/playerInventory';
 import PlayerStore from './player-store';
 import sync from './player-stats-sync.service';
@@ -61,5 +61,55 @@ describe('PlayerStore', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Buy' }));
     await waitFor(() => expect(buyAndSellInStore).toHaveBeenCalledTimes(1));
     expect(sync.updateInventory).not.toHaveBeenCalled();
+  });
+
+  it('shows equipped stats comparison in both Buy and Sell shop tabs', async () => {
+    jest.mocked(getStoreInventoryState).mockResolvedValue({
+      success: true,
+      data: { items: [{ itemId: 'swordInferno', count: 1 }] },
+    });
+    render(<PlayerStore
+      boardId="board"
+      mapId="map"
+      player={makePlayer({
+        coins: 300,
+        equipment: [
+          { id: 'steel-1', type: 'swordSteel' },
+          { id: 'rusty-1', type: 'swordRusty' },
+        ],
+        equipped: { weapon: 'steel-1' },
+      })}
+      usedItemIds={[]}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Inferno Sword' }));
+    const headers = screen.getAllByRole('columnheader');
+    expect(within(headers[0]).getByText('250')).toBeInTheDocument();
+    expect(headers[1]).toHaveTextContent('Equipped');
+    expect(headers[2]).toHaveTextContent('This Item');
+    expect(screen.getAllByRole('row').slice(1).map(row =>
+      within(row).getAllByRole('cell').map(cell => cell.textContent),
+    )).toEqual([
+      ['attack', '+2', '+10'],
+      ['damage', '+2', '+12'],
+      ['magic', '-', '+5'],
+    ]);
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('tab', { name: 'Sell' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rusty Sword' }));
+    expect(screen.getByRole('columnheader', { name: 'Equipped' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'This Item' })).toBeInTheDocument();
+    expect(screen.getAllByRole('row').slice(1).map(row =>
+      within(row).getAllByRole('cell').map(cell => cell.textContent),
+    )).toEqual([
+      ['attack', '+2', '+1'],
+      ['damage', '+2', '+1'],
+    ]);
+
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button', { name: 'Steel Sword' }));
+    expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { allItems } from '@/lib/games/items';
 import { SpellIds } from '@/lib/games/spells';
 import { type ConsumableItemDef, PlayerItemType } from '@/lib/games/types';
@@ -166,5 +166,86 @@ describe('InventoryItem', () => {
     setup({ isUsed: true, onSell: jest.fn() });
     expect(screen.queryByRole('button', { name: 'Sell' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Drop' })).not.toBeInTheDocument();
+  });
+
+  it('shows standard single-item stats without an equipped comparison column when none is equipped', () => {
+    setup({ item: { id: 'inferno-1', type: 'swordInferno' } });
+    expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument();
+    const rows = screen.getAllByRole('row');
+    expect(rows.map(row => within(row).getAllByRole('cell').map(cell => cell.textContent))).toEqual([
+      ['attack', '+10'],
+      ['damage', '+12'],
+      ['magic', '+5'],
+    ]);
+    for (const row of rows) {
+      const valueCell = within(row).getAllByRole('cell')[1];
+      expect(valueCell).toHaveClass('statValue');
+      expect(valueCell).not.toHaveClass('statWorse', 'statEqual');
+    }
+  });
+
+  it('does not show a comparison column when the item itself is equipped', () => {
+    setup({
+      item: { id: 'steel-1', type: 'swordSteel' },
+      isEquipped: true,
+      equippedItem: { id: 'steel-1', type: 'swordSteel' },
+    });
+    expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument();
+  });
+
+  it('renders an Equipped comparison column with extra rows and relative stat colors', () => {
+    setup({
+      item: { id: 'inferno-1', type: 'swordInferno' },
+      equippedItem: { id: 'steel-1', type: 'swordSteel' },
+    });
+
+    const headers = screen.getAllByRole('columnheader');
+    expect(headers).toHaveLength(3);
+    expect(within(headers[0]).getByText('250')).toBeInTheDocument();
+    expect(headers[1]).toHaveTextContent('Equipped');
+    expect(headers[2]).toHaveTextContent('This Item');
+
+    const bodyRows = screen.getAllByRole('row').slice(1);
+    expect(bodyRows.map(row => within(row).getAllByRole('cell').map(cell => cell.textContent))).toEqual([
+      ['attack', '+2', '+10'],
+      ['damage', '+2', '+12'],
+      ['magic', '-', '+5'],
+    ]);
+    for (const row of bodyRows) {
+      const [, equippedCell, itemCell] = within(row).getAllByRole('cell');
+      expect(equippedCell).toHaveClass('statWorse');
+      expect(itemCell).toHaveClass('statBetter');
+    }
+  });
+
+  it('includes extra rows from the equipped item, standard color for matching stats, and compares negative stats', () => {
+    setup({
+      item: { id: 'dagger-1', type: 'dagger' },
+      equippedItem: { id: 'steel-1', type: 'swordSteel' },
+    });
+
+    const daggerRows = screen.getAllByRole('row').slice(1);
+    expect(daggerRows.map(row => within(row).getAllByRole('cell').map(cell => cell.textContent))).toEqual([
+      ['attack', '+2', '+2'],
+      ['damage', '+2', '+1'],
+      ['speed', '-', '+1'],
+    ]);
+    expect(within(daggerRows[0]).getAllByRole('cell')[1]).toHaveClass('statEqual');
+    expect(within(daggerRows[0]).getAllByRole('cell')[2]).toHaveClass('statEqual');
+    expect(within(daggerRows[1]).getAllByRole('cell')[1]).toHaveClass('statBetter');
+    expect(within(daggerRows[1]).getAllByRole('cell')[2]).toHaveClass('statWorse');
+    expect(within(daggerRows[2]).getAllByRole('cell')[1]).toHaveClass('statWorse');
+    expect(within(daggerRows[2]).getAllByRole('cell')[2]).toHaveClass('statBetter');
+
+    // Negative stat (-1) is smaller than missing stat (0 / '-')
+    setup({
+      item: { id: 'hammer-1', type: 'warhammer' },
+      equippedItem: { id: 'steel-1', type: 'swordSteel' },
+    });
+    const hammerRows = screen.getAllByRole('row').slice(1);
+    const speedRow = hammerRows.find(row => within(row).getAllByRole('cell')[0].textContent === 'speed')!;
+    expect(within(speedRow).getAllByRole('cell').map(c => c.textContent)).toEqual(['speed', '-', '-1']);
+    expect(within(speedRow).getAllByRole('cell')[1]).toHaveClass('statBetter');
+    expect(within(speedRow).getAllByRole('cell')[2]).toHaveClass('statWorse');
   });
 });

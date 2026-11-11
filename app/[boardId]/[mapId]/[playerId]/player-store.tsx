@@ -5,9 +5,8 @@ import { Dialog } from 'radix-ui';
 import tabStyles from './tabs.module.css';
 import styles from './player-store.module.css';
 import { buyAndSellInStore, getStoreInventoryState } from '@/lib/store/playerInventory';
-import { PlayerInventoryEquipSlots, PlayerState, StoreInventoryState } from '@/lib/store/types';
-import InventoryItem from './inventory-item';
-import { allItems } from '@/lib/games/items';
+import { PlayerState, StoreInventoryState } from '@/lib/store/types';
+import InventoryItem, { getEquippedItemInSlot } from './inventory-item';
 import CoinDisplay from './coin-display';
 import { PlayerItem } from '@/lib/games/types';
 import playerStatsSyncService from './player-stats-sync.service';
@@ -52,11 +51,6 @@ export default function PlayerStore({
       getStoreState();
     }
   }
-
-  const isEquipped = (item: NonNullable<PlayerState['equipment']>[number]) => {
-    const slot = allItems[item.type].type as keyof PlayerInventoryEquipSlots;
-    return player.equipped[slot] === item.id;
-  };
 
   const onBuyItem = async (itemType: string) => {
     const response = await buyAndSellInStore(boardId, mapId, player.id, player.location.id, {
@@ -120,6 +114,7 @@ export default function PlayerStore({
                     isDead={player.health === 0}
                     item={{ id: storeItem.itemId, type: storeItem.itemId }}
                     isEquipped={false}
+                    equippedItem={getEquippedItemInSlot(player.equipped, player.equipment, storeItem.itemId)}
                     isUsed={false}
                     actionPointsLeft={0}
                     baseStats={player.baseStats!}
@@ -129,20 +124,25 @@ export default function PlayerStore({
                   />
                 );
               })}
-              {activeTab === 'sell' && (player.equipment || []).map(item => (
-                <InventoryItem
-                  key={item.id}
-                  isSelf={false}
-                  isDead={player.health === 0}
-                  item={item}
-                  isEquipped={isEquipped(item)}
-                  isUsed={usedItemIds.includes(item.id || '')}
-                  actionPointsLeft={0}
-                  baseStats={player.baseStats!}
-                  characterType={player.id}
-                  onSell={() => onSellItem(item)}
-                />
-              ))}
+              {activeTab === 'sell' && (player.equipment || []).map(item => {
+                const equippedInSlot = getEquippedItemInSlot(player.equipped, player.equipment, item.type);
+                const itemEquipped = equippedInSlot?.id === item.id;
+                return (
+                  <InventoryItem
+                    key={item.id}
+                    isSelf={false}
+                    isDead={player.health === 0}
+                    item={item}
+                    isEquipped={itemEquipped}
+                    equippedItem={itemEquipped ? undefined : equippedInSlot}
+                    isUsed={usedItemIds.includes(item.id || '')}
+                    actionPointsLeft={0}
+                    baseStats={player.baseStats!}
+                    characterType={player.id}
+                    onSell={() => onSellItem(item)}
+                  />
+                );
+              })}
             </div>
           </div>
           <Dialog.Close className="DialogClose btn-secondary material-symbols-outlined" aria-label="Close">

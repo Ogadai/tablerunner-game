@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { NOTHING_EQUPPED } from '@/lib/store/types';
 import Inventory from './inventory';
 import { makePlayer } from './test-fixtures';
 
@@ -103,5 +104,42 @@ describe('Inventory', () => {
     fireEvent.click(buttons[3]);
     fireEvent.click(screen.getByRole('button', { name: 'Equip' }));
     expect(onEquipItem).toHaveBeenCalledWith(items[1]);
+  });
+
+  it('compares an unequipped item against the item equipped in the same slot', () => {
+    const items = [
+      { id: 'steel-1', type: 'swordSteel' },
+      { id: 'inferno-1', type: 'swordInferno' },
+      { id: 'helm-1', type: 'helmetLeather' },
+    ];
+    render(<Inventory
+      player={makePlayer({ equipment: items, equipped: { weapon: 'steel-1', helmet: NOTHING_EQUPPED } })}
+      isSelf
+      isDead={false}
+      actionPointsLeft={20}
+      usedItemIds={[]}
+      onEquipItem={jest.fn()}
+      onUseItem={jest.fn()}
+      onDropItem={jest.fn()}
+      onLearnScroll={jest.fn()}
+    />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Inferno Sword' }));
+    expect(screen.getByRole('columnheader', { name: 'Equipped' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'This Item' })).toBeInTheDocument();
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(rows.map(row => within(row).getAllByRole('cell').map(cell => cell.textContent))).toEqual([
+      ['attack', '+2', '+10'],
+      ['damage', '+2', '+12'],
+      ['magic', '-', '+5'],
+    ]);
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button', { name: 'Steel Sword' }));
+    expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button', { name: 'Leather Hood' }));
+    expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument();
   });
 });

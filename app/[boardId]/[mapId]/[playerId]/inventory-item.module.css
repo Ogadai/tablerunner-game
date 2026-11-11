@@ -38,8 +38,9 @@ p.itemClassMismatch {
 }
 
 .itemHeaderCoins {
+  margin-top: 8px;
   margin-bottom: 8px;
-  margin-left: auto;
+  margin-right: auto;
   width: fit-content;
 }
 
@@ -65,30 +66,63 @@ p.itemClassMismatch {
   min-width: 150px;
 }
 
-.itemPopover ul {
-  margin: 0;
-  padding-left: 18px;
-}
-
 .itemPopover p {
   margin: 0;
 }
 
-.statEntry {
-  display: flex;
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .statName {
-  flex: 1 1 auto;
+  min-width: 120px;
+  text-align: left;
   text-transform: capitalize;
+  padding: 0 8px 0 8px;
+}
+
+.statColumnHeader {
+  text-align: center;
+  padding: 0 4px 6px;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-size: 0.9em;
+
+  & > div {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+.equippedHeader {
+  color: var(--color-text-muted);
+  font-weight: normal;
 }
 
 .statValue {
-  width: 40px;
+  min-width: 40px;
   text-align: center;
-  flex: 0 0 auto;
-  font-weight: bold;
+  padding: 0 4px;
+  white-space: nowrap;
   color: var(--color-success);
+}
+
+.statValueThis {
+  font-weight: bold;
+}
+
+.statBetter {
+  color: var(--color-success);
+}
+
+.statWorse {
+  color: var(--color-error);
+}
+
+.statEqual {
+  color: inherit;
 }
 
 .itemButtons {

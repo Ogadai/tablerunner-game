@@ -1,9 +1,8 @@
-import { INamedTarget, PlayerInventoryEquipSlots } from '@/lib/store/types';
+import { INamedTarget } from '@/lib/store/types';
 import styles from './inventory-item.module.css';
 import { PlayerItem } from '@/lib/games/types';
-import { allItems } from '@/lib/games/items';
 import { getCharacterType } from '@/lib/games/spells';
-import InventoryItem from './inventory-item';
+import InventoryItem, { getEquippedItemInSlot } from './inventory-item';
 
 export default function Inventory({
   player,
@@ -32,9 +31,8 @@ export default function Inventory({
   onLearnScroll: (item: PlayerItem) => void;
   usedItemIds: string[];
 }) {
-  const isEquipped = (item: PlayerItem) => {
-    return player.equipped[allItems[item.type].type as keyof PlayerInventoryEquipSlots] === item.id;
-  };
+  const isEquipped = (item: PlayerItem) =>
+    getEquippedItemInSlot(player.equipped, player.equipment, item.type)?.id === item.id;
   const isUsed = (item: PlayerItem) => {
     return usedItemIds.includes(item.id || '');
   };
@@ -43,13 +41,16 @@ export default function Inventory({
   return (
     <div className={styles.inventoryGrid}>
       {orderedEquipment.map(item => {
+        const equippedInSlot = getEquippedItemInSlot(player.equipped, player.equipment, item.type);
+        const itemEquipped = equippedInSlot?.id === item.id;
         return <InventoryItem
           isSelf={isSelf}
           disabled={disabled}
           isDead={isDead}
           key={`${item.id}}`}
           item={item}
-          isEquipped={isEquipped(item)}
+          isEquipped={itemEquipped}
+          equippedItem={itemEquipped ? undefined : equippedInSlot}
           isUsed={isUsed(item)}
           actionPointsLeft={actionPointsLeft}
           baseStats={player.baseStats!}
