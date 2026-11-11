@@ -52,7 +52,8 @@ it('derives starting NPC level, XP points, and allocated characterStats from hir
   const lowCostLevel = calculateNpcLevelFromCost(45);
   const highCostLevel = calculateNpcLevelFromCost(80);
   expect(lowCostLevel).toBe(1);
-  expect(highCostLevel).toBeGreaterThan(lowCostLevel);
+  expect(highCostLevel).toBe(4);
+  expect(calculateNpcLevelFromCost(200)).toBe(13);
 
   const prog = createNpcProgression('barbarian', 80, [], {});
   expect(prog.level).toBe(highCostLevel);

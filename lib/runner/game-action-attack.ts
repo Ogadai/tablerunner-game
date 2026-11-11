@@ -286,7 +286,7 @@ export function genericAttackMonster(params: BaseParams, player: INamedTarget, a
           && (npc.masterId !== null || !!npc.scriptedActions)
         );
         if (eligibleNpcs.length > 0) {
-          const npcPoints = Math.ceil(totalPoints / Math.max(1, players.length));
+          const npcPoints = Math.round((totalPoints * 2) / (3 * Math.max(1, players.length)));
           for (const npc of eligibleNpcs) {
             npc.points = (npc.points ?? 0) + npcPoints;
           }

@@ -525,12 +525,13 @@ describe('NPC battle experience sharing', () => {
     hit();
     actionAttack(params, player, attackTarget(monster.id));
 
-    const expectedPerCombatant = Math.ceil(expectedSoloXp / 2);
-    expect(player.points).toBe(expectedPerCombatant);
-    expect(secondPlayer.points).toBe(expectedPerCombatant);
-    expect(hiredNpc.points).toBe(expectedPerCombatant);
-    expect(escortNpc.points).toBe(expectedPerCombatant);
-    expect(warlordNpc.points).toBe(expectedPerCombatant);
+    const expectedPerPlayer = Math.ceil(expectedSoloXp / 2);
+    const expectedPerNpc = Math.round((expectedSoloXp * 2) / (3 * 2));
+    expect(player.points).toBe(expectedPerPlayer);
+    expect(secondPlayer.points).toBe(expectedPerPlayer);
+    expect(hiredNpc.points).toBe(expectedPerNpc);
+    expect(escortNpc.points).toBe(expectedPerNpc);
+    expect(warlordNpc.points).toBe(expectedPerNpc);
 
     expect(summonNpc.points).toBe(0);
     expect(zombieNpc.points).toBe(0);

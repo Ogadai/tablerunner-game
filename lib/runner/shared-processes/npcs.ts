@@ -81,7 +81,7 @@ function pickName(
 }
 
 export function calculateNpcLevelFromCost(cost: number): number {
-  return Math.max(1, 1 + Math.round((cost - 45) / 7));
+  return Math.max(1, 1 + Math.round((cost - 45) / 13));
 }
 
 export function createNpcProgression(
