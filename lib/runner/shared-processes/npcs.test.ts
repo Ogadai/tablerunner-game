@@ -90,3 +90,81 @@ it.each([
   expect(highLevel).toHaveLength(expectedHigh);
   expect(Math.max(...highLevel.map(id => spells[id].intelligence))).toBe(maxInt);
 });
+
+describe('late-game NPC respawning', () => {
+  it('does not respawn on turn 0 or non-interval turns', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    const params = createParams();
+
+    for (const turn of [0, 50, 99, 101]) {
+      params.gameState.turn = turn;
+      await npcs.executeForTurn!(params);
+      expect(params.gameState.npcs).toHaveLength(0);
+    }
+  });
+
+  it('replenishes depleted spawn locations at turn 100 with 120-250 coin NPCs and skips stocked locations', async () => {
+    const { calculateNpcLevelFromCost } = await import('./npcs');
+    const { createNpc } = await import('../test-support/fixtures');
+    jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    const params = createParams();
+    await npcs.setup!(params);
+
+    // Keep location 121 stocked with 3 un-hired alive NPCs; deplete all other locations
+    // (location 110 has a hired NPC, a dead un-hired NPC, and a zero-cost quest NPC, none of which count).
+    params.gameState.npcs = [
+      ...params.gameState.npcs.filter(n => n.location.id === 121).slice(0, 3),
+      createNpc({ id: 'npc-hired', masterId: 'p1', location: { id: 110, description: '', move: [] }, hireCost: 100 }),
+      createNpc({ id: 'npc-dead', masterId: null, health: 0, location: { id: 110, description: '', move: [] }, hireCost: 100 }),
+      createNpc({ id: 'npc-quest', masterId: null, health: 10, location: { id: 110, description: '', move: [] }, hireCost: 0 }),
+    ];
+    // Ensure at least 3 un-hired NPCs exist at 121 even if setup rolled 3
+    while (params.gameState.npcs.filter(n => n.location.id === 121).length < 3) {
+      params.gameState.npcs.push(createNpc({
+        id: `npc-121-${params.gameState.npcs.length}`,
+        masterId: null,
+        location: { id: 121, description: '', move: [] },
+        hireCost: 100,
+      }));
+    }
+    const initialIds = new Set(params.gameState.npcs.map(n => n.id));
+    const countAt121Before = params.gameState.npcs.filter(n => n.location.id === 121).length;
+
+    params.gameState.turn = 100;
+    await npcs.executeForTurn!(params);
+
+    expect(params.gameState.npcs.filter(n => n.location.id === 121)).toHaveLength(countAt121Before);
+    const spawned = params.gameState.npcs.filter(n => !initialIds.has(n.id));
+    expect(spawned.length).toBeGreaterThanOrEqual(8); // mins of 110(2), 91(1), 58(2), 22(1), 23(2)
+    expect(new Set(spawned.map(n => n.id)).size).toBe(spawned.length);
+
+    for (const npc of spawned) {
+      expect(npc.masterId).toBeNull();
+      expect(npc.hireCost).toBeGreaterThanOrEqual(120);
+      expect(npc.hireCost).toBeLessThanOrEqual(250);
+      expect(npc.level).toBe(calculateNpcLevelFromCost(npc.hireCost));
+      expect(npc.level).toBeGreaterThanOrEqual(7);
+    }
+  });
+
+  it('scales NPC cost and level higher at turn 200 than turn 100 and avoids ID collisions', async () => {
+    const { createNpc } = await import('../test-support/fixtures');
+    jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    const params = createParams();
+    params.gameState.npcs = [
+      createNpc({ id: 'npc-2', masterId: 'p1', location: { id: 1, description: '', move: [] }, hireCost: 80 }),
+    ];
+
+    params.gameState.turn = 200;
+    await npcs.executeForTurn!(params);
+
+    const spawned = params.gameState.npcs.filter(n => n.id !== 'npc-2');
+    expect(spawned.length).toBeGreaterThan(0);
+    expect(new Set(params.gameState.npcs.map(n => n.id)).size).toBe(params.gameState.npcs.length);
+    for (const npc of spawned) {
+      expect(npc.hireCost).toBeGreaterThanOrEqual(180);
+      expect(npc.hireCost).toBeLessThanOrEqual(350);
+      expect(npc.level).toBeGreaterThanOrEqual(11);
+    }
+  });
+});

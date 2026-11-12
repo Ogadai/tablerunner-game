@@ -66,6 +66,21 @@ const NPC_TYPES: ('barbarian' | 'witch' | 'ranger' | 'mage')[] = ['barbarian', '
 const NPC_RACES: ('human' | 'elf' | 'dwarf')[] = ['human', 'elf', 'dwarf'];
 const NPC_GENDERS: ('male' | 'female')[] = ['male', 'female'];
 
+const RESPAWN_INTERVAL_TURNS = 100;
+
+interface CostRange {
+  from: number;
+  to: number;
+}
+
+function getScaledCostRange(turn: number): CostRange {
+  const tier = Math.floor(turn / RESPAWN_INTERVAL_TURNS);
+  return {
+    from: 60 + tier * 60,
+    to: 150 + tier * 100,
+  };
+}
+
 function pickName(
   params: BaseParams,
   type: 'barbarian' | 'witch' | 'ranger' | 'mage',
@@ -77,7 +92,7 @@ function pickName(
     && !params.gameState.npcs.find(npc => npc.name === n.name)
   );
 
-  return availableNames && availableNames[Math.floor(Math.random() * availableNames.length)].name;
+  return availableNames[Math.floor(Math.random() * availableNames.length)]?.name;
 }
 
 export function calculateNpcLevelFromCost(cost: number): number {
@@ -128,7 +143,15 @@ export function createNpcProgression(
   };
 }
 
-function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
+function nextNpcId(params: BaseParams): string {
+  let nextIndex = params.gameState.npcs.length + 1;
+  while (params.gameState.npcs.some(n => n.id === `npc-${nextIndex}`)) {
+    nextIndex++;
+  }
+  return `npc-${nextIndex}`;
+}
+
+function generateNpc(params: BaseParams, mapNpc: IMapNpc, costRange: CostRange = mapNpc): NPCState | null {
   const magicUser = Math.random() < 0.33;
   const type = NPC_TYPES[Math.floor(Math.random() * 2 + (magicUser ? 2 : 0))];
   const race = NPC_RACES[Math.floor(Math.random() * NPC_RACES.length)];
@@ -142,9 +165,9 @@ function generateNpc(params: BaseParams, mapNpc: IMapNpc): NPCState | null {
 
   const iconXY = iconList[Math.floor(Math.random() * iconList.length)].iconXY;
 
-  const cost = mapNpc.from + Math.floor(Math.random() * (mapNpc.to - mapNpc.from + 1));
+  const cost = costRange.from + Math.floor(Math.random() * (costRange.to - costRange.from + 1));
 
-  const npcId = `npc-${params.gameState.npcs.length + 1}`;
+  const npcId = nextNpcId(params);
   const name = pickName(params, type, race, gender);
   if (!name) {
     return null;
@@ -307,5 +330,29 @@ export const npcs: ProcessRunner = {
         }
       }
     }
-  }
+  },
+
+  async executeForTurn(params: BaseParams): Promise<void> {
+    const turn = params.gameState.turn;
+    if (turn <= 0 || turn % RESPAWN_INTERVAL_TURNS !== 0) {
+      return;
+    }
+
+    const costRange = getScaledCostRange(turn);
+    for (const mapNpc of MAP_NPCS) {
+      const unhiredAtLocation = params.gameState.npcs.filter(
+        npc => npc.location.id === mapNpc.location && npc.masterId === null && npc.health > 0 && npc.hireCost > 0,
+      ).length;
+      if (unhiredAtLocation < mapNpc.min) {
+        const targetCount = mapNpc.min + Math.floor(Math.random() * (mapNpc.max - mapNpc.min + 1));
+        const toSpawn = targetCount - unhiredAtLocation;
+        for (let n = 0; n < toSpawn; n++) {
+          const npc = generateNpc(params, mapNpc, costRange);
+          if (npc) {
+            params.gameState.npcs.push(npc);
+          }
+        }
+      }
+    }
+  },
 }
