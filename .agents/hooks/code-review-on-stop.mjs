@@ -6,12 +6,14 @@ import path from "node:path";
 
 const STATE_FILE = path.join(os.tmpdir(), "agy-code-review-stop-hook.json");
 const MAX_STATE_ENTRIES = 50;
+const COMPLEX_FILE_THRESHOLD = 6;
+const COMPLEX_LINE_THRESHOLD = 300;
 
 /**
- * Compute a deterministic fingerprint of all staged, unstaged, and untracked
- * changes in the workspace so we only re-trigger review when changes are new.
+ * Compute a deterministic fingerprint and lightweight complexity metrics for all
+ * staged, unstaged, and untracked changes in the workspace.
  */
-function getWorkingTreeFingerprint(workspaceDir) {
+function inspectWorkingTree(workspaceDir) {
   const statusOutput = execFileSync("git", ["status", "--porcelain"], {
     cwd: workspaceDir,
     encoding: "utf8",
@@ -26,6 +28,9 @@ function getWorkingTreeFingerprint(workspaceDir) {
   hash.update(statusOutput);
   hash.update("\0");
 
+  const statusLines = statusOutput.split(/\r?\n/).filter(Boolean);
+  let changedLines = 0;
+
   for (const args of [
     ["diff", "--cached"],
     ["diff"],
@@ -38,6 +43,14 @@ function getWorkingTreeFingerprint(workspaceDir) {
         stdio: ["ignore", "pipe", "ignore"],
       });
       hash.update(diff);
+      for (const line of diff.split(/\r?\n/)) {
+        if (
+          (line.startsWith("+") && !line.startsWith("+++")) ||
+          (line.startsWith("-") && !line.startsWith("---"))
+        ) {
+          changedLines += 1;
+        }
+      }
     } catch {
       // Ignore diff errors on binary/large files; status still contributes.
     }
@@ -45,7 +58,7 @@ function getWorkingTreeFingerprint(workspaceDir) {
   }
 
   // Include untracked files so edits to new files update the fingerprint.
-  for (const line of statusOutput.split(/\r?\n/)) {
+  for (const line of statusLines) {
     if (!line.startsWith("?? ")) {
       continue;
     }
@@ -55,7 +68,9 @@ function getWorkingTreeFingerprint(workspaceDir) {
     try {
       const stat = fs.statSync(fullPath);
       if (stat.isFile()) {
-        hash.update(fs.readFileSync(fullPath));
+        const content = fs.readFileSync(fullPath);
+        hash.update(content);
+        changedLines += content.toString("utf8").split(/\r?\n/).length;
       } else {
         hash.update(String(stat.mtimeMs));
       }
@@ -65,7 +80,16 @@ function getWorkingTreeFingerprint(workspaceDir) {
     hash.update("\0");
   }
 
-  return hash.digest("hex");
+  const isComplex =
+    statusLines.length >= COMPLEX_FILE_THRESHOLD ||
+    changedLines >= COMPLEX_LINE_THRESHOLD;
+
+  return {
+    fingerprint: hash.digest("hex"),
+    fileCount: statusLines.length,
+    changedLines,
+    isComplex,
+  };
 }
 
 function readState() {
@@ -117,18 +141,20 @@ function main() {
       ? payload.cwd
       : path.resolve(process.cwd(), "..");
 
-  let fingerprint = null;
+  let treeInfo = null;
   try {
-    fingerprint = getWorkingTreeFingerprint(workspaceDir);
+    treeInfo = inspectWorkingTree(workspaceDir);
   } catch {
     process.stdout.write("{}\n");
     return;
   }
 
-  if (!fingerprint) {
+  if (!treeInfo) {
     process.stdout.write("{}\n");
     return;
   }
+
+  const { fingerprint, fileCount, changedLines, isComplex } = treeInfo;
 
   const stateKey =
     typeof payload.conversationId === "string" && payload.conversationId.length > 0
@@ -159,9 +185,13 @@ function main() {
   state[stateKey] = { fingerprint, updatedAt: Date.now() };
   writeState(state);
 
+  const modelInstruction = isComplex
+    ? `Run the \`code-review\` skill using model \`claude-opus-5-5-medium\` (Claude Opus 5.5) because the uncommitted changes are large/complex (${fileCount} file(s), ~${changedLines} changed line(s)).`
+    : "Run the `code-review` skill (default model `claude-sonnet-5-5-medium`, or request `claude-opus-5-5-medium` if you assess these changes as sufficiently complex — e.g., cross-cutting architecture, concurrency/state machines, security-sensitive logic, or subtle edge cases). The `code-review` skill may also self-escalate to `claude-opus-5-5-medium` after inspecting the diff.";
+
   const reason = [
     "Uncommitted changes were detected upon task completion.",
-    "Run the `code-review` skill (using model `claude-sonnet-5-5-medium` / Claude Sonnet 5.5) to review the current uncommitted changes.",
+    modelInstruction,
     "After `code-review` reports its findings, review each finding and either:",
     "1. Address the finding and re-run `code-review` on the revised changes, or",
     "2. Write a clear justification for why that finding does not need to be addressed.",

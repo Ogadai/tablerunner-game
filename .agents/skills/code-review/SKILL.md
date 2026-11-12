@@ -5,13 +5,24 @@ description: >-
   correctness, consistency, regressions, edge cases, and sufficient test coverage.
   Use when asked to review uncommitted changes, inspect a worktree before committing,
   or perform a code review.
-argument-hint: "[optional description of the changes]"
+argument-hint: "[optional description of the changes; include 'opus' to request claude-opus-5-5-medium]"
 model: claude-sonnet-5-5-medium
 ---
 
 # Code Review
 
 Review the current uncommitted changes in the repository without modifying the worktree. If an optional parameter describing the changes is provided, use it as context for intent—never as a substitute for inspecting the actual diff.
+
+## Model Selection & Escalation
+
+Default to `claude-sonnet-5-5-medium`. Upgrade to `claude-opus-5-5-medium` (Claude Opus 5.5) in either of these cases:
+
+1. **Caller-Requested**: The caller or implementing agent explicitly requests Opus (e.g., passes `opus` / `claude-opus-5-5-medium` in the skill argument or asks for an Opus review).
+2. **Complexity Self-Assessment**: After inspecting the uncommitted diff in Step 1, escalate to `claude-opus-5-5-medium` (via `swarm` worker/model switch if not already running on Opus) when the changes involve high complexity, such as:
+   - Cross-cutting changes spanning many files or multiple subsystems/layers (e.g., ≥ 6 files or ≥ 300 changed lines).
+   - Concurrency, async orchestration, race conditions, state machines, or shared-process coordination.
+   - Security-sensitive logic (authentication, authorization, input validation, cryptography, or sandboxing).
+   - Core architectural, schema, or public API changes with subtle regression risks.
 
 ## Workflow
 
