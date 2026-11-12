@@ -1,0 +1,11 @@
+{
+  "code-review-on-stop": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./hooks/code-review-on-stop.mjs",
+        "timeout": 15
+      }
+    ]
+  }
+}
