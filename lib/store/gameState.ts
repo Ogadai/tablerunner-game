@@ -191,7 +191,7 @@ export async function createPlayerForGame(boardId: string, mapId: string, player
       characterStats: { ...characterDef.characterStats },
       health: 0,
       magic: 0,
-      points: 0,
+      points: starterPlayer.points ?? 0,
       level: starterPlayer.level,
       availableStats: starterPlayer.availableStats,
       equipment,

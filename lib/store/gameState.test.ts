@@ -24,6 +24,8 @@ jest.mock('../runner/populate-items', () => ({ populateItemsForMap: jest.fn() })
 jest.mock('../runner/populate-chests', () => ({ populateChestsForMap: jest.fn() }));
 jest.mock('../runner/game-processes', () => ({ setupProcesses: jest.fn() }));
 jest.mock('../runner/cauldron-of-fire/processes', () => ({ cauldronOfFireProcesses: {} }));
+jest.mock('../runner/race-of-fire/processes', () => ({ raceOfFireProcesses: {} }));
+jest.mock('../runner/warlords-of-fire/processes', () => ({ warlordsOfFireProcesses: {} }));
 jest.mock('./playerInventory', () => ({ createStoreInventoryState: jest.fn() }));
 jest.mock('../games/character-names', () => ({ pickCharacterName: jest.fn() }));
 
@@ -184,7 +186,7 @@ describe('player creation and deletion', () => {
 
   it.each([1, 23])('uses game-specific starting properties at location %i', async location => {
     const customStarter = {
-      location, level: 3, availableStats: 8, coins: 50, team: 'red',
+      location, level: 3, points: 120, availableStats: 8, coins: 50, team: 'red',
       equipment: [allItems.healingPotion, allItems.healingPotion],
     };
 
@@ -203,7 +205,7 @@ describe('player creation and deletion', () => {
     expect(createStarter).toHaveBeenCalledWith(characters.mage, state);
     expect(saved.players[0]).toMatchObject({
       startLocation: location, location: game.locations.find(l => l.id === location),
-      level: 3, availableStats: 8, coins: 50, team: 'red',
+      level: 3, points: 120, availableStats: 8, coins: 50, team: 'red',
     });
     const equipment = saved.players[0].equipment;
     expect(equipment.map(item => item.type)).toEqual([
@@ -213,6 +215,47 @@ describe('player creation and deletion', () => {
     expect(new Set(equipment.map(item => item.id)).size).toBe(equipment.length);
     expect(saved.visited).toEqual([10, location]);
     expect(saved.visitedPortals).toEqual(game.portalLocations?.includes(location) ? [10, location] : []);
+  });
+
+  it.each([
+    ['cauldronfire', 5],
+    ['racefire', 12],
+  ] as const)('gives a mid-game joiner the lowest player level/XP and average total coin value in %s', async (gameId, initialAvailableStats) => {
+    const targetGame = games.find(g => g.id === gameId)!;
+    const state = createState();
+    state.gameId = targetGame.id;
+    state.turn = 6;
+    state.characters = targetGame.characters;
+    state.players = [
+      {
+        id: 'barbarian', name: 'Barb', rgbColour: '99733A', startLocation: 10,
+        location: targetGame.locations.find(l => l.id === 10)!,
+        characterStats: { ...characters.barbarian.characterStats },
+        health: 20, magic: 0, points: 250, level: 4, availableStats: 0,
+        equipment: [{ id: 'i-1', type: 'swordLegendary' }], // value 60
+        equipped: { weapon: 'i-1' }, spells: [], coins: 40, team: 'good',
+      },
+      {
+        id: 'ranger', name: 'Rang', rgbColour: '83A839', startLocation: 10,
+        location: targetGame.locations.find(l => l.id === 10)!,
+        characterStats: { ...characters.ranger.characterStats },
+        health: 20, magic: 0, points: 115, level: 3, availableStats: 0,
+        equipment: [{ id: 'i-2', type: 'swordSteel' }], // value 25
+        equipped: { weapon: 'i-2' }, spells: [], coins: 55, team: 'good',
+      },
+    ];
+    mockRedis.getGameStateFromRedis.mockResolvedValue(state);
+
+    await expect(createPlayerForGame('board', 'map', 'mage')).resolves.toEqual({ success: true });
+
+    const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
+    const joined = saved.players.find(p => p.id === 'mage')!;
+    expect(joined).toMatchObject({
+      level: 3,
+      points: 115,
+      availableStats: initialAvailableStats + 4,
+      coins: 90, // ((60 + 40) + (25 + 55)) / 2
+    });
   });
 
   it('rejects a missing game', async () => {

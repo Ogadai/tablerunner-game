@@ -19,6 +19,7 @@ export interface ProcessRunner {
 export interface StarterPlayer {
   location: number;
   level: number;
+  points?: number;
   availableStats: number;
   coins: number;
   team: string;
