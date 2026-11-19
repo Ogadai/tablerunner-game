@@ -1,4 +1,4 @@
-import { CharacterListEntry } from '@/lib/games/types';
+import { CharacterListEntry, ItemDef } from '@/lib/games/types';
 import { GameState } from '@/lib/store/types';
 import { GameCreation, StarterPlayer } from '../types';
 import { calculateMidGameJoinCatchUp } from '../mid-game-join';
@@ -8,8 +8,13 @@ const INITIAL_AVAILABLE_STATS = 12;
 const INITIAL_COINS = 200;
 const START_LOCATION = 10;
 
-export function createStarterPlayer(_characterDef?: CharacterListEntry, gameState?: GameState): StarterPlayer {
-  const catchUp = calculateMidGameJoinCatchUp(gameState, INITIAL_AVAILABLE_STATS);
+export function createStarterPlayer(characterDef?: CharacterListEntry, gameState?: GameState): StarterPlayer {
+  const equipment: ItemDef[] = [];
+  const catchUp = calculateMidGameJoinCatchUp(
+    gameState,
+    INITIAL_AVAILABLE_STATS,
+    [...(characterDef?.equipment ?? []), ...equipment],
+  );
 
   return {
     location: START_LOCATION,
@@ -18,7 +23,7 @@ export function createStarterPlayer(_characterDef?: CharacterListEntry, gameStat
     availableStats: catchUp?.availableStats ?? INITIAL_AVAILABLE_STATS,
     coins: catchUp?.coins ?? INITIAL_COINS,
     team: 'good',
-    equipment: [],
+    equipment,
   };
 }
 

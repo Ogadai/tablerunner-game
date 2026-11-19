@@ -1,6 +1,7 @@
 import { createStarterPlayer } from './game-creation';
 import { allItems } from '../../games/items';
 import { characters } from '../../games/characters';
+import { getItemDefsCoinValue } from '../mid-game-join';
 import { createGame, createPlayer } from '../test-support/fixtures';
 
 it('creates a player with the Race of Fire starting properties', () => {
@@ -23,7 +24,7 @@ it('uses default starting properties on turn 0 even when other players exist', (
   });
 });
 
-it('catches up a player joining mid-game to the lowest player level/XP and average total coin value', () => {
+it('catches up a player joining mid-game and subtracts their starter inventory value', () => {
   const game = createGame({
     gameId: 'racefire',
     turn: 7,
@@ -45,12 +46,15 @@ it('catches up a player joining mid-game to the lowest player level/XP and avera
     ],
   });
 
+  // Average total value = (300 + 160) / 2 = 230
+  const starterInventoryValue = getItemDefsCoinValue(characters.mage.equipment);
+
   expect(createStarterPlayer(characters.mage, game)).toEqual({
     location: 10,
     level: 2,
     points: 45,
     availableStats: 14, // 12 + (2 - 1) * 2
-    coins: 230,         // (300 + 160) / 2
+    coins: 230 - starterInventoryValue,
     team: 'good',
     equipment: [],
   });

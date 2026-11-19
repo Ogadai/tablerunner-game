@@ -220,7 +220,7 @@ describe('player creation and deletion', () => {
   it.each([
     ['cauldronfire', 5],
     ['racefire', 12],
-  ] as const)('gives a mid-game joiner the lowest player level/XP and average total coin value in %s', async (gameId, initialAvailableStats) => {
+  ] as const)('gives a mid-game joiner the lowest player level/XP and average total coin value minus starter inventory in %s', async (gameId, initialAvailableStats) => {
     const targetGame = games.find(g => g.id === gameId)!;
     const state = createState();
     state.gameId = targetGame.id;
@@ -233,7 +233,7 @@ describe('player creation and deletion', () => {
         characterStats: { ...characters.barbarian.characterStats },
         health: 20, magic: 0, points: 250, level: 4, availableStats: 0,
         equipment: [{ id: 'i-1', type: 'swordLegendary' }], // value 60
-        equipped: { weapon: 'i-1' }, spells: [], coins: 40, team: 'good',
+        equipped: { weapon: 'i-1' }, spells: [], coins: 440, team: 'good',
       },
       {
         id: 'ranger', name: 'Rang', rgbColour: '83A839', startLocation: 10,
@@ -241,7 +241,7 @@ describe('player creation and deletion', () => {
         characterStats: { ...characters.ranger.characterStats },
         health: 20, magic: 0, points: 115, level: 3, availableStats: 0,
         equipment: [{ id: 'i-2', type: 'swordSteel' }], // value 25
-        equipped: { weapon: 'i-2' }, spells: [], coins: 55, team: 'good',
+        equipped: { weapon: 'i-2' }, spells: [], coins: 455, team: 'good',
       },
     ];
     mockRedis.getGameStateFromRedis.mockResolvedValue(state);
@@ -250,12 +250,15 @@ describe('player creation and deletion', () => {
 
     const saved = mockRedis.setGameStateInRedis.mock.calls[0][2];
     const joined = saved.players.find(p => p.id === 'mage')!;
+    const joinedInventoryValue = joined.equipment.reduce((sum, item) => sum + (allItems[item.type]?.value ?? 0), 0);
+    // Existing players have totals 500 and 480 -> average 490
     expect(joined).toMatchObject({
       level: 3,
       points: 115,
       availableStats: initialAvailableStats + 4,
-      coins: 90, // ((60 + 40) + (25 + 55)) / 2
+      coins: 490 - joinedInventoryValue,
     });
+    expect(joined.coins + joinedInventoryValue).toBe(490);
   });
 
   it('rejects a missing game', async () => {

@@ -1,6 +1,10 @@
 import { allItems } from '../games/items';
 import { STATS_PER_LEVEL } from './level-up';
-import { calculateMidGameJoinCatchUp, getPlayerTotalCoinValue } from './mid-game-join';
+import {
+  calculateMidGameJoinCatchUp,
+  getItemDefsCoinValue,
+  getPlayerTotalCoinValue,
+} from './mid-game-join';
 import { createGame, createPlayer } from './test-support/fixtures';
 
 describe('getPlayerTotalCoinValue', () => {
@@ -17,6 +21,14 @@ describe('getPlayerTotalCoinValue', () => {
 
     const expected = 45 + (allItems.swordSteel.value ?? 0) + (allItems.swordLegendary.value ?? 0);
     expect(getPlayerTotalCoinValue(player)).toBe(expected);
+  });
+});
+
+describe('getItemDefsCoinValue', () => {
+  it('sums item definition values and treats items without value as 0', () => {
+    expect(
+      getItemDefsCoinValue([allItems.resurrectionStore, allItems.swordRusty, allItems.fireCrystalShard]),
+    ).toBe((allItems.resurrectionStore.value ?? 0) + (allItems.swordRusty.value ?? 0));
   });
 });
 
@@ -62,7 +74,7 @@ describe('calculateMidGameJoinCatchUp', () => {
     });
   });
 
-  it('averages total coin value including equipped and unequipped items', () => {
+  it('averages total coin value including equipped and unequipped items and subtracts starter inventory value', () => {
     const game = createGame({
       turn: 4,
       players: [
@@ -90,11 +102,28 @@ describe('calculateMidGameJoinCatchUp', () => {
     });
 
     // p1: 30 + 25 + 10 = 65; p2: 10 + 60 = 70; avg = 67.5 -> 68
-    expect(calculateMidGameJoinCatchUp(game, 5)).toEqual({
+    // starterEquipment: swordRusty (10) -> 68 - 10 = 58
+    expect(calculateMidGameJoinCatchUp(game, 5, [allItems.swordRusty])).toEqual({
       level: 1,
       points: 15,
       availableStats: 5,
-      coins: 68,
+      coins: 58,
+    });
+  });
+
+  it('clamps catch-up coins to 0 when starter inventory exceeds average total coin value', () => {
+    const game = createGame({
+      turn: 5,
+      players: [
+        createPlayer({ id: 'p1', level: 2, points: 50, coins: 100, equipment: [] }),
+      ],
+    });
+
+    expect(calculateMidGameJoinCatchUp(game, 5, [allItems.resurrectionStore])).toEqual({
+      level: 2,
+      points: 50,
+      availableStats: 5 + STATS_PER_LEVEL,
+      coins: 0,
     });
   });
 });
