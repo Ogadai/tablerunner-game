@@ -16,7 +16,7 @@ describe("RootLayout", () => {
       appleWebApp: {
         capable: true,
         title: "TableRunner",
-        statusBarStyle: "default",
+        statusBarStyle: "black-translucent",
       },
       other: {
         "apple-mobile-web-app-capable": "yes",
@@ -27,6 +27,7 @@ describe("RootLayout", () => {
   it("exports light and dark theme colors in viewport", () => {
     expect(viewport).toEqual({
       colorScheme: "light dark",
+      viewportFit: "cover",
       themeColor: [
         { media: "(prefers-color-scheme: light)", color: "#f2ebd9" },
         { media: "(prefers-color-scheme: dark)", color: "#120f0d" },

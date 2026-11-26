@@ -186,6 +186,7 @@
 
 html {
   height: 100%;
+  background-color: var(--bg-main);
 }
 
 html body {
@@ -194,7 +195,7 @@ html body {
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
-  padding: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   transition: background-color 0.3s ease, color 0.3s ease;
   height: 100%;
 
