@@ -17,6 +17,7 @@
   /* Color Palette - Weathered Parchment & Gold */
   --bg-main: #f2ebd9;
   --bg-main-50: rgba(242, 235, 217, 0.7);
+  --status-bar-scrim: linear-gradient(to bottom, rgba(43, 34, 26, 0.72), rgba(43, 34, 26, 0.45));
   --bg-card: #eadeca;
   --bg-card-hover: #e0d1b8;
   --bg-card-active: #e0d1b8;
@@ -210,6 +211,20 @@ html body {
     background-image:
       radial-gradient(circle at 50% 20%, rgba(40, 30, 20, 0.4), transparent 80%),
       linear-gradient(var(--bg-main), var(--bg-main));
+  }
+}
+
+@media (display-mode: standalone) and (prefers-color-scheme: light) {
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: var(--status-bar-scrim);
+    pointer-events: none;
+    z-index: 99;
   }
 }
 
@@ -661,8 +676,8 @@ ul {
 	transform: translate(-50%, -50%);
 	width: fit-content;
   min-width: 500px;
-	max-width: 800px;
-	max-height: 85vh;
+	max-width: min(800px, calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 16px));
+	max-height: min(85vh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px));
 	padding: 10px;
 	animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
