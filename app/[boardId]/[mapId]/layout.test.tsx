@@ -2,7 +2,7 @@ import "@testing-library/jest-dom";
 import { act, render, screen } from "@testing-library/react";
 import { useParams } from "next/navigation";
 
-import RootLayout from "./layout";
+import RootLayout, { generateMetadata } from "./layout";
 import { bluetoothService } from "../../ble/bluetooth-service";
 
 jest.mock("next/navigation", () => ({
@@ -265,5 +265,15 @@ describe("Route RootLayout", () => {
     unmount();
 
     expect(unsubscribe).toHaveBeenCalled();
+  });
+
+  it("generates a per-game manifest link for the current boardId and mapId", async () => {
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ boardId: "board-1", mapId: "map-2" }),
+    });
+
+    expect(metadata).toEqual({
+      manifest: "/manifest.webmanifest?boardId=board-1&mapId=map-2",
+    });
   });
 });
